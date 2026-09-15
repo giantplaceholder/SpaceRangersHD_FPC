@@ -9,6 +9,7 @@ unit ab_WorldLine;
 interface
 
 uses
+  GameHeap,
   EC_Struct,
   GI_PolyLine;
 
@@ -35,7 +36,7 @@ type
 
 var
 
-  WorldLineHeap: Cardinal = 0;
+  WorldLineHeap: TGameHeapHandle = 0;
 
   FirstWorldLine: PabWorldLine = nil;
 
@@ -85,7 +86,7 @@ begin
     ab_WorldLine_Delete(LastWorldLine);
   if WorldLineHeap <> 0 then
   begin
-    HeapDestroy(WorldLineHeap);
+    GameHeap.HeapDestroy(WorldLineHeap);
     WorldLineHeap := 0;
   end;
 end;
@@ -96,7 +97,7 @@ var
 begin
   if WorldLineHeap = 0 then
   begin
-    WorldLineHeap := HeapCreate(1, $8000, 0);
+    WorldLineHeap := GameHeap.HeapCreate(1, $8000, 0);
     if WorldLineHeap = 0 then
       raise Exception.Create('ab_WorldLine_Add.HeapCreate');
   end;

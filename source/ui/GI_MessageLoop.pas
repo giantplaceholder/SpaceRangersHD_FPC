@@ -9,6 +9,7 @@ unit GI_MessageLoop;
 interface
 
 uses
+  GameHeap,
   GR_Rect,
   Classes,
   EC_BlockPar,
@@ -216,7 +217,7 @@ type
     First: TPoint;
     Last: TPoint;
     Pixels: Pointer;
-    Heap: Cardinal;
+    Heap: TGameHeapHandle;
   end;
 
   TMessageLoopGI = class(TObjectEx)
@@ -2910,29 +2911,20 @@ end;
 
 procedure TMessageLoopGI.RestoreSavedPixels16;
 var
-  Entries, Pixels: Pointer;
-  Count: Integer;
+  Entry, Pixels: PByte;
+  Index, Offset: Integer;
 begin
   if SavedPixelCount16 < 1 then
     Exit;
   Pixels := ScreenRenderBuffer.GetPixels;
-  Count := SavedPixelCount16;
-  Entries := SavedPixels16;
-  // Native handwritten block: PUSHAD/POPAD and the compact eight-byte-entry loop.
-  asm
-    pushad
-    mov edi, Entries
-    mov esi, Pixels
-    mov ecx, Count
-  @@NextPixel:
-    mov ebx, [edi]
-    add edi, 4
-    mov ax, [edi]
-    add edi, 4
-    mov [esi+ebx], ax
-    dec ecx
-    jnz @@NextPixel
-    popad
+  Entry := SavedPixels16;
+  for Index := 0 to SavedPixelCount16 - 1 do
+  begin
+    // Each entry retains its 32-bit byte offset, 16-bit pixel and two padding bytes.
+    // Only Pixels is an address; widening the entry would break its other users.
+    Move(Entry^, Offset, SizeOf(Offset));
+    Move((Entry + 4)^, (Pixels + Offset)^, SizeOf(Word));
+    Inc(Entry, 8);
   end;
   SavedPixelCount16 := 0;
 end;
@@ -2972,7 +2964,7 @@ begin
   SavedLines[SavedLineCount].First := First;
   SavedLines[SavedLineCount].Last := Last;
   SavedLines[SavedLineCount].Pixels := Pixels;
-  SavedLines[SavedLineCount].Heap := GetProcessHeap;
+  SavedLines[SavedLineCount].Heap := GameHeap.GetProcessHeap;
   Inc(SavedLineCount);
 end;
 

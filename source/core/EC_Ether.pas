@@ -112,30 +112,15 @@ begin
 end;
 
 function TEther.GetIndexedEntry(Index: Integer): TEtherUnit;
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, EAX
-  MOV EAX, EDX
-  SHL EAX, 2
-  ADD EAX, [EBX].TEther.SortedItems
-  MOV EAX, [EAX]
-  POP EBX
-  POP EAX
+begin
+  Result := SortedItems^[Index];
+  // Original bug ($4DC9FC): POP EAX discards the loaded entry and returns Self.
+  Result := TEtherUnit(Pointer(Self));
 end;
 
 procedure TEther.SetIndexedEntry(Index: Integer; Item: TEtherUnit);
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, EAX
-  MOV EAX, EDX
-  SHL EAX, 2
-  ADD EAX, [EBX].TEther.SortedItems
-  MOV EBX, ECX
-  MOV [EAX], EBX
-  POP EBX
-  POP EAX
+begin
+  SortedItems^[Index] := Item;
 end;
 
 function TEther.FindInsertionIndex(const Name: WideString): Integer;
@@ -185,26 +170,7 @@ begin
   SortedItems := ReAllocREC(SortedItems, Count * SizeOf(TEtherUnit));
   MoveCount := Count - 1 - Index;
   if MoveCount > 0 then
-    asm
-    PUSH EBX
-    PUSH EAX
-    PUSH EDX
-    MOV EBX, Self
-    MOV EDX, [EBX].TEther.Count
-    SUB EDX, 1
-    SHL EDX, 2
-    ADD EDX, [EBX].TEther.SortedItems
-    MOV ECX, MoveCount
-  @@Move:
-    MOV EAX, [EDX - 4]
-    MOV [EDX], EAX
-    SUB EDX, 4
-    DEC ECX
-    JNZ @@Move
-    POP EDX
-    POP EAX
-    POP EBX
-    end;
+    Move(SortedItems^[Index], SortedItems^[Index + 1], MoveCount * SizeOf(TEtherUnit));
   SetIndexedEntry(Index, Item);
   Leave;
 end;

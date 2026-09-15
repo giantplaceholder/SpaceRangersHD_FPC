@@ -387,79 +387,40 @@ begin
 end;
 
 function PointFromRadiusAngle(Radius, Angle: Single): TPointF;
+var
+  Sine, Cosine: Extended;
 begin
-  asm
-  fld Angle
-  fsincos
-  mov eax, Result
-  fld Radius
-  fmul st(1), st(0)
-  fmulp st(2), st(0)
-  fstp [eax].TPointF.X
-  fstp [eax].TPointF.Y
-  end;
+  // FSINCOS kept both values at extended precision until the final Single stores.
+  SinCos(Extended(Angle), Sine, Cosine);
+  Result.X := Radius * Cosine;
+  Result.Y := Radius * Sine;
 end;
 
 function OffsetPointByRadiusAngle(Origin: TPointF; Radius, Angle: Single): TPointF;
+var
+  Sine, Cosine: Extended;
 begin
-  asm
-  fld Angle
-  fsincos
-  mov eax, Result
-  fld Radius
-  fmul st(1), st(0)
-  fmulp st(2), st(0)
-  fld Origin.X
-  faddp st(1), st(0)
-  fstp [eax].TPointF.X
-  fld Origin.Y
-  faddp st(1), st(0)
-  fstp [eax].TPointF.Y
-  end;
+  SinCos(Extended(Angle), Sine, Cosine);
+  Result.X := Radius * Cosine + Origin.X;
+  Result.Y := Radius * Sine + Origin.Y;
 end;
 
 function RotateAndTranslatePoint(Point, Translation: TPointF; Angle: Single): TPointF;
+var
+  Sine, Cosine: Extended;
 begin
-  asm
-  fld Angle
-  fsincos
-  fxch st(1)
-  mov eax, Result
-  fld Point.X
-  fmul st(0), st(2)
-  fld Point.Y
-  fmul st(0), st(2)
-  fchs
-  faddp st(1), st(0)
-  fld Translation.X
-  faddp st(1), st(0)
-  fstp [eax].TPointF.X
-  fld Point.Y
-  fmulp st(2), st(0)
-  fld Point.X
-  fmulp st(1), st(0)
-  faddp st(1), st(0)
-  fld Translation.Y
-  faddp st(1), st(0)
-  fstp [eax].TPointF.Y
-  end;
+  SinCos(Extended(Angle), Sine, Cosine);
+  Result.X := Point.X * Cosine - Point.Y * Sine + Translation.X;
+  Result.Y := Point.Y * Cosine + Point.X * Sine + Translation.Y;
 end;
 
 function PolarToPoint(Polar: TPolarPoint): TPointF;
+var
+  Sine, Cosine: Extended;
 begin
-  asm
-  fld Polar.AngleDegrees
-  fld PolarDegreesToRadians
-  fmulp st(1), st(0)
-  fsincos
-  mov eax, Result
-  fld Polar.Radius
-  fmul st(1), st(0)
-  fmulp st(2), st(0)
-  fchs
-  fstp [eax].TPointF.Y
-  fstp [eax].TPointF.X
-  end;
+  SinCos(Extended(Polar.AngleDegrees) * PolarDegreesToRadians, Sine, Cosine);
+  Result.Y := -(Polar.Radius * Cosine);
+  Result.X := Polar.Radius * Sine;
 end;
 
 function IntegerPointToPolar(Point: TPoint): TPolarRadiansPoint;

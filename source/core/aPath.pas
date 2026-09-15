@@ -9,6 +9,7 @@ unit aPath;
 interface
 
 uses
+  GameHeap,
   EC_Struct,
   SyncObjs;
 
@@ -56,7 +57,7 @@ type
 
 var
 
-  PathNodeHeap: Cardinal = 0;
+  PathNodeHeap: TGameHeapHandle = 0;
 
   PathPoolHead: PSPathNode = nil;
 
@@ -100,8 +101,8 @@ var
 begin
   PathPoolLock := TCriticalSection.Create;
   PathPoolFreeCount := 200000;
-  PathNodeHeap := HeapCreate(0, 16, 0);
-  PathInitialBlock := HeapAlloc(PathNodeHeap, 0, PathPoolFreeCount * SizeOf(TSPathNode));
+  PathNodeHeap := GameHeap.HeapCreate(0, 16, 0);
+  PathInitialBlock := GameHeap.HeapAlloc(PathNodeHeap, 0, PathPoolFreeCount * SizeOf(TSPathNode));
   if PathInitialBlock = nil then
     raise Exception.Create('Error: HeapAlloc');
   ZeroMemory(PathInitialBlock, PathPoolFreeCount * SizeOf(TSPathNode));
@@ -138,7 +139,7 @@ begin
   for Index := 0 to High(PathGrowthBlocks) do
     if PathGrowthBlocks[Index] <> nil then
     begin
-      HeapFree(PathNodeHeap, 0, PathGrowthBlocks[Index]);
+      GameHeap.HeapFree(PathNodeHeap, 0, PathGrowthBlocks[Index]);
       PathGrowthBlocks[Index] := nil;
     end;
   SetLength(PathGrowthBlocks, 0);
@@ -170,7 +171,7 @@ begin
   Count := 100000;
   Inc(PathPoolFreeCount, Count);
   ByteCount := Count * SizeOf(TSPathNode);
-  Block := HeapAlloc(PathNodeHeap, HEAP_ZERO_MEMORY, ByteCount);
+  Block := GameHeap.HeapAlloc(PathNodeHeap, GameHeap.HEAP_ZERO_MEMORY, ByteCount);
   if Block = nil then
     Exit;
   Node := Block;
@@ -193,12 +194,12 @@ begin
   FreePathGrowthBlocks;
   if PathInitialBlock <> nil then
   begin
-    HeapFree(PathNodeHeap, 0, PathInitialBlock);
+    GameHeap.HeapFree(PathNodeHeap, 0, PathInitialBlock);
     PathInitialBlock := nil;
   end;
   if PathNodeHeap <> 0 then
   begin
-    HeapDestroy(PathNodeHeap);
+    GameHeap.HeapDestroy(PathNodeHeap);
     PathNodeHeap := 0;
   end;
   if PathPoolLock <> nil then

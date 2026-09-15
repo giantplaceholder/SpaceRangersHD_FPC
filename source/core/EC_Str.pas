@@ -1073,45 +1073,33 @@ begin
 end;
 
 function CompareWideChars(Left, Right: PWideChar): Integer; cdecl;
-asm
-  PUSH ESI
-  PUSH EDI
-  PUSH EBX
-  PUSH EDX
-  MOV ESI, Left
-  MOV EDI, Right
-  TEST ESI, ESI
-  JNZ @@HaveLeft
-  MOV EAX, -1
-  TEST EDI, EDI
-  JNZ @@Done
-  XOR EAX, EAX
-  JMP @@Done
-@@HaveLeft:
-  TEST EDI, EDI
-  JNZ @@Next
-  MOV EAX, 1
-  JMP @@Done
-@@Next:
-  MOV BX, [ESI]
-  MOV DX, [EDI]
-  ADD ESI, 2
-  ADD EDI, 2
-  CMP BX, DX
-  JNZ @@Different
-  XOR EAX, EAX
-  TEST DX, DX
-  JNZ @@Next
-  JMP @@Done
-@@Different:
-  MOV EAX, 1
-  JA @@Done
-  MOV EAX, -1
-@@Done:
-  POP EDX
-  POP EBX
-  POP EDI
-  POP ESI
+begin
+  // Nil sorts before a non-nil string, including a non-nil empty string.
+  // Compare unsigned UTF-16 code units and return exactly -1, 0 or 1.
+  if Left = nil then
+  begin
+    if Right = nil then
+      Result := 0
+    else
+      Result := -1;
+    Exit;
+  end;
+  if Right = nil then
+  begin
+    Result := 1;
+    Exit;
+  end;
+  while (Left^ = Right^) and (Left^ <> #0) do
+  begin
+    Inc(Left);
+    Inc(Right);
+  end;
+  if Left^ < Right^ then
+    Result := -1
+  else if Left^ > Right^ then
+    Result := 1
+  else
+    Result := 0;
 end;
 
 function FindTextOffsetW(const Text, Search: WideString; StartIndex: Integer): Integer;

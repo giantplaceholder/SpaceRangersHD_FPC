@@ -42,8 +42,7 @@ implementation
 uses
   EC_HsFile,
   SyncObjs,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 constructor TFileEC.Create;
 begin
@@ -82,11 +81,8 @@ begin
   begin
     PackageFileLock.Enter;
     Handle :=
-        PackageCollection.OpenEntryByPathAcrossPackages(
-            AnsiString(FileName),
-            GENERIC_READ or GENERIC_WRITE,
-            False
-        );
+        PackageCollection
+            .OpenEntryByPathAcrossPackages(AnsiString(FileName), fmOpenReadWrite, False);
     PackageFileLock.Leave;
     if Handle = -1 then
       raise Exception.Create('TFileEC.Open. FileName=' + FileName);
@@ -101,7 +97,7 @@ begin
     PackageFileLock.Enter;
     Handle :=
         PackageCollection
-            .OpenEntryByPathAcrossPackages(AnsiString(FileName), GENERIC_READ, FirstPackageOnly);
+            .OpenEntryByPathAcrossPackages(AnsiString(FileName), fmOpenRead, FirstPackageOnly);
     PackageFileLock.Leave;
     if Handle = -1 then
       raise Exception.Create('TFileEC.Open. FileName=' + FileName);
@@ -116,7 +112,7 @@ begin
     PackageFileLock.Enter;
     Handle :=
         PackageCollection
-            .OpenEntryByPathAcrossPackages(AnsiString(FileName), GENERIC_READ, FirstPackageOnly);
+            .OpenEntryByPathAcrossPackages(AnsiString(FileName), fmOpenRead, FirstPackageOnly);
     PackageFileLock.Leave;
     if Handle = -1 then
     begin
@@ -213,7 +209,7 @@ begin
             + ' kolbyte='
             + SysUtils.IntToStr(ByteCount)
             + ' GetLastError='
-            + SysUtils.IntToStr(Windows.GetLastError));
+            + SysUtils.IntToStr(GetLastOSError));
 end;
 
 procedure TFileEC.WriteBuffer(Source: Pointer; ByteCount: Cardinal);

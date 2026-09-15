@@ -7,6 +7,10 @@ program Rangers;
 {$R Rangers.res}
 
 uses
+{$IFDEF UNIX}
+  cthreads,
+  cwstring,
+{$ENDIF}
   Windows,
   Classes,
   SysUtils,

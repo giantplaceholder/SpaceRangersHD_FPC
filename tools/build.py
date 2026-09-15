@@ -59,6 +59,11 @@ def compile_pascal(work: Path, command: list[str | Path], rebuild: bool) -> None
     stamp = work / "pascal-command.json"
     signature = command_signature(command)
     if rebuild or not stamp.is_file() or stamp.read_text() != signature:
+        if "-Ur" in command:
+            # Released dependencies ignore -B; invalidate their generated PPUs
+            # before recompiling this package with its own language mode.
+            for unit in work.glob("*.ppu"):
+                unit.unlink()
         command = [command[0], "-B", *command[1:]]
     # A failed build must not leave units compiled with a mixture of settings.
     stamp.write_text("")
@@ -151,26 +156,22 @@ def build_macos(release: bool, rebuild: bool = False) -> Path:
         rebuild=rebuild,
     )
     shutil.copy2(native / "libokgf.dylib", libraries)
-    cflags = shlex.split(output("pkg-config", "--cflags", "sdl2", "SDL2_mixer", "libjpeg"))
-    ldflags = shlex.split(output("pkg-config", "--libs", "sdl2", "SDL2_mixer", "libjpeg"))
-    native_object = work / "game_native.o"
-    # Keep the object: dsymutil needs its DWARF after linking the library.
-    compile_native(work, [
-        clang, "-c", "-O3" if release else "-O2", "-g",
-        "-Wall", "-Wextra", "-mmacosx-version-min=11.0",
-        ROOT / "platform/game_native.c", *cflags, "-o", native_object,
+    paszlib = work / "paszlib"
+    paszlib.mkdir(exist_ok=True)
+    # This FPC package uses ObjFPC syntax. Build released units separately so
+    # a game rebuild in Delphi mode does not recompile the package in that mode.
+    compile_pascal(paszlib, [
+        compiler, *compiler_flags, "-Mobjfpc", "-Ur", "-O2", "-Aclang-llvm-darwin",
+        f"-FU{paszlib}", f"-FE{paszlib}",
+        ROOT / "vendor/fpc/packages/paszlib/src/zinflate.pas",
     ], rebuild)  # fmt: skip
-    run_step(work, "native-link", [
-        clang, "-dynamiclib", "-mmacosx-version-min=11.0", native_object, *ldflags,
-        "-Wl,-install_name,@rpath/libgamenative.dylib", "-o", libraries / "libgamenative.dylib",
-    ])  # fmt: skip
     compile_pascal(work, [
-        compiler, *compiler_flags, *pascal_flags(release), "-Aclang-llvm-darwin",
+        compiler, *compiler_flags, *pascal_flags(release, paszlib), "-Aclang-llvm-darwin",
         f"-FU{units}", f"-FE{libraries}", f"-Fl{libraries}",
-        "-k-lgamenative", "-k-lokgf", "-k-lz", "-k-rpath", "-k@executable_path", f"-XR{sdk}",
+        "-k-lokgf", "-k-rpath", "-k@executable_path", f"-XR{sdk}",
         ROOT / "source/Rangers.dpr",
     ], rebuild)  # fmt: skip
-    for name in ("Rangers", "libgamenative.dylib", "libokgf.dylib"):
+    for name in ("Rangers", "libokgf.dylib"):
         run_step(work, f"symbols-{name}", [
             "xcrun", "dsymutil", libraries / name, "-o", libraries / f"{name}.dSYM",
         ])  # fmt: skip

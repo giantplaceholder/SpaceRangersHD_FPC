@@ -9,6 +9,7 @@ unit ab_WorldImage;
 interface
 
 uses
+  GameHeap,
   EC_Struct,
   GI_Image;
 
@@ -44,7 +45,7 @@ type
 
 var
 
-  WorldImageHeap: Cardinal = 0;
+  WorldImageHeap: TGameHeapHandle = 0;
 
   FirstWorldImage: PabWorldImage = nil;
 
@@ -98,7 +99,7 @@ begin
     ab_WorldImage_Delete(LastWorldImage);
   if WorldImageHeap <> 0 then
   begin
-    HeapDestroy(WorldImageHeap);
+    GameHeap.HeapDestroy(WorldImageHeap);
     WorldImageHeap := 0;
   end;
 end;
@@ -109,7 +110,7 @@ var
 begin
   if WorldImageHeap = 0 then
   begin
-    WorldImageHeap := HeapCreate(1, $8000, 0);
+    WorldImageHeap := GameHeap.HeapCreate(1, $8000, 0);
     if WorldImageHeap = 0 then
       raise Exception.Create('ab_WorldImage_Add.HeapCreate');
   end;

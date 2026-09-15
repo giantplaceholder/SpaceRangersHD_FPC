@@ -9,6 +9,7 @@ unit ab_Zone;
 interface
 
 uses
+  GameHeap,
   Classes,
   EC_Buf,
   EC_Struct,
@@ -67,7 +68,7 @@ type
 
 var
 
-  ZoneHeap: Cardinal = 0;
+  ZoneHeap: TGameHeapHandle = 0;
 
   FirstZone: PabZone = nil;
 
@@ -75,7 +76,7 @@ var
 
   SelectedZone: PabZone = nil;
 
-  ZoneLinkHeap: Cardinal = 0;
+  ZoneLinkHeap: TGameHeapHandle = 0;
 
   FirstZoneLink: PabZoneLink = nil;
 
@@ -170,7 +171,7 @@ begin
     ab_Zone_Delete(LastZone);
   if ZoneHeap <> 0 then
   begin
-    HeapDestroy(ZoneHeap);
+    GameHeap.HeapDestroy(ZoneHeap);
     ZoneHeap := 0;
   end;
 end;
@@ -181,7 +182,7 @@ var
 begin
   if ZoneHeap = 0 then
   begin
-    ZoneHeap := HeapCreate(1, $8000, 0);
+    ZoneHeap := GameHeap.HeapCreate(1, $8000, 0);
     if ZoneHeap = 0 then
       raise Exception.Create('ab_Zone_Add.HeapCreate');
   end;
@@ -428,7 +429,7 @@ begin
     ab_ZoneLink_Delete(LastZoneLink);
   if ZoneLinkHeap <> 0 then
   begin
-    HeapDestroy(ZoneLinkHeap);
+    GameHeap.HeapDestroy(ZoneLinkHeap);
     ZoneLinkHeap := 0;
   end;
 end;
@@ -439,7 +440,7 @@ var
 begin
   if ZoneLinkHeap = 0 then
   begin
-    ZoneLinkHeap := HeapCreate(1, $8000, 0);
+    ZoneLinkHeap := GameHeap.HeapCreate(1, $8000, 0);
     if ZoneLinkHeap = 0 then
       raise Exception.Create('ab_ZoneLink_Add.HeapCreate');
   end;

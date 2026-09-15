@@ -5,6 +5,7 @@ unit EC_Expression;
 {$Q-}
 {$B-}
 {$A8}
+{$POINTERMATH ON}
 
 interface
 
@@ -655,6 +656,7 @@ procedure RegisterExpressionBuiltins(Scope: TVarArrayEC);
 implementation
 
 uses
+  GameHeap,
   Math;
 
 // Reference parameters avoid copies of Self and RunStart in composed inline calls.
@@ -717,47 +719,34 @@ begin
   EmitSourceToken(Analyzer, Token, Kind, Index, SourceOffset, SourceLength);
 end;
 
-// Preserve the native assembly comparison, including its unsigned character order.
 function CompareScriptNames(Left, Right: PWideChar): Integer; cdecl;
-asm
-  PUSH ESI
-  PUSH EDI
-  PUSH EBX
-  PUSH EDX
-  MOV ESI, Left
-  MOV EDI, Right
-  TEST ESI, ESI
-  JNZ @@LeftPresent
-  MOV EAX, -1
-  TEST EDI, EDI
-  JNZ @@Done
-  XOR EAX, EAX
-  JMP @@Done
-@@LeftPresent:
-  TEST EDI, EDI
-  JNZ @@Compare
-  MOV EAX, 1
-  JMP @@Done
-@@Compare:
-  MOV BX, [ESI]
-  MOV DX, [EDI]
-  ADD ESI, 2
-  ADD EDI, 2
-  CMP BX, DX
-  JNZ @@Different
-  XOR EAX, EAX
-  TEST DX, DX
-  JNZ @@Compare
-  JMP @@Done
-@@Different:
-  MOV EAX, 1
-  JA @@Done
-  MOV EAX, -1
-@@Done:
-  POP EDX
-  POP EBX
-  POP EDI
-  POP ESI
+begin
+  // Nil sorts before a non-nil string, including a non-nil empty string.
+  // Compare unsigned UTF-16 code units and return exactly -1, 0 or 1.
+  if Left = nil then
+  begin
+    if Right = nil then
+      Result := 0
+    else
+      Result := -1;
+    Exit;
+  end;
+  if Right = nil then
+  begin
+    Result := 1;
+    Exit;
+  end;
+  while (Left^ = Right^) and (Left^ <> #0) do
+  begin
+    Inc(Left);
+    Inc(Right);
+  end;
+  if Left^ < Right^ then
+    Result := -1
+  else if Left^ > Right^ then
+    Result := 1
+  else
+    Result := 0;
 end;
 
 function TrimScriptString(Text: WideString): WideString;
@@ -2819,12 +2808,12 @@ procedure TVarArrayEC.ClearStorage;
 begin
   if Data <> nil then
   begin
-    HeapFree(GetProcessHeap, 0, Data);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Data);
     Data := nil;
   end;
   if NameOrder <> nil then
   begin
-    HeapFree(GetProcessHeap, 0, NameOrder);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, NameOrder);
     NameOrder := nil;
   end;
   Count := 0;
@@ -2852,8 +2841,8 @@ begin
   Count := Source.Count;
   if Count < 1 then
     Exit;
-  Data := HeapAlloc(GetProcessHeap, 0, Count * SizeOf(TVarEC));
-  NameOrder := HeapAlloc(GetProcessHeap, 0, Count * SizeOf(Integer));
+  Data := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, Count * SizeOf(TVarEC));
+  NameOrder := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, Count * SizeOf(Integer));
   CopyMemory(NameOrder, Source.NameOrder, Count * SizeOf(Integer));
   for i := 0 to Count - 1 do
   begin
@@ -2927,99 +2916,41 @@ begin
 end;
 
 procedure TVarArrayEC.SetNameOrderIndex(Index: Integer; DataIndex: Integer);
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TVarArrayEC.NameOrder
-  MOV EBX, DataIndex
-  MOV [EAX], EBX
-  POP EBX
-  POP EAX
+begin
+  PInteger(NameOrder)[Index] := DataIndex;
 end;
 
 function TVarArrayEC.GetNameOrderIndex(Index: Integer): Integer;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TVarArrayEC.NameOrder
-  MOV EAX, [EAX]
-  POP EBX
+begin
+  Result := PInteger(NameOrder)[Index];
 end;
 
 function TVarArrayEC.GetItemByNameOrder(Index: Integer): TVarEC;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TVarArrayEC.NameOrder
-  MOV EAX, [EAX]
-  MOV EBX, [EBX].TVarArrayEC.Data
-  MOV EAX, [EBX + EAX * 4]
-  POP EBX
+begin
+  Result := PointerToTVarEC(Data)[GetNameOrderIndex(Index)];
 end;
 
 function TVarArrayEC.FindNameOrderForDataIndex(DataIndex: Integer): Integer;
-asm
-  PUSH EBX
-  PUSH ECX
-  PUSH EDX
-  PUSH ESI
-  MOV EBX, DataIndex
-  MOV EAX, Self
-  MOV ECX, [EAX].TVarArrayEC.Count
-  XOR EDX, EDX
-  MOV ESI, [EAX].TVarArrayEC.NameOrder
-  MOV EAX, -1
-  TEST ECX, ECX
-  JZ @@Done
-@@Next:
-  MOV EAX, [ESI]
-  CMP EAX, EBX
-  JZ @@Found
-  ADD ESI, 4
-  INC EDX
-  DEC ECX
-  JNZ @@Next
-  MOV EAX, -1
-  JMP @@Done
-@@Found:
-  MOV EAX, EDX
-@@Done:
-  POP ESI
-  POP EDX
-  POP ECX
-  POP EBX
+var
+  i: Integer;
+begin
+  Result := -1;
+  for i := 0 to Count - 1 do
+    if GetNameOrderIndex(i) = DataIndex then
+    begin
+      Result := i;
+      Exit;
+    end;
 end;
 
 function TVarArrayEC.GetItem(Index: Integer): TVarEC;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TVarArrayEC.Data
-  MOV EAX, [EAX]
-  POP EBX
+begin
+  Result := PointerToTVarEC(Data)[Index];
 end;
 
 procedure TVarArrayEC.SetItem(Index: Integer; Value: TVarEC);
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TVarArrayEC.Data
-  MOV EBX, Value
-  MOV [EAX], EBX
-  POP EBX
-  POP EAX
+begin
+  PointerToTVarEC(Data)[Index] := Value;
 end;
 
 function TVarArrayEC.GetItemNE(Index: Integer): TVarEC;
@@ -3031,36 +2962,16 @@ begin
 end;
 
 function TVarArrayEC.IndexOf(Value: TVarEC): Integer;
-asm
-  PUSH ESI
-  PUSH EDX
-  PUSH ECX
-  PUSH EBX
-  MOV EBX, Value
-  MOV EAX, Self
-  MOV ECX, [EAX].TVarArrayEC.Count
-  XOR EDX, EDX
-  MOV ESI, [EAX].TVarArrayEC.Data
-  MOV EAX, -1
-  TEST ECX, ECX
-  JZ @@Done
-@@Next:
-  MOV EAX, [ESI]
-  CMP EAX, EBX
-  JZ @@Found
-  ADD ESI, 4
-  INC EDX
-  DEC ECX
-  JNZ @@Next
-  MOV EAX, -1
-  JMP @@Done
-@@Found:
-  MOV EAX, EDX
-@@Done:
-  POP EBX
-  POP ECX
-  POP EDX
-  POP ESI
+var
+  i: Integer;
+begin
+  Result := -1;
+  for i := 0 to Count - 1 do
+    if GetItem(i) = Value then
+    begin
+      Result := i;
+      Exit;
+    end;
 end;
 
 function TVarArrayEC.GetVar(const Name: WideString): TVarEC;
@@ -3164,24 +3075,26 @@ var
   i, InsertionIndex: Integer;
 begin
   if Data = nil then
-    Data := HeapAlloc(GetProcessHeap, 0, (Count + 1) * SizeOf(TVarEC))
+    Data := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, (Count + 1) * SizeOf(TVarEC))
   else
-    Data := HeapReAlloc(GetProcessHeap, 0, Data, (Count + 1) * SizeOf(TVarEC));
+    Data := GameHeap.HeapReAlloc(GameHeap.GetProcessHeap, 0, Data, (Count + 1) * SizeOf(TVarEC));
   SetItem(Count, Value);
   InsertionIndex := FindNameInsertionIndex(Value.Name);
   if InsertionIndex >= Count then
   begin
     Inc(Count);
     if NameOrder = nil then
-      NameOrder := HeapAlloc(GetProcessHeap, 0, Count * SizeOf(Integer))
+      NameOrder := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, Count * SizeOf(Integer))
     else
-      NameOrder := HeapReAlloc(GetProcessHeap, 0, NameOrder, Count * SizeOf(Integer));
+      NameOrder :=
+          GameHeap.HeapReAlloc(GameHeap.GetProcessHeap, 0, NameOrder, Count * SizeOf(Integer));
     SetNameOrderIndex(Count - 1, Count - 1);
   end
   else
   begin
     Inc(Count);
-    NameOrder := HeapReAlloc(GetProcessHeap, 0, NameOrder, Count * SizeOf(Integer));
+    NameOrder :=
+        GameHeap.HeapReAlloc(GameHeap.GetProcessHeap, 0, NameOrder, Count * SizeOf(Integer));
     for i := Count - 1 downto InsertionIndex + 1 do
       SetNameOrderIndex(i, GetNameOrderIndex(i - 1));
     SetNameOrderIndex(InsertionIndex, Count - 1);
@@ -4066,10 +3979,16 @@ function TExpressionEC.AddVariable: Integer;
 begin
   Inc(VariableCount);
   if Variables = nil then
-    Variables := HeapAlloc(GetProcessHeap, 0, VariableCount * SizeOf(TExpressionVarEC))
+    Variables :=
+        GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, VariableCount * SizeOf(TExpressionVarEC))
   else
     Variables :=
-        HeapReAlloc(GetProcessHeap, 0, Variables, VariableCount * SizeOf(TExpressionVarEC));
+        GameHeap.HeapReAlloc(
+            GameHeap.GetProcessHeap,
+            0,
+            Variables,
+            VariableCount * SizeOf(TExpressionVarEC)
+        );
   SetVariable(VariableCount - 1, TExpressionVarEC.Create);
   Result := VariableCount - 1;
 end;
@@ -4086,44 +4005,36 @@ begin
   Dec(VariableCount);
   if VariableCount <= 0 then
   begin
-    HeapFree(GetProcessHeap, 0, Variables);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Variables);
     Variables := nil;
   end;
 end;
 
 function TExpressionEC.GetVariable(Index: Integer): TExpressionVarEC; cdecl;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TExpressionEC.Variables
-  MOV EAX, [EAX]
-  POP EBX
+begin
+  Result := PointerToTExpressionVarEC(Variables)[Index];
 end;
 
 procedure TExpressionEC.SetVariable(Index: Integer; Value: TExpressionVarEC); cdecl;
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TExpressionEC.Variables
-  MOV EBX, Value
-  MOV [EAX], EBX
-  POP EBX
-  POP EAX
+begin
+  PointerToTExpressionVarEC(Variables)[Index] := Value;
 end;
 
 function TExpressionEC.AddInstruction: Integer;
 begin
   Inc(InstructionCount);
   if Instructions = nil then
-    Instructions := HeapAlloc(GetProcessHeap, 0, InstructionCount * SizeOf(TExpressionInstrEC))
+    Instructions :=
+        GameHeap
+            .HeapAlloc(GameHeap.GetProcessHeap, 0, InstructionCount * SizeOf(TExpressionInstrEC))
   else
     Instructions :=
-        HeapReAlloc(GetProcessHeap, 0, Instructions, InstructionCount * SizeOf(TExpressionInstrEC));
+        GameHeap.HeapReAlloc(
+            GameHeap.GetProcessHeap,
+            0,
+            Instructions,
+            InstructionCount * SizeOf(TExpressionInstrEC)
+        );
   SetInstruction(InstructionCount - 1, TExpressionInstrEC.Create);
   Result := InstructionCount - 1;
 end;
@@ -4140,34 +4051,19 @@ begin
   Dec(InstructionCount);
   if InstructionCount <= 0 then
   begin
-    HeapFree(GetProcessHeap, 0, Instructions);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Instructions);
     Instructions := nil;
   end;
 end;
 
 function TExpressionEC.GetInstruction(Index: Integer): TExpressionInstrEC; cdecl;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TExpressionEC.Instructions
-  MOV EAX, [EAX]
-  POP EBX
+begin
+  Result := PointerToTExpressionInstrEC(Instructions)[Index];
 end;
 
 procedure TExpressionEC.SetInstruction(Index: Integer; Value: TExpressionInstrEC); cdecl;
-asm
-  PUSH EAX
-  PUSH EBX
-  MOV EBX, Self
-  MOV EAX, Index
-  SHL EAX, 2
-  ADD EAX, [EBX].TExpressionEC.Instructions
-  MOV EBX, Value
-  MOV [EAX], EBX
-  POP EBX
-  POP EAX
+begin
+  PointerToTExpressionInstrEC(Instructions)[Index] := Value;
 end;
 
 // Extract whole conditions: a helper inside an and/or chain adds DCC32 temporaries.
@@ -5330,7 +5226,7 @@ begin
   for i := 0 to Handlers.Count - 1 do
   begin
     Handler := Handlers[i];
-    HeapFree(GetProcessHeap, 0, Handler);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Handler);
   end;
   Handlers.Clear;
   for i := 0 to Exceptions.Count - 1 do
@@ -5341,7 +5237,7 @@ begin
       Value^.Free;
       Value^ := nil;
     end;
-    HeapFree(GetProcessHeap, 0, Value);
+    GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Value);
   end;
   Exceptions.Clear;
 end;
@@ -5350,7 +5246,7 @@ procedure TCodeProcessEC.PushHandler(Code: TCodeEC; Handler: TCodeUnitEC);
 var
   Entry: PCodeExceptionHandler;
 begin
-  Entry := HeapAlloc(GetProcessHeap, 0, SizeOf(TCodeExceptionHandler));
+  Entry := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, SizeOf(TCodeExceptionHandler));
   Entry.Code := Code;
   Entry.Handler := Handler;
   Handlers.Add(Entry);
@@ -5365,7 +5261,7 @@ begin
   if Count < 1 then
     Exit;
   Entry := Handlers[Count - 1];
-  HeapFree(GetProcessHeap, 0, Entry);
+  GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Entry);
   Handlers.Delete(Count - 1);
 end;
 
@@ -5384,7 +5280,7 @@ procedure TCodeProcessEC.PushException(Value: TVarEC);
 var
   Entry: PVarEC;
 begin
-  Entry := HeapAlloc(GetProcessHeap, 0, SizeOf(TVarEC));
+  Entry := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, SizeOf(TVarEC));
   Entry^ := TVarEC.Create(Value.RealVType);
   Entry^.Assume(Value, False);
   Exceptions.Add(Entry);
@@ -5399,7 +5295,7 @@ begin
   if Count < 1 then
     Exit;
   Entry := Exceptions[Count - 1];
-  HeapFree(GetProcessHeap, 0, Entry);
+  GameHeap.HeapFree(GameHeap.GetProcessHeap, 0, Entry);
   Exceptions.Delete(Count - 1);
 end;
 

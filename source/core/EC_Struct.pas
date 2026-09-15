@@ -133,66 +133,32 @@ begin
 end;
 
 function IntersectRects(out Intersection: TRect; const First, Second: TRect): Boolean;
-// The native routine is handwritten assembly. Preserve its register saves and
-// leave Intersection untouched on failure, including when it aliases an input.
-asm
-  PUSH ESI
-  PUSH EDI
-  PUSH ECX
-  PUSH EBX
-  MOV ESI, EDX
-  MOV EDI, ECX
-  MOV EBX, EAX
-  MOV EAX, [EDI].TRect.Left
-  CMP EAX, [ESI].TRect.Right
-  JGE @@Empty
-  MOV EAX, [EDI].TRect.Right
-  CMP EAX, [ESI].TRect.Left
-  JLE @@Empty
-  MOV EAX, [EDI].TRect.Top
-  CMP EAX, [ESI].TRect.Bottom
-  JGE @@Empty
-  MOV EAX, [EDI].TRect.Bottom
-  CMP EAX, [ESI].TRect.Top
-  JLE @@Empty
-  MOV EAX, [EDI].TRect.Left
-  MOV ECX, [ESI].TRect.Left
-  CMP EAX, ECX
-  JGE @@Left
-  MOV EAX, ECX
-@@Left:
-  MOV [EBX].TRect.Left, EAX
-  MOV EAX, [EDI].TRect.Right
-  MOV ECX, [ESI].TRect.Right
-  CMP EAX, ECX
-  JLE @@Right
-  MOV EAX, ECX
-@@Right:
-  MOV [EBX].TRect.Right, EAX
-  MOV EAX, [EDI].TRect.Top
-  MOV ECX, [ESI].TRect.Top
-  CMP EAX, ECX
-  JGE @@Top
-  MOV EAX, ECX
-@@Top:
-  MOV [EBX].TRect.Top, EAX
-  MOV EAX, [EDI].TRect.Bottom
-  MOV ECX, [ESI].TRect.Bottom
-  CMP EAX, ECX
-  JLE @@Bottom
-  MOV EAX, ECX
-@@Bottom:
-  MOV [EBX].TRect.Bottom, EAX
-  XOR EAX, EAX
-  INC EAX
-  JMP @@Done
-@@Empty:
-  XOR EAX, EAX
-@@Done:
-  POP EBX
-  POP ECX
-  POP EDI
-  POP ESI
+begin
+  // Preserve the assembly's four overlap tests, even for inverted rectangles.
+  // In particular, failure must leave Intersection untouched when it aliases an input.
+  Result :=
+      (Second.Left < First.Right)
+          and (Second.Right > First.Left)
+          and (Second.Top < First.Bottom)
+          and (Second.Bottom > First.Top);
+  if not Result then
+    Exit;
+  if First.Left > Second.Left then
+    Intersection.Left := First.Left
+  else
+    Intersection.Left := Second.Left;
+  if First.Right < Second.Right then
+    Intersection.Right := First.Right
+  else
+    Intersection.Right := Second.Right;
+  if First.Top > Second.Top then
+    Intersection.Top := First.Top
+  else
+    Intersection.Top := Second.Top;
+  if First.Bottom < Second.Bottom then
+    Intersection.Bottom := First.Bottom
+  else
+    Intersection.Bottom := Second.Bottom;
 end;
 
 constructor TObjectEx.Create;

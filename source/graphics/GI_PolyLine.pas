@@ -9,6 +9,7 @@ unit GI_PolyLine;
 interface
 
 uses
+  GameHeap,
   GI_MessageLoop,
   GI_Circle,
   EC_BlockPar,
@@ -61,7 +62,7 @@ type
     AutoRebuildBounds: Boolean;
     NormalizeBounds: Boolean;
     Gap13A: array[0..1] of Byte;
-    SegmentHeap: Cardinal;
+    SegmentHeap: TGameHeapHandle;
     procedure Clear; override;
     procedure LoadFromConfigPath(const Path: WideString); override;
     procedure Invalidate; override;
@@ -118,7 +119,7 @@ uses
 constructor TPolyLineGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
-  SegmentHeap := HeapCreate(1, $8000, 0);
+  SegmentHeap := GameHeap.HeapCreate(1, $8000, 0);
   if SegmentHeap = 0 then
     raise Exception.Create('TPolyLineGI.HeapCreate');
   ClientSize := Classes.Point(1, 1);
@@ -138,7 +139,7 @@ begin
   Clear;
   if SegmentHeap <> 0 then
   begin
-    HeapDestroy(SegmentHeap);
+    GameHeap.HeapDestroy(SegmentHeap);
     SegmentHeap := 0;
   end;
   inherited Destroy;

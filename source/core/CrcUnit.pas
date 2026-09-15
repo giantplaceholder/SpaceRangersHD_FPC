@@ -293,35 +293,7 @@ implementation
 
 function ComputeCrc32(BufferPtr: Pointer; ByteCount: Integer): Cardinal;
 begin
-  // Native bug: 16-bit PUSHA/POPA restore only BX after modifying EBX, leaving
-  // its upper half clobbered and violating Delphi's callee-save convention.
-  // O+ callers can retain values or pointers in EBX across this call and then
-  // use the corrupted value. Compiling this routine with DCC32 18.5 O+ also
-  // keeps @Result in EBX: POPA corrupts that pointer before the final read,
-  // even with ByteCount = 0. O- masks these uses; it does not fix preservation.
-  // Preserve the original operand sizes for reconstruction fidelity.
-  asm
-    PUSHA
-    MOV EAX, $FFFFFFFF
-    MOV EBX, BufferPtr
-    MOV ECX, EBX
-    ADD ECX, ByteCount
-@@Next:
-    CMP EBX, ECX
-    JGE @@Done
-    XOR EDX, EDX
-    MOV DL, [EBX]
-    XOR DL, AL
-    MOV EDX, DWORD PTR [Crc32Table + EDX * 4]
-    SHR EAX, 8
-    XOR EAX, EDX
-    INC EBX
-    JMP @@Next
-@@Done:
-    NOT EAX
-    MOV Result, EAX
-    POPA
-  end;
+  Result := not UpdateCrc32($FFFFFFFF, BufferPtr, ByteCount);
 end;
 
 function InitCrc32: Cardinal;
@@ -330,35 +302,19 @@ begin
 end;
 
 function UpdateCrc32(State: Cardinal; BufferPtr: Pointer; ByteCount: Integer): Cardinal;
+var
+  Cursor: PByte;
+  i: Integer;
 begin
-  // Native bug: 16-bit PUSHA/POPA restore only BX after modifying EBX, leaving
-  // its upper half clobbered and violating Delphi's callee-save convention.
-  // O+ callers can retain values or pointers in EBX across this call and then
-  // use the corrupted value. Compiling this routine with DCC32 18.5 O+ also
-  // keeps @Result in EBX: POPA corrupts that pointer before the final read,
-  // even with ByteCount = 0. O- masks these uses; it does not fix preservation.
-  // Preserve the original operand sizes for reconstruction fidelity.
-  asm
-    PUSHA
-    MOV EAX, State
-    MOV EBX, BufferPtr
-    MOV ECX, EBX
-    ADD ECX, ByteCount
-@@Next:
-    CMP EBX, ECX
-    JGE @@Done
-    XOR EDX, EDX
-    MOV DL, [EBX]
-    XOR DL, AL
-    MOV EDX, DWORD PTR [Crc32Table + EDX * 4]
-    SHR EAX, 8
-    XOR EAX, EDX
-    INC EBX
-    JMP @@Next
-@@Done:
-    MOV Result, EAX
-    POPA
+  // Same CRC recurrence as the x86 code. Its PUSHA/POPA register corruption is
+  // an ABI defect, not part of the checksum; Pascal preserves the host registers.
+  Cursor := BufferPtr;
+  for i := 1 to ByteCount do
+  begin
+    State := (State shr 8) xor Crc32Table[Byte(State xor Cursor^)];
+    Inc(Cursor);
   end;
+  Result := State;
 end;
 
 function FinishCrc32(State: Cardinal): Cardinal;
@@ -367,27 +323,13 @@ begin
 end;
 
 function InvertCrc32(State: Cardinal): Cardinal;
-asm
-  NOT EAX
+begin
+  Result := not State;
 end;
 
 function UpdateCrc32Bytes(State: Cardinal; BufferPtr: Pointer; ByteCount: Integer): Cardinal;
-asm
-  TEST ECX, ECX
-  JZ @@Done
-  PUSH ESI
-  MOV ESI, EDX
-@@Next:
-  MOV EDX, EAX
-  LODSB
-  XOR EDX, EAX
-  SHR EAX, 8
-  SHL EDX, 2
-  XOR EAX, DWORD PTR [Crc32Table + EDX]
-  DEC ECX
-  JNZ @@Next
-  POP ESI
-@@Done:
+begin
+  Result := UpdateCrc32(State, BufferPtr, ByteCount);
 end;
 
 function ExtendCrc32(Crc: Cardinal; BufferPtr: Pointer; ByteCount: Integer): Cardinal;

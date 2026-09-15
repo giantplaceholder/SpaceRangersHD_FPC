@@ -9,6 +9,7 @@ unit ab_StopLine;
 interface
 
 uses
+  GameHeap,
   EC_Buf,
   EC_Struct,
   GI_PolyLine,
@@ -65,7 +66,7 @@ type
 
 var
 
-  StopPointHeap: Cardinal = 0;
+  StopPointHeap: TGameHeapHandle = 0;
 
   FirstStopPoint: PabStopPoint = nil;
 
@@ -73,7 +74,7 @@ var
 
   SelectedStopPoint: PabStopPoint = nil;
 
-  StopLineHeap: Cardinal = 0;
+  StopLineHeap: TGameHeapHandle = 0;
 
   FirstStopLine: PabStopLine = nil;
 
@@ -162,7 +163,7 @@ begin
     ab_StopPoint_Delete(LastStopPoint);
   if StopPointHeap <> 0 then
   begin
-    HeapDestroy(StopPointHeap);
+    GameHeap.HeapDestroy(StopPointHeap);
     StopPointHeap := 0;
   end;
 end;
@@ -173,7 +174,7 @@ var
 begin
   if StopPointHeap = 0 then
   begin
-    StopPointHeap := HeapCreate(1, $8000, 0);
+    StopPointHeap := GameHeap.HeapCreate(1, $8000, 0);
     if StopPointHeap = 0 then
       raise Exception.Create('ab_StopPoint_Add.HeapCreate');
   end;
@@ -316,7 +317,7 @@ begin
     ab_StopLine_Delete(LastStopLine);
   if StopLineHeap <> 0 then
   begin
-    HeapDestroy(StopLineHeap);
+    GameHeap.HeapDestroy(StopLineHeap);
     StopLineHeap := 0;
   end;
 end;
@@ -327,7 +328,7 @@ var
 begin
   if StopLineHeap = 0 then
   begin
-    StopLineHeap := HeapCreate(1, $8000, 0);
+    StopLineHeap := GameHeap.HeapCreate(1, $8000, 0);
     if StopLineHeap = 0 then
       raise Exception.Create('ab_StopLine_Add.HeapCreate');
   end;

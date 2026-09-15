@@ -9,6 +9,7 @@ unit GI_GAI;
 interface
 
 uses
+  GameHeap,
   Types,
   GR_GraphBuf,
   GI_Main,
@@ -99,7 +100,7 @@ type
 
 var
 
-  GaiFrameHeap: Cardinal = 0;
+  GaiFrameHeap: TGameHeapHandle = 0;
 
 procedure LoadGaiFrameToGraphBuf(const Path: WideString; GraphBuf: TGraphBufGR; Seed: Cardinal);
 
@@ -125,7 +126,7 @@ begin
   inherited Create(Owner);
   if GaiFrameHeap = 0 then
   begin
-    GaiFrameHeap := HeapCreate(0, $8000, 0);
+    GaiFrameHeap := GameHeap.HeapCreate(0, $8000, 0);
     if GaiFrameHeap = 0 then
       raise Exception.Create('TgaiGI.HeapCreate');
   end;

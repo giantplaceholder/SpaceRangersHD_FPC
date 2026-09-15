@@ -400,20 +400,8 @@ end;
 function TBufEC.GetByte: Byte;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    INC [EBX].TBufEC.Position
-    MOV AL, [EDI + EAX]
-    MOV Result, AL
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Result := ReadByteEC(PAnsiChar(Data) + Position);
+  Inc(Position, SizeOf(Result));
 end;
 
 function TBufEC.GetWideChar: WideChar;
@@ -426,77 +414,29 @@ end;
 function TBufEC.GetWord: Word;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    ADD [EBX].TBufEC.Position, 2
-    MOV AX, [EDI + EAX]
-    MOV Result, AX
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Result := ReadWordEC(PAnsiChar(Data) + Position);
+  Inc(Position, SizeOf(Result));
 end;
 
 function TBufEC.GetUInt32: Cardinal;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    ADD [EBX].TBufEC.Position, 4
-    MOV EAX, [EDI + EAX]
-    MOV Result, EAX
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Result := ReadDWordEC(PAnsiChar(Data) + Position);
+  Inc(Position, SizeOf(Result));
 end;
 
 function TBufEC.GetInt32: Integer;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    ADD [EBX].TBufEC.Position, 4
-    MOV EAX, [EDI + EAX]
-    MOV Result, EAX
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Result := ReadIntegerEC(PAnsiChar(Data) + Position);
+  Inc(Position, SizeOf(Result));
 end;
 
 function TBufEC.GetSingle: Single;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    ADD [EBX].TBufEC.Position, 4
-    MOV EAX, [EDI + EAX]
-    MOV Result, EAX
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Result := ReadSingleEC(PAnsiChar(Data) + Position);
+  Inc(Position, SizeOf(Result));
   if IsNan(Result) then
   begin
     Result := 0;
@@ -519,20 +459,8 @@ end;
 function TBufEC.GetBoolean: Boolean;
 begin
   EnsureReadable(SizeOf(Result));
-  asm
-    PUSH EAX
-    PUSH EBX
-    PUSH EDI
-    MOV EBX, Self
-    MOV EAX, [EBX].TBufEC.Position
-    MOV EDI, [EBX].TBufEC.Data
-    INC [EBX].TBufEC.Position
-    MOV AL, [EDI + EAX]
-    MOV Result, AL
-    POP EDI
-    POP EBX
-    POP EAX
-  end;
+  Move((PAnsiChar(Data) + Position)^, Result, SizeOf(Result));
+  Inc(Position, SizeOf(Result));
 end;
 
 procedure TBufEC.ReadLengthPrefixedBuffer(Dest: TBufEC);

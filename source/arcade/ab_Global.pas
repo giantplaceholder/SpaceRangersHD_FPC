@@ -858,66 +858,34 @@ begin
 end;
 
 function ProjectPointByMatrix(const Matrix: TMatrix4D; const Source: TVector3D): TVector3D;
-// Handwritten native x87 implementation: keeps X, Y, Z and reciprocal W on the
-// FPU stack and writes the result without a Delphi frame or intermediate stores.
-asm
-  push ebx
-  push edx
-  push ecx
-  mov ebx, edx
-  mov edx, eax
-  mov ecx, ecx
-  fld qword ptr [ebx+$10]
-  fld qword ptr [ebx+$08]
-  fld qword ptr [ebx]
-  fld qword ptr [edx+$18]
-  fmul st, st(1)
-  fld qword ptr [edx+$38]
-  fmul st, st(3)
-  faddp st(1), st
-  fld qword ptr [edx+$58]
-  fmul st, st(4)
-  faddp st(1), st
-  fadd qword ptr [edx+$78]
-  fld1
-  fdivrp st(1), st
-  fld qword ptr [edx]
-  fmul st, st(2)
-  fld qword ptr [edx+$20]
-  fmul st, st(4)
-  faddp st(1), st
-  fld qword ptr [edx+$40]
-  fmul st, st(5)
-  faddp st(1), st
-  fadd qword ptr [edx+$60]
-  fmul st, st(1)
-  fstp qword ptr [ecx]
-  fld qword ptr [edx+$08]
-  fmul st, st(2)
-  fld qword ptr [edx+$28]
-  fmul st, st(4)
-  faddp st(1), st
-  fld qword ptr [edx+$48]
-  fmul st, st(5)
-  faddp st(1), st
-  fadd qword ptr [edx+$68]
-  fmul st, st(1)
-  fstp qword ptr [ecx+$08]
-  fld qword ptr [edx+$10]
-  fmulp st(2), st
-  fld qword ptr [edx+$30]
-  fmulp st(3), st
-  fld qword ptr [edx+$50]
-  fmulp st(4), st
-  fxch st(3)
-  fadd qword ptr [edx+$70]
-  faddp st(1), st
-  faddp st(1), st
-  fmulp st(1), st
-  fstp qword ptr [ecx+$10]
-  pop ecx
-  pop edx
-  pop ebx
+var
+  InverseW: Extended;
+begin
+  // Preserve the x87 addition order and its single division followed by multiplies.
+  InverseW :=
+      1
+          / (Extended(Matrix[0, 3]) * Source.X
+              + Extended(Matrix[1, 3]) * Source.Y
+              + Extended(Matrix[2, 3]) * Source.Z
+              + Matrix[3, 3]);
+  Result.X :=
+      (Extended(Matrix[0, 0]) * Source.X
+              + Extended(Matrix[1, 0]) * Source.Y
+              + Extended(Matrix[2, 0]) * Source.Z
+              + Matrix[3, 0])
+          * InverseW;
+  Result.Y :=
+      (Extended(Matrix[0, 1]) * Source.X
+              + Extended(Matrix[1, 1]) * Source.Y
+              + Extended(Matrix[2, 1]) * Source.Z
+              + Matrix[3, 1])
+          * InverseW;
+  // Z unwinds the remaining x87 stack in a different order from X and Y.
+  Result.Z :=
+      (Extended(Matrix[1, 2]) * Source.Y
+              + (Extended(Matrix[0, 2]) * Source.X
+                  + (Extended(Matrix[2, 2]) * Source.Z + Matrix[3, 2])))
+          * InverseW;
 end;
 
 function TryIntersectRayWithSphere(
