@@ -10,7 +10,7 @@ Both binaries report game version **2.1.2500** (file version `2.1.2500.0`).
 | Branch | Build | Distribution | Size (bytes) |
 | --- | --- | --- | ---: |
 | [`main`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/main) | 2026-08-11 | Prerelease | 4,999,680 |
-| [`build-2025-10-13`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/build-2025-10-13) | 2025-10-13 | GOG release | 4,995,584 |
+| [`build-2025-10-13`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/build-2025-10-13) | 2025-10-13 | Steam/GOG release | 4,995,584 |
 
 <details>
 <summary>SHA-256 checksums</summary>
@@ -21,7 +21,7 @@ Prerelease (2026-08-11):
 f00343363043cbb9c2d10c1216e9f4c37b5eaa5e4d58f37a45284cae528fdc1d
 ```
 
-GOG release (2025-10-13):
+Steam/GOG release (2025-10-13):
 
 ```text
 83300344af802bc51e64389c58f047e5afdf195c133048098be3881fae29ed98
