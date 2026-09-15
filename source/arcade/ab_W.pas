@@ -1,46 +1,81 @@
 unit ab_W;
-// Shared arcade weapon records and dispatch: $4FBA2C..$4FD5CF.
-// Inferred ownership; original unit boundary remains unresolved.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, GI_MessageLoop, aGalaxyStruct, ab_Object;
+uses
+  aConst,
+  Classes,
+  GI_MessageLoop,
+  aGalaxyStruct,
+  ab_Object;
 
 type
-  PabWeapon = ^TabWeapon;
-  TabWeapon = record // @size $30
-    Kind: Byte; // @offset $00  Zero-based arcade weapon type.
-    ItemType: Byte; // @offset $01  Corresponding campaign item type (50..67).
-    SlotData: Cardinal; // @offset $04 Campaign equipment slot index and secondary-fire flag; copied from TEquipment.AssignedSlotData.
-    Ammo: Integer; // @offset $08
-    MaxAmmo: Integer; // @offset $0C
-    RechargePerTick: Integer; // @offset $10
-    AmmoCost: Integer; // @offset $14
-    LastFireTick: Integer; // @offset $18
-    FireIntervalTicks: Integer; // @offset $1C
-    Damage: Integer; // @offset $20
-    Range: Double; // @offset $28
+
+  PointerToTabWeapon = ^TabWeapon;
+
+  PabWeapon = PointerToTabWeapon;
+
+  TabWeapon = record
+    Kind: Byte;
+    ItemType: Byte;
+    Gap2: array[0..1] of Byte;
+    SlotData: Cardinal;
+    Ammo: Integer;
+    MaxAmmo: Integer;
+    RechargePerTick: Integer;
+    AmmoCost: Integer;
+    LastFireTick: Integer;
+    FireIntervalTicks: Integer;
+    Damage: Integer;
+    Gap24: array[0..3] of Byte;
+    Range: Double;
   end;
 
-procedure ab_Weapon_InitializeFromInfo(Weapon: PabWeapon; Info: PWeaponInfo); // @addr $4FBA2C
-procedure ab_Weapon_Initialize(Weapon: PabWeapon; ItemType: Byte); // @addr $4FBA4C
-procedure ab_Weapon_Fire(Weapon: PabWeapon; Owner: TabObject; DamageScale: Single); // @addr $4FC1C4 @ida "void __userpurge $name(TabWeapon *Weapon@<eax>, TabObject *Owner@<edx>, float DamageScale@<^0>);"
-procedure ab_Weapon_QueueImageLoad(Weapon: PabWeapon; PendingLoads: TList; Owner: TObjectGI); // @addr $4FCAE4
+procedure ab_Weapon_InitializeFromInfo(Weapon: PabWeapon; Info: PWeaponInfo);
+
+procedure ab_Weapon_Initialize(Weapon: PabWeapon; ItemType: Byte);
+
+procedure ab_Weapon_Fire(Weapon: PabWeapon; Owner: TabObject; DamageScale: Single);
+
+procedure ab_Weapon_QueueImageLoad(Weapon: PabWeapon; PendingLoads: TList; Owner: TObjectGI);
 
 implementation
 
-uses Globals, GR_Main, GI_Tail, ab_Global,
-  ab_W01, ab_W02, ab_W03, ab_W04, ab_W05, ab_W06, ab_W07, ab_W08, ab_W09, ab_W10, ab_W11, ab_W12, ab_W13, ab_W14, ab_W15, ab_W16, ab_W17, ab_W18;
+uses
+  Globals,
+  GR_Main,
+  GI_Tail,
+  ab_Global,
+  ab_W01,
+  ab_W02,
+  ab_W03,
+  ab_W04,
+  ab_W05,
+  ab_W06,
+  ab_W07,
+  ab_W08,
+  ab_W09,
+  ab_W10,
+  ab_W11,
+  ab_W12,
+  ab_W13,
+  ab_W14,
+  ab_W15,
+  ab_W16,
+  ab_W17,
+  ab_W18;
 
-
-{ @routine $4FBA2C ab_Weapon_InitializeFromInfo }
 procedure ab_Weapon_InitializeFromInfo(Weapon: PabWeapon; Info: PWeaponInfo);
 begin
   ab_Weapon_Initialize(Weapon, Info.ArcadeWeaponType);
 end;
-{ @end $4FBA2C }
 
-{ @routine $4FBA4C ab_Weapon_Initialize }
 procedure ab_Weapon_Initialize(Weapon: PabWeapon; ItemType: Byte);
 begin
   Weapon.ItemType := ItemType;
@@ -261,9 +296,7 @@ begin
     Weapon.Range := 150;
   end;
 end;
-{ @end $4FBA4C }
 
-{ @routine $4FC1C4 ab_Weapon_Fire }
 procedure ab_Weapon_Fire(Weapon: PabWeapon; Owner: TabObject; DamageScale: Single);
 var
   W01: TabW01;
@@ -287,8 +320,7 @@ var
   Angle: Single;
   Index: Integer;
 
-  // @nested $4FC168 ConfigureObjectSound
-  procedure ConfigureObjectSound(Obj: TabObject; Kind: Integer); // @addr $4FC168 @ida "void __usercall $name(TabObject *Obj@<eax>, int Kind@<edx>, void *ParentFrame@<^0>);" @stackpop 0 @calls "0x4fc25f,0x4fc2af,0x4fc2ff,0x4fc34f,0x4fc3ac,0x4FC3F8,0x4fc444,0x4fc48d,0x4FC4D9,0x4FC525,0x4fc571,0x4FC5C1,0x4FC611,0x4fc665,0x4FC6B3,0x4FC703,0x4fc753,0x4fc7ad,0x4FC7F9,0x4fc851,0x4fc89b,0x4FC8E5,0x4fc948,0x4fc9bf,0x4FCA29,0x4fca77,0x4FCAC4"
+  procedure ConfigureObjectSound(Obj: TabObject; Kind: Integer);
   begin
     if ArcadeWeaponLoopTicks[Kind] >= 0 then
     begin
@@ -438,7 +470,8 @@ begin
       W14 := TabW14.Create;
       ab_Object_Add(W14);
       W14.Launch(Owner, Round(Weapon.Damage * DamageScale), Angle);
-      if Index and 1 = 0 then ConfigureObjectSound(W14, 13);
+      if Index and 1 = 0 then
+        ConfigureObjectSound(W14, 13);
       Angle := Angle + 15;
       Inc(Index);
     end;
@@ -477,172 +510,169 @@ begin
     ConfigureObjectSound(W18, 3);
   end;
 end;
-{ @end $4FC1C4 }
 
-{ @routine $4FCAE4 ab_Weapon_QueueImageLoad }
 procedure ab_Weapon_QueueImageLoad(Weapon: PabWeapon; PendingLoads: TList; Owner: TObjectGI);
 begin
   case Weapon.Kind of
     0:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w01b_s');
+    end;
     1:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w02a_s');
+    end;
     2:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w03a_s');
+    end;
     3:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04b_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04c_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04c_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04b_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04c_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w04c_s');
+    end;
     4:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w05b_s');
+    end;
     5:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w06a_s');
+    end;
     6:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w07b_s');
+    end;
     7:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w08b_s');
+    end;
     8:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09b_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09c_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09c_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09b_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09c_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w09c_s');
+    end;
     9:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w10b_s');
+    end;
     10:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w11b_s');
+    end;
     11:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w12b_s');
+    end;
     12:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13b_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w13b_s');
+    end;
     13:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w14a_s');
+    end;
     14:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w15a_s');
+    end;
     15:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16b_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16c_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16c_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16b_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16c_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w16c_s');
+    end;
     16:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17a_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17b_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17b_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17c_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17c_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17a_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17b_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17b_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17c_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w17c_s');
+    end;
     17:
-      begin
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18_s');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18a_f');
-        GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18a_s');
-      end;
+    begin
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18_s');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18a_f');
+      GlobalCache.QueueNamedLoadIfMissing(PendingLoads, 'GAI', 'Bm.AB.w18a_s');
+    end;
   end;
 end;
-{ @end $4FCAE4 }
 
 end.

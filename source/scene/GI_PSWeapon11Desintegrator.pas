@@ -1,70 +1,95 @@
 unit GI_PSWeapon11Desintegrator;
-// Native Desintegrator beam and screen-brightness-guided impact sparks.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_MessageLoop, GI_PSWeapon, Types;
+uses
+  EC_Struct,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  Types;
 
 type
-  PDesintegratorParticle = ^TDesintegratorParticle;
-  TDesintegratorParticle = record // @size $24
-    Prev: PDesintegratorParticle; // @offset $00
-    Next: PDesintegratorParticle; // @offset $04
-    Position: TPointF; // @offset $08
-    Color: Word; // @offset $10
-    Alpha: Byte; // @offset $12
-    Velocity: TPointF; // @offset $14
-    State: Byte; // @offset $1C
-    RemainingTicks: Word; // @offset $1E
-    BaseAlpha: Integer; // @offset $20
+
+  PointerToTDesintegratorParticle = ^TDesintegratorParticle;
+
+  PDesintegratorParticle = PointerToTDesintegratorParticle;
+
+  TDesintegratorParticle = record
+    Prev: PDesintegratorParticle;
+    Next: PDesintegratorParticle;
+    Position: TPointF;
+    Color: Word;
+    Alpha: Byte;
+    Gap13: array[0..0] of Byte;
+    Velocity: TPointF;
+    State: Byte;
+    Gap1D: array[0..0] of Byte;
+    RemainingTicks: Word;
+    BaseAlpha: Integer;
   end;
+
   TDesintegratorPalette = array[0..0] of Word;
-  TDesintegratorPalettes = array of TDesintegratorPalette;
 
 var
-  DesintegratorPalettes: array of TDesintegratorPalette; // @addr $88AEDC
+
+  DesintegratorPalettes: array of TDesintegratorPalette;
 
 type
-  TPSWeapon11Desintegrator = class(TPSWeaponGI) // @size $170
-  public
-    HalfWidth: Integer; // @offset $130
-    Wavelength: Integer; // @offset $134
-    PhaseMask: Integer; // @offset $138
-    FirstParticle: PDesintegratorParticle; // @offset $13C
-    LastParticle: PDesintegratorParticle; // @offset $140
-    PendingSparkSteps: Integer; // @offset $144
-    Color: Word; // @offset $148
-    ProjectionBounds: TRect; // @offset $14A
-    LengthScale: Double; // @offset $160
-    OriginalLength: Double; // @offset $168
 
-    constructor Create(Owner: TObjectGI; APaletteIndex: Integer); // @addr $691EA4 @ida "TPSWeapon11Desintegrator *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>, int APaletteIndex@<^0>);"
-    destructor Destroy; override; // @addr $691F8C @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure SetPosition(Position: TPoint); override; // @addr $691FC8 @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TPoint *Position@<edx>);"
-    procedure SetTargetPoint(Point: TPoint); override; // @addr $69200C @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TPoint *Point@<edx>);"
-    procedure UpdateProjectionBounds; // @addr $692060
-    procedure UpdateHitTestBounds; override; // @addr $6923A4
-    function GetLocalBounds: TRect; override; // @addr $692410 @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TRect *Result@<edx>);"
-    function AddParticle: PDesintegratorParticle; // @addr $692474
-    procedure RemoveParticle(Particle: PDesintegratorParticle); // @addr $6924EC
-    procedure AdvanceImpactSparks(ClipRect: TRect); // @addr $692B24 @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TRect *ClipRect@<edx>);"
-    procedure ClearParticles; // @addr $692570
-    procedure Invalidate; override; // @addr $6925C4 @note "Native empty override."
-    procedure InvalidateRect(Rect: TRect); override; // @addr $6925D0 @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TRect *Rect@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override; // @addr $69269C
-    procedure Draw(ClipRect: TRect); override; // @addr $692EB8 @ida "void __usercall $name(TPSWeapon11Desintegrator *Self@<eax>, TRect *ClipRect@<edx>);"
+  TPSWeapon11Desintegrator = class;
+
+  TPSWeapon11Desintegrator = class(TPSWeaponGI)
+    HalfWidth: Integer;
+    Wavelength: Integer;
+    PhaseMask: Integer;
+    FirstParticle: PDesintegratorParticle;
+    LastParticle: PDesintegratorParticle;
+    PendingSparkSteps: Integer;
+    Color: Word;
+    ProjectionBounds: TRect;
+    Gap15A: array[0..5] of Byte;
+    LengthScale: Double;
+    OriginalLength: Double;
+    procedure UpdateHitTestBounds; override;
+    procedure SetPosition(Position: TPoint); override;
+    function GetLocalBounds: TRect; override;
+    procedure InvalidateRect(Rect: TRect); override;
+    procedure Invalidate; override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure SetTargetPoint(Point: TPoint); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
+    destructor Destroy; override;
+    procedure UpdateProjectionBounds;
+    function AddParticle: PDesintegratorParticle;
+    procedure RemoveParticle(Particle: PDesintegratorParticle);
+    procedure ClearParticles;
+    procedure AdvanceImpactSparks(ClipRect: TRect);
   end;
 
-procedure LoadDesintegratorPalettes; // @addr $6931A4
+procedure LoadDesintegratorPalettes;
 
 implementation
 
-// @unit-initialization $877934
-// @unit-finalization $693468
+uses
+  GlobalsV,
+  SysUtils,
+  Classes,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  aMyFunction,
+  Globals;
 
-uses SysUtils, Classes, Math, EC_BlockPar, EC_Str, EC_Mem, GR_Main, GR_DX, aMyFunction, Globals;
-
-{ @routine $691EA4 TPSWeapon11Desintegrator_Create }
 constructor TPSWeapon11Desintegrator.Create(Owner: TObjectGI; APaletteIndex: Integer);
 begin
   inherited Create(Owner);
@@ -79,17 +104,13 @@ begin
   RemainingTicks := 50;
   LifetimeTicks := RemainingTicks;
 end;
-{ @end $691EA4 }
 
-{ @routine $691F8C TPSWeapon11Desintegrator_Destroy }
 destructor TPSWeapon11Desintegrator.Destroy;
 begin
   ClearParticles;
   inherited Destroy;
 end;
-{ @end $691F8C }
 
-{ @routine $691FC8 TPSWeapon11Desintegrator_SetPosition }
 procedure TPSWeapon11Desintegrator.SetPosition(Position: TPoint);
 begin
   if (LocalPosition.X <> Position.X) or (LocalPosition.Y <> Position.Y) then
@@ -98,9 +119,7 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $691FC8 }
 
-{ @routine $69200C TPSWeapon11Desintegrator_SetTargetPoint }
 procedure TPSWeapon11Desintegrator.SetTargetPoint(Point: TPoint);
 begin
   if (TargetPoint.X <> Point.X) or (TargetPoint.Y <> Point.Y) then
@@ -109,16 +128,15 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $69200C }
 
-{ @routine $692060 TPSWeapon11Desintegrator_UpdateProjectionBounds }
 procedure TPSWeapon11Desintegrator.UpdateProjectionBounds;
 var
   Angle, Sine, Cosine, Distance, A, B, C, D: Single;
   DY: Integer;
 begin
   DY := -(TargetPoint.Y - LocalPosition.Y);
-  if DY = 0 then Inc(DY);
+  if DY = 0 then
+    Inc(DY);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, DY);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -137,9 +155,7 @@ begin
   ProjectionBounds.Top := Floor(Math.Min(Math.Min(Math.Min(A, B), C), D));
   ProjectionBounds.Bottom := Ceil(Math.Max(Math.Max(Math.Max(A, B), C), D));
 end;
-{ @end $692060 }
 
-{ @routine $6923A4 TPSWeapon11Desintegrator_UpdateHitTestBounds }
 procedure TPSWeapon11Desintegrator.UpdateHitTestBounds;
 begin
   HitTestBounds.Left := ProjectionBounds.Left + AbsolutePosition.X - 32;
@@ -147,9 +163,7 @@ begin
   HitTestBounds.Right := ProjectionBounds.Right + AbsolutePosition.X + 32;
   HitTestBounds.Bottom := ProjectionBounds.Bottom + AbsolutePosition.Y + 32;
 end;
-{ @end $6923A4 }
 
-{ @routine $692410 TPSWeapon11Desintegrator_GetLocalBounds }
 function TPSWeapon11Desintegrator.GetLocalBounds: TRect;
 begin
   Result.Left := ProjectionBounds.Left + LocalPosition.X;
@@ -157,38 +171,38 @@ begin
   Result.Right := ProjectionBounds.Right + LocalPosition.X;
   Result.Bottom := ProjectionBounds.Bottom + LocalPosition.Y;
 end;
-{ @end $692410 }
 
-{ @routine $692474 TPSWeapon11Desintegrator_AddParticle }
 function TPSWeapon11Desintegrator.AddParticle: PDesintegratorParticle;
 var
   Particle: PDesintegratorParticle;
 begin
   Particle := AllocEC(SizeOf(TDesintegratorParticle));
-  if LastParticle <> nil then LastParticle.Next := Particle;
+  if LastParticle <> nil then
+    LastParticle.Next := Particle;
   Particle.Prev := LastParticle;
   Particle.Next := nil;
   LastParticle := Particle;
-  if FirstParticle = nil then FirstParticle := Particle;
+  if FirstParticle = nil then
+    FirstParticle := Particle;
   Result := Particle;
 end;
-{ @end $692474 }
 
-{ @routine $6924EC TPSWeapon11Desintegrator_RemoveParticle }
 procedure TPSWeapon11Desintegrator.RemoveParticle(Particle: PDesintegratorParticle);
 begin
   if Particle <> nil then
   begin
-  if Particle.Prev <> nil then Particle.Prev.Next := Particle.Next;
-  if Particle.Next <> nil then Particle.Next.Prev := Particle.Prev;
-  if LastParticle = Particle then LastParticle := Particle.Prev;
-  if FirstParticle = Particle then FirstParticle := Particle.Next;
-  FreeEC(Particle);
+    if Particle.Prev <> nil then
+      Particle.Prev.Next := Particle.Next;
+    if Particle.Next <> nil then
+      Particle.Next.Prev := Particle.Prev;
+    if LastParticle = Particle then
+      LastParticle := Particle.Prev;
+    if FirstParticle = Particle then
+      FirstParticle := Particle.Next;
+    FreeEC(Particle);
   end;
 end;
-{ @end $6924EC }
 
-{ @routine $692570 TPSWeapon11Desintegrator_ClearParticles }
 procedure TPSWeapon11Desintegrator.ClearParticles;
 var
   Particle, Current: PDesintegratorParticle;
@@ -203,21 +217,21 @@ begin
   FirstParticle := nil;
   LastParticle := nil;
 end;
-{ @end $692570 }
 
-{ @routine $6925C4 TPSWeapon11Desintegrator_Invalidate }
 procedure TPSWeapon11Desintegrator.Invalidate;
 begin
 end;
-{ @end $6925C4 }
 
-{ @routine $6925D0 TPSWeapon11Desintegrator_InvalidateRect }
 procedure TPSWeapon11Desintegrator.InvalidateRect(Rect: TRect);
 var
   Target: TPoint;
   Intersection: TRect;
 begin
-  MessageLoop.UpdateRects.AddScreenClippedRect(HitTestBounds, Parent.ToAbsolutePoint(LocalPosition), Parent.ToAbsolutePoint(TargetPoint));
+  MessageLoop.UpdateRects.AddScreenClippedRect(
+      HitTestBounds,
+      Parent.ToAbsolutePoint(LocalPosition),
+      Parent.ToAbsolutePoint(TargetPoint)
+  );
   Target := Parent.ToAbsolutePoint(TargetPoint);
   Rect.Left := Target.X - 32;
   Rect.Right := Target.X + 32;
@@ -226,9 +240,7 @@ begin
   if IntersectRects(Intersection, Rect, GameScreenRect) then
     MessageLoop.QueueUpdateRect(Intersection);
 end;
-{ @end $6925D0 }
 
-{ @routine $69269C TPSWeapon11Desintegrator_Advance }
 procedure TPSWeapon11Desintegrator.Advance(Timer: PCallbackTimerGI; UserData: Integer);
 var
   Y, Distance, Angle: Single;
@@ -240,7 +252,8 @@ begin
     Distance := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y));
     OriginalLength := Distance;
     // Native comparison is strictly negative, including its zero-length behavior.
-    if OriginalLength < 0 then OriginalLength := 1;
+    if OriginalLength < 0 then
+      OriginalLength := 1;
     LengthScale := 1;
     while Y < Distance do
     begin
@@ -250,8 +263,10 @@ begin
       Particle.Position.Y := Y;
       Particle.Color := Color;
       Particle.BaseAlpha := Trunc(Sin(Angle) * 95.0 + 160.0);
-      if Y < 64.0 then Particle.Alpha := Trunc(Particle.BaseAlpha * Y) shr 6
-      else Particle.Alpha := Particle.BaseAlpha;
+      if Y < 64.0 then
+        Particle.Alpha := Trunc(Particle.BaseAlpha * Y) shr 6
+      else
+        Particle.Alpha := Particle.BaseAlpha;
       Particle.Velocity.X := 0;
       Particle.Velocity.Y := 4;
       Particle.State := 1;
@@ -260,8 +275,10 @@ begin
       Particle.Position.Y := Y;
       Particle.Color := Color;
       Particle.BaseAlpha := Trunc(Sin(Angle) * 95.0 + 160.0);
-      if Y < 64.0 then Particle.Alpha := Trunc(Particle.BaseAlpha * Y) shr 6
-      else Particle.Alpha := Particle.BaseAlpha;
+      if Y < 64.0 then
+        Particle.Alpha := Trunc(Particle.BaseAlpha * Y) shr 6
+      else
+        Particle.Alpha := Particle.BaseAlpha;
       Particle.Velocity.X := 0;
       Particle.Velocity.Y := 4;
       Particle.State := 1;
@@ -271,7 +288,9 @@ begin
   else
   begin
     Distance := OriginalLength;
-    LengthScale := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)) / OriginalLength;
+    LengthScale :=
+        Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y))
+            / OriginalLength;
     UpdateHitTestBounds;
     Particle := FirstParticle;
     while Particle <> nil do
@@ -279,34 +298,36 @@ begin
       Current := Particle;
       Particle := Particle.Next;
       case Current.State of
-      1: begin
-        Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
-        Current.Position.X := Current.Position.X + Current.Velocity.X;
-        if Current.Position.Y > Distance then
+        1:
         begin
-          Spark := AddParticle;
-          Spark.Position := MakePointF(0, 0);
-          Spark.Color := Current.Color;
-          Spark.Alpha := Current.BaseAlpha;
-          Angle := Random(12) * Pi / 6.0;
-          Spark.Velocity := MakePointF(Sin(Angle) * 1.0, Cos(Angle) * 1.0);
-          Spark.State := 2;
-          Spark.RemainingTicks := 18;
-          Current.Position.Y := Current.Position.Y - Distance;
+          Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
+          Current.Position.X := Current.Position.X + Current.Velocity.X;
+          if Current.Position.Y > Distance then
+          begin
+            Spark := AddParticle;
+            Spark.Position := MakePointF(0, 0);
+            Spark.Color := Current.Color;
+            Spark.Alpha := Current.BaseAlpha;
+            Angle := Random(12) * Pi / 6.0;
+            Spark.Velocity := MakePointF(Sin(Angle) * 1.0, Cos(Angle) * 1.0);
+            Spark.State := 2;
+            Spark.RemainingTicks := 18;
+            Current.Position.Y := Current.Position.Y - Distance;
+          end;
+          if Current.Position.Y < 64.0 then
+            Current.Alpha := Trunc(Current.BaseAlpha * Current.Position.Y) shr 6
+          else
+            Current.Alpha := Current.BaseAlpha;
+          if RemainingTicks < 18 then
+            RemoveParticle(Current);
         end;
-        if Current.Position.Y < 64.0 then Current.Alpha := Trunc(Current.BaseAlpha * Current.Position.Y) shr 6
-        else Current.Alpha := Current.BaseAlpha;
-        if RemainingTicks < 18 then RemoveParticle(Current);
-      end;
       end;
     end;
   end;
   Inc(PendingSparkSteps);
   Dec(RemainingTicks);
 end;
-{ @end $69269C }
 
-{ @routine $692B24 TPSWeapon11Desintegrator_AdvanceImpactSparks }
 procedure TPSWeapon11Desintegrator.AdvanceImpactSparks(ClipRect: TRect);
 var
   TargetX, TargetY, X, Y: Integer;
@@ -324,7 +345,8 @@ begin
     Particle := Particle.Next;
     if Current.State = 2 then
     begin
-      if Current.Alpha > 96 then Dec(Current.Alpha, 4);
+      if Current.Alpha > 96 then
+        Dec(Current.Alpha, 4);
       Current.Position.X := Current.Position.X + Current.Velocity.X;
       Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
       X := Round(TargetX + Current.Position.X);
@@ -348,7 +370,8 @@ begin
           DY := 0;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X - 1, Y - 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -356,7 +379,8 @@ begin
           DY := -0.25;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X - 1, Y - 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -364,7 +388,8 @@ begin
           DY := -0.25;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X + 1, Y - 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -372,7 +397,8 @@ begin
           DY := -0.25;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X + 1, Y);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -380,7 +406,8 @@ begin
           DY := 0;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X + 1, Y + 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -388,7 +415,8 @@ begin
           DY := 0.25;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X, Y + 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           Minimum := Brightness;
@@ -396,7 +424,8 @@ begin
           DY := 0.25;
         end;
         Brightness := ScreenRenderBuffer.GetBrightness16(X - 1, Y + 1);
-        if Brightness <> Minimum then Uniform := False;
+        if Brightness <> Minimum then
+          Uniform := False;
         if Brightness < Minimum then
         begin
           DX := -0.25;
@@ -411,13 +440,12 @@ begin
       Current.Velocity.X := Current.Velocity.X + DX;
       Current.Velocity.Y := Current.Velocity.Y + DY;
       Dec(Current.RemainingTicks);
-      if Current.RemainingTicks = 0 then RemoveParticle(Current);
+      if Current.RemainingTicks = 0 then
+        RemoveParticle(Current);
     end;
   end;
 end;
-{ @end $692B24 }
 
-{ @routine $692EB8 TPSWeapon11Desintegrator_Draw }
 procedure TPSWeapon11Desintegrator.Draw(ClipRect: TRect);
 var
   PX, PY, Sine, Cosine, Angle: Single;
@@ -431,7 +459,8 @@ begin
   TargetX := TargetPoint.X - LocalPosition.X + AbsolutePosition.X;
   TargetY := TargetPoint.Y - LocalPosition.Y + AbsolutePosition.Y;
   PY := -(TargetPoint.Y - LocalPosition.Y);
-  if PY = 0 then PY := 1;
+  if PY = 0 then
+    PY := 1;
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, PY);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -473,15 +502,16 @@ begin
         X := AbsolutePosition.X + Trunc(PX * Cosine + PY * Sine);
         Y := AbsolutePosition.Y + Trunc(PX * Sine - PY * Cosine);
       end;
-      if (X >= ClipRect.Left) and (X < ClipRect.Right) and (Y >= ClipRect.Top) and (Y < ClipRect.Bottom) then
+      if (X >= ClipRect.Left)
+          and (X < ClipRect.Right)
+          and (Y >= ClipRect.Top)
+          and (Y < ClipRect.Bottom) then
         ScreenRenderBuffer.BlendPixel16(X, Y, Particle.Color, Particle.Alpha);
       Particle := Particle.Next;
     end;
   end;
 end;
-{ @end $692EB8 }
 
-{ @routine $6931A4 LoadDesintegratorPalettes }
 procedure LoadDesintegratorPalettes;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -504,14 +534,15 @@ begin
         if PaletteBlock.CountParams('Color' + IntToStr(ColorIndex)) > 0 then
         begin
           Text := PaletteBlock.GetParam('Color' + IntToStr(ColorIndex));
-          DesintegratorPalettes[Index][ColorIndex] := CurrentPixelFormat.PackNormalizedRgb(
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ',')));
+          DesintegratorPalettes[Index][ColorIndex] :=
+              CurrentPixelFormat.PackNormalizedRgb(
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ','))
+              );
         end;
     end;
   end;
 end;
-{ @end $6931A4 }
 
 end.

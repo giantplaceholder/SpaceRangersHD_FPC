@@ -1,70 +1,70 @@
 unit GR_Rect;
-// Unit bracket (inferred): .text 0x00472098..0x004728CA; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, Types;
+uses
+  EC_Struct,
+  Types;
 
 type
-  TRectGR = class(TObject) // @size 0x1C
-  public
-    Prev: TRectGR; // @offset 0x04
-    Next: TRectGR; // @offset 0x08
-    Bounds: TRect; // @offset 0x0C
 
-    constructor Create; // @addr 0x472148 @ida "TRectGR *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x47218C @ida "void __usercall $name(TRectGR *Self@<eax>, __int8 DestroyFlags@<dl>);"
+  TArrayRectGR = class;
+
+  TRectGR = class;
+
+  TRectGR = class(TObject)
+    Prev: TRectGR;
+    Next: TRectGR;
+    Bounds: TRect;
+    constructor Create;
+    destructor Destroy; override;
   end;
 
-  TArrayRectGR = class(TObjectEx) // @size 0x0C
-  public
-    FirstRect: TRectGR; // @offset 0x04
-    LastRect: TRectGR; // @offset 0x08
-
-    constructor Create; // @addr 0x4721C0 @ida "TArrayRectGR *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x472204 @ida "void __usercall $name(TArrayRectGR *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; // @addr 0x472240
-    function AllocateRectNode: TRectGR; // @addr 0x47228C
-    procedure RemoveRectNode(RectNode: TRectGR); // @addr 0x4722F8
-    procedure AddRect(Rect: TRect); // @addr 0x472370 @ida "void __usercall $name(TArrayRectGR *Self@<eax>, TRect *Rect@<edx>);" @note "Maintains nonoverlapping coverage."
-    procedure InsertRectFragment(Left, Top, Right, Bottom: Integer); // @addr 0x472464
-    procedure AddScreenClippedRect(Rect: TRect; UnusedPoint1, UnusedPoint2: TPoint); // @addr 0x472880 @ida "void __userpurge $name(TArrayRectGR *Self@<eax>, TRect *Rect@<edx>, TPoint *UnusedPoint1@<ecx>, TPoint *UnusedPoint2@<^0>);"
+  TArrayRectGR = class(TObjectEx)
+    FirstRect: TRectGR;
+    LastRect: TRectGR;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    function AllocateRectNode: TRectGR;
+    procedure RemoveRectNode(RectNode: TRectGR);
+    procedure AddRect(Rect: TRect);
+    procedure InsertRectFragment(Left: Integer; Top: Integer; Right: Integer; Bottom: Integer);
+    procedure AddScreenClippedRect(Rect: TRect; UnusedPoint1: TPoint; UnusedPoint2: TPoint);
   end;
 
 implementation
 
-uses GR_Main;
+uses
+  GR_Main;
 
-{ @routine $472148 TRectGR_Create }
 constructor TRectGR.Create;
 begin
   inherited Create;
 end;
-{ @end $472148 }
 
-{ @routine $47218C TRectGR_Destroy }
 destructor TRectGR.Destroy;
 begin
   inherited Destroy;
 end;
-{ @end $47218C }
 
-{ @routine $4721C0 TArrayRectGR_Create }
 constructor TArrayRectGR.Create;
 begin
   inherited Create;
 end;
-{ @end $4721C0 }
 
-{ @routine $472204 TArrayRectGR_Destroy }
 destructor TArrayRectGR.Destroy;
 begin
   Clear;
   inherited Destroy;
 end;
-{ @end $472204 }
 
-{ @routine $472240 TArrayRectGR_Clear }
 procedure TArrayRectGR.Clear;
 var
   Node, Removed: TRectGR;
@@ -79,9 +79,7 @@ begin
   FirstRect := nil;
   LastRect := nil;
 end;
-{ @end $472240 }
 
-{ @routine $47228C TArrayRectGR_AllocateRectNode }
 function TArrayRectGR.AllocateRectNode: TRectGR;
 var
   Node: TRectGR;
@@ -96,9 +94,7 @@ begin
     FirstRect := Node;
   Result := Node;
 end;
-{ @end $47228C }
 
-{ @routine $4722F8 TArrayRectGR_RemoveRectNode }
 procedure TArrayRectGR.RemoveRectNode(RectNode: TRectGR);
 begin
   if RectNode.Prev <> nil then
@@ -111,9 +107,7 @@ begin
     FirstRect := RectNode.Next;
   RectNode.Free;
 end;
-{ @end $4722F8 }
 
-{ @routine $472370 TArrayRectGR_AddRect }
 procedure TArrayRectGR.AddRect(Rect: TRect);
 var
   Node, Removed: TRectGR;
@@ -122,8 +116,10 @@ begin
   while Node <> nil do
   begin
     with Node.Bounds do
-      if (Rect.Left >= Left) and (Rect.Right <= Right) and
-         (Rect.Top >= Top) and (Rect.Bottom <= Bottom) then
+      if (Rect.Left >= Left)
+          and (Rect.Right <= Right)
+          and (Rect.Top >= Top)
+          and (Rect.Bottom <= Bottom) then
         Exit;
     Node := Node.Prev;
   end;
@@ -131,8 +127,10 @@ begin
   while Node <> nil do
   begin
     with Node.Bounds do
-      if (Left >= Rect.Left) and (Right <= Rect.Right) and
-         (Top >= Rect.Top) and (Bottom <= Rect.Bottom) then
+      if (Left >= Rect.Left)
+          and (Right <= Rect.Right)
+          and (Top >= Rect.Top)
+          and (Bottom <= Rect.Bottom) then
       begin
         Removed := Node;
         Node := Node.Prev;
@@ -143,9 +141,7 @@ begin
   end;
   InsertRectFragment(Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
 end;
-{ @end $472370 }
 
-{ @routine $472464 TArrayRectGR_InsertRectFragment }
 procedure TArrayRectGR.InsertRectFragment(Left, Top, Right, Bottom: Integer);
 var
   Node: TRectGR;
@@ -159,11 +155,15 @@ begin
     ExistingRight := Node.Bounds.Right;
     ExistingTop := Node.Bounds.Top;
     ExistingBottom := Node.Bounds.Bottom;
-    if (Left >= ExistingLeft) and (Right <= ExistingRight) and
-       (Top >= ExistingTop) and (Bottom <= ExistingBottom) then
+    if (Left >= ExistingLeft)
+        and (Right <= ExistingRight)
+        and (Top >= ExistingTop)
+        and (Bottom <= ExistingBottom) then
       Exit;
-    if (Left < ExistingRight) and (Right > ExistingLeft) and
-       (Top < ExistingBottom) and (Bottom > ExistingTop) then
+    if (Left < ExistingRight)
+        and (Right > ExistingLeft)
+        and (Top < ExistingBottom)
+        and (Bottom > ExistingTop) then
       Break;
     Node := Node.Prev;
   end;
@@ -177,10 +177,14 @@ begin
     Exit;
   end;
   OutsideEdges := 0;
-  if Left < ExistingLeft then OutsideEdges := OutsideEdges or 1;
-  if Right > ExistingRight then OutsideEdges := OutsideEdges or 8;
-  if Top < ExistingTop then OutsideEdges := OutsideEdges or 16;
-  if Bottom > ExistingBottom then OutsideEdges := OutsideEdges or 128;
+  if Left < ExistingLeft then
+    OutsideEdges := OutsideEdges or 1;
+  if Right > ExistingRight then
+    OutsideEdges := OutsideEdges or 8;
+  if Top < ExistingTop then
+    OutsideEdges := OutsideEdges or 16;
+  if Bottom > ExistingBottom then
+    OutsideEdges := OutsideEdges or 128;
   if (OutsideEdges = 1) then
   begin
     InsertRectFragment(Left, Top, ExistingLeft, Bottom);
@@ -252,9 +256,7 @@ begin
     InsertRectFragment(ExistingRight, Top, Right, ExistingBottom);
   end;
 end;
-{ @end $472464 }
 
-{ @routine $472880 TArrayRectGR_AddScreenClippedRect }
 procedure TArrayRectGR.AddScreenClippedRect(Rect: TRect; UnusedPoint1, UnusedPoint2: TPoint);
 var
   Clipped: TRect;
@@ -262,6 +264,5 @@ begin
   if IntersectRects(Clipped, Rect, GameScreenRect) then
     AddRect(Clipped);
 end;
-{ @end $472880 }
 
 end.

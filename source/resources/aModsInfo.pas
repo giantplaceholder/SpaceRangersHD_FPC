@@ -1,65 +1,87 @@
 unit aModsInfo;
-// Unit bracket (inferred): .text 0x005EFD2C..0x005F21B9; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TModInfo RTTI and module-manager accesses establish the class layout.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_BlockPar, EC_Struct, GI_Image;
+uses
+  Classes,
+  EC_BlockPar,
+  EC_Struct,
+  GI_Image;
 
 type
-  TModInfo = class(TObjectEx) // @size $48
-  public
-    Folder: WideString; // @offset $04 Relative path beneath Mods.
-    SwitchImage: TImageGI; // @offset $08 Borrowed module-manager control.
-    IndexText: WideString; // @offset $0C Decimal index in ModInfos.
-    Name: WideString; // @offset $10 Metadata ID; duplicates are permitted.
-    Section: WideString; // @offset $14
-    SmallDescription: WideString; // @offset $18
-    FullDescription: WideString; // @offset $1C
-    Author: WideString; // @offset $20
-    DependencyNames: WideString; // @offset $24 Comma-separated IDs.
-    DependencyCount: Integer; // @offset $28
-    Dependencies: array of TModInfo; // @offset $2C Borrowed references.
-    ConflictNames: WideString; // @offset $30 Comma-separated IDs.
-    ConflictCount: Integer; // @offset $34
-    Conflicts: array of TModInfo; // @offset $38 Borrowed references.
-    Priority: Cardinal; // @offset $3C
-    UnsupportedLanguage: Boolean; // @offset $40
-    MissingFolder: Boolean; // @offset $41
-    MissingDependency: Boolean; // @offset $42
-    Misplaced: Boolean; // @offset $43 Reported as ProblemsInfoMisplaced by the module manager.
-    DuplicateName: Boolean; // @offset $44
-    ReferencedAsConflict: Boolean; // @offset $45
-    ReferencedAsDependency: Boolean; // @offset $46
-    Selected: Boolean; // @offset $47
-    constructor Create; // @addr $5EFE4C @ida "TModInfo *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $5EFF74 @ida "void __usercall $name(TModInfo *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    function GetDisplayName: WideString; // @addr $5EFFDC @ida "void __usercall $name(TModInfo *Self@<eax>, unsigned __int16 **Result@<edx>);"
-    function GetConflict(Index, VariantIndex: Integer): TModInfo; // @addr $5F0038
-    function GetDependency(Index, VariantIndex: Integer): TModInfo; // @addr $5F013C
+
+  TModInfo = class;
+
+  TModInfo = class(TObjectEx)
+    Folder: WideString;
+    SwitchImage: TImageGI;
+    IndexText: WideString;
+    Name: WideString;
+    Section: WideString;
+    SmallDescription: WideString;
+    FullDescription: WideString;
+    Author: WideString;
+    DependencyNames: WideString;
+    DependencyCount: Integer;
+    Dependencies: array of TModInfo;
+    ConflictNames: WideString;
+    ConflictCount: Integer;
+    Conflicts: array of TModInfo;
+    Priority: Cardinal;
+    UnsupportedLanguage: Boolean;
+    MissingFolder: Boolean;
+    MissingDependency: Boolean;
+    Misplaced: Boolean;
+    DuplicateName: Boolean;
+    ReferencedAsConflict: Boolean;
+    ReferencedAsDependency: Boolean;
+    Selected: Boolean;
+    constructor Create;
+    destructor Destroy; override;
+    function GetDisplayName: WideString;
+    function GetConflict(Index: Integer; VariantIndex: Integer): TModInfo;
+    function GetDependency(Index: Integer; VariantIndex: Integer): TModInfo;
   end;
 
-function FindOrInsertModFolder(Folder: WideString): Integer; // @addr $5F0240
-function LoadModInfo(Folder: WideString; Info: TModInfo): Boolean; // @addr $5F07E8
-procedure ScanModFolders(Folder, Prefix: WideString); // @addr $5F14F8
-procedure InitializeModInfos; // @addr $5F1734
-
 var
-  ModInfos: TList = nil; // @addr $87BE2C @note "Owns the TModInfo objects."
-  SelectedModInfos: TList = nil; // @addr $87BE30 @note "Non-owning references into ModInfos."
-  ModIdCounts: TBlockParEC = nil; // @addr $87BE34
-  ModConflictIndex: TBlockParEC = nil; // @addr $87BE38 @note "Maps declared conflict IDs to matching mod indices."
-  ModDependencyIndex: TBlockParEC = nil; // @addr $87BE3C @note "Maps required mod IDs to matching mod indices."
-  ModInfosInitialized: Boolean = False; // @addr $87BE40
 
-procedure ClearModInfoState; // @addr $5F2118 @note "Frees mod objects and clears the existing containers, retaining their allocation for reload."
+  ModInfos: TList = nil;
+
+  SelectedModInfos: TList = nil;
+
+  ModIdCounts: TBlockParEC = nil;
+
+  ModConflictIndex: TBlockParEC = nil;
+
+  ModDependencyIndex: TBlockParEC = nil;
+
+  ModInfosInitialized: Boolean = False;
+
+function FindOrInsertModFolder(Folder: WideString): Integer;
+
+function LoadModInfo(Folder: WideString; Info: TModInfo): Boolean;
+
+procedure ScanModFolders(Folder: WideString; Prefix: WideString);
+
+procedure InitializeModInfos;
+
+procedure ClearModInfoState;
 
 implementation
 
-uses Windows, SysUtils, EC_Str, EC_Expression, GR_Main;
+uses
+  Windows,
+  SysUtils,
+  EC_Str,
+  EC_Expression,
+  GR_Main;
 
-
-{ @routine $5EFE4C TModInfo_Create }
 constructor TModInfo.Create;
 begin
   inherited Create;
@@ -86,26 +108,22 @@ begin
   ReferencedAsDependency := False;
   Selected := False;
 end;
-{ @end $5EFE4C }
 
-{ @routine $5EFF74 TModInfo_Destroy }
 destructor TModInfo.Destroy;
 begin
   SetLength(Dependencies, 0);
   SetLength(Conflicts, 0);
   inherited Destroy;
 end;
-{ @end $5EFF74 }
 
-{ @routine $5EFFDC TModInfo_GetDisplayName }
 function TModInfo.GetDisplayName: WideString;
 begin
-  if Name <> '' then Result := Name
-  else Result := '[' + Folder + ']';
+  if Name <> '' then
+    Result := Name
+  else
+    Result := '[' + Folder + ']';
 end;
-{ @end $5EFFDC }
 
-{ @routine $5F0038 TModInfo_GetConflict }
 function TModInfo.GetConflict(Index, VariantIndex: Integer): TModInfo;
 var
   Info: TModInfo;
@@ -113,22 +131,24 @@ var
   Count: Integer;
 begin
   Result := nil;
-  if (Index < 0) or (Index >= ConflictCount) then Exit;
+  if (Index < 0) or (Index >= ConflictCount) then
+    Exit;
   if VariantIndex = 0 then
   begin
     Result := Conflicts[Index];
     Exit;
   end;
   Info := Conflicts[Index];
-  if not Info.DuplicateName then Exit;
+  if not Info.DuplicateName then
+    Exit;
   Indices := ModConflictIndex.GetParam(Info.Name);
   Count := CountDelimitedPartsW(Indices, ',');
-  if (VariantIndex < 0) or (VariantIndex >= Count) then Exit;
-  Result := TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, VariantIndex, ','))]);
+  if (VariantIndex < 0) or (VariantIndex >= Count) then
+    Exit;
+  Result :=
+      TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, VariantIndex, ','))]);
 end;
-{ @end $5F0038 }
 
-{ @routine $5F013C TModInfo_GetDependency }
 function TModInfo.GetDependency(Index, VariantIndex: Integer): TModInfo;
 var
   Info: TModInfo;
@@ -136,22 +156,24 @@ var
   Count: Integer;
 begin
   Result := nil;
-  if (Index < 0) or (Index >= DependencyCount) then Exit;
+  if (Index < 0) or (Index >= DependencyCount) then
+    Exit;
   if VariantIndex = 0 then
   begin
     Result := Dependencies[Index];
     Exit;
   end;
   Info := Dependencies[Index];
-  if not Info.DuplicateName then Exit;
+  if not Info.DuplicateName then
+    Exit;
   Indices := ModDependencyIndex.GetParam(Info.Name);
   Count := CountDelimitedPartsW(Indices, ',');
-  if (VariantIndex < 0) or (VariantIndex >= Count) then Exit;
-  Result := TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, VariantIndex, ','))]);
+  if (VariantIndex < 0) or (VariantIndex >= Count) then
+    Exit;
+  Result :=
+      TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, VariantIndex, ','))]);
 end;
-{ @end $5F013C }
 
-{ @routine $5F0240 FindOrInsertModFolder }
 function FindOrInsertModFolder(Folder: WideString): Integer;
 var
   Left, Right, Middle, Comparison: Integer;
@@ -207,12 +229,13 @@ begin
       Result := Middle;
       Exit;
     end;
-    if Comparison < 0 then Right := Middle else Left := Middle;
+    if Comparison < 0 then
+      Right := Middle
+    else
+      Left := Middle;
   end;
 end;
-{ @end $5F0240 }
 
-{ @routine $5F07E8 LoadModInfo }
 function LoadModInfo(Folder: WideString; Info: TModInfo): Boolean;
 var
   SavedDir: AnsiString;
@@ -221,8 +244,7 @@ var
   Language, Languages: WideString;
   I, Count: Integer;
 
-  // @nested $5F03FC HasOtherLanguageResources
-  function HasOtherLanguageResources: Boolean; // @addr $5F03FC @ida "bool __usercall $name@<al>(void *ParentFrame@<^0>);" @stackpop 0 @calls "0x5F090A,0x5F0955,0x5F0FFD,0x5F1126"
+  function HasOtherLanguageResources: Boolean;
   var
     FileName: WideString;
     Handle: THandle;
@@ -238,9 +260,9 @@ var
         begin
           FileName := WideString(FindData.cFileName);
           FileName := LowerCaseWideString(FileName);
-          if (FileName <> LowerCaseWideString('install_' + SelectedLanguage + '.txt')) and
-             (Length(FileName) > 12) and
-             (FindTextOffsetW(FileName, 'install_') = 0) then
+          if (FileName <> LowerCaseWideString('install_' + SelectedLanguage + '.txt'))
+              and (Length(FileName) > 12)
+              and (FindTextOffsetW(FileName, 'install_') = 0) then
           begin
             Result := True;
             Windows.FindClose(Handle);
@@ -262,9 +284,11 @@ var
             if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
             begin
               FileName := WideString(FindData.cFileName);
-              if (FileName <> '.') and (FileName <> '..') and
-                 (LowerCaseWideString(FileName) <> LowerCaseWideString(LanguageInstallConfig.GetParam('Lang'))) and
-                 SysUtils.FileExists(AnsiString(FileName + '\Lang.dat')) then
+              if (FileName <> '.')
+                  and (FileName <> '..')
+                  and (LowerCaseWideString(FileName)
+                      <> LowerCaseWideString(LanguageInstallConfig.GetParam('Lang')))
+                  and SysUtils.FileExists(AnsiString(FileName + '\Lang.dat')) then
               begin
                 Result := True;
                 Windows.FindClose(Handle);
@@ -288,20 +312,25 @@ begin
   SavedDir := GetCurrentDir;
   try
     SetCurrentDir(AnsiString(Folder));
-    if SysUtils.FileExists('install.txt') or
-       SysUtils.FileExists('CFG\Main.dat') or
-       SysUtils.FileExists('CFG\CacheData.dat') then HasCommonResources := True;
+    if SysUtils.FileExists('install.txt')
+        or SysUtils.FileExists('CFG\Main.dat')
+        or SysUtils.FileExists('CFG\CacheData.dat') then
+      HasCommonResources := True;
     Language := LanguageInstallConfig.GetParam('Lang');
-    if SysUtils.FileExists(AnsiString('install_' + SelectedLanguage + '.txt')) or
-       SysUtils.FileExists(AnsiString('CFG\' + Language + '\Lang.dat')) then HasLanguageResources := True;
-    if not HasCommonResources and not HasLanguageResources then HasForeignResources := HasOtherLanguageResources;
+    if SysUtils.FileExists(AnsiString('install_' + SelectedLanguage + '.txt'))
+        or SysUtils.FileExists(AnsiString('CFG\' + Language + '\Lang.dat')) then
+      HasLanguageResources := True;
+    if not HasCommonResources and not HasLanguageResources then
+      HasForeignResources := HasOtherLanguageResources;
     Result := (HasCommonResources or HasLanguageResources) or HasForeignResources;
     if not SysUtils.FileExists('ModuleInfo.txt') then
     begin
-      if not Result then Exit;
+      if not Result then
+        Exit;
       if not HasLanguageResources then
       begin
-        if not HasForeignResources then HasForeignResources := HasOtherLanguageResources;
+        if not HasForeignResources then
+          HasForeignResources := HasOtherLanguageResources;
         Info.UnsupportedLanguage := HasForeignResources;
       end;
       Exit;
@@ -319,7 +348,8 @@ begin
         end;
         Result := True;
       end;
-      if Block.CountParams('Name') > 0 then Info.Name := TrimWideString(Block.GetParam('Name'));
+      if Block.CountParams('Name') > 0 then
+        Info.Name := TrimWideString(Block.GetParam('Name'));
       if Block.CountParams('Section' + Language) > 0 then
         Info.Section := TrimWideString(Block.GetParam('Section' + Language))
       else if Block.CountParams('Section') > 0 then
@@ -329,28 +359,40 @@ begin
         Count := Block.CountParams('SmallDescription' + Language);
         Info.SmallDescription := Block.GetParamByPath('SmallDescription' + Language + ':0');
         for I := 1 to Count - 1 do
-          Info.SmallDescription := Info.SmallDescription + #13#10 + Block.GetParamByPath('SmallDescription' + Language + ':' + IntToWideString(I));
+          Info.SmallDescription :=
+              Info.SmallDescription
+                  + #13#10
+                  + Block.GetParamByPath('SmallDescription' + Language + ':' + IntToWideString(I));
       end
       else if Block.CountParams('SmallDescription') > 0 then
       begin
         Count := Block.CountParams('SmallDescription');
         Info.SmallDescription := Block.GetParamByPath('SmallDescription:0');
         for I := 1 to Count - 1 do
-          Info.SmallDescription := Info.SmallDescription + #13#10 + Block.GetParamByPath('SmallDescription:' + IntToWideString(I));
+          Info.SmallDescription :=
+              Info.SmallDescription
+                  + #13#10
+                  + Block.GetParamByPath('SmallDescription:' + IntToWideString(I));
       end;
       if Block.CountParams('FullDescription' + Language) > 0 then
       begin
         Count := Block.CountParams('FullDescription' + Language);
         Info.FullDescription := Block.GetParamByPath('FullDescription' + Language + ':0');
         for I := 1 to Count - 1 do
-          Info.FullDescription := Info.FullDescription + #13#10 + Block.GetParamByPath('FullDescription' + Language + ':' + IntToWideString(I));
+          Info.FullDescription :=
+              Info.FullDescription
+                  + #13#10
+                  + Block.GetParamByPath('FullDescription' + Language + ':' + IntToWideString(I));
       end
       else if Block.CountParams('FullDescription') > 0 then
       begin
         Count := Block.CountParams('FullDescription');
         Info.FullDescription := Block.GetParamByPath('FullDescription:0');
         for I := 1 to Count - 1 do
-          Info.FullDescription := Info.FullDescription + #13#10 + Block.GetParamByPath('FullDescription:' + IntToWideString(I));
+          Info.FullDescription :=
+              Info.FullDescription
+                  + #13#10
+                  + Block.GetParamByPath('FullDescription:' + IntToWideString(I));
       end;
       if Block.CountParams('Author' + Language) > 0 then
         Info.Author := TrimWideString(Block.GetParam('Author' + Language))
@@ -364,7 +406,9 @@ begin
         Count := CountDelimitedPartsW(Languages, ',');
         if Languages <> '' then
           for I := 0 to Count - 1 do
-            if WideString(LowerCase(AnsiString(TrimWideString(ExtractDelimitedPartW(Languages, I, ','))))) = Language then
+            if WideString(
+                    LowerCase(AnsiString(TrimWideString(ExtractDelimitedPartW(Languages, I, ',')))))
+                = Language then
             begin
               Info.UnsupportedLanguage := False;
               Break;
@@ -372,12 +416,16 @@ begin
       end
       else if not HasLanguageResources then
       begin
-        if not HasForeignResources then HasForeignResources := HasOtherLanguageResources;
+        if not HasForeignResources then
+          HasForeignResources := HasOtherLanguageResources;
         Info.UnsupportedLanguage := HasForeignResources;
       end;
-      if Block.CountParams('Dependence') > 0 then Info.DependencyNames := TrimWideString(Block.GetParam('Dependence'));
-      if Block.CountParams('Conflict') > 0 then Info.ConflictNames := TrimWideString(Block.GetParam('Conflict'));
-      if Block.CountParams('Priority') > 0 then Info.Priority := ExtractDigitsToIntW(Block.GetParam('Priority'));
+      if Block.CountParams('Dependence') > 0 then
+        Info.DependencyNames := TrimWideString(Block.GetParam('Dependence'));
+      if Block.CountParams('Conflict') > 0 then
+        Info.ConflictNames := TrimWideString(Block.GetParam('Conflict'));
+      if Block.CountParams('Priority') > 0 then
+        Info.Priority := ExtractDigitsToIntW(Block.GetParam('Priority'));
     except
       Info.Name := '';
       Info.Section := '';
@@ -386,22 +434,23 @@ begin
       Info.Author := '';
       if not HasLanguageResources then
       begin
-        if not HasForeignResources then HasForeignResources := HasOtherLanguageResources;
+        if not HasForeignResources then
+          HasForeignResources := HasOtherLanguageResources;
         Info.UnsupportedLanguage := HasForeignResources;
       end
-      else Info.UnsupportedLanguage := True;
+      else
+        Info.UnsupportedLanguage := True;
       Info.DependencyNames := '';
       Info.ConflictNames := '';
       Info.Priority := 0;
     end;
   finally
     SetCurrentDir(SavedDir);
-    if Block <> nil then Block.Free;
+    if Block <> nil then
+      Block.Free;
   end;
 end;
-{ @end $5F07E8 }
 
-{ @routine $5F14F8 ScanModFolders }
 procedure ScanModFolders(Folder, Prefix: WideString);
 var
   FileName: WideString;
@@ -431,8 +480,10 @@ begin
             ModInfos[Index] := Info;
             if Info.Name <> '' then
             begin
-              if ModIdCounts.CountParams(Info.Name) <= 0 then ModIdCounts.AddParam(Info.Name, '1')
-              else ModIdCounts.SetOrAddParam(Info.Name, '0');
+              if ModIdCounts.CountParams(Info.Name) <= 0 then
+                ModIdCounts.AddParam(Info.Name, '1')
+              else
+                ModIdCounts.SetOrAddParam(Info.Name, '0');
             end;
             Info := TModInfo.Create;
           end
@@ -448,9 +499,7 @@ begin
   end;
   Info.Free;
 end;
-{ @end $5F14F8 }
 
-{ @routine $5F1734 InitializeModInfos }
 procedure InitializeModInfos;
 var
   SavedDir: AnsiString;
@@ -458,12 +507,18 @@ var
   I, J, Index, Count: Integer;
   Info: TModInfo;
 begin
-  if ModInfosInitialized then Exit;
-  if ModInfos = nil then ModInfos := TList.Create;
-  if SelectedModInfos = nil then SelectedModInfos := TList.Create;
-  if ModIdCounts = nil then ModIdCounts := TBlockParEC.Create;
-  if ModConflictIndex = nil then ModConflictIndex := TBlockParEC.Create;
-  if ModDependencyIndex = nil then ModDependencyIndex := TBlockParEC.Create;
+  if ModInfosInitialized then
+    Exit;
+  if ModInfos = nil then
+    ModInfos := TList.Create;
+  if SelectedModInfos = nil then
+    SelectedModInfos := TList.Create;
+  if ModIdCounts = nil then
+    ModIdCounts := TBlockParEC.Create;
+  if ModConflictIndex = nil then
+    ModConflictIndex := TBlockParEC.Create;
+  if ModDependencyIndex = nil then
+    ModDependencyIndex := TBlockParEC.Create;
   SavedDir := GetCurrentDir;
   Folder := WideString(SavedDir);
   Folder := Folder + '\Mods';
@@ -491,13 +546,16 @@ begin
           Info := TModInfo.Create;
           ModInfos[Index] := Info;
           SelectedModInfos.Add(Info);
-          if DirectoryExists(AnsiString(Folder + '\' + Name)) and LoadModInfo(Folder + '\' + Name, Info) then
+          if DirectoryExists(AnsiString(Folder + '\' + Name))
+              and LoadModInfo(Folder + '\' + Name, Info) then
           begin
             Info.Folder := Name;
             if Info.Name <> '' then
             begin
-              if ModIdCounts.CountParams(Info.Name) <= 0 then ModIdCounts.AddParam(Info.Name, '1')
-              else ModIdCounts.SetOrAddParam(Info.Name, '0');
+              if ModIdCounts.CountParams(Info.Name) <= 0 then
+                ModIdCounts.AddParam(Info.Name, '1')
+              else
+                ModIdCounts.SetOrAddParam(Info.Name, '0');
             end;
           end
           else
@@ -514,14 +572,16 @@ begin
   begin
     Info := TModInfo(ModInfos[I]);
     Info.IndexText := IntToWideString(I);
-    if Info.Name <> '' then Info.DuplicateName := ModIdCounts.GetParam(Info.Name) <> '1';
+    if Info.Name <> '' then
+      Info.DuplicateName := ModIdCounts.GetParam(Info.Name) <> '1';
     if Info.ConflictNames <> '' then
     begin
       Count := CountDelimitedPartsW(Info.ConflictNames, ',');
       for J := 0 to Count - 1 do
       begin
         Indices := TrimWideString(ExtractDelimitedPartW(Info.ConflictNames, J, ','));
-        if ModConflictIndex.CountParams(Indices) <= 0 then ModConflictIndex.AddParam(Indices, '');
+        if ModConflictIndex.CountParams(Indices) <= 0 then
+          ModConflictIndex.AddParam(Indices, '');
       end;
     end;
     if Info.DependencyNames <> '' then
@@ -530,31 +590,38 @@ begin
       for J := 0 to Count - 1 do
       begin
         Indices := TrimWideString(ExtractDelimitedPartW(Info.DependencyNames, J, ','));
-        if ModDependencyIndex.CountParams(Indices) <= 0 then ModDependencyIndex.AddParam(Indices, '');
+        if ModDependencyIndex.CountParams(Indices) <= 0 then
+          ModDependencyIndex.AddParam(Indices, '');
       end;
     end;
   end;
   for I := 0 to ModInfos.Count - 1 do
   begin
     Info := TModInfo(ModInfos[I]);
-    if Info.Name = '' then Continue;
+    if Info.Name = '' then
+      Continue;
     if ModConflictIndex.CountParams(Info.Name) > 0 then
     begin
       Indices := ModConflictIndex.GetParam(Info.Name);
-      if Indices = '' then ModConflictIndex.SetParam(Info.Name, IntToWideString(I))
-      else ModConflictIndex.SetParam(Info.Name, Indices + ',' + IntToWideString(I));
+      if Indices = '' then
+        ModConflictIndex.SetParam(Info.Name, IntToWideString(I))
+      else
+        ModConflictIndex.SetParam(Info.Name, Indices + ',' + IntToWideString(I));
     end;
     if ModDependencyIndex.CountParams(Info.Name) > 0 then
     begin
       Indices := ModDependencyIndex.GetParam(Info.Name);
-      if Indices = '' then ModDependencyIndex.SetParam(Info.Name, IntToWideString(I))
-      else ModDependencyIndex.SetParam(Info.Name, Indices + ',' + IntToWideString(I));
+      if Indices = '' then
+        ModDependencyIndex.SetParam(Info.Name, IntToWideString(I))
+      else
+        ModDependencyIndex.SetParam(Info.Name, Indices + ',' + IntToWideString(I));
     end;
   end;
   for I := 0 to ModInfos.Count - 1 do
   begin
     Info := TModInfo(ModInfos[I]);
-    if Info.DependencyNames = '' then Continue;
+    if Info.DependencyNames = '' then
+      Continue;
     Info.DependencyCount := CountDelimitedPartsW(Info.DependencyNames, ',');
     SetLength(Info.Dependencies, Info.DependencyCount);
     for J := 0 to Info.DependencyCount - 1 do
@@ -566,13 +633,16 @@ begin
         Info.MissingDependency := True;
         Info.Dependencies[J] := nil;
       end
-      else Info.Dependencies[J] := TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, 0, ','))]);
+      else
+        Info.Dependencies[J] :=
+            TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, 0, ','))]);
     end;
   end;
   for I := 0 to ModInfos.Count - 1 do
   begin
     Info := TModInfo(ModInfos[I]);
-    if Info.ConflictNames = '' then Continue;
+    if Info.ConflictNames = '' then
+      Continue;
     Info.ConflictCount := CountDelimitedPartsW(Info.ConflictNames, ',');
     SetLength(Info.Conflicts, Info.ConflictCount);
     for J := 0 to Info.ConflictCount - 1 do
@@ -583,7 +653,9 @@ begin
       begin
         Info.Conflicts[J] := nil;
       end
-      else Info.Conflicts[J] := TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, 0, ','))]);
+      else
+        Info.Conflicts[J] :=
+            TModInfo(ModInfos[ExtractDigitsToIntW(ExtractDelimitedPartW(Indices, 0, ','))]);
     end;
   end;
   for I := 0 to ModConflictIndex.GetParamCount - 1 do
@@ -608,23 +680,26 @@ begin
   end;
   ModInfosInitialized := True;
 end;
-{ @end $5F1734 }
 
-{ @routine $5F2118 ClearModInfoState }
 procedure ClearModInfoState;
-var Index: Integer;
+var
+  Index: Integer;
 begin
   ModInfosInitialized := False;
   if ModInfos <> nil then
   begin
-    for Index := 0 to ModInfos.Count - 1 do TObject(ModInfos[Index]).Free;
+    for Index := 0 to ModInfos.Count - 1 do
+      TObject(ModInfos[Index]).Free;
     ModInfos.Clear;
   end;
-  if SelectedModInfos <> nil then SelectedModInfos.Clear;
-  if ModIdCounts <> nil then ModIdCounts.Clear;
-  if ModConflictIndex <> nil then ModConflictIndex.Clear;
-  if ModDependencyIndex <> nil then ModDependencyIndex.Clear;
+  if SelectedModInfos <> nil then
+    SelectedModInfos.Clear;
+  if ModIdCounts <> nil then
+    ModIdCounts.Clear;
+  if ModConflictIndex <> nil then
+    ModConflictIndex.Clear;
+  if ModDependencyIndex <> nil then
+    ModDependencyIndex.Clear;
 end;
-{ @end $5F2118 }
 
 end.

@@ -1,25 +1,33 @@
 unit GI_PSWeapon14Vertix;
-// Native animation palette resources; this effect uses the shared GAI control.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
 type
-  TGAISet = array[0..0] of WideString;
-  TWeapon14AnimationPaths = array of TGAISet;
 
-procedure LoadWeapon14AnimationPaths; // @addr $695CC8
+  TGAISet = array[0..0] of WideString;
 
 var
-  Weapon14AnimationPaths: array of TGAISet; // @addr $88AEF8
+
+  Weapon14AnimationPaths: array of TGAISet;
+
+procedure LoadWeapon14AnimationPaths;
 
 implementation
 
-// @unit-initialization $87794C
-// @unit-finalization $695E74
+uses
+  GR_Main,
+  SysUtils,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  Globals;
 
-uses SysUtils, Math, EC_BlockPar, EC_Str, Globals;
-
-{ @routine $695CC8 LoadWeapon14AnimationPaths }
 procedure LoadWeapon14AnimationPaths;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -43,6 +51,5 @@ begin
     end;
   end;
 end;
-{ @end $695CC8 }
 
 end.

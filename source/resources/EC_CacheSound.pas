@@ -1,71 +1,84 @@
 unit EC_CacheSound;
-// Unit bracket (inferred): .text 0x0083DCE0..0x0083E064; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Buf, EC_Cache;
+uses
+  Classes,
+  EC_Buf,
+  EC_Cache;
 
 type
-  TWaveFormatEx = packed record // @size 0x12
-    FormatTag: Word; // @offset 0x00
-    Channels: Word; // @offset 0x02
-    SamplesPerSecond: Cardinal; // @offset 0x04
-    AverageBytesPerSecond: Cardinal; // @offset 0x08
-    BlockAlign: Word; // @offset 0x0C
-    BitsPerSample: Word; // @offset 0x0E
-    ExtraSize: Word; // @offset 0x10
-  end;
-  PWaveFormatEx = ^TWaveFormatEx;
-
-  TWaveFileHeader = packed record // @size 0x2C
-    // Uninterpreted RIFF/fmt identifiers and lengths precede these fields.
-    Channels: Word; // @offset 0x16
-    SamplesPerSecond: Cardinal; // @offset 0x18
-    BlockAlign: Word; // @offset 0x20
-    BitsPerSample: Word; // @offset 0x22
-    DataId: Cardinal; // @offset 0x24
-    DataSize: Cardinal; // @offset 0x28
-  end;
 
   TCSoundControlEC = class;
+
   TCSoundEC = class;
 
-  TCSoundControlEC = class(TCacheControlEC) // @size 0x18
-  public
-    procedure QueueLoadIfMissing(PendingLoads: TList); override; // @addr 0x83DDB8 @slot 0x08
-    function CreateData: TCacheDataEC; override; // @addr 0x83DE3C @slot 0x0C
-    function AcquireData: TCacheDataEC; override; // @addr 0x83DE88 @slot 0x10
+  TWaveFormatEx = packed record
+    FormatTag: Word;
+    Channels: Word;
+    SamplesPerSecond: Cardinal;
+    AverageBytesPerSecond: Cardinal;
+    BlockAlign: Word;
+    BitsPerSample: Word;
+    ExtraSize: Word;
   end;
 
-  TCSoundEC = class(TCacheDataEC) // @size 0x3C
-  public
-    Format: TWaveFormatEx; // @offset 0x20
-    SampleData: Pointer; // @offset 0x34
-    SampleDataSize: Cardinal; // @offset 0x38
-
-    constructor Create; // @addr 0x83DEA4 @ida "TCSoundEC *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x83DEE8 @ida "void __usercall $name(TCSoundEC *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure LoadFromConfigBuffer(SourceBuffer: TBufEC; const LoadOption: WideString); override; // @addr 0x83DF38 @slot 0x00 @note "Reads 44 bytes from the current position. Forces PCM without validating RIFF, WAVE or fmt identifiers. If data is absent at header offset 36, scans the whole buffer byte by byte for it. Ignores LoadOption."
+  TWaveFileHeader = packed record
+    Gap0: array[0..21] of Byte;
+    Channels: Word;
+    SamplesPerSecond: Cardinal;
+    Gap1C: array[0..3] of Byte;
+    BlockAlign: Word;
+    BitsPerSample: Word;
+    DataId: Cardinal;
+    DataSize: Cardinal;
   end;
 
-function AcquireCachedSound(Control: TCacheControlEC): TCSoundEC; // @addr 0x83DE5C
+  TCSoundControlEC = class(TCacheControlEC)
+    procedure QueueLoadIfMissing(PendingLoads: TList); override;
+    function CreateData: TCacheDataEC; override;
+    function AcquireData: TCacheDataEC; override;
+  end;
+
+  TCSoundEC = class(TCacheDataEC)
+    Format: TWaveFormatEx;
+    Gap32: array[0..1] of Byte;
+    SampleData: Pointer;
+    SampleDataSize: Cardinal;
+    procedure LoadFromConfigBuffer(SourceBuffer: TBufEC; const LoadOption: WideString); override;
+    constructor Create;
+    destructor Destroy; override;
+  end;
+
+function AcquireCachedSound(Control: TCacheControlEC): TCSoundEC;
 
 implementation
 
-uses EC_Mem, GR_Main, MMSystem;
+uses
+  EC_Mem,
+  GR_Main,
+  MMSystem;
 
 const
   WaveDataChunkId = $61746164; // little-endian 'data'
   WaveChunkHeaderSize = 2 * SizeOf(Cardinal);
 
-{ @routine $83DDB8 TCSoundControlEC_QueueLoadIfMissing }
 procedure TCSoundControlEC.QueueLoadIfMissing(PendingLoads: TList);
 var
   Control: TCSoundControlEC;
 begin
-  if RetainCount > 0 then Exit;
-  if BoundData <> nil then Exit;
-  if HasEmptyCacheKey then Exit;
+  if RetainCount > 0 then
+    Exit;
+  if BoundData <> nil then
+    Exit;
+  if HasEmptyCacheKey then
+    Exit;
   if GlobalCache.FindDataByKeyAndClass(CacheKey, TCSoundEC) = nil then
   begin
     Control := TCSoundControlEC.Create;
@@ -74,37 +87,27 @@ begin
     PendingLoads.Add(Control);
   end;
 end;
-{ @end $83DDB8 }
 
-{ @routine $83DE3C TCSoundControlEC_CreateData }
 function TCSoundControlEC.CreateData: TCacheDataEC;
 begin
   Result := TCSoundEC.Create;
 end;
-{ @end $83DE3C }
 
-{ @routine $83DE5C AcquireCachedSound }
 function AcquireCachedSound(Control: TCacheControlEC): TCSoundEC;
 begin
   Result := Control.AcquireDataFromConfig(TCSoundEC) as TCSoundEC;
 end;
-{ @end $83DE5C }
 
-{ @routine $83DE88 TCSoundControlEC_AcquireData }
 function TCSoundControlEC.AcquireData: TCacheDataEC;
 begin
   Result := AcquireCachedSound(Self);
 end;
-{ @end $83DE88 }
 
-{ @routine $83DEA4 TCSoundEC_Create }
 constructor TCSoundEC.Create;
 begin
   inherited Create;
 end;
-{ @end $83DEA4 }
 
-{ @routine $83DEE8 TCSoundEC_Destroy }
 destructor TCSoundEC.Destroy;
 begin
   if SampleData <> nil then
@@ -114,9 +117,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $83DEE8 }
 
-{ @routine $83DF38 TCSoundEC_LoadFromConfigBuffer }
 procedure TCSoundEC.LoadFromConfigBuffer(SourceBuffer: TBufEC; const LoadOption: WideString);
 var
   Offset: Integer;
@@ -128,10 +129,12 @@ begin
     Offset := 0;
     while SourceBuffer.DataSize - WaveChunkHeaderSize > Offset do
     begin
-      if SourceBuffer.GetUInt32At(Offset) = WaveDataChunkId then Break;
+      if SourceBuffer.GetUInt32At(Offset) = WaveDataChunkId then
+        Break;
       Inc(Offset);
     end;
-    if SourceBuffer.DataSize - WaveChunkHeaderSize <= Offset then RaiseWideMessage('WAVE format');
+    if SourceBuffer.DataSize - WaveChunkHeaderSize <= Offset then
+      RaiseWideMessage('WAVE format');
     Header.DataId := WaveDataChunkId;
     Header.DataSize := SourceBuffer.GetUInt32At(Offset + SizeOf(Header.DataId));
     SourceBuffer.SetPosition(Offset + WaveChunkHeaderSize);
@@ -152,6 +155,5 @@ begin
   SampleData := AllocEC(SampleDataSize);
   SourceBuffer.ReadBytes(SampleData, SampleDataSize);
 end;
-{ @end $83DF38 }
 
 end.

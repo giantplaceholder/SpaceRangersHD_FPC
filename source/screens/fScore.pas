@@ -1,102 +1,142 @@
 unit fScore;
-// Unit bracket (inferred): .text 0x0057B608..0x005836DE; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Buf, GI_MessageLoop, Types, aGalaxyStruct, aPlayer;
+uses
+  Classes,
+  EC_Buf,
+  GI_MessageLoop,
+  Types,
+  aGalaxyStruct,
+  aPlayer;
 
 type
-  TScoreQuestResult = packed record // @size 0x4
-    Successful: Boolean; // @offset 0x0
-    QuestType: TQuestType; // @offset 0x1
-    QuestNumber: Word; // @offset 0x2
+
+  TfScore = class;
+
+  TfScoreUnit = class;
+
+  TScoreQuestResult = packed record
+    Successful: Boolean;
+    QuestType: TQuestType;
+    QuestNumber: Word;
   end;
 
-  TfScoreUnit = class(TObject) // @size 0x7C
-  public
-    VictoryAchieved: Boolean; // @offset 0x04
-    Disqualified: Boolean; // @offset 0x05
-    DifficultyLevels: array[0..7] of Byte; // @offset 0x06
-    DifficultyPercent: Integer; // @offset 0x10
-    PlayerName: WideString; // @offset 0x14
-    PortraitFaceId: Integer; // @offset 0x18
-    PilotRace: Byte; // @offset 0x1C
-    FinishedTurn: Integer; // @offset 0x20
-    Rank: Byte; // @offset 0x24
-    PirateRank: Byte; // @offset 0x25
-    OtherShipKillCount: Integer; // @offset 0x28
-    PirateKillCount: Integer; // @offset 0x2C
-    DominatorKillCount: Integer; // @offset 0x30
-    LiberatedSystemCount: Integer; // @offset 0x34
-    CivilianKillCount: Integer; // @offset 0x38
-    MilitaryKillCount: Integer; // @offset 0x3C
-    RangerKillCount: Integer; // @offset 0x40
-    ArcadeKillCount: Integer; // @offset 0x44
-    AwardCount: Integer; // @offset 0x48  Defaults can have a count without individual IDs.
-    AwardIds: array of Byte; // @offset 0x4C
-    TotalExperience: Integer; // @offset 0x50
-    SkillLevels: array[0..5] of Byte; // @offset 0x54
-    GenerationSeed: Integer; // @offset 0x5C
-    ScoreTags: TBufEC; // @offset 0x60  Owned buffer.
-    QuestResults: array of TScoreQuestResult; // @offset 0x64
-    PlanetBattles: Integer; // @offset 0x68
-    PlanetBattleHistory: array of TPlanetBattleHistoryEntry; // @offset 0x6C
-    BlazerEndingState: Byte; // @offset 0x70
-    KellerEndingState: Byte; // @offset 0x71
-    TerronEndingState: Byte; // @offset 0x72
-    PirateEndingState: Byte; // @offset 0x73
-    TotalScore: Integer; // @offset 0x74
-    Exported: Boolean; // @offset 0x78  Session-only; not serialized.
-
-    constructor Create; // @addr 0x57B77C @ida "TfScoreUnit *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x57B7D0 @ida "void __usercall $name(TfScoreUnit *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure CapturePlayer(Victory: Boolean); // @addr 0x57B80C @note "Also checks end-game achievements and submits eligible victories through the Steam score callback."
-    procedure RecalculateDifficultyPercent; // @addr 0x57BE28
-    procedure RecalculateTotalScore; // @addr 0x57BE80 @note "Defeats score zero. Victories use experience, difficulty, elapsed years and ending-resolution penalties; Disqualified does not suppress the local score."
-    procedure SaveToBuffer(Buffer: TBufEC); // @addr 0x57BFF0 @note "Writes entry marker 205. PortraitFaceId and quest numbers are truncated to bytes; separate civilian/military/ranger kill counts are not saved."
-    procedure LoadFromBuffer(Buffer: TBufEC; FileVersion: Integer); // @addr 0x57C374 @note "Recalculates TotalScore. An unexpected entry marker resets the registered score screen to defaults."
-    procedure ExportToFile(FileName: WideString); // @addr 0x57C7F0 @note "Writes readable statistics and a protected payload; overwrites the destination."
+  TfScoreUnit = class(TObject)
+    VictoryAchieved: Boolean;
+    Disqualified: Boolean;
+    DifficultyLevels: array[0..7] of Byte;
+    GapE: array[0..1] of Byte;
+    DifficultyPercent: Integer;
+    PlayerName: WideString;
+    PortraitFaceId: Integer;
+    PilotRace: Byte;
+    Gap1D: array[0..2] of Byte;
+    FinishedTurn: Integer;
+    Rank: Byte;
+    PirateRank: Byte;
+    Gap26: array[0..1] of Byte;
+    OtherShipKillCount: Integer;
+    PirateKillCount: Integer;
+    DominatorKillCount: Integer;
+    LiberatedSystemCount: Integer;
+    CivilianKillCount: Integer;
+    MilitaryKillCount: Integer;
+    RangerKillCount: Integer;
+    ArcadeKillCount: Integer;
+    AwardCount: Integer;
+    AwardIds: array of Byte;
+    TotalExperience: Integer;
+    SkillLevels: array[0..5] of Byte;
+    Gap5A: array[0..1] of Byte;
+    GenerationSeed: Integer;
+    ScoreTags: TBufEC;
+    QuestResults: array of TScoreQuestResult;
+    PlanetBattles: Integer;
+    PlanetBattleHistory: array of TPlanetBattleHistoryEntry;
+    BlazerEndingState: Byte;
+    KellerEndingState: Byte;
+    TerronEndingState: Byte;
+    PirateEndingState: Byte;
+    TotalScore: Integer;
+    Exported: Boolean;
+    Gap79: array[0..2] of Byte;
+    constructor Create;
+    destructor Destroy; override;
+    procedure CapturePlayer(Victory: Boolean);
+    procedure RecalculateDifficultyPercent;
+    procedure RecalculateTotalScore;
+    procedure SaveToBuffer(Buffer: TBufEC);
+    procedure LoadFromBuffer(Buffer: TBufEC; FileVersion: Integer);
+    procedure ExportToFile(FileName: WideString);
   end;
 
-  TfScore = class(TMessageLoopGI) // @size 0xD8
-  public
-    Entries: TList; // @offset 0xD0  Owned TfScoreUnit objects; table capacity is 11.
-    SelectedIndex: Integer; // @offset 0xD4
-
-    constructor Create; // @addr 0x57ECD4 @ida "TfScore *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x57ED2C @ida "void __usercall $name(TfScore *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure InitializeLayout; override; // @addr 0x57ED74 @slot 0x30
-    procedure OnOpen; override; // @addr 0x57EFF0 @slot 0x1C @note "Releases the active galaxy and memory save snapshot."
-    procedure OnClose; override; // @addr 0x57FE0C @slot 0x20
-    procedure SelectMusic; override; // @addr 0x5836C4 @slot 0x28
-    procedure SortAndTrimEntries; // @addr 0x57D1BC @note "Keeps 11 entries. Equal-score comparison only favors an earlier finish when candidate difficulty is at least the incumbent's; this is not a lexicographic comparison."
-    procedure InitializeDefaultEntry(Index: Integer; var Entry: TfScoreUnit); // @addr 0x57D2C4 @note "Index must be 0..10; Entry must already be allocated."
-    procedure CreateDefaultTable; // @addr 0x57E2FC
-    procedure RecordPlayerResult(Victory: Boolean); // @addr 0x57E358 @note "Reloads the table. Matches an existing run by score and generation seed; otherwise replaces the last entry, sorts by score alone, and tracks its selection. Saves immediately."
-    procedure RemoveSelectedEntryAndRefill; // @addr 0x57E5A4 @note "Also removes every entry with an empty ScoreTags buffer; surviving entries are mixed with defaults and trimmed to 11. Does not save."
-    procedure ClearEntries; // @addr 0x57E6A8
-    procedure LoadTableFromDisk; // @addr 0x57E704 @note "Appends to Entries; the caller must clear it first. Reads file version 2 and verifies its checksum."
-    procedure ReloadTable; // @addr 0x57E9C4 @note "Clears Entries, loads score.dat when present, otherwise creates defaults."
-    procedure SaveTableToDisk; // @addr 0x57EA70 @note "Replaces the table with defaults if its count is not 11."
-    procedure EntryMouseEnter(Sender: TObjectGI); // @addr 0x57FE98
-    procedure EntryMouseLeave(Sender: TObjectGI); // @addr 0x580040
-    procedure DeleteEntryClicked(Sender: TObjectGI); // @addr 0x5801E8
-    procedure ClearTableClicked(Sender: TObjectGI); // @addr 0x580374
-    procedure CloseClicked(Sender: TObjectGI); // @addr 0x5804A4
-    procedure KeyDown(Sender: TObjectGI; Key: Cardinal); // @addr 0x5804DC
-    procedure RefreshDetails; // @addr 0x580610
-    procedure EntryMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint); // @addr 0x583278 @ida "void __userpurge $name(TfScore *Self@<eax>, TObjectGI *Sender@<edx>, unsigned int KeyState@<ecx>, TPoint *Point@<^0>);"
-    procedure ExportEntryClicked(Sender: TObjectGI); // @addr 0x583300 @note "Exports ToServerNN.txt and also submits an eligible score through the Steam callback when available."
-    procedure QuestHelpMouseEnter(Sender: TObjectGI); // @addr 0x583610
-    procedure QuestHelpMouseLeave(Sender: TObjectGI); // @addr 0x583630
-    procedure ShowControlHelp(Sender: TObjectGI; Visible: Boolean); // @addr 0x583650
+  TfScore = class(TMessageLoopGI)
+    Entries: TList;
+    SelectedIndex: Integer;
+    procedure OnOpen; override;
+    procedure OnClose; override;
+    procedure SelectMusic; override;
+    procedure InitializeLayout; override;
+    procedure SortAndTrimEntries;
+    procedure InitializeDefaultEntry(Index: Integer; var Entry: TfScoreUnit);
+    procedure CreateDefaultTable;
+    procedure RecordPlayerResult(Victory: Boolean);
+    procedure RemoveSelectedEntryAndRefill;
+    procedure ClearEntries;
+    procedure LoadTableFromDisk;
+    procedure ReloadTable;
+    procedure SaveTableToDisk;
+    constructor Create;
+    destructor Destroy; override;
+    procedure EntryMouseEnter(Sender: TObjectGI);
+    procedure EntryMouseLeave(Sender: TObjectGI);
+    procedure DeleteEntryClicked(Sender: TObjectGI);
+    procedure ClearTableClicked(Sender: TObjectGI);
+    procedure CloseClicked(Sender: TObjectGI);
+    procedure KeyDown(Sender: TObjectGI; Key: Cardinal);
+    procedure RefreshDetails;
+    procedure EntryMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
+    procedure ExportEntryClicked(Sender: TObjectGI);
+    procedure QuestHelpMouseEnter(Sender: TObjectGI);
+    procedure QuestHelpMouseLeave(Sender: TObjectGI);
+    procedure ShowControlHelp(Sender: TObjectGI; Visible: Boolean);
   end;
 
 implementation
 
-uses aKling, SysUtils, Windows, Math, EC_File, EC_Str, GR_Main, GlobalsV, Globals,
-  aGalaxy, SimpleSteamApi, aConst, aMyFunction, aRanger, aShip, Achievements,
-  GI_GraphButton, GI_Image, GI_Label, GI_Panel, GI_MessageBox, aSaveLoad, GI_GAI, ExceptionInfo;
+uses
+  GI_Main,
+  aKling,
+  SysUtils,
+  Windows,
+  Math,
+  EC_File,
+  EC_Str,
+  GR_Main,
+  GlobalsV,
+  Globals,
+  aGalaxy,
+  SimpleSteamApi,
+  aConst,
+  aMyFunction,
+  aRanger,
+  aShip,
+  Achievements,
+  GI_GraphButton,
+  GI_Image,
+  GI_Label,
+  GI_Panel,
+  GI_MessageBox,
+  aSaveLoad,
+  GI_GAI,
+  ExceptionInfo;
 
 // Preserve evaluation of the localized template before the turn clamp, and
 // the separate managed temporary retained by the native compiler.
@@ -106,28 +146,26 @@ var
   Template: WideString;
 begin
   Template := LocalizedColorText('FormScore.TurnWin');
-  if Entry.FinishedTurn - 300 < 0 then Turns := 0 else Turns := Entry.FinishedTurn - 300;
-  (Screen.GetByName('ITurn') as TLabelGI).SetText(FormatText1(Template,
-    '<color=255,222,0>', '<Date>', WideString(IntToStr(Turns))));
+  if Entry.FinishedTurn - 300 < 0 then
+    Turns := 0
+  else
+    Turns := Entry.FinishedTurn - 300;
+  (Screen.GetByName('ITurn') as TLabelGI)
+      .SetText(FormatText1(Template, '<color=255,222,0>', '<Date>', WideString(IntToStr(Turns))));
 end;
 
-{ @routine $57B77C TfScoreUnit_Create }
 constructor TfScoreUnit.Create;
 begin
   inherited Create;
   ScoreTags := TBufEC.Create;
 end;
-{ @end $57B77C }
 
-{ @routine $57B7D0 TfScoreUnit_Destroy }
 destructor TfScoreUnit.Destroy;
 begin
   ScoreTags.Free;
   inherited Destroy;
 end;
-{ @end $57B7D0 }
 
-{ @routine $57B80C TfScoreUnit_CapturePlayer }
 procedure TfScoreUnit.CapturePlayer(Victory: Boolean);
 type
   TScoreKillCounters = array[0..6] of Integer;
@@ -151,9 +189,15 @@ begin
   PlayerName := GetPlayer.Name;
   PortraitFaceId := GetPlayer.PortraitFaceId;
   PilotRace := GetPlayer.PilotRace;
-  for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do DifficultyLevels[Difficulty] := Galaxy.DifficultyLevels[Difficulty];
-  Disqualified := GR_Main.CCInterface.GetTamperDetected or GR_Main.CCInterface.GetFlag0A or GR_Main.CCInterface.GetEditableStateApplied or
-    Galaxy.CustomRules.Enabled or (GR_Main.CCInterface.GetIntegrityError <> 0) or (Galaxy.GetCheatPoints <> 0);
+  for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do
+    DifficultyLevels[Difficulty] := Galaxy.DifficultyLevels[Difficulty];
+  Disqualified :=
+      GR_Main.CCInterface.GetTamperDetected
+          or GR_Main.CCInterface.GetFlag0A
+          or GR_Main.CCInterface.GetEditableStateApplied
+          or Galaxy.CustomRules.Enabled
+          or (GR_Main.CCInterface.GetIntegrityError <> 0)
+          or (Galaxy.GetCheatPoints <> 0);
   FinishedTurn := Galaxy.CurrentTurn;
   Rank := GetPlayer.Rank;
   PirateRank := GetPlayer.PirateRank;
@@ -161,7 +205,8 @@ begin
   PScoreCounterView(Self).Counters := PShipCounterView(GetPlayer).Counters;
   OtherShipKillCount := OtherShipKillCount - PirateKillCount - DominatorKillCount;
   ArcadeKillCount := GetPlayer.HyperspaceKillCount + GetPlayer.BlackHoleKillCount;
-  if GetPlayer.AwardIds = nil then AwardCount := 0
+  if GetPlayer.AwardIds = nil then
+    AwardCount := 0
   else
   begin
     AwardCount := GetPlayer.AwardIds.Count;
@@ -173,9 +218,11 @@ begin
     end;
   end;
   TotalExperience := GetPlayer.TotalExperience;
-  for Skill := Low(TPilotSkill) to High(TPilotSkill) do SkillLevels[Ord(Skill)] := GetPlayer.GetBaseSkillLevel(Skill);
+  for Skill := Low(TPilotSkill) to High(TPilotSkill) do
+    SkillLevels[Ord(Skill)] := GetPlayer.GetBaseSkillLevel(Skill);
   ScoreTags.Clear;
-  if GR_Main.CCInterface.Buffer.DataSize > 0 then ScoreTags.AddBytes(GR_Main.CCInterface.Buffer.Data, GR_Main.CCInterface.Buffer.DataSize);
+  if GR_Main.CCInterface.Buffer.DataSize > 0 then
+    ScoreTags.AddBytes(GR_Main.CCInterface.Buffer.Data, GR_Main.CCInterface.Buffer.DataSize);
   GenerationSeed := Galaxy.GenerationSeed;
   SetLength(QuestResults, PlayerOldQuests.Count);
   for I := 0 to PlayerOldQuests.Count - 1 do
@@ -187,34 +234,56 @@ begin
   end;
   PlanetBattles := GetPlayer.PlanetBattles;
   SetLength(PlanetBattleHistory, High(GetPlayer.PlanetBattleHistory) + 1);
-  for I := 0 to High(GetPlayer.PlanetBattleHistory) do PlanetBattleHistory[I] := GetPlayer.PlanetBattleHistory[I];
-  if Galaxy.BlazerSeriesResolvedTurn = 0 then BlazerEndingState := 0
-  else if (Galaxy.BlazerLandingPlanetId <> 0) and (BlazerShip <> nil) then BlazerEndingState := 3
-  else if Galaxy.BlazerSelfDestructTurn <> 0 then BlazerEndingState := 2
-  else BlazerEndingState := 1;
+  for I := 0 to High(GetPlayer.PlanetBattleHistory) do
+    PlanetBattleHistory[I] := GetPlayer.PlanetBattleHistory[I];
+  if Galaxy.BlazerSeriesResolvedTurn = 0 then
+    BlazerEndingState := 0
+  else if (Galaxy.BlazerLandingPlanetId <> 0) and (BlazerShip <> nil) then
+    BlazerEndingState := 3
+  else if Galaxy.BlazerSelfDestructTurn <> 0 then
+    BlazerEndingState := 2
+  else
+    BlazerEndingState := 1;
   if CurrentScreenId = screenArcadeBattle then
   begin
-    if Galaxy.KellerLeaveTurn <> 0 then KellerEndingState := 2
-    else if KellerShip = nil then KellerEndingState := 1
-    else KellerEndingState := 0;
+    if Galaxy.KellerLeaveTurn <> 0 then
+      KellerEndingState := 2
+    else if KellerShip = nil then
+      KellerEndingState := 1
+    else
+      KellerEndingState := 0;
   end
   else
   begin
-    if Galaxy.KellerSeriesResolvedTurn = 0 then KellerEndingState := 0
-    else if Galaxy.KellerLeaveTurn <> 0 then KellerEndingState := 2
-    else if Galaxy.KellerResearchTargetStarId <> 0 then KellerEndingState := 3
-    else KellerEndingState := 1;
+    if Galaxy.KellerSeriesResolvedTurn = 0 then
+      KellerEndingState := 0
+    else if Galaxy.KellerLeaveTurn <> 0 then
+      KellerEndingState := 2
+    else if Galaxy.KellerResearchTargetStarId <> 0 then
+      KellerEndingState := 3
+    else
+      KellerEndingState := 1;
   end;
-  if Galaxy.TerronSeriesResolvedTurn = 0 then TerronEndingState := 0
-  else if Galaxy.TerronToStarTurn <> 0 then TerronEndingState := 2
-  else if Galaxy.TerronLandingLockTurn <> 0 then TerronEndingState := 3
-  else TerronEndingState := 1;
-  if Galaxy.PirateWinTurn = 0 then PirateEndingState := 0
-  else PirateEndingState := Byte(Galaxy.PirateWinType);
+  if Galaxy.TerronSeriesResolvedTurn = 0 then
+    TerronEndingState := 0
+  else if Galaxy.TerronToStarTurn <> 0 then
+    TerronEndingState := 2
+  else if Galaxy.TerronLandingLockTurn <> 0 then
+    TerronEndingState := 3
+  else
+    TerronEndingState := 1;
+  if Galaxy.PirateWinTurn = 0 then
+    PirateEndingState := 0
+  else
+    PirateEndingState := Byte(Galaxy.PirateWinType);
   VictoryAchieved := Victory;
   RecalculateTotalScore;
-  if VictoryAchieved and not GR_Main.CCInterface.GetTamperDetected and not GR_Main.CCInterface.GetFlag0A and not GR_Main.CCInterface.GetEditableStateApplied and
-    (GR_Main.CCInterface.GetIntegrityError = 0) and (Galaxy.GetCheatPoints = 0) then
+  if VictoryAchieved
+      and not GR_Main.CCInterface.GetTamperDetected
+      and not GR_Main.CCInterface.GetFlag0A
+      and not GR_Main.CCInterface.GetEditableStateApplied
+      and (GR_Main.CCInterface.GetIntegrityError = 0)
+      and (Galaxy.GetCheatPoints = 0) then
   begin
     GetPlayer.AchievementStats.CheckNoQuestVictoryAchievement;
     GetPlayer.AchievementStats.CheckChampionVictoryAchievement(TotalScore);
@@ -222,22 +291,21 @@ begin
     GetPlayer.AchievementStats.CheckPacifistVictoryAchievement;
     GetPlayer.AchievementStats.CheckNoLoadVictoryAchievement;
     GetPlayer.AchievementStats.CheckFastVictoryAchievement;
-    if SteamInitialized and SteamLeaderboardFound then SteamUploadScore(TotalScore);
+    if SteamInitialized and SteamLeaderboardFound then
+      SteamUploadScore(TotalScore);
   end;
 end;
-{ @end $57B80C }
 
-{ @routine $57BE28 TfScoreUnit_RecalculateDifficultyPercent }
 procedure TfScoreUnit.RecalculateDifficultyPercent;
-var I: Byte;
+var
+  I: Byte;
 begin
   DifficultyPercent := 0;
-  for I := 0 to 7 do DifficultyPercent := DifficultyPercent + 50 * DifficultyLevels[I] + 50;
+  for I := 0 to 7 do
+    DifficultyPercent := DifficultyPercent + 50 * DifficultyLevels[I] + 50;
   DifficultyPercent := DifficultyPercent div 8;
 end;
-{ @end $57BE28 }
 
-{ @routine $57BE80 TfScoreUnit_RecalculateTotalScore }
 procedure TfScoreUnit.RecalculateTotalScore;
 var
   Experience, Difficulty: Extended;
@@ -248,19 +316,22 @@ begin
   Difficulty := DifficultyPercent;
   if VictoryAchieved then
   begin
-    TotalScore := Round(Experience * Difficulty / 100 / Power(Max(7, (FinishedTurn - 300) / 365), 1.3));
-    DominatorsResolved := (TerronEndingState <> 0) and (KellerEndingState <> 0) and (BlazerEndingState <> 0);
+    TotalScore :=
+        Round(Experience * Difficulty / 100 / Power(Max(7, (FinishedTurn - 300) / 365), 1.3));
+    DominatorsResolved :=
+        (TerronEndingState <> 0) and (KellerEndingState <> 0) and (BlazerEndingState <> 0);
     PirateResolved := (PirateRank >= 7) or (PirateEndingState = 3);
     PirateDefeat := PirateEndingState = 4;
     if (DominatorsResolved = False) or (PirateDefeat <> False) then
-      if PirateResolved or DominatorsResolved then TotalScore := Floor(TotalScore * 0.75)
-      else TotalScore := TotalScore div 2;
+      if PirateResolved or DominatorsResolved then
+        TotalScore := Floor(TotalScore * 0.75)
+      else
+        TotalScore := TotalScore div 2;
   end
-  else TotalScore := 0;
+  else
+    TotalScore := 0;
 end;
-{ @end $57BE80 }
 
-{ @routine $57BFF0 TfScoreUnit_SaveToBuffer }
 procedure TfScoreUnit.SaveToBuffer(Buffer: TBufEC);
 var
   Skill: Byte;
@@ -269,7 +340,8 @@ var
 begin
   Buffer.AddIntegerValue(205);
   Buffer.AddBoolean(VictoryAchieved);
-  for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do Buffer.AddAnsiChar(AnsiChar(DifficultyLevels[Difficulty]));
+  for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do
+    Buffer.AddAnsiChar(AnsiChar(DifficultyLevels[Difficulty]));
   Buffer.AddWideStringZ(PlayerName);
   Buffer.AddAnsiChar(AnsiChar(PortraitFaceId));
   Buffer.AddAnsiChar(AnsiChar(PilotRace));
@@ -283,9 +355,11 @@ begin
   Buffer.AddIntegerValue(ArcadeKillCount);
   Buffer.AddIntegerValue(AwardCount);
   Buffer.AddIntegerValue(High(AwardIds) + 1);
-  for I := 0 to High(AwardIds) do Buffer.AddAnsiChar(AnsiChar(AwardIds[I]));
+  for I := 0 to High(AwardIds) do
+    Buffer.AddAnsiChar(AnsiChar(AwardIds[I]));
   Buffer.AddIntegerValue(TotalExperience);
-  for Skill := 0 to 5 do Buffer.AddAnsiChar(AnsiChar(SkillLevels[Skill]));
+  for Skill := 0 to 5 do
+    Buffer.AddAnsiChar(AnsiChar(SkillLevels[Skill]));
   Buffer.AddBoolean(Disqualified);
   Buffer.AddBuffer(ScoreTags);
   Buffer.AddIntegerValue(GenerationSeed);
@@ -316,9 +390,7 @@ begin
     Buffer.AddIntegerValue(PlanetBattleHistory[I].DateTurn);
   end;
 end;
-{ @end $57BFF0 }
 
-{ @routine $57C374 TfScoreUnit_LoadFromBuffer }
 procedure TfScoreUnit.LoadFromBuffer(Buffer: TBufEC; FileVersion: Integer);
 var
   Skill: Byte;
@@ -327,11 +399,13 @@ var
   Marker: Integer;
 begin
   Marker := Buffer.GetInt32;
-  if (Marker < 205) or (Marker > 205) then ScoreScreen.CreateDefaultTable
+  if (Marker < 205) or (Marker > 205) then
+    ScoreScreen.CreateDefaultTable
   else
   begin
     VictoryAchieved := Buffer.GetBoolean;
-    for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do DifficultyLevels[Difficulty] := Buffer.GetByte;
+    for Difficulty := Low(DifficultyLevels) to High(DifficultyLevels) do
+      DifficultyLevels[Difficulty] := Buffer.GetByte;
     PlayerName := Buffer.ReadWideString;
     PortraitFaceId := Buffer.GetByte;
     PilotRace := Buffer.GetByte;
@@ -346,9 +420,11 @@ begin
     AwardCount := Buffer.GetInt32;
     Count := Buffer.GetInt32;
     SetLength(AwardIds, Count);
-    for I := 0 to Count - 1 do AwardIds[I] := Buffer.GetByte;
+    for I := 0 to Count - 1 do
+      AwardIds[I] := Buffer.GetByte;
     TotalExperience := Buffer.GetInt32;
-    for Skill := 0 to 5 do SkillLevels[Skill] := Buffer.GetByte;
+    for Skill := 0 to 5 do
+      SkillLevels[Skill] := Buffer.GetByte;
     if FileVersion < 1 then
     begin
       Disqualified := False;
@@ -396,9 +472,7 @@ begin
     RecalculateTotalScore;
   end;
 end;
-{ @end $57C374 }
 
-{ @routine $57C7F0 TfScoreUnit_ExportToFile }
 procedure TfScoreUnit.ExportToFile(FileName: WideString);
 var
   Text: WideString;
@@ -424,14 +498,17 @@ begin
   Text := Text + 'SkillTechnical=' + WideString(IntToStr(SkillLevels[2])) + #13#10;
   Text := Text + 'SkillTrader=' + WideString(IntToStr(SkillLevels[3])) + #13#10;
   Text := Text + 'SkillCharm=' + WideString(IntToStr(SkillLevels[4])) + #13#10;
-  Text := Text + 'SkillLeadership=' + WideString(IntToStr(SkillLevels[5])) + #13#10 + #13#10 + #13#10;
+  Text :=
+      Text + 'SkillLeadership=' + WideString(IntToStr(SkillLevels[5])) + #13#10 + #13#10 + #13#10;
   Text := Text + '*************** Protect database ****************' + #13#10 + #13#10;
   Buffer := TBufEC.Create;
   Encoded := TBufEC.Create;
   Seed := RandomIntRange(0, 2000000000);
   SaveToBuffer(Buffer);
-  if SteamInitialized then Buffer.AddAnsiStringZ(IntToStr(SteamUserId))
-  else Buffer.AddAnsiStringZ(IntToStr(0));
+  if SteamInitialized then
+    Buffer.AddAnsiStringZ(IntToStr(SteamUserId))
+  else
+    Buffer.AddAnsiStringZ(IntToStr(0));
   Buffer.CompressZlibPayloadInPlace(False);
   Buffer.ApplyDatXorCipher(Seed);
   Encoded.AddIntegerValue(3);
@@ -445,7 +522,8 @@ begin
   for I := 0 to Encoded.DataSize - 1 do
   begin
     Buffer.AddAnsiStringRaw(AnsiString(' ' + ByteToHexText(Data^)));
-    if I and $0F = $0F then Buffer.AddAnsiStringRaw(#13#10);
+    if I and $0F = $0F then
+      Buffer.AddAnsiStringRaw(#13#10);
     Data := PByte(PAnsiChar(Data) + 1);
   end;
   AnsiText := AnsiString(Text);
@@ -461,24 +539,47 @@ begin
   Buffer.Free;
   Encoded.Free;
 end;
-{ @end $57C7F0 }
 
-{ @routine $57D1BC TfScore_SortAndTrimEntries }
 procedure TfScore.SortAndTrimEntries;
 var
   Candidate, Current: TfScoreUnit;
   Last: TObject;
   I, Count, J: Integer;
-  // @nested $57D10C ShouldSwapScoreEntries
-  function ShouldSwapScoreEntries: Boolean; // @addr 0x57D10C @ida "bool __cdecl $name(void *ParentFrame);" @note "Nested in TfScore.SortAndTrimEntries; requires its parent frame."
+
+  function ShouldSwapScoreEntries:
+      Boolean; { Nested in TfScore.SortAndTrimEntries; requires its parent frame. }
   begin
-    if Candidate.TotalScore < Current.TotalScore then begin Result := False; Exit; end;
-    if Candidate.TotalScore > Current.TotalScore then begin Result := True; Exit; end;
-    if Candidate.DifficultyPercent < Current.DifficultyPercent then begin Result := False; Exit; end;
+    if Candidate.TotalScore < Current.TotalScore then
+    begin
+      Result := False;
+      Exit;
+    end;
+    if Candidate.TotalScore > Current.TotalScore then
+    begin
+      Result := True;
+      Exit;
+    end;
+    if Candidate.DifficultyPercent < Current.DifficultyPercent then
+    begin
+      Result := False;
+      Exit;
+    end;
     // Repeated '<' is present in the native comparator, including the dormant branch.
-    if Candidate.DifficultyPercent < Current.DifficultyPercent then begin Result := True; Exit; end;
-    if Candidate.FinishedTurn > Current.FinishedTurn then begin Result := False; Exit; end;
-    if Candidate.FinishedTurn < Current.FinishedTurn then begin Result := True; Exit; end;
+    if Candidate.DifficultyPercent < Current.DifficultyPercent then
+    begin
+      Result := True;
+      Exit;
+    end;
+    if Candidate.FinishedTurn > Current.FinishedTurn then
+    begin
+      Result := False;
+      Exit;
+    end;
+    if Candidate.FinishedTurn < Current.FinishedTurn then
+    begin
+      Result := True;
+      Exit;
+    end;
     Result := False;
   end;
 begin
@@ -501,9 +602,7 @@ begin
     Entries.Delete(Entries.Count - 1);
   end;
 end;
-{ @end $57D1BC }
 
-{ @routine $57D2C4 TfScore_InitializeDefaultEntry }
 procedure TfScore.InitializeDefaultEntry(Index: Integer; var Entry: TfScoreUnit);
 var
   Count, I: Integer;
@@ -512,406 +611,417 @@ var
 begin
   case Index of
     0:
-      begin
-        Entry.PortraitFaceId := 0;
-        Entry.DifficultyLevels[0] := 3;
-        Entry.DifficultyLevels[1] := 3;
-        Entry.DifficultyLevels[2] := 3;
-        Entry.DifficultyLevels[3] := 3;
-        Entry.DifficultyLevels[4] := 3;
-        Entry.DifficultyLevels[5] := 3;
-        Entry.DifficultyLevels[6] := 3;
-        Entry.DifficultyLevels[7] := 3;
-        Entry.FinishedTurn := 5600;
-        Entry.OtherShipKillCount := 34;
-        Entry.PirateKillCount := 50;
-        Entry.DominatorKillCount := 170;
-        Entry.ArcadeKillCount := 27;
-        Entry.LiberatedSystemCount := 15;
-        Entry.AwardCount := 14;
-        Entry.TotalExperience := 100000;
-        Entry.SkillLevels[0] := 4;
-        Entry.SkillLevels[1] := 5;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 5;
-        Entry.SkillLevels[4] := 5;
-        Entry.SkillLevels[5] := 5;
-        QuestCounts[Ord(qtSendLetter)] := 20;
-        QuestCounts[Ord(qtKillShip)] := 5;
-        QuestCounts[Ord(qtPlanetQuest)] := 30;
-        QuestCounts[Ord(qtDefendSystem)] := 8;
-        QuestCounts[Ord(qtDefendShip)] := 12;
-        Entry.PlanetBattles := 7;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 3;
-        Entry.KellerEndingState := 2;
-        Entry.TerronEndingState := 2;
-      end;
+    begin
+      Entry.PortraitFaceId := 0;
+      Entry.DifficultyLevels[0] := 3;
+      Entry.DifficultyLevels[1] := 3;
+      Entry.DifficultyLevels[2] := 3;
+      Entry.DifficultyLevels[3] := 3;
+      Entry.DifficultyLevels[4] := 3;
+      Entry.DifficultyLevels[5] := 3;
+      Entry.DifficultyLevels[6] := 3;
+      Entry.DifficultyLevels[7] := 3;
+      Entry.FinishedTurn := 5600;
+      Entry.OtherShipKillCount := 34;
+      Entry.PirateKillCount := 50;
+      Entry.DominatorKillCount := 170;
+      Entry.ArcadeKillCount := 27;
+      Entry.LiberatedSystemCount := 15;
+      Entry.AwardCount := 14;
+      Entry.TotalExperience := 100000;
+      Entry.SkillLevels[0] := 4;
+      Entry.SkillLevels[1] := 5;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 5;
+      Entry.SkillLevels[4] := 5;
+      Entry.SkillLevels[5] := 5;
+      QuestCounts[Ord(qtSendLetter)] := 20;
+      QuestCounts[Ord(qtKillShip)] := 5;
+      QuestCounts[Ord(qtPlanetQuest)] := 30;
+      QuestCounts[Ord(qtDefendSystem)] := 8;
+      QuestCounts[Ord(qtDefendShip)] := 12;
+      Entry.PlanetBattles := 7;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 3;
+      Entry.KellerEndingState := 2;
+      Entry.TerronEndingState := 2;
+    end;
     1:
-      begin
-        Entry.PortraitFaceId := 9;
-        Entry.DifficultyLevels[0] := 3;
-        Entry.DifficultyLevels[1] := 3;
-        Entry.DifficultyLevels[2] := 2;
-        Entry.DifficultyLevels[3] := 2;
-        Entry.DifficultyLevels[4] := 2;
-        Entry.DifficultyLevels[5] := 2;
-        Entry.DifficultyLevels[6] := 2;
-        Entry.DifficultyLevels[7] := 2;
-        Entry.FinishedTurn := 6000;
-        Entry.OtherShipKillCount := 12;
-        Entry.PirateKillCount := 95;
-        Entry.DominatorKillCount := 280;
-        Entry.ArcadeKillCount := 22;
-        Entry.LiberatedSystemCount := 13;
-        Entry.AwardCount := 11;
-        Entry.TotalExperience := 90000;
-        Entry.SkillLevels[0] := 5;
-        Entry.SkillLevels[1] := 5;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 5;
-        Entry.SkillLevels[4] := 3;
-        Entry.SkillLevels[5] := 4;
-        QuestCounts[Ord(qtSendLetter)] := 18;
-        QuestCounts[Ord(qtKillShip)] := 2;
-        QuestCounts[Ord(qtPlanetQuest)] := 28;
-        QuestCounts[Ord(qtDefendSystem)] := 8;
-        QuestCounts[Ord(qtDefendShip)] := 2;
-        Entry.PlanetBattles := 6;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 2;
-        Entry.KellerEndingState := 2;
-        Entry.TerronEndingState := 2;
-      end;
+    begin
+      Entry.PortraitFaceId := 9;
+      Entry.DifficultyLevels[0] := 3;
+      Entry.DifficultyLevels[1] := 3;
+      Entry.DifficultyLevels[2] := 2;
+      Entry.DifficultyLevels[3] := 2;
+      Entry.DifficultyLevels[4] := 2;
+      Entry.DifficultyLevels[5] := 2;
+      Entry.DifficultyLevels[6] := 2;
+      Entry.DifficultyLevels[7] := 2;
+      Entry.FinishedTurn := 6000;
+      Entry.OtherShipKillCount := 12;
+      Entry.PirateKillCount := 95;
+      Entry.DominatorKillCount := 280;
+      Entry.ArcadeKillCount := 22;
+      Entry.LiberatedSystemCount := 13;
+      Entry.AwardCount := 11;
+      Entry.TotalExperience := 90000;
+      Entry.SkillLevels[0] := 5;
+      Entry.SkillLevels[1] := 5;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 5;
+      Entry.SkillLevels[4] := 3;
+      Entry.SkillLevels[5] := 4;
+      QuestCounts[Ord(qtSendLetter)] := 18;
+      QuestCounts[Ord(qtKillShip)] := 2;
+      QuestCounts[Ord(qtPlanetQuest)] := 28;
+      QuestCounts[Ord(qtDefendSystem)] := 8;
+      QuestCounts[Ord(qtDefendShip)] := 2;
+      Entry.PlanetBattles := 6;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 2;
+      Entry.KellerEndingState := 2;
+      Entry.TerronEndingState := 2;
+    end;
     2:
-      begin
-        Entry.PortraitFaceId := 11;
-        Entry.DifficultyLevels[0] := 2;
-        Entry.DifficultyLevels[1] := 2;
-        Entry.DifficultyLevels[2] := 2;
-        Entry.DifficultyLevels[3] := 2;
-        Entry.DifficultyLevels[4] := 2;
-        Entry.DifficultyLevels[5] := 2;
-        Entry.DifficultyLevels[6] := 2;
-        Entry.DifficultyLevels[7] := 2;
-        Entry.FinishedTurn := 6500;
-        Entry.OtherShipKillCount := 50;
-        Entry.PirateKillCount := 46;
-        Entry.DominatorKillCount := 308;
-        Entry.ArcadeKillCount := 66;
-        Entry.LiberatedSystemCount := 8;
-        Entry.AwardCount := 7;
-        Entry.TotalExperience := 85000;
-        Entry.SkillLevels[0] := 5;
-        Entry.SkillLevels[1] := 5;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 3;
-        Entry.SkillLevels[4] := 3;
-        Entry.SkillLevels[5] := 5;
-        QuestCounts[Ord(qtSendLetter)] := 14;
-        QuestCounts[Ord(qtKillShip)] := 18;
-        QuestCounts[Ord(qtPlanetQuest)] := 26;
-        QuestCounts[Ord(qtDefendSystem)] := 11;
-        QuestCounts[Ord(qtDefendShip)] := 14;
-        Entry.PlanetBattles := 11;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 1;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 1;
-      end;
+    begin
+      Entry.PortraitFaceId := 11;
+      Entry.DifficultyLevels[0] := 2;
+      Entry.DifficultyLevels[1] := 2;
+      Entry.DifficultyLevels[2] := 2;
+      Entry.DifficultyLevels[3] := 2;
+      Entry.DifficultyLevels[4] := 2;
+      Entry.DifficultyLevels[5] := 2;
+      Entry.DifficultyLevels[6] := 2;
+      Entry.DifficultyLevels[7] := 2;
+      Entry.FinishedTurn := 6500;
+      Entry.OtherShipKillCount := 50;
+      Entry.PirateKillCount := 46;
+      Entry.DominatorKillCount := 308;
+      Entry.ArcadeKillCount := 66;
+      Entry.LiberatedSystemCount := 8;
+      Entry.AwardCount := 7;
+      Entry.TotalExperience := 85000;
+      Entry.SkillLevels[0] := 5;
+      Entry.SkillLevels[1] := 5;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 3;
+      Entry.SkillLevels[4] := 3;
+      Entry.SkillLevels[5] := 5;
+      QuestCounts[Ord(qtSendLetter)] := 14;
+      QuestCounts[Ord(qtKillShip)] := 18;
+      QuestCounts[Ord(qtPlanetQuest)] := 26;
+      QuestCounts[Ord(qtDefendSystem)] := 11;
+      QuestCounts[Ord(qtDefendShip)] := 14;
+      Entry.PlanetBattles := 11;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 1;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 1;
+    end;
     3:
-      begin
-        Entry.PortraitFaceId := 13;
-        Entry.DifficultyLevels[0] := 2;
-        Entry.DifficultyLevels[1] := 2;
-        Entry.DifficultyLevels[2] := 2;
-        Entry.DifficultyLevels[3] := 2;
-        Entry.DifficultyLevels[4] := 2;
-        Entry.DifficultyLevels[5] := 2;
-        Entry.DifficultyLevels[6] := 1;
-        Entry.DifficultyLevels[7] := 1;
-        Entry.FinishedTurn := 7000;
-        Entry.OtherShipKillCount := 102;
-        Entry.PirateKillCount := 2;
-        Entry.DominatorKillCount := 135;
-        Entry.ArcadeKillCount := 16;
-        Entry.LiberatedSystemCount := 6;
-        Entry.AwardCount := 12;
-        Entry.TotalExperience := 80000;
-        Entry.SkillLevels[0] := 3;
-        Entry.SkillLevels[1] := 5;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 5;
-        Entry.SkillLevels[4] := 5;
-        Entry.SkillLevels[5] := 2;
-        QuestCounts[Ord(qtSendLetter)] := 8;
-        QuestCounts[Ord(qtKillShip)] := 19;
-        QuestCounts[Ord(qtPlanetQuest)] := 5;
-        QuestCounts[Ord(qtDefendSystem)] := 1;
-        QuestCounts[Ord(qtDefendShip)] := 0;
-        Entry.PlanetBattles := 9;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 2;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 3;
-      end;
+    begin
+      Entry.PortraitFaceId := 13;
+      Entry.DifficultyLevels[0] := 2;
+      Entry.DifficultyLevels[1] := 2;
+      Entry.DifficultyLevels[2] := 2;
+      Entry.DifficultyLevels[3] := 2;
+      Entry.DifficultyLevels[4] := 2;
+      Entry.DifficultyLevels[5] := 2;
+      Entry.DifficultyLevels[6] := 1;
+      Entry.DifficultyLevels[7] := 1;
+      Entry.FinishedTurn := 7000;
+      Entry.OtherShipKillCount := 102;
+      Entry.PirateKillCount := 2;
+      Entry.DominatorKillCount := 135;
+      Entry.ArcadeKillCount := 16;
+      Entry.LiberatedSystemCount := 6;
+      Entry.AwardCount := 12;
+      Entry.TotalExperience := 80000;
+      Entry.SkillLevels[0] := 3;
+      Entry.SkillLevels[1] := 5;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 5;
+      Entry.SkillLevels[4] := 5;
+      Entry.SkillLevels[5] := 2;
+      QuestCounts[Ord(qtSendLetter)] := 8;
+      QuestCounts[Ord(qtKillShip)] := 19;
+      QuestCounts[Ord(qtPlanetQuest)] := 5;
+      QuestCounts[Ord(qtDefendSystem)] := 1;
+      QuestCounts[Ord(qtDefendShip)] := 0;
+      Entry.PlanetBattles := 9;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 2;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 3;
+    end;
     4:
-      begin
-        Entry.PortraitFaceId := 3;
-        Entry.DifficultyLevels[0] := 2;
-        Entry.DifficultyLevels[1] := 2;
-        Entry.DifficultyLevels[2] := 2;
-        Entry.DifficultyLevels[3] := 2;
-        Entry.DifficultyLevels[4] := 1;
-        Entry.DifficultyLevels[5] := 1;
-        Entry.DifficultyLevels[6] := 1;
-        Entry.DifficultyLevels[7] := 1;
-        Entry.FinishedTurn := 7500;
-        Entry.OtherShipKillCount := 28;
-        Entry.PirateKillCount := 110;
-        Entry.DominatorKillCount := 282;
-        Entry.ArcadeKillCount := 44;
-        Entry.LiberatedSystemCount := 7;
-        Entry.AwardCount := 11;
-        Entry.TotalExperience := 76000;
-        Entry.SkillLevels[0] := 5;
-        Entry.SkillLevels[1] := 4;
-        Entry.SkillLevels[2] := 3;
-        Entry.SkillLevels[3] := 1;
-        Entry.SkillLevels[4] := 2;
-        Entry.SkillLevels[5] := 5;
-        QuestCounts[Ord(qtSendLetter)] := 7;
-        QuestCounts[Ord(qtKillShip)] := 13;
-        QuestCounts[Ord(qtPlanetQuest)] := 10;
-        QuestCounts[Ord(qtDefendSystem)] := 15;
-        QuestCounts[Ord(qtDefendShip)] := 4;
-        Entry.PlanetBattles := 3;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 1;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 1;
-      end;
+    begin
+      Entry.PortraitFaceId := 3;
+      Entry.DifficultyLevels[0] := 2;
+      Entry.DifficultyLevels[1] := 2;
+      Entry.DifficultyLevels[2] := 2;
+      Entry.DifficultyLevels[3] := 2;
+      Entry.DifficultyLevels[4] := 1;
+      Entry.DifficultyLevels[5] := 1;
+      Entry.DifficultyLevels[6] := 1;
+      Entry.DifficultyLevels[7] := 1;
+      Entry.FinishedTurn := 7500;
+      Entry.OtherShipKillCount := 28;
+      Entry.PirateKillCount := 110;
+      Entry.DominatorKillCount := 282;
+      Entry.ArcadeKillCount := 44;
+      Entry.LiberatedSystemCount := 7;
+      Entry.AwardCount := 11;
+      Entry.TotalExperience := 76000;
+      Entry.SkillLevels[0] := 5;
+      Entry.SkillLevels[1] := 4;
+      Entry.SkillLevels[2] := 3;
+      Entry.SkillLevels[3] := 1;
+      Entry.SkillLevels[4] := 2;
+      Entry.SkillLevels[5] := 5;
+      QuestCounts[Ord(qtSendLetter)] := 7;
+      QuestCounts[Ord(qtKillShip)] := 13;
+      QuestCounts[Ord(qtPlanetQuest)] := 10;
+      QuestCounts[Ord(qtDefendSystem)] := 15;
+      QuestCounts[Ord(qtDefendShip)] := 4;
+      Entry.PlanetBattles := 3;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 1;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 1;
+    end;
     5:
-      begin
-        Entry.PortraitFaceId := 10;
-        Entry.DifficultyLevels[0] := 2;
-        Entry.DifficultyLevels[1] := 2;
-        Entry.DifficultyLevels[2] := 1;
-        Entry.DifficultyLevels[3] := 1;
-        Entry.DifficultyLevels[4] := 1;
-        Entry.DifficultyLevels[5] := 1;
-        Entry.DifficultyLevels[6] := 1;
-        Entry.DifficultyLevels[7] := 1;
-        Entry.FinishedTurn := 8000;
-        Entry.OtherShipKillCount := 34;
-        Entry.PirateKillCount := 50;
-        Entry.DominatorKillCount := 148;
-        Entry.ArcadeKillCount := 30;
-        Entry.LiberatedSystemCount := 11;
-        Entry.AwardCount := 10;
-        Entry.TotalExperience := 63000;
-        Entry.SkillLevels[0] := 3;
-        Entry.SkillLevels[1] := 4;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 2;
-        Entry.SkillLevels[4] := 5;
-        Entry.SkillLevels[5] := 1;
-        QuestCounts[Ord(qtSendLetter)] := 17;
-        QuestCounts[Ord(qtKillShip)] := 10;
-        QuestCounts[Ord(qtPlanetQuest)] := 3;
-        QuestCounts[Ord(qtDefendSystem)] := 9;
-        QuestCounts[Ord(qtDefendShip)] := 18;
-        Entry.PlanetBattles := 5;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 3;
-        Entry.KellerEndingState := 2;
-        Entry.TerronEndingState := 1;
-      end;
+    begin
+      Entry.PortraitFaceId := 10;
+      Entry.DifficultyLevels[0] := 2;
+      Entry.DifficultyLevels[1] := 2;
+      Entry.DifficultyLevels[2] := 1;
+      Entry.DifficultyLevels[3] := 1;
+      Entry.DifficultyLevels[4] := 1;
+      Entry.DifficultyLevels[5] := 1;
+      Entry.DifficultyLevels[6] := 1;
+      Entry.DifficultyLevels[7] := 1;
+      Entry.FinishedTurn := 8000;
+      Entry.OtherShipKillCount := 34;
+      Entry.PirateKillCount := 50;
+      Entry.DominatorKillCount := 148;
+      Entry.ArcadeKillCount := 30;
+      Entry.LiberatedSystemCount := 11;
+      Entry.AwardCount := 10;
+      Entry.TotalExperience := 63000;
+      Entry.SkillLevels[0] := 3;
+      Entry.SkillLevels[1] := 4;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 2;
+      Entry.SkillLevels[4] := 5;
+      Entry.SkillLevels[5] := 1;
+      QuestCounts[Ord(qtSendLetter)] := 17;
+      QuestCounts[Ord(qtKillShip)] := 10;
+      QuestCounts[Ord(qtPlanetQuest)] := 3;
+      QuestCounts[Ord(qtDefendSystem)] := 9;
+      QuestCounts[Ord(qtDefendShip)] := 18;
+      Entry.PlanetBattles := 5;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 3;
+      Entry.KellerEndingState := 2;
+      Entry.TerronEndingState := 1;
+    end;
     6:
-      begin
-        Entry.PortraitFaceId := 10;
-        Entry.DifficultyLevels[0] := 1;
-        Entry.DifficultyLevels[1] := 1;
-        Entry.DifficultyLevels[2] := 1;
-        Entry.DifficultyLevels[3] := 1;
-        Entry.DifficultyLevels[4] := 1;
-        Entry.DifficultyLevels[5] := 1;
-        Entry.DifficultyLevels[6] := 1;
-        Entry.DifficultyLevels[7] := 1;
-        Entry.FinishedTurn := 8500;
-        Entry.OtherShipKillCount := 40;
-        Entry.PirateKillCount := 30;
-        Entry.DominatorKillCount := 180;
-        Entry.ArcadeKillCount := 52;
-        Entry.LiberatedSystemCount := 8;
-        Entry.AwardCount := 7;
-        Entry.TotalExperience := 52000;
-        Entry.SkillLevels[0] := 2;
-        Entry.SkillLevels[1] := 5;
-        Entry.SkillLevels[2] := 2;
-        Entry.SkillLevels[3] := 4;
-        Entry.SkillLevels[4] := 2;
-        Entry.SkillLevels[5] := 3;
-        QuestCounts[Ord(qtSendLetter)] := 5;
-        QuestCounts[Ord(qtKillShip)] := 20;
-        QuestCounts[Ord(qtPlanetQuest)] := 6;
-        QuestCounts[Ord(qtDefendSystem)] := 18;
-        QuestCounts[Ord(qtDefendShip)] := 4;
-        Entry.PlanetBattles := 2;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 2;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 2;
-      end;
+    begin
+      Entry.PortraitFaceId := 10;
+      Entry.DifficultyLevels[0] := 1;
+      Entry.DifficultyLevels[1] := 1;
+      Entry.DifficultyLevels[2] := 1;
+      Entry.DifficultyLevels[3] := 1;
+      Entry.DifficultyLevels[4] := 1;
+      Entry.DifficultyLevels[5] := 1;
+      Entry.DifficultyLevels[6] := 1;
+      Entry.DifficultyLevels[7] := 1;
+      Entry.FinishedTurn := 8500;
+      Entry.OtherShipKillCount := 40;
+      Entry.PirateKillCount := 30;
+      Entry.DominatorKillCount := 180;
+      Entry.ArcadeKillCount := 52;
+      Entry.LiberatedSystemCount := 8;
+      Entry.AwardCount := 7;
+      Entry.TotalExperience := 52000;
+      Entry.SkillLevels[0] := 2;
+      Entry.SkillLevels[1] := 5;
+      Entry.SkillLevels[2] := 2;
+      Entry.SkillLevels[3] := 4;
+      Entry.SkillLevels[4] := 2;
+      Entry.SkillLevels[5] := 3;
+      QuestCounts[Ord(qtSendLetter)] := 5;
+      QuestCounts[Ord(qtKillShip)] := 20;
+      QuestCounts[Ord(qtPlanetQuest)] := 6;
+      QuestCounts[Ord(qtDefendSystem)] := 18;
+      QuestCounts[Ord(qtDefendShip)] := 4;
+      Entry.PlanetBattles := 2;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 2;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 2;
+    end;
     7:
-      begin
-        Entry.PortraitFaceId := 11;
-        Entry.DifficultyLevels[0] := 1;
-        Entry.DifficultyLevels[1] := 1;
-        Entry.DifficultyLevels[2] := 1;
-        Entry.DifficultyLevels[3] := 1;
-        Entry.DifficultyLevels[4] := 1;
-        Entry.DifficultyLevels[5] := 1;
-        Entry.DifficultyLevels[6] := 0;
-        Entry.DifficultyLevels[7] := 0;
-        Entry.FinishedTurn := 9000;
-        Entry.OtherShipKillCount := 12;
-        Entry.PirateKillCount := 25;
-        Entry.DominatorKillCount := 92;
-        Entry.ArcadeKillCount := 1;
-        Entry.LiberatedSystemCount := 6;
-        Entry.AwardCount := 9;
-        Entry.TotalExperience := 45000;
-        Entry.SkillLevels[0] := 4;
-        Entry.SkillLevels[1] := 2;
-        Entry.SkillLevels[2] := 5;
-        Entry.SkillLevels[3] := 1;
-        Entry.SkillLevels[4] := 1;
-        Entry.SkillLevels[5] := 0;
-        QuestCounts[Ord(qtSendLetter)] := 10;
-        QuestCounts[Ord(qtKillShip)] := 18;
-        QuestCounts[Ord(qtPlanetQuest)] := 15;
-        QuestCounts[Ord(qtDefendSystem)] := 10;
-        QuestCounts[Ord(qtDefendShip)] := 0;
-        Entry.PlanetBattles := 1;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 2;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 1;
-      end;
+    begin
+      Entry.PortraitFaceId := 11;
+      Entry.DifficultyLevels[0] := 1;
+      Entry.DifficultyLevels[1] := 1;
+      Entry.DifficultyLevels[2] := 1;
+      Entry.DifficultyLevels[3] := 1;
+      Entry.DifficultyLevels[4] := 1;
+      Entry.DifficultyLevels[5] := 1;
+      Entry.DifficultyLevels[6] := 0;
+      Entry.DifficultyLevels[7] := 0;
+      Entry.FinishedTurn := 9000;
+      Entry.OtherShipKillCount := 12;
+      Entry.PirateKillCount := 25;
+      Entry.DominatorKillCount := 92;
+      Entry.ArcadeKillCount := 1;
+      Entry.LiberatedSystemCount := 6;
+      Entry.AwardCount := 9;
+      Entry.TotalExperience := 45000;
+      Entry.SkillLevels[0] := 4;
+      Entry.SkillLevels[1] := 2;
+      Entry.SkillLevels[2] := 5;
+      Entry.SkillLevels[3] := 1;
+      Entry.SkillLevels[4] := 1;
+      Entry.SkillLevels[5] := 0;
+      QuestCounts[Ord(qtSendLetter)] := 10;
+      QuestCounts[Ord(qtKillShip)] := 18;
+      QuestCounts[Ord(qtPlanetQuest)] := 15;
+      QuestCounts[Ord(qtDefendSystem)] := 10;
+      QuestCounts[Ord(qtDefendShip)] := 0;
+      Entry.PlanetBattles := 1;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 2;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 1;
+    end;
     8:
-      begin
-        Entry.PortraitFaceId := 7;
-        Entry.DifficultyLevels[0] := 1;
-        Entry.DifficultyLevels[1] := 1;
-        Entry.DifficultyLevels[2] := 1;
-        Entry.DifficultyLevels[3] := 1;
-        Entry.DifficultyLevels[4] := 0;
-        Entry.DifficultyLevels[5] := 0;
-        Entry.DifficultyLevels[6] := 0;
-        Entry.DifficultyLevels[7] := 0;
-        Entry.FinishedTurn := 9300;
-        Entry.OtherShipKillCount := 40;
-        Entry.PirateKillCount := 2;
-        Entry.DominatorKillCount := 74;
-        Entry.ArcadeKillCount := 10;
-        Entry.LiberatedSystemCount := 5;
-        Entry.AwardCount := 7;
-        Entry.TotalExperience := 38500;
-        Entry.SkillLevels[0] := 2;
-        Entry.SkillLevels[1] := 3;
-        Entry.SkillLevels[2] := 4;
-        Entry.SkillLevels[3] := 4;
-        Entry.SkillLevels[4] := 0;
-        Entry.SkillLevels[5] := 2;
-        QuestCounts[Ord(qtSendLetter)] := 16;
-        QuestCounts[Ord(qtKillShip)] := 3;
-        QuestCounts[Ord(qtPlanetQuest)] := 6;
-        QuestCounts[Ord(qtDefendSystem)] := 5;
-        QuestCounts[Ord(qtDefendShip)] := 8;
-        Entry.PlanetBattles := 2;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 2;
-        Entry.KellerEndingState := 2;
-        Entry.TerronEndingState := 2;
-      end;
+    begin
+      Entry.PortraitFaceId := 7;
+      Entry.DifficultyLevels[0] := 1;
+      Entry.DifficultyLevels[1] := 1;
+      Entry.DifficultyLevels[2] := 1;
+      Entry.DifficultyLevels[3] := 1;
+      Entry.DifficultyLevels[4] := 0;
+      Entry.DifficultyLevels[5] := 0;
+      Entry.DifficultyLevels[6] := 0;
+      Entry.DifficultyLevels[7] := 0;
+      Entry.FinishedTurn := 9300;
+      Entry.OtherShipKillCount := 40;
+      Entry.PirateKillCount := 2;
+      Entry.DominatorKillCount := 74;
+      Entry.ArcadeKillCount := 10;
+      Entry.LiberatedSystemCount := 5;
+      Entry.AwardCount := 7;
+      Entry.TotalExperience := 38500;
+      Entry.SkillLevels[0] := 2;
+      Entry.SkillLevels[1] := 3;
+      Entry.SkillLevels[2] := 4;
+      Entry.SkillLevels[3] := 4;
+      Entry.SkillLevels[4] := 0;
+      Entry.SkillLevels[5] := 2;
+      QuestCounts[Ord(qtSendLetter)] := 16;
+      QuestCounts[Ord(qtKillShip)] := 3;
+      QuestCounts[Ord(qtPlanetQuest)] := 6;
+      QuestCounts[Ord(qtDefendSystem)] := 5;
+      QuestCounts[Ord(qtDefendShip)] := 8;
+      Entry.PlanetBattles := 2;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 2;
+      Entry.KellerEndingState := 2;
+      Entry.TerronEndingState := 2;
+    end;
     9:
-      begin
-        Entry.PortraitFaceId := 28;
-        Entry.DifficultyLevels[0] := 1;
-        Entry.DifficultyLevels[1] := 1;
-        Entry.DifficultyLevels[2] := 0;
-        Entry.DifficultyLevels[3] := 0;
-        Entry.DifficultyLevels[4] := 0;
-        Entry.DifficultyLevels[5] := 0;
-        Entry.DifficultyLevels[6] := 0;
-        Entry.DifficultyLevels[7] := 0;
-        Entry.FinishedTurn := 9500;
-        Entry.OtherShipKillCount := 8;
-        Entry.PirateKillCount := 9;
-        Entry.DominatorKillCount := 45;
-        Entry.ArcadeKillCount := 2;
-        Entry.LiberatedSystemCount := 3;
-        Entry.AwardCount := 5;
-        Entry.TotalExperience := 33000;
-        Entry.SkillLevels[0] := 0;
-        Entry.SkillLevels[1] := 3;
-        Entry.SkillLevels[2] := 0;
-        Entry.SkillLevels[3] := 3;
-        Entry.SkillLevels[4] := 5;
-        Entry.SkillLevels[5] := 3;
-        QuestCounts[Ord(qtSendLetter)] := 5;
-        QuestCounts[Ord(qtKillShip)] := 13;
-        QuestCounts[Ord(qtPlanetQuest)] := 8;
-        QuestCounts[Ord(qtDefendSystem)] := 0;
-        QuestCounts[Ord(qtDefendShip)] := 0;
-        Entry.PlanetBattles := 3;
-        Entry.VictoryAchieved := True;
-        Entry.BlazerEndingState := 1;
-        Entry.KellerEndingState := 1;
-        Entry.TerronEndingState := 3;
-      end;
+    begin
+      Entry.PortraitFaceId := 28;
+      Entry.DifficultyLevels[0] := 1;
+      Entry.DifficultyLevels[1] := 1;
+      Entry.DifficultyLevels[2] := 0;
+      Entry.DifficultyLevels[3] := 0;
+      Entry.DifficultyLevels[4] := 0;
+      Entry.DifficultyLevels[5] := 0;
+      Entry.DifficultyLevels[6] := 0;
+      Entry.DifficultyLevels[7] := 0;
+      Entry.FinishedTurn := 9500;
+      Entry.OtherShipKillCount := 8;
+      Entry.PirateKillCount := 9;
+      Entry.DominatorKillCount := 45;
+      Entry.ArcadeKillCount := 2;
+      Entry.LiberatedSystemCount := 3;
+      Entry.AwardCount := 5;
+      Entry.TotalExperience := 33000;
+      Entry.SkillLevels[0] := 0;
+      Entry.SkillLevels[1] := 3;
+      Entry.SkillLevels[2] := 0;
+      Entry.SkillLevels[3] := 3;
+      Entry.SkillLevels[4] := 5;
+      Entry.SkillLevels[5] := 3;
+      QuestCounts[Ord(qtSendLetter)] := 5;
+      QuestCounts[Ord(qtKillShip)] := 13;
+      QuestCounts[Ord(qtPlanetQuest)] := 8;
+      QuestCounts[Ord(qtDefendSystem)] := 0;
+      QuestCounts[Ord(qtDefendShip)] := 0;
+      Entry.PlanetBattles := 3;
+      Entry.VictoryAchieved := True;
+      Entry.BlazerEndingState := 1;
+      Entry.KellerEndingState := 1;
+      Entry.TerronEndingState := 3;
+    end;
     10:
-      begin
-        Entry.PortraitFaceId := 12;
-        Entry.DifficultyLevels[0] := 0;
-        Entry.DifficultyLevels[1] := 0;
-        Entry.DifficultyLevels[2] := 0;
-        Entry.DifficultyLevels[3] := 0;
-        Entry.DifficultyLevels[4] := 0;
-        Entry.DifficultyLevels[5] := 0;
-        Entry.DifficultyLevels[6] := 0;
-        Entry.DifficultyLevels[7] := 0;
-        Entry.FinishedTurn := 3000;
-        Entry.OtherShipKillCount := 63;
-        Entry.PirateKillCount := 7;
-        Entry.DominatorKillCount := 40;
-        Entry.ArcadeKillCount := 28;
-        Entry.LiberatedSystemCount := 1;
-        Entry.AwardCount := 1;
-        Entry.TotalExperience := 12000;
-        Entry.SkillLevels[0] := 2;
-        Entry.SkillLevels[1] := 3;
-        Entry.SkillLevels[2] := 1;
-        Entry.SkillLevels[3] := 1;
-        Entry.SkillLevels[4] := 2;
-        Entry.SkillLevels[5] := 1;
-        QuestCounts[Ord(qtSendLetter)] := 10;
-        QuestCounts[Ord(qtKillShip)] := 0;
-        QuestCounts[Ord(qtPlanetQuest)] := 6;
-        QuestCounts[Ord(qtDefendSystem)] := 0;
-        QuestCounts[Ord(qtDefendShip)] := 4;
-        Entry.PlanetBattles := 0;
-        Entry.VictoryAchieved := False;
-        Entry.BlazerEndingState := 1;
-        Entry.KellerEndingState := 0;
-        Entry.TerronEndingState := 0;
-      end;
+    begin
+      Entry.PortraitFaceId := 12;
+      Entry.DifficultyLevels[0] := 0;
+      Entry.DifficultyLevels[1] := 0;
+      Entry.DifficultyLevels[2] := 0;
+      Entry.DifficultyLevels[3] := 0;
+      Entry.DifficultyLevels[4] := 0;
+      Entry.DifficultyLevels[5] := 0;
+      Entry.DifficultyLevels[6] := 0;
+      Entry.DifficultyLevels[7] := 0;
+      Entry.FinishedTurn := 3000;
+      Entry.OtherShipKillCount := 63;
+      Entry.PirateKillCount := 7;
+      Entry.DominatorKillCount := 40;
+      Entry.ArcadeKillCount := 28;
+      Entry.LiberatedSystemCount := 1;
+      Entry.AwardCount := 1;
+      Entry.TotalExperience := 12000;
+      Entry.SkillLevels[0] := 2;
+      Entry.SkillLevels[1] := 3;
+      Entry.SkillLevels[2] := 1;
+      Entry.SkillLevels[3] := 1;
+      Entry.SkillLevels[4] := 2;
+      Entry.SkillLevels[5] := 1;
+      QuestCounts[Ord(qtSendLetter)] := 10;
+      QuestCounts[Ord(qtKillShip)] := 0;
+      QuestCounts[Ord(qtPlanetQuest)] := 6;
+      QuestCounts[Ord(qtDefendSystem)] := 0;
+      QuestCounts[Ord(qtDefendShip)] := 4;
+      Entry.PlanetBattles := 0;
+      Entry.VictoryAchieved := False;
+      Entry.BlazerEndingState := 1;
+      Entry.KellerEndingState := 0;
+      Entry.TerronEndingState := 0;
+    end;
   end;
-  Entry.PlayerName := LookupLocalizedTextByKey(WideString('FormScore.Winners.' + IntToStr(Index) + '.Name'));
-  Entry.PilotRace := OwnerToRace(OwnerFromInternalName(LookupLocalizedTextByKey(WideString('FormScore.Winners.' + IntToStr(Index) + '.Race'))));
+  Entry.PlayerName :=
+      LookupLocalizedTextByKey(WideString('FormScore.Winners.' + IntToStr(Index) + '.Name'));
+  Entry.PilotRace :=
+      OwnerToRace(
+          OwnerFromInternalName(
+              LookupLocalizedTextByKey(WideString('FormScore.Winners.' + IntToStr(Index) + '.Race'))
+          )
+      );
   Entry.Rank := Round(RemapClamped(Index, 0, 10, 6, 3));
-  Count := QuestCounts[Ord(qtSendLetter)] + QuestCounts[Ord(qtKillShip)] + QuestCounts[Ord(qtPlanetQuest)] + QuestCounts[Ord(qtDefendSystem)] + QuestCounts[Ord(qtDefendShip)];
+  Count :=
+      QuestCounts[Ord(qtSendLetter)]
+          + QuestCounts[Ord(qtKillShip)]
+          + QuestCounts[Ord(qtPlanetQuest)]
+          + QuestCounts[Ord(qtDefendSystem)]
+          + QuestCounts[Ord(qtDefendShip)];
   SetLength(Entry.QuestResults, Count);
   Count := 0;
   for Kind := Low(TQuestType) to High(TQuestType) do
@@ -924,11 +1034,11 @@ begin
     end;
   Entry.RecalculateTotalScore;
 end;
-{ @end $57D2C4 }
 
-{ @routine $57E2FC TfScore_CreateDefaultTable }
 procedure TfScore.CreateDefaultTable;
-var Entry: TfScoreUnit; I: Integer;
+var
+  Entry: TfScoreUnit;
+  I: Integer;
 begin
   ClearEntries;
   for I := 0 to 10 do
@@ -939,18 +1049,18 @@ begin
   end;
   SortAndTrimEntries;
 end;
-{ @end $57E2FC }
 
-{ @routine $57E358 TfScore_RecordPlayerResult }
 procedure TfScore.RecordPlayerResult(Victory: Boolean);
 var
   I, J, Count: Integer;
   Entry, Other: TfScoreUnit;
 begin
-  if SteamInitialized and not SteamLeaderboardFound then SteamSetLeaderboardName('Scores');
+  if SteamInitialized and not SteamLeaderboardFound then
+    SteamSetLeaderboardName('Scores');
   ReloadTable;
   Count := Entries.Count;
-  if Count <> 11 then RaiseWideMessage('Score sort');
+  if Count <> 11 then
+    RaiseWideMessage('Score sort');
   Galaxy.AppendIntegritySnapshot;
   Entry := TfScoreUnit.Create;
   Entry.CapturePlayer(Victory);
@@ -978,17 +1088,19 @@ begin
       begin
         Entries[I] := Other;
         Entries[J] := Entry;
-        if SelectedIndex = I then SelectedIndex := J
-        else if SelectedIndex = J then SelectedIndex := I;
+        if SelectedIndex = I then
+          SelectedIndex := J
+        else if SelectedIndex = J then
+          SelectedIndex := I;
       end;
     end;
   SaveTableToDisk;
 end;
-{ @end $57E358 }
 
-{ @routine $57E5A4 TfScore_RemoveSelectedEntryAndRefill }
 procedure TfScore.RemoveSelectedEntryAndRefill;
-var I: Integer; Entry: TfScoreUnit;
+var
+  I: Integer;
+  Entry: TfScoreUnit;
 begin
   for I := 0 to Entries.Count - 1 do
   begin
@@ -1001,7 +1113,10 @@ begin
   end;
   I := 0;
   while I < Entries.Count do
-    if Entries[I] = nil then Entries.Delete(I) else Inc(I);
+    if Entries[I] = nil then
+      Entries.Delete(I)
+    else
+      Inc(I);
   for I := 0 to 10 do
   begin
     Entry := TfScoreUnit.Create;
@@ -1010,11 +1125,11 @@ begin
   end;
   SortAndTrimEntries;
 end;
-{ @end $57E5A4 }
 
-{ @routine $57E6A8 TfScore_ClearEntries }
 procedure TfScore.ClearEntries;
-var I: Integer; Entry: TObject;
+var
+  I: Integer;
+  Entry: TObject;
 begin
   for I := 0 to Entries.Count - 1 do
   begin
@@ -1023,9 +1138,7 @@ begin
   end;
   Entries.Clear;
 end;
-{ @end $57E6A8 }
 
-{ @routine $57E704 TfScore_LoadTableFromDisk }
 procedure TfScore.LoadTableFromDisk;
 var
   Buffer: TBufEC;
@@ -1041,16 +1154,21 @@ begin
       Buffer.LoadFromWideFilePath(PWideChar(GetGameUserDirectory + 'score.dat'));
       Buffer.ExpandZlibPayloadInPlace;
       Version := Buffer.GetInt32At(0);
-      if Version <> 2 then raise EAbort.Create('Error unpacking score.dat');
-      Seed := Integer(Buffer.GetByteAt(6)) or (Integer(Buffer.GetByteAt(7)) shl 8) or
-        (Integer(Buffer.GetByteAt(4)) shl 16) or (Integer(Buffer.GetByteAt(5)) shl 24);
+      if Version <> 2 then
+        raise EAbort.Create('Error unpacking score.dat');
+      Seed :=
+          Integer(Buffer.GetByteAt(6))
+              or (Integer(Buffer.GetByteAt(7)) shl 8)
+              or (Integer(Buffer.GetByteAt(4)) shl 16)
+              or (Integer(Buffer.GetByteAt(5)) shl 24);
       Data := PByte(Cardinal(Buffer.Data) + 8);
       Size := Buffer.DataSize;
       for I := 8 to Size - 1 do
       begin
         Data^ := Data^ xor Byte(Seed - 1);
         Seed := 16807 * (Seed mod 127773) - 2836 * (Seed div 127773);
-        if Seed <= 0 then Inc(Seed, MaxInt);
+        if Seed <= 0 then
+          Inc(Seed, MaxInt);
         Data := PByte(PAnsiChar(Data) + 1);
       end;
       Checksum := 0;
@@ -1060,7 +1178,8 @@ begin
         Inc(Checksum, Byte(Data^ xor $FF));
         Data := PByte(PAnsiChar(Data) + 1);
       end;
-      if Buffer.GetUInt32At(8) <> Checksum then raise EAbort.Create('Error unpacking score.dat');
+      if Buffer.GetUInt32At(8) <> Checksum then
+        raise EAbort.Create('Error unpacking score.dat');
       Buffer.SetPosition(12);
       for I := 0 to 10 do
       begin
@@ -1075,22 +1194,19 @@ begin
     Buffer.Free;
   end;
 end;
-{ @end $57E704 }
 
-{ @routine $57E9C4 TfScore_ReloadTable }
 procedure TfScore.ReloadTable;
 begin
   ClearEntries;
-  if not FileExists(AnsiString(GetGameUserDirectory + 'score.dat')) then CreateDefaultTable
+  if not FileExists(AnsiString(GetGameUserDirectory + 'score.dat')) then
+    CreateDefaultTable
   else
   begin
     LoadTableFromDisk;
     SortAndTrimEntries;
   end;
 end;
-{ @end $57E9C4 }
 
-{ @routine $57EA70 TfScore_SaveTableToDisk }
 procedure TfScore.SaveTableToDisk;
 var
   Buffer: TBufEC;
@@ -1100,7 +1216,8 @@ var
   FileObject: TFileEC;
   Checksum: Integer;
 begin
-  if Entries.Count <> 11 then CreateDefaultTable;
+  if Entries.Count <> 11 then
+    CreateDefaultTable;
   Seed := Random(MaxInt);
   Buffer := TBufEC.Create;
   Buffer.AddIntegerValue(2);
@@ -1129,7 +1246,8 @@ begin
   begin
     Data^ := Data^ xor Byte(Seed - 1);
     Seed := 16807 * (Seed mod 127773) - 2836 * (Seed div 127773);
-    if Seed <= 0 then Inc(Seed, MaxInt);
+    if Seed <= 0 then
+      Inc(Seed, MaxInt);
     Data := PByte(PAnsiChar(Data) + 1);
   end;
   Buffer.CompressZlibPayloadInPlace(False);
@@ -1140,26 +1258,20 @@ begin
   FileObject.Free;
   Buffer.Free;
 end;
-{ @end $57EA70 }
 
-{ @routine $57ECD4 TfScore_Create }
 constructor TfScore.Create;
 begin
   inherited Create;
   Entries := TList.Create;
 end;
-{ @end $57ECD4 }
 
-{ @routine $57ED2C TfScore_Destroy }
 destructor TfScore.Destroy;
 begin
   ClearEntries;
   Entries.Free;
   inherited Destroy;
 end;
-{ @end $57ED2C }
 
-{ @routine $57ED74 TfScore_InitializeLayout }
 procedure TfScore.InitializeLayout;
 begin
   inherited InitializeLayout;
@@ -1170,9 +1282,19 @@ begin
     SetSize(Classes.Point(GameScreenWidth, GameScreenHeight));
     FirstChild.SetSize(Classes.Point(GameScreenWidth, GameScreenHeight));
     with FindByNameRecursive('PanelToServer') do
-      SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2, LocalPosition.Y + ExtraScreenHeight div 2));
+      SetPosition(
+          Classes.Point(
+              LocalPosition.X + ExtraScreenWidth div 2,
+              LocalPosition.Y + ExtraScreenHeight div 2
+          )
+      );
     with FindByNameRecursive('PanelWin') do
-      SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2, LocalPosition.Y + ExtraScreenHeight div 2));
+      SetPosition(
+          Classes.Point(
+              LocalPosition.X + ExtraScreenWidth div 2,
+              LocalPosition.Y + ExtraScreenHeight div 2
+          )
+      );
   end;
   AppendLogLineThreadSafe('ok');
   SetHelpCallback(ShowControlHelp);
@@ -1181,19 +1303,20 @@ begin
   GetByName('MainPanel').KeyDownCallback := KeyDown;
   SelectedIndex := 0;
 end;
-{ @end $57ED74 }
 
-{ @routine $57EFF0 TfScore_OnOpen }
 procedure TfScore.OnOpen;
 var
   I: Integer;
   Row, Panel, SendPanel: TPanelGI;
 begin
-  if SteamInitialized and not SteamLeaderboardFound then SteamSetLeaderboardName('Scores');
-  if MemorySnapshotBuffer <> nil then MemorySnapshotBuffer.Free;
+  if SteamInitialized and not SteamLeaderboardFound then
+    SteamSetLeaderboardName('Scores');
+  if MemorySnapshotBuffer <> nil then
+    MemorySnapshotBuffer.Free;
   MemorySnapshotBuffer := nil;
   MemorySnapshotActive := False;
-  if (Galaxy <> nil) and not Galaxy.Destroying then Galaxy.Free;
+  if (Galaxy <> nil) and not Galaxy.Destroying then
+    Galaxy.Free;
   Galaxy := nil;
   GetByName('LabelHelp').SetActive(False);
   Panel := GetByName('PanelSlot') as TPanelGI;
@@ -1219,8 +1342,10 @@ begin
     begin
       SetDepthByName('99');
       SetPosition(Classes.Point(0, 0));
-      if GiResourceVariant = 1 then SetSize(Classes.Point(454, 40))
-      else SetSize(Classes.Point(577, 51));
+      if GiResourceVariant = 1 then
+        SetSize(Classes.Point(454, 40))
+      else
+        SetSize(Classes.Point(577, 51));
       SetActive(True);
       SetName(WideString('Slot' + IntToStr(I) + 'Active'));
     end;
@@ -1339,50 +1464,68 @@ begin
   ReloadTable;
   RefreshDetails;
 end;
-{ @end $57EFF0 }
 
-{ @routine $57FE0C TfScore_OnClose }
 procedure TfScore.OnClose;
 begin
-  with GetByName('PanelSlot') as TPanelGI do FreeOwnedChildren;
-  with GetByName('PanelToServer') as TPanelGI do FreeOwnedChildren;
+  with GetByName('PanelSlot') as TPanelGI do
+    FreeOwnedChildren;
+  with GetByName('PanelToServer') as TPanelGI do
+    FreeOwnedChildren;
 end;
-{ @end $57FE0C }
 
-{ @routine $57FE98 TfScore_EntryMouseEnter }
 procedure TfScore.EntryMouseEnter(Sender: TObjectGI);
 begin
   if Sender.UserValue <> SelectedIndex then
   begin
     SoundManager.PlaySound('Sound.ButtonEnter');
     with GetByName(WideString('Slot' + IntToStr(Sender.UserValue) + 'Active')) as TImageGI do
-      SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix +
-        OwnerInfo[Integer(RaceToOwner(TfScoreUnit(Entries[Sender.UserValue]).PilotRace)) and $7F].InternalName + 'A');
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + OwnerInfo[
+                      Integer(RaceToOwner(TfScoreUnit(Entries[Sender.UserValue]).PilotRace))
+                          and $7F]
+                  .InternalName
+              + 'A'
+      );
   end;
 end;
-{ @end $57FE98 }
 
-{ @routine $580040 TfScore_EntryMouseLeave }
 procedure TfScore.EntryMouseLeave(Sender: TObjectGI);
 begin
   if Sender.UserValue <> SelectedIndex then
   begin
     SoundManager.PlaySound('Sound.ButtonLeave');
     with GetByName(WideString('Slot' + IntToStr(Sender.UserValue) + 'Active')) as TImageGI do
-      SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix +
-        OwnerInfo[Integer(RaceToOwner(TfScoreUnit(Entries[Sender.UserValue]).PilotRace)) and $7F].InternalName + 'N');
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + OwnerInfo[
+                      Integer(RaceToOwner(TfScoreUnit(Entries[Sender.UserValue]).PilotRace))
+                          and $7F]
+                  .InternalName
+              + 'N'
+      );
   end;
 end;
-{ @end $580040 }
 
-{ @routine $5801E8 TfScore_DeleteEntryClicked }
 procedure TfScore.DeleteEntryClicked(Sender: TObjectGI);
-var Text: WideString; Entry: TfScoreUnit;
+var
+  Text: WideString;
+  Entry: TfScoreUnit;
 begin
   Entry := Entries[SelectedIndex];
-  Text := FormatText2(LanguageDataConfig.GetParamByPathOrMarker('FormScore.QueryDelete'),
-    '<color=255,240,100>', '<Name>', Entry.PlayerName, '<Score>', WideString(IntToStr(Entry.TotalScore)));
-  if ShowMessageBoxGI(Self, Text, mbgOK or mbgCancel or mbgQuestion) <> mbgResultOK then PostMouseMoveMessage
+  Text :=
+      FormatText2(
+          LanguageDataConfig.GetParamByPathOrMarker('FormScore.QueryDelete'),
+          '<color=255,240,100>',
+          '<Name>',
+          Entry.PlayerName,
+          '<Score>',
+          WideString(IntToStr(Entry.TotalScore))
+      );
+  if ShowMessageBoxGI(Self, Text, mbgOK or mbgCancel or mbgQuestion) <> mbgResultOK then
+    PostMouseMoveMessage
   else
   begin
     PostMouseMoveMessage;
@@ -1391,12 +1534,14 @@ begin
     RefreshDetails;
   end;
 end;
-{ @end $5801E8 }
 
-{ @routine $580374 TfScore_ClearTableClicked }
 procedure TfScore.ClearTableClicked(Sender: TObjectGI);
 begin
-  if ShowMessageBoxGI(Self, LanguageDataConfig.GetParamByPathOrMarker('FormScore.QueryClear'), mbgOK or mbgCancel or mbgQuestion) <> mbgResultOK then
+  if ShowMessageBoxGI(
+          Self,
+          LanguageDataConfig.GetParamByPathOrMarker('FormScore.QueryClear'),
+          mbgOK or mbgCancel or mbgQuestion)
+      <> mbgResultOK then
     PostMouseMoveMessage
   else
   begin
@@ -1407,9 +1552,7 @@ begin
     RefreshDetails;
   end;
 end;
-{ @end $580374 }
 
-{ @routine $5804A4 TfScore_CloseClicked }
 procedure TfScore.CloseClicked(Sender: TObjectGI);
 begin
   ScreenLoadMode := 4;
@@ -1417,13 +1560,13 @@ begin
   RequestedScreenId := screenLoad;
   RequestClose(1);
 end;
-{ @end $5804A4 }
 
-{ @routine $5804DC TfScore_KeyDown }
 procedure TfScore.KeyDown(Sender: TObjectGI; Key: Cardinal);
 begin
-  if (Key = VK_ESCAPE) or (Key = VK_RETURN) then CloseClicked(nil)
-  else if Key = Ord('C') then ClearTableClicked(nil)
+  if (Key = VK_ESCAPE) or (Key = VK_RETURN) then
+    CloseClicked(nil)
+  else if Key = Ord('C') then
+    ClearTableClicked(nil)
   else if (Key = VK_HOME) or (Key = VK_PRIOR) then
   begin
     SelectedIndex := 0;
@@ -1445,9 +1588,7 @@ begin
     RefreshDetails;
   end;
 end;
-{ @end $5804DC }
 
-{ @routine $580610 TfScore_RefreshDetails }
 procedure TfScore.RefreshDetails;
 var
   I, X: Integer;
@@ -1462,42 +1603,68 @@ begin
     Entry := Entries[I];
     Selected := I = SelectedIndex;
     with GetByName(WideString('Slot' + IntToStr(I) + 'Active')) as TImageGI do
-      if Selected then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix +
-        OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName + 'D')
-      else SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix +
-        OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName + 'N');
+      if Selected then
+        SetImagePath(
+            'GI,Bm.FormScore2.'
+                + GiResourceSuffix
+                + OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName
+                + 'D'
+        )
+      else
+        SetImagePath(
+            'GI,Bm.FormScore2.'
+                + GiResourceSuffix
+                + OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName
+                + 'N'
+        );
     with GetByName(WideString('Slot' + IntToStr(I) + 'Nom')) as TLabelGI do
     begin
-      if Selected then SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
-      else SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
+      if Selected then
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
+      else
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
     end;
     with GetByName(WideString('Slot' + IntToStr(I) + 'Score')) as TLabelGI do
     begin
-      if Selected then SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
-      else SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
+      if Selected then
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
+      else
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
       SetText(WideString(IntToStr(Entry.TotalScore)));
     end;
     with GetByName(WideString('Slot' + IntToStr(I) + 'Name')) as TLabelGI do
     begin
       SetText(Entry.PlayerName);
-      if Selected then SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
-      else SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
+      if Selected then
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
+      else
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
     end;
     with GetByName(WideString('Slot' + IntToStr(I) + 'Code')) as TLabelGI do
     begin
       SetText(WideString(IntToStr(Entry.DifficultyPercent) + '%'));
-      if Selected then SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
-      else SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
+      if Selected then
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(255, 222, 0))
+      else
+        SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
     end;
-    with GetByName(WideString('Slot' + IntToStr(I) + 'ToServer')) as TPanelGI do SetActive(False);
-    with GetByName(WideString('Slot' + IntToStr(I) + 'ToServerLight')) do SetActive(TfScoreUnit(Entries[I]).Exported);
+    with GetByName(WideString('Slot' + IntToStr(I) + 'ToServer')) as TPanelGI do
+      SetActive(False);
+    with GetByName(WideString('Slot' + IntToStr(I) + 'ToServerLight')) do
+      SetActive(TfScoreUnit(Entries[I]).Exported);
   end;
   Entry := Entries[SelectedIndex];
-  with GetByName('ButClear') as TGraphButtonGI do SetDisabled(Entry.ScoreTags.DataSize <= 0);
+  with GetByName('ButClear') as TGraphButtonGI do
+    SetDisabled(Entry.ScoreTags.DataSize <= 0);
   with GetByName('CaptainI') as TImageGI do
   begin
-    SetImagePath('GI,Bm.Captain.' + GiResourceSuffix +
-      OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName + WideString(IntToStr(Entry.PortraitFaceId)) + 'i');
+    SetImagePath(
+        'GI,Bm.Captain.'
+            + GiResourceSuffix
+            + OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName
+            + WideString(IntToStr(Entry.PortraitFaceId))
+            + 'i'
+    );
     SetImageKindX(ikxCenter);
     SetImageKindY(ikyCenter);
     SetActive(True);
@@ -1505,8 +1672,13 @@ begin
   with GetByName('CaptainA') as TgaiGI do
   begin
     FirstFrameOnly := not AnimCaptain;
-    SetImagePath('Bm.Captain.' + GiResourceSuffix +
-      OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName + WideString(IntToStr(Entry.PortraitFaceId)) + 'a');
+    SetImagePath(
+        'Bm.Captain.'
+            + GiResourceSuffix
+            + OwnerInfo[Integer(RaceToOwner(Entry.PilotRace)) and $7F].InternalName
+            + WideString(IntToStr(Entry.PortraitFaceId))
+            + 'a'
+    );
     SequenceIndex := 0;
     UpdateAutoGeometry;
     SetImageKindX(ikxCenter);
@@ -1515,57 +1687,125 @@ begin
     RestartPlayback;
   end;
   with GetByName('IRankImage') as TImageGI do
-    if Entry.Rank = 0 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank0')
-    else if Entry.Rank = 1 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank1')
-    else if Entry.Rank = 2 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank2')
-    else if Entry.Rank = 3 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank3')
-    else if Entry.Rank = 4 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank4')
-    else if Entry.Rank = 5 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank5')
-    else if Entry.Rank = 6 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank6')
-    else if Entry.Rank = 7 then SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank7');
+    if Entry.Rank = 0 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank0')
+    else if Entry.Rank = 1 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank1')
+    else if Entry.Rank = 2 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank2')
+    else if Entry.Rank = 3 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank3')
+    else if Entry.Rank = 4 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank4')
+    else if Entry.Rank = 5 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank5')
+    else if Entry.Rank = 6 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank6')
+    else if Entry.Rank = 7 then
+      SetImagePath('GI,Bm.FormShip.' + GiResourceSuffix + 'Rank7');
   with GetByName('Skill0') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[0] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[0] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[0] - 1))
+      );
   end;
   with GetByName('Skill1') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[1] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[1] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[1] - 1))
+      );
   end;
   with GetByName('Skill2') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[2] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[2] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[2] - 1))
+      );
   end;
   with GetByName('Skill3') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[3] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[3] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[3] - 1))
+      );
   end;
   with GetByName('Skill4') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[4] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[4] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[4] - 1))
+      );
   end;
   with GetByName('Skill5') as TImageGI do
   begin
     SetActive(Entry.SkillLevels[5] > 0);
-    if Active then SetImagePath('GI,Bm.FormScore2.' + GiResourceSuffix + 'Skill' + WideString(IntToStr(Entry.SkillLevels[5] - 1)));
+    if Active then
+      SetImagePath(
+          'GI,Bm.FormScore2.'
+              + GiResourceSuffix
+              + 'Skill'
+              + WideString(IntToStr(Entry.SkillLevels[5] - 1))
+      );
   end;
-  (GetByName('IDate') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.DateWin'),
-    '<color=255,222,0>', '<Date>', FormatGameTurnDate(Entry.FinishedTurn)));
+  (GetByName('IDate') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.DateWin'),
+              '<color=255,222,0>',
+              '<Date>',
+              FormatGameTurnDate(Entry.FinishedTurn)
+          ));
   SetElapsedScoreTurns(Self, Entry);
-  (GetByName('IRank') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.Rank'),
-    '<color=255,240,100>', '<Rank>', LocalizedText('Rank.' + CoalitionRankNames[Entry.Rank] + '.Name')));
+  (GetByName('IRank') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.Rank'),
+              '<color=255,240,100>',
+              '<Rank>',
+              LocalizedText('Rank.' + CoalitionRankNames[Entry.Rank] + '.Name')
+          ));
   (GetByName('IKillDominator') as TLabelGI).SetText(WideString(IntToStr(Entry.DominatorKillCount)));
   (GetByName('IKillPirate') as TLabelGI).SetText(WideString(IntToStr(Entry.PirateKillCount)));
   (GetByName('IKillNormal') as TLabelGI).SetText(WideString(IntToStr(Entry.OtherShipKillCount)));
   (GetByName('IKillHyper') as TLabelGI).SetText(WideString(IntToStr(Entry.ArcadeKillCount)));
-  (GetByName('ILiberationSystem') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.LiberationSystem'),
-    '<color=255,222,0>', '<LiberationSystem>', WideString(IntToStr(Entry.LiberatedSystemCount))));
-  (GetByName('IRewards') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.Rewards'),
-    '<color=255,240,100>', '<Rewards>', WideString(IntToStr(Entry.AwardCount))));
+  (GetByName('ILiberationSystem') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.LiberationSystem'),
+              '<color=255,222,0>',
+              '<LiberationSystem>',
+              WideString(IntToStr(Entry.LiberatedSystemCount))
+          ));
+  (GetByName('IRewards') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.Rewards'),
+              '<color=255,240,100>',
+              '<Rewards>',
+              WideString(IntToStr(Entry.AwardCount))
+          ));
   LetterQuests := 0;
   ShipKillQuests := 0;
   PlanetQuests := 0;
@@ -1573,14 +1813,36 @@ begin
   ShipDefenseQuests := 0;
   for I := 0 to High(Entry.QuestResults) do
     if Entry.QuestResults[I].Successful then
-      if Entry.QuestResults[I].QuestType = qtSendLetter then Inc(LetterQuests)
-      else if Entry.QuestResults[I].QuestType = qtKillShip then Inc(ShipKillQuests)
-      else if Entry.QuestResults[I].QuestType = qtPlanetQuest then Inc(PlanetQuests)
-      else if Entry.QuestResults[I].QuestType = qtDefendSystem then Inc(SystemDefenseQuests)
-      else if Entry.QuestResults[I].QuestType = qtDefendShip then Inc(ShipDefenseQuests);
-  (GetByName('IQuests') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.Quests'),
-    '<color=255,240,100>', '<Quests>', WideString(IntToStr(LetterQuests + ShipKillQuests + PlanetQuests + SystemDefenseQuests + ShipDefenseQuests))));
-  if GiResourceVariant = 2 then Separator := '+' else Separator := ':';
+      if Entry.QuestResults[I].QuestType = qtSendLetter then
+        Inc(LetterQuests)
+      else if Entry.QuestResults[I].QuestType = qtKillShip then
+        Inc(ShipKillQuests)
+      else if Entry.QuestResults[I].QuestType = qtPlanetQuest then
+        Inc(PlanetQuests)
+      else if Entry.QuestResults[I].QuestType = qtDefendSystem then
+        Inc(SystemDefenseQuests)
+      else if Entry.QuestResults[I].QuestType = qtDefendShip then
+        Inc(ShipDefenseQuests);
+  (GetByName('IQuests') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.Quests'),
+              '<color=255,240,100>',
+              '<Quests>',
+              WideString(
+                  IntToStr(
+                      LetterQuests
+                          + ShipKillQuests
+                          + PlanetQuests
+                          + SystemDefenseQuests
+                          + ShipDefenseQuests
+                  )
+              )
+          ));
+  if GiResourceVariant = 2 then
+    Separator := '+'
+  else
+    Separator := ':';
   with GetByName('IQuests') do
   begin
     X := LocalPosition.X + ClientSize.X + 5;
@@ -1596,39 +1858,74 @@ begin
       Control.SetSize(Classes.Point(1, ClientSize.Y - 2));
       with Control as TLabelGI do
       begin
-        if GiResourceVariant = 2 then SetFontName(SmallFontName) else SetFontName(MiniFontName);
+        if GiResourceVariant = 2 then
+          SetFontName(SmallFontName)
+        else
+          SetFontName(MiniFontName);
         SetTextAlignX(taxAuto);
         SetTextAlignY(tayCenterEx);
         SetTextColor(CurrentPixelFormat.PackRgbBytes(199, 135, 0));
-        if I = 0 then SetText('(')
-        else if I = 1 then SetText(WideString(IntToStr(LetterQuests)))
-        else if I = 2 then SetText(Separator)
-        else if I = 3 then SetText(WideString(IntToStr(ShipKillQuests)))
-        else if I = 4 then SetText(Separator)
-        else if I = 5 then SetText(WideString(IntToStr(PlanetQuests)))
-        else if I = 6 then SetText(Separator)
-        else if I = 7 then SetText(WideString(IntToStr(SystemDefenseQuests)))
-        else if I = 8 then SetText(Separator)
-        else if I = 9 then SetText(WideString(IntToStr(ShipDefenseQuests)))
-        else if I = 10 then SetText(')');
+        if I = 0 then
+          SetText('(')
+        else if I = 1 then
+          SetText(WideString(IntToStr(LetterQuests)))
+        else if I = 2 then
+          SetText(Separator)
+        else if I = 3 then
+          SetText(WideString(IntToStr(ShipKillQuests)))
+        else if I = 4 then
+          SetText(Separator)
+        else if I = 5 then
+          SetText(WideString(IntToStr(PlanetQuests)))
+        else if I = 6 then
+          SetText(Separator)
+        else if I = 7 then
+          SetText(WideString(IntToStr(SystemDefenseQuests)))
+        else if I = 8 then
+          SetText(Separator)
+        else if I = 9 then
+          SetText(WideString(IntToStr(ShipDefenseQuests)))
+        else if I = 10 then
+          SetText(')');
         if I in [1, 3, 5, 7, 9] then
         begin
-          HelpText := FormatText1(LookupLocalizedTextByKey(WideString('FormScore.Quests' + IntToStr((I - 1) div 2 + 1))),
-            '<color=255,240,100>', '<N>', GetText);
+          HelpText :=
+              FormatText1(
+                  LookupLocalizedTextByKey(
+                      WideString('FormScore.Quests' + IntToStr((I - 1) div 2 + 1))
+                  ),
+                  '<color=255,240,100>',
+                  '<N>',
+                  GetText
+              );
           MouseEnterCallback := QuestHelpMouseEnter;
           MouseLeaveCallback := QuestHelpMouseLeave;
         end;
         SetTextAlignX(taxCenter);
-        if GiResourceVariant = 1 then SetSize(Classes.Point(ClientSize.X - 3, ClientSize.Y))
-        else SetSize(Classes.Point(ClientSize.X - 4, ClientSize.Y));
+        if GiResourceVariant = 1 then
+          SetSize(Classes.Point(ClientSize.X - 3, ClientSize.Y))
+        else
+          SetSize(Classes.Point(ClientSize.X - 4, ClientSize.Y));
         Inc(X, ClientSize.X);
       end;
     end;
   end;
-  (GetByName('IPlanetBattles') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.PlanetBattles'),
-    '<color=255,240,100>', '<PlanetBattles>', WideString(IntToStr(Entry.PlanetBattles))));
-  (GetByName('IExp') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.Exp'),
-    '<color=255,222,0>', '<Exp>', WideString(IntToStr(Entry.TotalExperience))));
+  (GetByName('IPlanetBattles') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.PlanetBattles'),
+              '<color=255,240,100>',
+              '<PlanetBattles>',
+              WideString(IntToStr(Entry.PlanetBattles))
+          ));
+  (GetByName('IExp') as TLabelGI)
+      .SetText(
+          FormatText1(
+              LocalizedColorText('FormScore.Exp'),
+              '<color=255,222,0>',
+              '<Exp>',
+              WideString(IntToStr(Entry.TotalExperience))
+          ));
   ResolvedColor := '<color=255,100,50>';
   UnresolvedColor := '<color=30,252,30>';
   case Entry.BlazerEndingState of
@@ -1636,41 +1933,78 @@ begin
     1: Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerDead'), ResolvedColor);
     2: Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerSuicide'), ResolvedColor);
   else
-    if Entry.PirateEndingState = 5 then Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerChangeSideAlt'), ResolvedColor)
-    else Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerChangeSide'), ResolvedColor);
+    if Entry.PirateEndingState = 5 then
+      Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerChangeSideAlt'), ResolvedColor)
+    else
+      Text := WrapTextInColor(LocalizedColorText('FormScore.BlazerChangeSide'), ResolvedColor);
   end;
-  (GetByName('IBlazer') as TLabelGI).SetText(FormatText1(Text, '', '<Blazer>', LookupLocalizedTextByKey('ShipType.Dominator.Blazer.0')));
+  (GetByName('IBlazer') as TLabelGI)
+      .SetText(
+          FormatText1(
+              Text,
+              '',
+              '<Blazer>',
+              LookupLocalizedTextByKey('ShipType.Dominator.Blazer.0')
+          ));
   case Entry.KellerEndingState of
     0: Text := WrapTextInColor(LocalizedColorText('FormScore.KellerLeave'), UnresolvedColor);
     1: Text := WrapTextInColor(LocalizedColorText('FormScore.KellerDead'), ResolvedColor);
     2: Text := WrapTextInColor(LocalizedColorText('FormScore.KellerFly'), ResolvedColor);
-  else Text := WrapTextInColor(LocalizedColorText('FormScore.KellerNewResearch'), ResolvedColor);
+  else
+    Text := WrapTextInColor(LocalizedColorText('FormScore.KellerNewResearch'), ResolvedColor);
   end;
-  (GetByName('IKeller') as TLabelGI).SetText(FormatText1(Text, '', '<Keller>', LookupLocalizedTextByKey('ShipType.Dominator.Keller.0')));
+  (GetByName('IKeller') as TLabelGI)
+      .SetText(
+          FormatText1(
+              Text,
+              '',
+              '<Keller>',
+              LookupLocalizedTextByKey('ShipType.Dominator.Keller.0')
+          ));
   case Entry.TerronEndingState of
     0: Text := WrapTextInColor(LocalizedColorText('FormScore.TerronLeave'), UnresolvedColor);
     1: Text := WrapTextInColor(LocalizedColorText('FormScore.TerronDead'), ResolvedColor);
     2: Text := WrapTextInColor(LocalizedColorText('FormScore.TerronStar'), ResolvedColor);
-  else Text := WrapTextInColor(LocalizedColorText('FormScore.TerronBattle'), ResolvedColor);
+  else
+    Text := WrapTextInColor(LocalizedColorText('FormScore.TerronBattle'), ResolvedColor);
   end;
-  (GetByName('ITerron') as TLabelGI).SetText(FormatText1(Text, '', '<Terron>', LookupLocalizedTextByKey('ShipType.Dominator.Terron.0')));
+  (GetByName('ITerron') as TLabelGI)
+      .SetText(
+          FormatText1(
+              Text,
+              '',
+              '<Terron>',
+              LookupLocalizedTextByKey('ShipType.Dominator.Terron.0')
+          ));
   if Entry.PirateEndingState > 0 then
-    Text := WrapTextInColor(LocalizedColorText(WideString('FormScore.PirateWin' + IntToStr(Entry.PirateEndingState))), ResolvedColor)
-  else Text := WrapTextInColor(LocalizedColorText('FormScore.PirateWin0'), UnresolvedColor);
+    Text :=
+        WrapTextInColor(
+            LocalizedColorText(
+                WideString('FormScore.PirateWin' + IntToStr(Entry.PirateEndingState))
+            ),
+            ResolvedColor
+        )
+  else
+    Text := WrapTextInColor(LocalizedColorText('FormScore.PirateWin0'), UnresolvedColor);
   with GetByName('IPirate') as TLabelGI do
   begin
     SetActive(True);
     SetText(Text);
   end;
   if Entry.VictoryAchieved then
-    (GetByName('ITotal') as TLabelGI).SetText(FormatText1(LocalizedColorText('FormScore.TotalWin'),
-      '<color=255,222,0>', '<Total>', WideString(IntToStr(Entry.TotalScore))))
-  else (GetByName('ITotal') as TLabelGI).SetText(LocalizedColorText('FormScore.TotalLoss'));
+    (GetByName('ITotal') as TLabelGI)
+        .SetText(
+            FormatText1(
+                LocalizedColorText('FormScore.TotalWin'),
+                '<color=255,222,0>',
+                '<Total>',
+                WideString(IntToStr(Entry.TotalScore))
+            ))
+  else
+    (GetByName('ITotal') as TLabelGI).SetText(LocalizedColorText('FormScore.TotalLoss'));
   (GetByName('INote') as TLabelGI).SetText(LocalizedColorText('FormScore.Note'));
 end;
-{ @end $580610 }
 
-{ @routine $583278 TfScore_EntryMouseDown }
 procedure TfScore.EntryMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
 begin
   if not Sender.IsOccludedAtPoint(Point) then
@@ -1680,9 +2014,7 @@ begin
     RefreshDetails;
   end;
 end;
-{ @end $583278 }
 
-{ @routine $583300 TfScore_ExportEntryClicked }
 procedure TfScore.ExportEntryClicked(Sender: TObjectGI);
 var
   Entry: TfScoreUnit;
@@ -1691,51 +2023,58 @@ var
 begin
   Index := Sender.UserValue;
   Entry := Entries[Index];
-  if SteamInitialized and SteamLeaderboardFound and not Entry.Disqualified then SteamUploadScore(Entry.TotalScore);
-  if Index + 1 < 10 then FileName := GetGameUserDirectory + 'ToServer0' + WideString(IntToStr(Index + 1)) + '.txt'
-  else FileName := GetGameUserDirectory + 'ToServer' + WideString(IntToStr(Index + 1)) + '.txt';
+  if SteamInitialized and SteamLeaderboardFound and not Entry.Disqualified then
+    SteamUploadScore(Entry.TotalScore);
+  if Index + 1 < 10 then
+    FileName := GetGameUserDirectory + 'ToServer0' + WideString(IntToStr(Index + 1)) + '.txt'
+  else
+    FileName := GetGameUserDirectory + 'ToServer' + WideString(IntToStr(Index + 1)) + '.txt';
   Entry.ExportToFile(FileName);
   Text := LocalizedColorText('FormScore.ToServer');
   Text := ReplaceColoredToken(Text, '<Player>', Entry.PlayerName, '<color=255,240,100>');
-  Text := ReplaceColoredToken(Text, '<File>', ReplaceAllWideString(FileName, '\', ' \ '), '<color=255,240,100>');
-  Text := ReplaceColoredToken(Text, '<WinGameDate>', FormatGameTurnDate(Entry.FinishedTurn), '<color=255,240,100>');
+  Text :=
+      ReplaceColoredToken(
+          Text,
+          '<File>',
+          ReplaceAllWideString(FileName, '\', ' \ '),
+          '<color=255,240,100>'
+      );
+  Text :=
+      ReplaceColoredToken(
+          Text,
+          '<WinGameDate>',
+          FormatGameTurnDate(Entry.FinishedTurn),
+          '<color=255,240,100>'
+      );
   Entry.Exported := True;
   ShowMessageBoxGI(Self, Text, mbgOK or mbgUnused04 or mbgLeftAlign);
   RefreshDetails;
 end;
-{ @end $583300 }
 
-{ @routine $583610 TfScore_QuestHelpMouseEnter }
 procedure TfScore.QuestHelpMouseEnter(Sender: TObjectGI);
 begin
   ShowControlHelp(Sender, True);
 end;
-{ @end $583610 }
 
-{ @routine $583630 TfScore_QuestHelpMouseLeave }
 procedure TfScore.QuestHelpMouseLeave(Sender: TObjectGI);
 begin
   ShowControlHelp(Sender, False);
 end;
-{ @end $583630 }
 
-{ @routine $583650 TfScore_ShowControlHelp }
 procedure TfScore.ShowControlHelp(Sender: TObjectGI; Visible: Boolean);
 begin
   with GetByName('LabelHelp') as TLabelGI do
   begin
-    if Sender.HelpText = '' then Visible := False;
+    if Sender.HelpText = '' then
+      Visible := False;
     SetActive(Visible);
     SetText(Sender.HelpText);
   end;
 end;
-{ @end $583650 }
 
-{ @routine $5836C4 TfScore_SelectMusic }
 procedure TfScore.SelectMusic;
 begin
   MusicManager.PlayCategory('Base');
 end;
-{ @end $5836C4 }
 
 end.

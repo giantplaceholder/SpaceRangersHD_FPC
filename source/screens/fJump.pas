@@ -1,49 +1,81 @@
 unit fJump;
-// Unit bracket (inferred): .text 0x006709E8..0x00671829; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses GI_MessageLoop, fPanelLoad;
+uses
+  GI_MessageLoop,
+  fPanelLoad;
 
 type
-  TfJump = class(TMessageLoopGI) // @size 0xEC
-  public
-    TransitionTimer: PCallbackTimerGI; // @offset 0xD0
-    LoadingStarted: Boolean; // @offset $D4
-    NoPendingLoads: Boolean; // @offset $D5
-    Progress: Single; // @offset $D8
-    RestoreOrdersOnArrival: Boolean; // @offset $E8
-    LoadPanel: TfPanelLoad; // @offset 0xDC
-    MovieStartTick: Cardinal; // @offset 0xE0
-    MovieTimer: PCallbackTimerGI; // @offset 0xE4
 
-    constructor Create; // @addr 0x670A7C @ida "TfJump *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x670AD4 @ida "void __usercall $name(TfJump *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure OnOpen; override; // @addr 0x670CB8
-    procedure OnClose; override; // @addr 0x671098
-    procedure SelectMusic; override; // @addr 0x671820
-    procedure InitializeLayout; override; // @addr 0x670B2C
-    procedure AdvanceTravel(Timer: PCallbackTimerGI; UserData: Integer); // @addr $671120
-    procedure AdvanceLoading(Timer: PCallbackTimerGI; UserData: Integer); // @addr $671440
-    procedure AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer); // @addr $671700
-    function StopMovie: Boolean; // @addr $67176C
+  TfJump = class;
+
+  TfJump = class(TMessageLoopGI)
+    TransitionTimer: PCallbackTimerGI;
+    LoadingStarted: Boolean;
+    NoPendingLoads: Boolean;
+    GapD6: array[0..1] of Byte;
+    Progress: Single;
+    LoadPanel: TfPanelLoad;
+    MovieStartTick: Cardinal;
+    MovieTimer: PCallbackTimerGI;
+    RestoreOrdersOnArrival: Boolean;
+    GapE9: array[0..2] of Byte;
+    procedure OnOpen; override;
+    procedure OnClose; override;
+    procedure SelectMusic; override;
+    procedure InitializeLayout; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure AdvanceTravel(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceLoading(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer);
+    function StopMovie: Boolean;
   end;
 
 implementation
 
-uses aGalaxyStruct, SysUtils, Classes, Types, Math, Windows, MMSystem, Globals, GlobalsV, GR_Main,
-  GR_DX, GR_Music, GI_XviD, EC_Str, aPlayer, aShip, aGalaxy, aRuins, aScript,
-  aItem, ThreadCalc, aCalc, fLoad, fStarMap, fRuinsTalk;
+uses
+  EC_Cache,
+  EC_Struct,
+  aGalaxyStruct,
+  SysUtils,
+  Classes,
+  Types,
+  Math,
+  Windows,
+  MMSystem,
+  Globals,
+  GlobalsV,
+  GR_Main,
+  GR_DX,
+  GR_Music,
+  GI_XviD,
+  EC_Str,
+  aPlayer,
+  aShip,
+  aGalaxy,
+  aRuins,
+  aScript,
+  aItem,
+  ThreadCalc,
+  aCalc,
+  fLoad,
+  fStarMap,
+  fRuinsTalk;
 
-{ @routine $670A7C TfJump_Create }
 constructor TfJump.Create;
 begin
   inherited Create;
   LoadPanel := TfPanelLoad.Create;
 end;
-{ @end $670A7C }
 
-{ @routine $670AD4 TfJump_Destroy }
 destructor TfJump.Destroy;
 begin
   if LoadPanel <> nil then
@@ -53,9 +85,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $670AD4 }
 
-{ @routine $670B2C TfJump_InitializeLayout }
 procedure TfJump.InitializeLayout;
 begin
   inherited InitializeLayout;
@@ -70,14 +100,12 @@ begin
   AppendLogLineThreadSafe('ok');
   RestoreOrdersOnArrival := False;
 end;
-{ @end $670B2C }
 
-{ @routine $670CB8 TfJump_OnOpen }
 procedure TfJump.OnOpen;
 var
   MovieConfig, MoviePath: WideString;
-  // @nested $670C2C BeginTravel
-  procedure BeginTravel; cdecl; // @addr $670C2C @ida "void __cdecl $name(void *ParentFrame);"
+
+  procedure BeginTravel; cdecl;
   begin
     if TransitionTimer <> nil then
     begin
@@ -100,7 +128,8 @@ begin
     NoPendingLoads := False;
     if GetPlayer.InHyperspace or GetPlayer.IsDockedToShip then
       TransitionTimer := ScheduleCallbackTimer(20, 20, AdvanceTravel)
-    else AdvanceLoading(nil, 0);
+    else
+      AdvanceLoading(nil, 0);
     Progress := 0;
     LoadPanel.SetProgress(0);
     LoadPanel.Show;
@@ -140,9 +169,11 @@ begin
         if MusicEnabled and (CountDelimitedPartsW(MovieConfig, ',') > 1) then
         begin
           MusicManager.StopImmediately;
-          while MusicManager.IsPlaying do SysUtils.Sleep(1);
+          while MusicManager.IsPlaying do
+            SysUtils.Sleep(1);
           MusicManager.PlayCategory(ExtractDelimitedPartW(MovieConfig, 1, ','));
-          while not MusicManager.IsPlaying do SysUtils.Sleep(1);
+          while not MusicManager.IsPlaying do
+            SysUtils.Sleep(1);
         end;
         MovieStartTick := timeGetTime;
         if MovieTimer <> nil then
@@ -160,9 +191,7 @@ begin
     end;
   end;
 end;
-{ @end $670CB8 }
 
-{ @routine $671098 TfJump_OnClose }
 procedure TfJump.OnClose;
 begin
   StopMovie;
@@ -178,25 +207,28 @@ begin
     TransitionTimer := nil;
   end;
 end;
-{ @end $671098 }
 
-{ @routine $671120 TfJump_AdvanceTravel }
 procedure TfJump.AdvanceTravel(Timer: PCallbackTimerGI; UserData: Integer);
 var
   PreviousStar: TStar;
 begin
   if (GetPlayer = nil) or (GetPlayer.GetHull.HullPoints <= 0) then
   begin
-    if GetPlayer <> nil then Galaxy.ScoreScreenDismissed := 1;
-    while GetPlayer <> nil do SysUtils.Sleep(1);
+    if GetPlayer <> nil then
+      Galaxy.ScoreScreenDismissed := 1;
+    while GetPlayer <> nil do
+      SysUtils.Sleep(1);
     RequestedScreenId := screenGameEnd;
     RequestClose(1);
     Exit;
   end;
   Progress := Progress + 0.008;
-  if Progress > 0.49 then Progress := 0.5;
+  if Progress > 0.49 then
+    Progress := 0.5;
   LoadPanel.SetProgress(Progress);
-  if IsTurnCalculationRunningUI or (TurnCalculationPhase in [tcpGalaxyRunning, tcpPlayerStarRunning]) then Exit;
+  if IsTurnCalculationRunningUI
+      or (TurnCalculationPhase in [tcpGalaxyRunning, tcpPlayerStarRunning]) then
+    Exit;
   if TurnCalculationPhase = tcpGalaxyFinished then
   begin
     QueuePlayerStarTurnCalculation;
@@ -204,8 +236,9 @@ begin
   end;
   if GetPlayer.IsDockedToShip then
   begin
-    if (GetPlayer.DockedTo.Order <> soTeleport) and
-      (((GetPlayer.DockedTo as TRuins).FlyToStar = GetPlayer.DockedTo.CurrentStar) or ((GetPlayer.DockedTo as TRuins).FlyToStar = nil)) then
+    if (GetPlayer.DockedTo.Order <> soTeleport)
+        and (((GetPlayer.DockedTo as TRuins).FlyToStar = GetPlayer.DockedTo.CurrentStar)
+            or ((GetPlayer.DockedTo as TRuins).FlyToStar = nil)) then
     begin
       QueueGalaxyTurnCalculation;
       AdvanceLoading(nil, 0);
@@ -227,8 +260,8 @@ begin
   end
   else
   begin
-    if not (GetPlayer.Order in [soJump, soJumpHole, soTeleport]) or
-      ((GetPlayer.Order = soJumpHole) and (GetPlayer.OrderStateData = -65536)) then
+    if not (GetPlayer.Order in [soJump, soJumpHole, soTeleport])
+        or ((GetPlayer.Order = soJumpHole) and (GetPlayer.OrderStateData = -65536)) then
     begin
       QueueGalaxyTurnCalculation;
       StarMapScreen.SetMapCenterManually(TruncatePointF(GetPlayer.Position));
@@ -251,9 +284,7 @@ begin
     Present;
   end;
 end;
-{ @end $671120 }
 
-{ @routine $671440 TfJump_AdvanceLoading }
 procedure TfJump.AdvanceLoading(Timer: PCallbackTimerGI; UserData: Integer);
 var
   Loads: TList;
@@ -282,9 +313,16 @@ begin
   end
   else
   begin
-    if NoPendingLoads then Progress := Progress + 0.008
-    else Progress := Min(Progress + 0.008, CacheLoader.CompletedLoadCount / CacheLoader.TotalLoadCount * 0.5 + 0.5);
-    if Progress > 0.99 then Progress := 1;
+    if NoPendingLoads then
+      Progress := Progress + 0.008
+    else
+      Progress :=
+          Min(
+              Progress + 0.008,
+              CacheLoader.CompletedLoadCount / CacheLoader.TotalLoadCount * 0.5 + 0.5
+          );
+    if Progress > 0.99 then
+      Progress := 1;
     LoadPanel.SetProgress(Progress);
     if (NoPendingLoads or not CacheLoader.IsRunning) and (Progress >= 1) then
     begin
@@ -312,20 +350,18 @@ begin
     end;
   end;
 end;
-{ @end $671440 }
 
-{ @routine $671700 TfJump_AdvanceMovie }
 procedure TfJump.AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer);
 begin
-  if (GetByName('Film') as TxvidGI).SetPlaybackTime(timeGetTime - MovieStartTick) then StopMovie;
+  if (GetByName('Film') as TxvidGI).SetPlaybackTime(timeGetTime - MovieStartTick) then
+    StopMovie;
 end;
-{ @end $671700 }
 
-{ @routine $67176C TfJump_StopMovie }
 function TfJump.StopMovie: Boolean;
 begin
   Result := MovieTimer <> nil;
-  if MusicEnabled and Result then MusicManager.StopImmediately;
+  if MusicEnabled and Result then
+    MusicManager.StopImmediately;
   if MovieTimer <> nil then
   begin
     CancelCallbackTimer(MovieTimer);
@@ -339,12 +375,9 @@ begin
   end;
   TransitionTimer := ScheduleCallbackTimer(20, 20, AdvanceTravel);
 end;
-{ @end $67176C }
 
-{ @routine $671820 TfJump_SelectMusic }
 procedure TfJump.SelectMusic;
 begin
 end;
-{ @end $671820 }
 
 end.

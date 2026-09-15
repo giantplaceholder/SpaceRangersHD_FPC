@@ -1,63 +1,87 @@
 unit GI_PSWeapon16Esodafer;
-// Native Esodafer projectile, reusable particles and branching impact sparks.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_MessageLoop, GI_PSWeapon, Types;
+uses
+  EC_Struct,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  Types;
 
 type
-  PEsodaferParticle = ^TEsodaferParticle;
-  TEsodaferParticle = record // @size $20
-    Prev: PEsodaferParticle; // @offset $00
-    Next: PEsodaferParticle; // @offset $04
-    Position: TPointF; // @offset $08
-    Color: Word; // @offset $10
-    Alpha: Byte; // @offset $12
-    Velocity: TPointF; // @offset $14
-    State: Byte; // @offset $1C
+
+  PointerToTEsodaferParticle = ^TEsodaferParticle;
+
+  PEsodaferParticle = PointerToTEsodaferParticle;
+
+  TEsodaferParticle = record
+    Prev: PEsodaferParticle;
+    Next: PEsodaferParticle;
+    Position: TPointF;
+    Color: Word;
+    Alpha: Byte;
+    Gap13: array[0..0] of Byte;
+    Velocity: TPointF;
+    State: Byte;
+    Gap1D: array[0..2] of Byte;
   end;
+
   TEsodaferPalette = array[0..2] of Word;
-  TEsodaferPalettes = array of TEsodaferPalette;
 
 var
-  EsodaferPalettes: array of TEsodaferPalette; // @addr $88AF00
+
+  EsodaferPalettes: array of TEsodaferPalette;
 
 type
-  TPSWeapon16Esodafer = class(TPSWeaponGI) // @size $168
-  public
-    HalfWidth: Integer; // @offset $130
-    FirstParticle: PEsodaferParticle; // @offset $134
-    LastParticle: PEsodaferParticle; // @offset $138
-    Colors: TEsodaferPalette; // @offset $13C
-    ProjectionBounds: TRect; // @offset $142
-    OriginalLength: Double; // @offset $158
-    LengthScale: Double; // @offset $160
 
-    constructor Create(Owner: TObjectGI; APaletteIndex: Integer); // @addr $696018 @ida "TPSWeapon16Esodafer *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>, int APaletteIndex@<^0>);"
-    destructor Destroy; override; // @addr $6960E8 @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure SetColors(Primary, Secondary, Tertiary: Word); // @addr $696124
-    procedure SetPosition(Position: TPoint); override; // @addr $696168 @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, TPoint *Position@<edx>);"
-    procedure SetTargetPoint(Point: TPoint); override; // @addr $6961AC @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, TPoint *Point@<edx>);"
-    procedure UpdateProjectionBounds; // @addr $696200
-    procedure UpdateHitTestBounds; override; // @addr $69654C
-    function GetLocalBounds: TRect; override; // @addr $6965AC @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, TRect *Result@<edx>);"
-    function AddParticle: PEsodaferParticle; // @addr $696610
-    procedure ClearParticles; // @addr $696688
-    procedure InvalidateRect(Rect: TRect); override; // @addr $6966DC @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, TRect *Rect@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override; // @addr $6967F8
-    procedure Draw(ClipRect: TRect); override; // @addr $697178 @ida "void __usercall $name(TPSWeapon16Esodafer *Self@<eax>, TRect *ClipRect@<edx>);"
+  TPSWeapon16Esodafer = class;
+
+  TPSWeapon16Esodafer = class(TPSWeaponGI)
+    HalfWidth: Integer;
+    FirstParticle: PEsodaferParticle;
+    LastParticle: PEsodaferParticle;
+    Colors: TEsodaferPalette;
+    ProjectionBounds: TRect;
+    Gap152: array[0..5] of Byte;
+    OriginalLength: Double;
+    LengthScale: Double;
+    procedure UpdateHitTestBounds; override;
+    procedure SetPosition(Position: TPoint); override;
+    function GetLocalBounds: TRect; override;
+    procedure InvalidateRect(Rect: TRect); override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure SetTargetPoint(Point: TPoint); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
+    destructor Destroy; override;
+    procedure SetColors(Primary: Word; Secondary: Word; Tertiary: Word);
+    procedure UpdateProjectionBounds;
+    function AddParticle: PEsodaferParticle;
+    procedure ClearParticles;
   end;
 
-procedure LoadEsodaferPalettes; // @addr $6973AC
+procedure LoadEsodaferPalettes;
 
 implementation
 
-// @unit-initialization $877954
-// @unit-finalization $697674
+uses
+  GlobalsV,
+  SysUtils,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  aMyFunction,
+  Globals;
 
-uses SysUtils, Math, EC_BlockPar, EC_Str, EC_Mem, GR_Main, GR_DX, aMyFunction, Globals;
-
-{ @routine $696018 TPSWeapon16Esodafer_Create }
 constructor TPSWeapon16Esodafer.Create(Owner: TObjectGI; APaletteIndex: Integer);
 begin
   inherited Create(Owner);
@@ -66,28 +90,26 @@ begin
   OriginalLength := 1;
   RemainingTicks := 160;
   UpdateProjectionBounds;
-  SetColors(EsodaferPalettes[APaletteIndex][0], EsodaferPalettes[APaletteIndex][1], EsodaferPalettes[APaletteIndex][2]);
+  SetColors(
+      EsodaferPalettes[APaletteIndex][0],
+      EsodaferPalettes[APaletteIndex][1],
+      EsodaferPalettes[APaletteIndex][2]
+  );
 end;
-{ @end $696018 }
 
-{ @routine $6960E8 TPSWeapon16Esodafer_Destroy }
 destructor TPSWeapon16Esodafer.Destroy;
 begin
   ClearParticles;
   inherited Destroy;
 end;
-{ @end $6960E8 }
 
-{ @routine $696124 TPSWeapon16Esodafer_SetColors }
 procedure TPSWeapon16Esodafer.SetColors(Primary, Secondary, Tertiary: Word);
 begin
   Colors[0] := Primary;
   Colors[1] := Secondary;
   Colors[2] := Tertiary;
 end;
-{ @end $696124 }
 
-{ @routine $696168 TPSWeapon16Esodafer_SetPosition }
 procedure TPSWeapon16Esodafer.SetPosition(Position: TPoint);
 begin
   if (LocalPosition.X <> Position.X) or (LocalPosition.Y <> Position.Y) then
@@ -96,9 +118,7 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $696168 }
 
-{ @routine $6961AC TPSWeapon16Esodafer_SetTargetPoint }
 procedure TPSWeapon16Esodafer.SetTargetPoint(Point: TPoint);
 begin
   if (TargetPoint.X <> Point.X) or (TargetPoint.Y <> Point.Y) then
@@ -107,15 +127,14 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $6961AC }
 
-{ @routine $696200 TPSWeapon16Esodafer_UpdateProjectionBounds }
 procedure TPSWeapon16Esodafer.UpdateProjectionBounds;
 var
   Sine, Cosine, Distance, A, B, C, D: Single;
 begin
   Distance := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y));
-  if Distance = 0 then Distance := 1;
+  if Distance = 0 then
+    Distance := 1;
   Cosine := -(TargetPoint.Y - LocalPosition.Y) / Distance;
   Sine := (TargetPoint.X - LocalPosition.X) / Distance;
   A := (-HalfWidth - 12) * Cosine - (-Distance - 100.0) * Sine;
@@ -132,9 +151,7 @@ begin
   ProjectionBounds.Top := Floor(Math.Min(Math.Min(Math.Min(A, B), C), D));
   ProjectionBounds.Bottom := Ceil(Math.Max(Math.Max(Math.Max(A, B), C), D));
 end;
-{ @end $696200 }
 
-{ @routine $69654C TPSWeapon16Esodafer_UpdateHitTestBounds }
 procedure TPSWeapon16Esodafer.UpdateHitTestBounds;
 begin
   HitTestBounds.Left := ProjectionBounds.Left + AbsolutePosition.X;
@@ -142,9 +159,7 @@ begin
   HitTestBounds.Right := ProjectionBounds.Right + AbsolutePosition.X;
   HitTestBounds.Bottom := ProjectionBounds.Bottom + AbsolutePosition.Y;
 end;
-{ @end $69654C }
 
-{ @routine $6965AC TPSWeapon16Esodafer_GetLocalBounds }
 function TPSWeapon16Esodafer.GetLocalBounds: TRect;
 begin
   Result.Left := ProjectionBounds.Left + LocalPosition.X;
@@ -152,24 +167,22 @@ begin
   Result.Right := ProjectionBounds.Right + LocalPosition.X;
   Result.Bottom := ProjectionBounds.Bottom + LocalPosition.Y;
 end;
-{ @end $6965AC }
 
-{ @routine $696610 TPSWeapon16Esodafer_AddParticle }
 function TPSWeapon16Esodafer.AddParticle: PEsodaferParticle;
 var
   Particle: PEsodaferParticle;
 begin
   Particle := AllocEC(SizeOf(TEsodaferParticle));
-  if LastParticle <> nil then LastParticle.Next := Particle;
+  if LastParticle <> nil then
+    LastParticle.Next := Particle;
   Particle.Prev := LastParticle;
   Particle.Next := nil;
   LastParticle := Particle;
-  if FirstParticle = nil then FirstParticle := Particle;
+  if FirstParticle = nil then
+    FirstParticle := Particle;
   Result := Particle;
 end;
-{ @end $696610 }
 
-{ @routine $696688 TPSWeapon16Esodafer_ClearParticles }
 procedure TPSWeapon16Esodafer.ClearParticles;
 var
   Particle, Current: PEsodaferParticle;
@@ -184,15 +197,17 @@ begin
   FirstParticle := nil;
   LastParticle := nil;
 end;
-{ @end $696688 }
 
-{ @routine $6966DC TPSWeapon16Esodafer_InvalidateRect }
 procedure TPSWeapon16Esodafer.InvalidateRect(Rect: TRect);
 var
   Target: TPoint;
   Intersection: TRect;
 begin
-  MessageLoop.UpdateRects.AddScreenClippedRect(HitTestBounds, Parent.ToAbsolutePoint(LocalPosition), Parent.ToAbsolutePoint(TargetPoint));
+  MessageLoop.UpdateRects.AddScreenClippedRect(
+      HitTestBounds,
+      Parent.ToAbsolutePoint(LocalPosition),
+      Parent.ToAbsolutePoint(TargetPoint)
+  );
   Target := Parent.ToAbsolutePoint(TargetPoint);
   Rect.Left := Target.X - 24;
   Rect.Right := Target.X + 24;
@@ -201,23 +216,22 @@ begin
   if IntersectRects(Intersection, Rect, GameScreenRect) then
     MessageLoop.QueueUpdateRect(Intersection);
 end;
-{ @end $6966DC }
 
-{ @routine $6967F8 TPSWeapon16Esodafer_Advance }
 procedure TPSWeapon16Esodafer.Advance(Timer: PCallbackTimerGI; UserData: Integer);
 var
   I: Integer;
   Distance, Angle, Speed: Single;
   Particle, Current, Spark: PEsodaferParticle;
 
-  // @nested $6967A8 AcquireEsodaferParticle
-  function AcquireEsodaferParticle: PEsodaferParticle; // @addr $6967A8 @ida "TEsodaferParticle *__usercall $name@<eax>(void *ParentFrame@<^0>);" @stackpop 0 @calls "0x696C50, 0x696DB8"
+  function AcquireEsodaferParticle: PEsodaferParticle;
   var
     Candidate: PEsodaferParticle;
   begin
     Candidate := FirstParticle;
-    while (Candidate <> nil) and (Candidate.State <> 255) do Candidate := Candidate.Next;
-    if Candidate = nil then Candidate := AddParticle;
+    while (Candidate <> nil) and (Candidate.State <> 255) do
+      Candidate := Candidate.Next;
+    if Candidate = nil then
+      Candidate := AddParticle;
     Result := Candidate;
   end;
 
@@ -225,7 +239,8 @@ begin
   Invalidate;
   if (FirstParticle = nil) and (RemainingTicks >= 24) then
   begin
-    Distance := Round(Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)));
+    Distance :=
+        Round(Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)));
     OriginalLength := Math.Max(70, Distance);
     Particle := AddParticle;
     Particle.Position := MakePointF(0, 0);
@@ -238,7 +253,8 @@ begin
     for I := 1 to 16 do
     begin
       Particle := AddParticle;
-      Particle.Position := MakePointF(Cos(I * 3.14 * 0.125) * 2.0, Sin(I * 3.14 * 0.125) * 2.0 - 10.0);
+      Particle.Position :=
+          MakePointF(Cos(I * 3.14 * 0.125) * 2.0, Sin(I * 3.14 * 0.125) * 2.0 - 10.0);
       Particle.Color := Colors[1];
       Particle.Alpha := 0;
       Particle.Velocity := MakePointF(0, Speed);
@@ -247,7 +263,8 @@ begin
     for I := 1 to 16 do
     begin
       Particle := AddParticle;
-      Particle.Position := MakePointF(Cos(I * 3.14 * 0.125) * 1.5, Sin(I * 3.14 * 0.125) * 1.5 - 20.0);
+      Particle.Position :=
+          MakePointF(Cos(I * 3.14 * 0.125) * 1.5, Sin(I * 3.14 * 0.125) * 1.5 - 20.0);
       Particle.Color := Colors[1];
       Particle.Alpha := 0;
       Particle.Velocity := MakePointF(Particle.Position.X * 0.5, Speed);
@@ -256,7 +273,8 @@ begin
     for I := 1 to 16 do
     begin
       Particle := AddParticle;
-      Particle.Position := MakePointF(Cos(I * 3.14 * 0.125) * 1.0, Sin(I * 3.14 * 0.125) * 1.0 - 30.0);
+      Particle.Position :=
+          MakePointF(Cos(I * 3.14 * 0.125) * 1.0, Sin(I * 3.14 * 0.125) * 1.0 - 30.0);
       Particle.Color := Colors[1];
       Particle.Alpha := 0;
       Particle.Velocity := MakePointF(Particle.Position.X * 1.0, Speed);
@@ -266,7 +284,9 @@ begin
   else
   begin
     Distance := OriginalLength;
-    LengthScale := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)) / OriginalLength;
+    LengthScale :=
+        Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y))
+            / OriginalLength;
     UpdateHitTestBounds;
     Particle := FirstParticle;
     while Particle <> nil do
@@ -281,10 +301,15 @@ begin
         Spark.Alpha := Current.Alpha;
         Speed := 0.06 * Distance / RemainingTicks;
         Angle := Random(360) * 0.01745329252;
-        Spark.Velocity := MakePointF(Cos(Angle) * Speed + Current.Velocity.X, Sin(Angle) * Speed + Current.Velocity.Y);
+        Spark.Velocity :=
+            MakePointF(
+                Cos(Angle) * Speed + Current.Velocity.X,
+                Sin(Angle) * Speed + Current.Velocity.Y
+            );
         Spark.State := 2;
       end
-      else if ((Current.State = 2) and (Random(101) < 3)) or ((Current.State = 3) and (Random(101) < 10)) then
+      else if ((Current.State = 2) and (Random(101) < 3))
+          or ((Current.State = 3) and (Random(101) < 10)) then
       begin
         if Current.Alpha > 100 then
         begin
@@ -297,25 +322,37 @@ begin
             Spark.Position := Current.Position;
             Spark.Color := Colors[Random(3)];
             Spark.Alpha := Current.Alpha;
-            if Current.State = 3 then Speed := 20.0 / RemainingTicks
-            else Speed := 0.04 * Distance / RemainingTicks;
+            if Current.State = 3 then
+              Speed := 20.0 / RemainingTicks
+            else
+              Speed := 0.04 * Distance / RemainingTicks;
             Angle := Random(360) * 0.01745329252;
-            Spark.Velocity := MakePointF(Cos(Angle) * Speed + Current.Velocity.X, Sin(Angle) * Speed + Current.Velocity.Y);
+            Spark.Velocity :=
+                MakePointF(
+                    Cos(Angle) * Speed + Current.Velocity.X,
+                    Sin(Angle) * Speed + Current.Velocity.Y
+                );
             Spark.State := Current.State;
           end;
         end
-        else Current.State := 255;
+        else
+          Current.State := 255;
       end;
       if (Current.State = 2) and (FirstParticle.State = 1) then
       begin
-        if Current.Alpha >= 3 then Dec(Current.Alpha, 3);
-        Current.Velocity.X := (Current.Velocity.X - FirstParticle.Velocity.X) * 0.8 + FirstParticle.Velocity.X;
-        Current.Velocity.Y := (Current.Velocity.Y - FirstParticle.Velocity.Y) * 0.8 + FirstParticle.Velocity.Y;
+        if Current.Alpha >= 3 then
+          Dec(Current.Alpha, 3);
+        Current.Velocity.X :=
+            (Current.Velocity.X - FirstParticle.Velocity.X) * 0.8 + FirstParticle.Velocity.X;
+        Current.Velocity.Y :=
+            (Current.Velocity.Y - FirstParticle.Velocity.Y) * 0.8 + FirstParticle.Velocity.Y;
       end;
       if (RemainingTicks > 150) and (Current.State in [1, 2]) then
         Current.Alpha := Math.Min(255, Current.Alpha + 30);
-      if (RemainingTicks < 40) and (Current.State in [2, 3]) and (Current.Alpha >= 5) then Dec(Current.Alpha, 5);
-      if (Current.Alpha < 100) and (RemainingTicks < 150) then Current.State := 255;
+      if (RemainingTicks < 40) and (Current.State in [2, 3]) and (Current.Alpha >= 5) then
+        Dec(Current.Alpha, 5);
+      if (Current.Alpha < 100) and (RemainingTicks < 150) then
+        Current.State := 255;
       Current.Position.X := Current.Position.X + Current.Velocity.X;
       Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
       if (Current.Position.Y >= Distance) and (Current.State in [1, 2]) then
@@ -323,17 +360,17 @@ begin
         Current.Position.Y := (Current.Position.Y - Distance) * 0.3 + Distance;
         Speed := 40.0 / RemainingTicks;
         Angle := Random(360) * 0.01745329252;
-        if Current.State = 2 then Current.Velocity := MakePointF(Cos(Angle) * Speed, Sin(Angle) * Speed)
-        else Current.Velocity := MakePointF(0, 0);
+        if Current.State = 2 then
+          Current.Velocity := MakePointF(Cos(Angle) * Speed, Sin(Angle) * Speed)
+        else
+          Current.Velocity := MakePointF(0, 0);
         Current.State := 3;
       end;
     end;
   end;
   Dec(RemainingTicks);
 end;
-{ @end $6967F8 }
 
-{ @routine $697178 TPSWeapon16Esodafer_Draw }
 procedure TPSWeapon16Esodafer.Draw(ClipRect: TRect);
 var
   Angle, Sine, Cosine, PX, PY: Single;
@@ -341,7 +378,8 @@ var
   X, Y: Integer;
 begin
   Y := -(TargetPoint.Y - LocalPosition.Y);
-  if Y = 0 then Inc(Y);
+  if Y = 0 then
+    Inc(Y);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, Y);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -372,16 +410,17 @@ begin
         PY := -Particle.Position.Y * LengthScale;
         X := Round(PX * Cosine - PY * Sine + AbsolutePosition.X);
         Y := Round(PX * Sine + PY * Cosine + AbsolutePosition.Y);
-        if (X >= ClipRect.Left) and (X < ClipRect.Right) and (Y >= ClipRect.Top) and (Y < ClipRect.Bottom) then
+        if (X >= ClipRect.Left)
+            and (X < ClipRect.Right)
+            and (Y >= ClipRect.Top)
+            and (Y < ClipRect.Bottom) then
           ScreenRenderBuffer.BlendPixel16(X, Y, Particle.Color, Particle.Alpha);
       end;
       Particle := Particle.Next;
     end;
   end;
 end;
-{ @end $697178 }
 
-{ @routine $6973AC LoadEsodaferPalettes }
 procedure LoadEsodaferPalettes;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -404,14 +443,15 @@ begin
         if PaletteBlock.CountParams('Color' + IntToStr(ColorIndex)) > 0 then
         begin
           Text := PaletteBlock.GetParam('Color' + IntToStr(ColorIndex));
-          EsodaferPalettes[Index][ColorIndex] := CurrentPixelFormat.PackNormalizedRgb(
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ',')));
+          EsodaferPalettes[Index][ColorIndex] :=
+              CurrentPixelFormat.PackNormalizedRgb(
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ','))
+              );
         end;
     end;
   end;
 end;
-{ @end $6973AC }
 
 end.

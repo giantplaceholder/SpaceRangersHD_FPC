@@ -1,37 +1,54 @@
 unit GI_AlphaImage;
-// Unit bracket (inferred): .text 0x00475A3C..0x00476914; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_BlockPar, EC_CacheAlphaBitmap, GI_Main, GI_MessageLoop, Types;
+uses
+  Classes,
+  EC_BlockPar,
+  EC_CacheAlphaBitmap,
+  GI_Main,
+  GI_MessageLoop,
+  Types;
 
 type
-  TAlphaImageGI = class(TObjectGI) // @size 0x128
-  public
-    ImageCache: TCAlphaBitmapControlEC; // @offset 0x120
-    ImageKindX: TImageKindXGI; // @offset 0x124
-    ImageKindY: TImageKindYGI; // @offset 0x125
 
-    constructor Create(Owner: TObjectGI); // @addr 0x475B60 @ida "TAlphaImageGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    destructor Destroy; override; // @addr 0x475BE8 @ida "void __usercall $name(TAlphaImageGI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; override; // @addr 0x475C34
-    procedure SetImagePath(const ImagePath: WideString); // @addr 0x475C5C
-    function GetContentSize: TPoint; // @addr 0x475CA0 @ida "void __usercall $name(TAlphaImageGI *Self@<eax>, TPoint *Result@<edx>);"
-    procedure SetImageKindX(Value: TImageKindXGI); // @addr 0x475D04
-    procedure SetImageKindY(Value: TImageKindYGI); // @addr 0x475D3C
-    function HitTestPixel(Point: TPoint): Boolean; // @addr 0x475D74 @ida "bool __usercall $name@<al>(TAlphaImageGI *Self@<eax>, TPoint *Point@<edx>);" @note "Black pixels do not count as hits."
-    procedure LoadFromConfigPath(const Path: WideString); override; // @addr 0x476048
-    procedure LoadFromBlock(Block: TBlockParEC); override; // @addr 0x476318
-    procedure Draw(ClipRect: TRect); override; // @addr 0x4765C4 @ida "void __usercall $name(TAlphaImageGI *Self@<eax>, TRect *ClipRect@<edx>);"
-    procedure QueueImageLoad(PendingLoads: TList); override; // @addr 0x4768F4
+  TAlphaImageGI = class;
+
+  TAlphaImageGI = class(TObjectGI)
+    ImageCache: TCAlphaBitmapControlEC;
+    ImageKindX: TImageKindXGI;
+    ImageKindY: TImageKindYGI;
+    Gap126: array[0..1] of Byte;
+    procedure Clear; override;
+    procedure QueueImageLoad(PendingLoads: TList); override;
+    procedure LoadFromConfigPath(const Path: WideString); override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure LoadFromBlock(Block: TBlockParEC); override;
+    constructor Create(Owner: TObjectGI);
+    destructor Destroy; override;
+    procedure SetImagePath(const ImagePath: WideString);
+    function GetContentSize: TPoint;
+    procedure SetImageKindX(Value: TImageKindXGI);
+    procedure SetImageKindY(Value: TImageKindYGI);
+    function HitTestPixel(Point: TPoint): Boolean;
   end;
 
 implementation
 
-uses EC_Str, EC_Mem, GlobalsV, GR_Main, GR_DX, SysUtils;
+uses
+  EC_Str,
+  EC_Mem,
+  GlobalsV,
+  GR_Main,
+  GR_DX,
+  SysUtils;
 
-
-{ @routine $475B60 TAlphaImageGI_Create }
 constructor TAlphaImageGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
@@ -40,27 +57,21 @@ begin
   ImageKindX := ikxCenter;
   ImageKindY := ikyCenter;
 end;
-{ @end $475B60 }
 
-{ @routine $475BE8 TAlphaImageGI_Destroy }
 destructor TAlphaImageGI.Destroy;
 begin
   ImageCache.Free;
   ImageCache := nil;
   inherited Destroy;
 end;
-{ @end $475BE8 }
 
-{ @routine $475C34 TAlphaImageGI_Clear }
 procedure TAlphaImageGI.Clear;
 begin
   ImageKindX := ikxCenter;
   ImageKindY := ikyCenter;
   inherited Clear;
 end;
-{ @end $475C34 }
 
-{ @routine $475C5C TAlphaImageGI_SetImagePath }
 procedure TAlphaImageGI.SetImagePath(const ImagePath: WideString);
 begin
   if ImageCache.CacheKey <> ImagePath then
@@ -69,11 +80,10 @@ begin
     ImageCache.SetCacheKey(ImagePath);
   end;
 end;
-{ @end $475C5C }
 
-{ @routine $475CA0 TAlphaImageGI_GetContentSize }
 function TAlphaImageGI.GetContentSize: TPoint;
-var Bitmap: TCAlphaBitmapEC;
+var
+  Bitmap: TCAlphaBitmapEC;
 begin
   Bitmap := AcquireOrCreateAlphaBitmap(ImageCache);
   try
@@ -82,9 +92,7 @@ begin
     ImageCache.Release;
   end;
 end;
-{ @end $475CA0 }
 
-{ @routine $475D04 TAlphaImageGI_SetImageKindX }
 procedure TAlphaImageGI.SetImageKindX(Value: TImageKindXGI);
 begin
   if ImageKindX <> Value then
@@ -93,9 +101,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $475D04 }
 
-{ @routine $475D3C TAlphaImageGI_SetImageKindY }
 procedure TAlphaImageGI.SetImageKindY(Value: TImageKindYGI);
 begin
   if ImageKindY <> Value then
@@ -104,11 +110,14 @@ begin
     Invalidate;
   end;
 end;
-{ @end $475D3C }
 
-{ @routine $475D74 TAlphaImageGI_HitTestPixel }
 function TAlphaImageGI.HitTestPixel(Point: TPoint): Boolean;
-var Bitmap: TCAlphaBitmapEC; Width, Height, Left, Right, X, Top, Bottom, Y: Integer; Pixel: Cardinal; Pixels: Pointer; Clip: TRect;
+var
+  Bitmap: TCAlphaBitmapEC;
+  Width, Height, Left, Right, X, Top, Bottom, Y: Integer;
+  Pixel: Cardinal;
+  Pixels: Pointer;
+  Clip: TRect;
 begin
   Result := False;
   Pixel := 0;
@@ -118,112 +127,134 @@ begin
   Clip.Bottom := Point.Y + 1;
   Bitmap := AcquireOrCreateAlphaBitmap(ImageCache);
   try
-  Width := Bitmap.PixelSize.X;
-  Height := Bitmap.PixelSize.Y;
-  if ImageKindX = ikxLeftFill then
-  begin
-    Left := HitTestBounds.Left;
-    Right := HitTestBounds.Right;
-  end
-  else if ImageKindX = ikxRightFill then
-  begin
-    Right := HitTestBounds.Right;
-    Left := Right;
-    while Left > Clip.Left do Dec(Left, Width);
-  end
-  else if ImageKindX = ikxLeft then
-  begin
-    Left := HitTestBounds.Left;
-    Right := Left + Width;
-  end
-  else if ImageKindX = ikxRight then
-  begin
-    Right := HitTestBounds.Right;
-    Left := Right - Width;
-  end
-  else if ImageKindX = ikxCenter then
-  begin
-    Left := (HitTestBounds.Right - HitTestBounds.Left) div 2 + HitTestBounds.Left - Width div 2;
-    Right := Left + Width;
-  end
-  else begin Exit; end;
-  if ImageKindY = ikyTopFill then
-  begin
-    Top := HitTestBounds.Top;
-    Bottom := HitTestBounds.Bottom;
-  end
-  else if ImageKindY = ikyBottomFill then
-  begin
-    Bottom := HitTestBounds.Bottom;
-    Top := Bottom;
-    while Top > Clip.Top do Dec(Top, Height);
-  end
-  else if ImageKindY = ikyTop then
-  begin
-    Top := HitTestBounds.Top;
-    Bottom := Top + Height;
-  end
-  else if ImageKindY = ikyBottom then
-  begin
-    Bottom := HitTestBounds.Bottom;
-    Top := Bottom - Height;
-  end
-  else if ImageKindY = ikyCenter then
-  begin
-    Top := (HitTestBounds.Bottom - HitTestBounds.Top) div 2 + HitTestBounds.Top - Height div 2;
-    Bottom := Top + Height;
-  end
-  else begin Exit; end;
-  Pixels := AddPointerOffset(@Pixel, -(ScreenRenderBuffer.PitchBytes * Point.Y + Point.X * SizeOf(Word)));
-  Y := Top;
-  while (Y < Bottom) and (Pixel = 0) do
-  begin
-    X := Left;
-    while (X < Right) and (Pixel = 0) do
+    Width := Bitmap.PixelSize.X;
+    Height := Bitmap.PixelSize.Y;
+    if ImageKindX = ikxLeftFill then
     begin
-      Bitmap.Draw16(Pixels, ScreenRenderBuffer.PitchBytes, X, Y, Clip);
-      Inc(X, Width);
+      Left := HitTestBounds.Left;
+      Right := HitTestBounds.Right;
+    end
+    else if ImageKindX = ikxRightFill then
+    begin
+      Right := HitTestBounds.Right;
+      Left := Right;
+      while Left > Clip.Left do
+        Dec(Left, Width);
+    end
+    else if ImageKindX = ikxLeft then
+    begin
+      Left := HitTestBounds.Left;
+      Right := Left + Width;
+    end
+    else if ImageKindX = ikxRight then
+    begin
+      Right := HitTestBounds.Right;
+      Left := Right - Width;
+    end
+    else if ImageKindX = ikxCenter then
+    begin
+      Left := (HitTestBounds.Right - HitTestBounds.Left) div 2 + HitTestBounds.Left - Width div 2;
+      Right := Left + Width;
+    end
+    else
+    begin
+      Exit;
     end;
-    Inc(Y, Height);
-  end;
+    if ImageKindY = ikyTopFill then
+    begin
+      Top := HitTestBounds.Top;
+      Bottom := HitTestBounds.Bottom;
+    end
+    else if ImageKindY = ikyBottomFill then
+    begin
+      Bottom := HitTestBounds.Bottom;
+      Top := Bottom;
+      while Top > Clip.Top do
+        Dec(Top, Height);
+    end
+    else if ImageKindY = ikyTop then
+    begin
+      Top := HitTestBounds.Top;
+      Bottom := Top + Height;
+    end
+    else if ImageKindY = ikyBottom then
+    begin
+      Bottom := HitTestBounds.Bottom;
+      Top := Bottom - Height;
+    end
+    else if ImageKindY = ikyCenter then
+    begin
+      Top := (HitTestBounds.Bottom - HitTestBounds.Top) div 2 + HitTestBounds.Top - Height div 2;
+      Bottom := Top + Height;
+    end
+    else
+    begin
+      Exit;
+    end;
+    Pixels :=
+        AddPointerOffset(
+            @Pixel,
+            -(ScreenRenderBuffer.PitchBytes * Point.Y + Point.X * SizeOf(Word))
+        );
+    Y := Top;
+    while (Y < Bottom) and (Pixel = 0) do
+    begin
+      X := Left;
+      while (X < Right) and (Pixel = 0) do
+      begin
+        Bitmap.Draw16(Pixels, ScreenRenderBuffer.PitchBytes, X, Y, Clip);
+        Inc(X, Width);
+      end;
+      Inc(Y, Height);
+    end;
   finally
     ImageCache.Release;
   end;
   Result := Pixel <> 0;
 end;
-{ @end $475D74 }
 
-{ @routine $476048 TAlphaImageGI_LoadFromConfigPath }
 procedure TAlphaImageGI.LoadFromConfigPath(const Path: WideString);
-var Block: TBlockParEC; Bitmap: TCAlphaBitmapEC; Text: WideString;
+var
+  Block: TBlockParEC;
+  Bitmap: TCAlphaBitmapEC;
+  Text: WideString;
 begin
   inherited LoadFromConfigPath(Path);
   Block := UiStyleConfig.GetBlockByPath(Path);
   if Block.CountParams('Image') > 0 then
   begin
-  ImageCache.SetCacheKey(Block.GetParam('Image'));
-  Bitmap := AcquireOrCreateAlphaBitmap(ImageCache);
-  try
-    SetSize(Bitmap.PixelSize);
-  finally
-    ImageCache.Release;
-  end;
+    ImageCache.SetCacheKey(Block.GetParam('Image'));
+    Bitmap := AcquireOrCreateAlphaBitmap(ImageCache);
+    try
+      SetSize(Bitmap.PixelSize);
+    finally
+      ImageCache.Release;
+    end;
   end;
   if Block.CountParams('Size') > 0 then
   begin
     Text := Block.GetParam('Size');
-    SetSize(Classes.Point(StrToInt(ExtractDelimitedPartW(Text, 0, ',')), StrToInt(ExtractDelimitedPartW(Text, 1, ','))));
+    SetSize(
+        Classes.Point(
+            StrToInt(ExtractDelimitedPartW(Text, 0, ',')),
+            StrToInt(ExtractDelimitedPartW(Text, 1, ','))
+        )
+    );
   end;
-  if Block.CountParams('KindX') > 0 then SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
-  if Block.CountParams('KindY') > 0 then SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
-  if Block.CountParams('AlignX') > 0 then SetImageKindX(ParseImageKindXName(Block.GetParam('AlignX')));
-  if Block.CountParams('AlignY') > 0 then SetImageKindY(ParseImageKindYName(Block.GetParam('AlignY')));
+  if Block.CountParams('KindX') > 0 then
+    SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
+  if Block.CountParams('KindY') > 0 then
+    SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
+  if Block.CountParams('AlignX') > 0 then
+    SetImageKindX(ParseImageKindXName(Block.GetParam('AlignX')));
+  if Block.CountParams('AlignY') > 0 then
+    SetImageKindY(ParseImageKindYName(Block.GetParam('AlignY')));
 end;
-{ @end $476048 }
 
-{ @routine $476318 TAlphaImageGI_LoadFromBlock }
 procedure TAlphaImageGI.LoadFromBlock(Block: TBlockParEC);
-var Bitmap: TCAlphaBitmapEC; Text: WideString;
+var
+  Bitmap: TCAlphaBitmapEC;
+  Text: WideString;
 begin
   inherited LoadFromBlock(Block);
   ImageCache.SetCacheKey(Block.GetParam('Image'));
@@ -236,116 +267,131 @@ begin
   if Block.CountParams('Size') > 0 then
   begin
     Text := Block.GetParam('Size');
-    SetSize(Classes.Point(StrToInt(ExtractDelimitedPartW(Text, 0, ',')), StrToInt(ExtractDelimitedPartW(Text, 1, ','))));
+    SetSize(
+        Classes.Point(
+            StrToInt(ExtractDelimitedPartW(Text, 0, ',')),
+            StrToInt(ExtractDelimitedPartW(Text, 1, ','))
+        )
+    );
   end;
-  if Block.CountParams('KindX') > 0 then SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
-  if Block.CountParams('KindY') > 0 then SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
-  if Block.CountParams('AlignX') > 0 then SetImageKindX(ParseImageKindXName(Block.GetParam('AlignX')));
-  if Block.CountParams('AlignY') > 0 then SetImageKindY(ParseImageKindYName(Block.GetParam('AlignY')));
+  if Block.CountParams('KindX') > 0 then
+    SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
+  if Block.CountParams('KindY') > 0 then
+    SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
+  if Block.CountParams('AlignX') > 0 then
+    SetImageKindX(ParseImageKindXName(Block.GetParam('AlignX')));
+  if Block.CountParams('AlignY') > 0 then
+    SetImageKindY(ParseImageKindYName(Block.GetParam('AlignY')));
 end;
-{ @end $476318 }
 
-{ @routine $4765C4 TAlphaImageGI_Draw }
 procedure TAlphaImageGI.Draw(ClipRect: TRect);
-var Bitmap: TCAlphaBitmapEC; Width, Height, Left, Right, X, Top, Bottom, Y: Integer;
+var
+  Bitmap: TCAlphaBitmapEC;
+  Width, Height, Left, Right, X, Top, Bottom, Y: Integer;
 begin
   Bitmap := AcquireOrCreateAlphaBitmap(ImageCache);
   try
-  Width := Bitmap.PixelSize.X;
-  Height := Bitmap.PixelSize.Y;
-  if ImageKindX = ikxLeftFill then
-  begin
-    Left := HitTestBounds.Left;
-    Right := HitTestBounds.Right;
-  end
-  else if ImageKindX = ikxRightFill then
-  begin
-    Right := HitTestBounds.Right;
-    Left := Right;
-    while Left > ClipRect.Left do Dec(Left, Width);
-  end
-  else if ImageKindX = ikxLeft then
-  begin
-    Left := HitTestBounds.Left;
-    Right := Left + Width;
-  end
-  else if ImageKindX = ikxRight then
-  begin
-    Right := HitTestBounds.Right;
-    Left := Right - Width;
-  end
-  else if ImageKindX = ikxCenter then
-  begin
-    Left := (HitTestBounds.Right - HitTestBounds.Left) div 2 + HitTestBounds.Left - Width div 2;
-    Right := Left + Width;
-  end
-  else begin Exit; end;
-  if ImageKindY = ikyTopFill then
-  begin
-    Top := HitTestBounds.Top;
-    Bottom := HitTestBounds.Bottom;
-  end
-  else if ImageKindY = ikyBottomFill then
-  begin
-    Bottom := HitTestBounds.Bottom;
-    Top := Bottom;
-    while Top > ClipRect.Top do Dec(Top, Height);
-  end
-  else if ImageKindY = ikyTop then
-  begin
-    Top := HitTestBounds.Top;
-    Bottom := Top + Height;
-  end
-  else if ImageKindY = ikyBottom then
-  begin
-    Bottom := HitTestBounds.Bottom;
-    Top := Bottom - Height;
-  end
-  else if ImageKindY = ikyCenter then
-  begin
-    Top := (HitTestBounds.Bottom - HitTestBounds.Top) div 2 + HitTestBounds.Top - Height div 2;
-    Bottom := Top + Height;
-  end
-  else begin Exit; end;
-  if HardwareRenderingEnabled then
-  begin
-  Y := Top;
-  while (Y < Bottom) do
-  begin
-    X := Left;
-    while (X < Right) do
+    Width := Bitmap.PixelSize.X;
+    Height := Bitmap.PixelSize.Y;
+    if ImageKindX = ikxLeftFill then
     begin
-      DrawTexture(Bitmap.GetTexture, X, Y, 255, $FFFFFF, @ClipRect, False, False);
-      Inc(X, Width);
-    end;
-    Inc(Y, Height);
-  end;
-  end
-  else
-  begin
-  Y := Top;
-  while (Y < Bottom) do
-  begin
-    X := Left;
-    while (X < Right) do
+      Left := HitTestBounds.Left;
+      Right := HitTestBounds.Right;
+    end
+    else if ImageKindX = ikxRightFill then
     begin
-      Bitmap.Draw16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes, X, Y, ClipRect);
-      Inc(X, Width);
+      Right := HitTestBounds.Right;
+      Left := Right;
+      while Left > ClipRect.Left do
+        Dec(Left, Width);
+    end
+    else if ImageKindX = ikxLeft then
+    begin
+      Left := HitTestBounds.Left;
+      Right := Left + Width;
+    end
+    else if ImageKindX = ikxRight then
+    begin
+      Right := HitTestBounds.Right;
+      Left := Right - Width;
+    end
+    else if ImageKindX = ikxCenter then
+    begin
+      Left := (HitTestBounds.Right - HitTestBounds.Left) div 2 + HitTestBounds.Left - Width div 2;
+      Right := Left + Width;
+    end
+    else
+    begin
+      Exit;
     end;
-    Inc(Y, Height);
-  end;
-  end;
+    if ImageKindY = ikyTopFill then
+    begin
+      Top := HitTestBounds.Top;
+      Bottom := HitTestBounds.Bottom;
+    end
+    else if ImageKindY = ikyBottomFill then
+    begin
+      Bottom := HitTestBounds.Bottom;
+      Top := Bottom;
+      while Top > ClipRect.Top do
+        Dec(Top, Height);
+    end
+    else if ImageKindY = ikyTop then
+    begin
+      Top := HitTestBounds.Top;
+      Bottom := Top + Height;
+    end
+    else if ImageKindY = ikyBottom then
+    begin
+      Bottom := HitTestBounds.Bottom;
+      Top := Bottom - Height;
+    end
+    else if ImageKindY = ikyCenter then
+    begin
+      Top := (HitTestBounds.Bottom - HitTestBounds.Top) div 2 + HitTestBounds.Top - Height div 2;
+      Bottom := Top + Height;
+    end
+    else
+    begin
+      Exit;
+    end;
+    if HardwareRenderingEnabled then
+    begin
+      Y := Top;
+      while (Y < Bottom) do
+      begin
+        X := Left;
+        while (X < Right) do
+        begin
+          DrawTexture(Bitmap.GetTexture, X, Y, 255, $FFFFFF, @ClipRect, False, False);
+          Inc(X, Width);
+        end;
+        Inc(Y, Height);
+      end;
+    end
+    else
+    begin
+      Y := Top;
+      while (Y < Bottom) do
+      begin
+        X := Left;
+        while (X < Right) do
+        begin
+          Bitmap
+              .Draw16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes, X, Y, ClipRect);
+          Inc(X, Width);
+        end;
+        Inc(Y, Height);
+      end;
+    end;
   finally
     ImageCache.Release;
   end;
 end;
-{ @end $4765C4 }
 
-{ @routine $4768F4 TAlphaImageGI_QueueImageLoad }
 procedure TAlphaImageGI.QueueImageLoad(PendingLoads: TList);
 begin
   ImageCache.QueueLoadIfMissing(PendingLoads);
 end;
-{ @end $4768F4 }
 
 end.

@@ -1,114 +1,173 @@
 unit SE_Weapon;
-// Unit bracket (inferred): .text 0x0069CD64..0x006A15D2; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_BlockPar, EC_Struct, GI_GAI, GI_Label, GI_MessageLoop, GI_PSWeapon, SE_Space, Types;
+uses
+  EC_BlockPar,
+  EC_Struct,
+  GI_GAI,
+  GI_Label,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  SE_Space,
+  Types;
 
 type
-  PWeaponEffectItem = ^TWeaponEffectItem;
-  TWeaponEffectItem = record // @size $2C
-    Next: PWeaponEffectItem; // @offset $00
-    Prev: PWeaponEffectItem; // @offset $04
-    Image: TgaiGI; // @offset $08
-    Position: TPointF; // @offset $0C  Y is the evolving radial distance; X starts at zero.
-    Angle: Single; // @offset $14
-    Lifetime: Integer; // @offset $18
-    Speed: Single; // @offset $1C
-    Acceleration: Single; // @offset $20
-    AtTarget: Boolean; // @offset $24
-    AutoAnimation: Boolean; // @offset $25
-    LoopAnimation: Boolean; // @offset $26
-    SkipTime: Integer; // @offset $28
+
+  TWeaponEffect = class;
+
+  TWeaponSE = class;
+
+  PointerToTWeaponEffectItem = ^TWeaponEffectItem;
+
+  PWeaponEffectItem = PointerToTWeaponEffectItem;
+
+  TWeaponEffectItem = record
+    Next: PWeaponEffectItem;
+    Prev: PWeaponEffectItem;
+    Image: TgaiGI;
+    Position: TPointF;
+    Angle: Single;
+    Lifetime: Integer;
+    Speed: Single;
+    Acceleration: Single;
+    AtTarget: Boolean;
+    AutoAnimation: Boolean;
+    LoopAnimation: Boolean;
+    Gap27: array[0..0] of Byte;
+    SkipTime: Integer;
   end;
 
-  TWeaponEffect = class(TObject) // @size $40
-  public
-    Owner: TObjectGI; // @offset $04
-    FirstItem: PWeaponEffectItem; // @offset $08
-    LastItem: PWeaponEffectItem; // @offset $0C
-    EffectIndex: Integer; // @offset $10
-    DepthExpression: WideString; // @offset $14
-    SourcePoint: TPointF; // @offset $18
-    TargetPoint: TPointF; // @offset $20
-    Started: Boolean; // @offset $28
-    LeftTime: Integer; // @offset $2C
-    Direction: Single; // @offset $30
-    AnimationInterval: Integer; // @offset $34
-    AnimationCountdown: Integer; // @offset $38
-    BeforeEnd: Boolean; // @offset $3C
-
-    constructor Create(AEffectIndex: Integer; AOwner: TObjectGI); // @addr $6A03D8 @ida "TWeaponEffect *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, int AEffectIndex@<ecx>, TObjectGI *AOwner@<^0>);"
-    destructor Destroy; override; // @addr $6A058C @ida "void __usercall $name(TWeaponEffect *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; // @addr $6A05B8
-    function AddItem: PWeaponEffectItem; // @addr $6A05DC
-    procedure RemoveItem(Item: PWeaponEffectItem); // @addr $6A0680
-    procedure AddTargetEffect(Index: Integer); // @addr $6A071C
-    procedure AddSourceEffect(Index: Integer); // @addr $6A0BBC
-    procedure Start; // @addr $6A105C
-    procedure Advance; // @addr $6A11E0
-    procedure AnimationComplete(Sender: TObjectGI); // @addr $6A13B4
-    function IsFinished: Boolean; // @addr $6A13DC
-    procedure SetSourcePoint(Point: TPointF); // @addr $6A1400 @ida "void __usercall $name(TWeaponEffect *Self@<eax>, TPointF *Point@<edx>);"
-    procedure SetTargetPoint(Point: TPointF); // @addr $6A14BC @ida "void __usercall $name(TWeaponEffect *Self@<eax>, TPointF *Point@<edx>);"
+  TWeaponEffect = class(TObject)
+    Owner: TObjectGI;
+    FirstItem: PWeaponEffectItem;
+    LastItem: PWeaponEffectItem;
+    EffectIndex: Integer;
+    DepthExpression: WideString;
+    SourcePoint: TPointF;
+    TargetPoint: TPointF;
+    Started: Boolean;
+    Gap29: array[0..2] of Byte;
+    LeftTime: Integer;
+    Direction: Single;
+    AnimationInterval: Integer;
+    AnimationCountdown: Integer;
+    BeforeEnd: Boolean;
+    Gap3D: array[0..2] of Byte;
+    constructor Create(AEffectIndex: Integer; AOwner: TObjectGI);
+    destructor Destroy; override;
+    procedure Clear;
+    function AddItem: PWeaponEffectItem;
+    procedure RemoveItem(Item: PWeaponEffectItem);
+    procedure AddTargetEffect(Index: Integer);
+    procedure AddSourceEffect(Index: Integer);
+    procedure Start;
+    procedure Advance;
+    procedure AnimationComplete(Sender: TObjectGI);
+    function IsFinished: Boolean;
+    procedure SetSourcePoint(Point: TPointF);
+    procedure SetTargetPoint(Point: TPointF);
   end;
 
-  TWeaponSE = class(TObjectSE) // @size 0xD4
-  public
-    ShotSoundPath: WideString; // @offset $4C
-    HitSoundPath: WideString; // @offset $50
-    PlayShotSound: Boolean; // @offset $54
-    SourceObject: TObjectSE; // @offset $58
-    TargetObject: TObjectSE; // @offset $5C
-    HitDamage: Integer; // @offset $60
-    TargetDestroyed: Boolean; // @offset $64
-    DestructionEffect: Integer; // @offset $68
-    DestructionFrameInterval: Integer; // @offset $6C
-    DestructionDetachStep: Integer; // @offset $70
-    HitColor: Integer; // @offset $74
-    SourceAnimation: TgaiGI; // @offset $78
-    SourceAnimationInterval: Integer; // @offset $7C
-    TargetAnimation: TgaiGI; // @offset $80
-    TargetAnimationInterval: Integer; // @offset $84
-    HitEffect: TWeaponEffect; // @offset $88
-    HitVariant: Integer; // @offset $8C
-    Projectile: TPSWeaponGI; // @offset $90  Nonzero selects removal from trailing effects at end turn.
-    DestructionAnimation: TgaiGI; // @offset $94
-    ExtraDestructionAnimations: array[0..5] of TgaiGI; // @offset $98
-    DamageLabel: TLabelGI; // @offset $B0
-    ImmediateDestruction: Boolean; // @offset $B4
-    DestructionAlpha: Single; // @offset $B8
-    DestructionAlphaStep: Single; // @offset $BC
-    DamageLabelPoint: TPointF; // @offset $C0
-    ProjectileFinished: Boolean; // @offset $C9
-    StepIndex: Integer; // @offset $CC
-    ShotVisual: Integer; // @offset $D0
-    destructor Destroy; override; // @addr $69D00C @ida "void __usercall $name(TWeaponSE *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    function GetTargetPoint: TPointF; // @addr $69F614 @ida "void __usercall $name(TWeaponSE *Self@<eax>, TPointF *Result@<edx>);"
-    function GetSourcePoint: TPointF; // @addr $69F6B0 @ida "void __usercall $name(TWeaponSE *Self@<eax>, TPointF *Result@<edx>);"
-    procedure LoadTemplate(Block: TBlockParEC); override; // @addr $6A01F0
-    procedure AttachToSpace(ASpace: TSpaceSE); override; // @addr $69D068
-    procedure DetachFromSpace; override; // @addr $69F45C
-    procedure Advance; override; // @addr $69F770
-    procedure SetHit(Color, Damage: Integer; Destroyed, PlaySound: Boolean); // @addr $69F5A8
-    procedure SetEndpoints(Source, Target: TObjectSE); // @addr $69F5E4 Retains both scene references.
-    constructor Create(const GraphKey: WideString; UnusedPosition: TPoint; ShotVisual, Variant: Integer); // @addr 0x69CE9C @ida "TWeaponSE *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, unsigned __int16 *GraphKey@<ecx>, TPoint *UnusedPosition@<^8>, int ShotVisual@<^4>, int Variant@<^0>);" @note "Stores visual/variant and appends them to GraphKey. Position is passed through the base constructor."
+  TWeaponSE = class(TObjectSE)
+    ShotSoundPath: WideString;
+    HitSoundPath: WideString;
+    PlayShotSound: Boolean;
+    Gap55: array[0..2] of Byte;
+    SourceObject: TObjectSE;
+    TargetObject: TObjectSE;
+    HitDamage: Integer;
+    TargetDestroyed: Boolean;
+    Gap65: array[0..2] of Byte;
+    DestructionEffect: Integer;
+    DestructionFrameInterval: Integer;
+    DestructionDetachStep: Integer;
+    HitColor: Integer;
+    SourceAnimation: TgaiGI;
+    SourceAnimationInterval: Integer;
+    TargetAnimation: TgaiGI;
+    TargetAnimationInterval: Integer;
+    HitEffect: TWeaponEffect;
+    HitVariant: Integer;
+    Projectile: TPSWeaponGI;
+    DestructionAnimation: TgaiGI;
+    ExtraDestructionAnimations: array[0..5] of TgaiGI;
+    DamageLabel: TLabelGI;
+    ImmediateDestruction: Boolean;
+    GapB5: array[0..2] of Byte;
+    DestructionAlpha: Single;
+    DestructionAlphaStep: Single;
+    DamageLabelPoint: TPointF;
+    GapC8: array[0..0] of Byte;
+    ProjectileFinished: Boolean;
+    GapCA: array[0..1] of Byte;
+    StepIndex: Integer;
+    ShotVisual: Integer;
+    procedure AttachToSpace(ASpace: TSpaceSE); override;
+    procedure DetachFromSpace; override;
+    procedure Advance; override;
+    procedure LoadTemplate(Block: TBlockParEC); override;
+    constructor Create(
+        const GraphKey: WideString;
+        UnusedPosition: TPoint;
+        ShotVisual: Integer;
+        Variant: Integer
+    );
+    destructor Destroy; override;
+    procedure SetHit(Color: Integer; Damage: Integer; Destroyed: Boolean; PlaySound: Boolean);
+    procedure SetEndpoints(Source: TObjectSE; Target: TObjectSE);
+    function GetTargetPoint: TPointF;
+    function GetSourcePoint: TPointF;
   end;
 
-// The owner-color helper's original unit ownership is unresolved.
-
-procedure InitializeWeaponVisualResources; // @addr $6A1578
+procedure InitializeWeaponVisualResources;
 
 implementation
 
-uses Classes, Math, SysUtils, EC_Str, aMyFunction, GI_Main, GR_Main, Globals, GlobalsV, GR_Sound, SE_Ship2, SE_Ruins,
-  GI_PSWeapon01Laser, GI_PSWeapon02FragCannon, GI_PSWeapon03Lezka, GI_PSWeapon05Treton, GI_PSWeapon06Phaser,
-  GI_PSWeapon07Blaster, GI_PSWeapon08ECutter, GI_PSWeapon09MResonator, GI_PSWeapon10AVision, GI_PSWeapon11Desintegrator,
-  GI_PSWeapon12Turbogravir, GI_PSWeapon13IMHO, GI_PSWeapon14Vertix, GI_PSWeapon16Esodafer, GI_PSWeapon17Kafacitor,
-  GI_PSMissileHit, GI_RadialEffect, GI_PDTurretWeapon, GI_PSEyes;
+uses
+  Classes,
+  Math,
+  SysUtils,
+  EC_Str,
+  aMyFunction,
+  GI_Main,
+  GR_Main,
+  Globals,
+  GlobalsV,
+  GR_Sound,
+  SE_Ship2,
+  SE_Ruins,
+  GI_PSWeapon01Laser,
+  GI_PSWeapon02FragCannon,
+  GI_PSWeapon03Lezka,
+  GI_PSWeapon05Treton,
+  GI_PSWeapon06Phaser,
+  GI_PSWeapon07Blaster,
+  GI_PSWeapon08ECutter,
+  GI_PSWeapon09MResonator,
+  GI_PSWeapon10AVision,
+  GI_PSWeapon11Desintegrator,
+  GI_PSWeapon12Turbogravir,
+  GI_PSWeapon13IMHO,
+  GI_PSWeapon14Vertix,
+  GI_PSWeapon16Esodafer,
+  GI_PSWeapon17Kafacitor,
+  GI_PSMissileHit,
+  GI_RadialEffect,
+  GI_PDTurretWeapon,
+  GI_PSEyes;
 
-{ @routine $69CE9C TWeaponSE_Create }
-constructor TWeaponSE.Create(const GraphKey: WideString; UnusedPosition: TPoint; ShotVisual, Variant: Integer);
+constructor TWeaponSE.Create(
+    const GraphKey: WideString;
+    UnusedPosition: TPoint;
+    ShotVisual, Variant: Integer
+);
 begin
   Self.ShotVisual := ShotVisual;
   HitVariant := Variant;
@@ -118,18 +177,16 @@ begin
   else if ShotVisual > 0 then
     Self.GraphKey := Self.GraphKey + ',' + IntToStr(ShotVisual);
 end;
-{ @end $69CE9C }
 
-{ @routine $69D00C TWeaponSE_Destroy }
 destructor TWeaponSE.Destroy;
 begin
-  if SourceObject <> nil then ReleaseSpaceObject(SourceObject);
-  if TargetObject <> nil then ReleaseSpaceObject(TargetObject);
+  if SourceObject <> nil then
+    ReleaseSpaceObject(SourceObject);
+  if TargetObject <> nil then
+    ReleaseSpaceObject(TargetObject);
   inherited Destroy;
 end;
-{ @end $69D00C }
 
-{ @routine $69D068 TWeaponSE_AttachToSpace }
 procedure TWeaponSE.AttachToSpace(ASpace: TSpaceSE);
 var
   Distance, Angle: Single;
@@ -152,7 +209,8 @@ begin
     VisualConfig := nil;
     if I in [3, 14, 17] then
       VisualConfig := GameDataConfig.FindBlockByPath('SE.Weapon.Eyes');
-    if VisualConfig = nil then VisualConfig := GameDataConfig.GetBlockByPath('SE.' + Key);
+    if VisualConfig = nil then
+      VisualConfig := GameDataConfig.GetBlockByPath('SE.' + Key);
     LoadTemplate(VisualConfig);
   end;
   UseRandomHit := True;
@@ -183,7 +241,9 @@ begin
     SourceAnimation.SetOrigin(HalfPoint(SourceAnimation.ClientSize));
     SourceAnimation.SetDepthByName('Weapon');
     SourceAnimation.SetPositionModeW(True);
-    SourceAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(SourceAnimation.GetMainImageFrameCount - 1) + ']');
+    SourceAnimation.LoadFrameSequenceFromText(
+        '[50,0-' + IntToStr(SourceAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     SourceAnimation.SetPosition(TruncatePointF(GetSourcePoint));
     SourceAnimation.StopAutoPlayback;
     SourceAnimationInterval := 3;
@@ -200,7 +260,9 @@ begin
     SourceAnimation.SetOrigin(HalfPoint(SourceAnimation.ClientSize));
     SourceAnimation.SetDepthByName('Weapon');
     SourceAnimation.SetPositionModeW(True);
-    SourceAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(SourceAnimation.GetMainImageFrameCount - 1) + ']');
+    SourceAnimation.LoadFrameSequenceFromText(
+        '[50,0-' + IntToStr(SourceAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     SourceAnimation.SetPosition(TruncatePointF(GetSourcePoint));
     SourceAnimation.StopAutoPlayback;
     SourceAnimationInterval := 3;
@@ -217,7 +279,9 @@ begin
     TargetAnimation.SetOrigin(HalfPoint(TargetAnimation.ClientSize));
     TargetAnimation.SetDepthByName('Weapon');
     TargetAnimation.SetPositionModeW(True);
-    TargetAnimation.LoadFrameSequenceFromText('[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']');
+    TargetAnimation.LoadFrameSequenceFromText(
+        '[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     TargetAnimation.StopAutoPlayback;
     TargetAnimationInterval := 2;
   end
@@ -240,7 +304,9 @@ begin
     TargetAnimation.SetOrigin(HalfPoint(TargetAnimation.ClientSize));
     TargetAnimation.SetDepthByName('Weapon');
     TargetAnimation.SetPositionModeW(True);
-    TargetAnimation.LoadFrameSequenceFromText('[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']');
+    TargetAnimation.LoadFrameSequenceFromText(
+        '[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     TargetAnimation.StopAutoPlayback;
     TargetAnimationInterval := 2;
   end
@@ -273,7 +339,9 @@ begin
     TargetAnimation.SetOrigin(HalfPoint(TargetAnimation.ClientSize));
     TargetAnimation.SetDepthByName('Weapon');
     TargetAnimation.SetPositionModeW(True);
-    TargetAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']');
+    TargetAnimation.LoadFrameSequenceFromText(
+        '[50,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     TargetAnimation.StopAutoPlayback;
     TargetAnimationInterval := 2;
   end
@@ -310,11 +378,14 @@ begin
     TargetAnimation.SetOrigin(HalfPoint(TargetAnimation.ClientSize));
     TargetAnimation.SetDepthByName('Weapon');
     TargetAnimation.SetPositionModeW(True);
-    TargetAnimation.LoadFrameSequenceFromText('[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']');
+    TargetAnimation.LoadFrameSequenceFromText(
+        '[40,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']'
+    );
     TargetAnimation.StopAutoPlayback;
     TargetAnimationInterval := 2;
   end
-  else Projectile := TPSEyesGI.Create(Space.MapPanel, ShotVisual);
+  else
+    Projectile := TPSEyesGI.Create(Space.MapPanel, ShotVisual);
   if HitVariant < 0 then
   begin
     if CountDelimitedPartsW(GraphKey, ',') > 2 then
@@ -322,16 +393,21 @@ begin
     else if UseRandomHit then
       HitVariant := Random(ExtractDigitsToIntW(WeaponConfig.GetParam('HitCount'))) + 1;
   end;
-  if HitVariant > 0 then HitEffect := TWeaponEffect.Create(HitVariant, Space.MapPanel);
+  if HitVariant > 0 then
+    HitEffect := TWeaponEffect.Create(HitVariant, Space.MapPanel);
   if DepthExpression <> '' then
   begin
-    if TargetAnimation <> nil then TargetAnimation.SetDepthByName(DepthExpression);
-    if SourceAnimation <> nil then SourceAnimation.SetDepthByName(DepthExpression);
+    if TargetAnimation <> nil then
+      TargetAnimation.SetDepthByName(DepthExpression);
+    if SourceAnimation <> nil then
+      SourceAnimation.SetDepthByName(DepthExpression);
   end;
   if Projectile <> nil then
   begin
-    if DepthExpression <> '' then Projectile.SetDepthByName(DepthExpression)
-    else Projectile.SetDepthByName('Weapon');
+    if DepthExpression <> '' then
+      Projectile.SetDepthByName(DepthExpression)
+    else
+      Projectile.SetDepthByName('Weapon');
     Projectile.SetPosition(TruncatePointF(GetSourcePoint));
     Projectile.SetTargetPoint(TruncatePointF(GetTargetPoint));
     Projectile.SetPositionModeW(True);
@@ -345,8 +421,10 @@ begin
     DamageLabel.SetFontName(NormalFontName);
     DamageLabel.SetDepthByName('HitPoint');
     DamageLabel.SetPosition(TruncatePointF(DamageLabelPoint));
-    if HitDamage >= 0 then DamageLabel.SetText(IntToStr(HitDamage))
-    else DamageLabel.SetText('+' + IntToStr(-HitDamage));
+    if HitDamage >= 0 then
+      DamageLabel.SetText(IntToStr(HitDamage))
+    else
+      DamageLabel.SetText('+' + IntToStr(-HitDamage));
     DamageLabel.SetWordWrapEnabled(False);
     DamageLabel.SetTextAlignX(taxAuto);
     DamageLabel.SetTextAlignY(tayAuto);
@@ -357,11 +435,14 @@ begin
   if TargetDestroyed then
   begin
     if DestructionEffect = 0 then
-      if (TargetObject is TRuinsSE) or (TargetObject.Size.X > 128) or (TargetObject.Size.Y > 128) then
+      if (TargetObject is TRuinsSE)
+          or (TargetObject.Size.X > 128)
+          or (TargetObject.Size.Y > 128) then
         DestructionEffect := 4;
     if DestructionEffect = 7 then
     begin
-      if TargetObject <> nil then TargetObject.DetachFromSpace;
+      if TargetObject <> nil then
+        TargetObject.DetachFromSpace;
     end
     else if DestructionEffect = 6 then
     begin
@@ -379,21 +460,24 @@ begin
     end
     else if DestructionEffect = 0 then
     begin
-    DestructionAnimation := TgaiGI.Create(Space.MapPanel);
+      DestructionAnimation := TgaiGI.Create(Space.MapPanel);
       DestructionAnimation.SetActive(False);
       DestructionAnimation.SetImagePath('Bm.Weapon.Expl' + IntToStr(RandomIntRange(0, 1)));
       DestructionAnimation.SetSize(DestructionAnimation.GetContentSize);
       DestructionAnimation.SetOrigin(HalfPoint(DestructionAnimation.ClientSize));
       DestructionAnimation.SetDepthByName('Weapon');
       DestructionAnimation.SetPositionModeW(True);
-      DestructionAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']');
+      DestructionAnimation.LoadFrameSequenceFromText(
+          '[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       DestructionAnimation.StopAutoPlayback;
       DestructionFrameInterval := 2;
       DestructionDetachStep := DestructionAnimation.SequenceFrameCount div 3;
       if TargetObject <> nil then
       begin
         DestructionAlpha := TargetObject.GetAlpha;
-        DestructionAlphaStep := (0.0 - DestructionAlpha) / (DestructionAnimation.GetMainImageFrameCount div 2 - 1);
+        DestructionAlphaStep :=
+            (0.0 - DestructionAlpha) / (DestructionAnimation.GetMainImageFrameCount div 2 - 1);
       end
       else
       begin
@@ -403,39 +487,48 @@ begin
     end
     else if DestructionEffect = 1 then
     begin
-    DestructionAnimation := TgaiGI.Create(Space.MapPanel);
+      DestructionAnimation := TgaiGI.Create(Space.MapPanel);
       DestructionAnimation.SetActive(False);
       DestructionAnimation.SetImagePath('Bm.Weapon.Bomb');
       DestructionAnimation.SetSize(DestructionAnimation.GetContentSize);
       DestructionAnimation.SetOrigin(HalfPoint(DestructionAnimation.ClientSize));
       DestructionAnimation.SetDepthByName('Weapon');
       DestructionAnimation.SetPositionModeW(True);
-      DestructionAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']');
+      DestructionAnimation.LoadFrameSequenceFromText(
+          '[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       DestructionAnimation.StopAutoPlayback;
       DestructionFrameInterval := 1;
       DestructionDetachStep := DestructionAnimation.SequenceFrameCount div 3;
     end
     else if DestructionEffect = 4 then
     begin
-    DestructionAnimation := TgaiGI.Create(Space.MapPanel);
+      DestructionAnimation := TgaiGI.Create(Space.MapPanel);
       DestructionAnimation.SetActive(False);
       DestructionAnimation.SetImagePath('Bm.Weapon.Expl0');
       DestructionAnimation.SetSize(DestructionAnimation.GetContentSize);
       DestructionAnimation.SetOrigin(HalfPoint(DestructionAnimation.ClientSize));
       DestructionAnimation.SetDepthByName('Weapon');
       DestructionAnimation.SetPositionModeW(True);
-      DestructionAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']');
+      DestructionAnimation.LoadFrameSequenceFromText(
+          '[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       DestructionAnimation.StopAutoPlayback;
       for I := 0 to 3 do
       begin
-    ExtraDestructionAnimations[I] := TgaiGI.Create(Space.MapPanel);
+        ExtraDestructionAnimations[I] := TgaiGI.Create(Space.MapPanel);
         ExtraDestructionAnimations[I].SetActive(False);
         ExtraDestructionAnimations[I].SetImagePath('Bm.Weapon.Expl0');
         ExtraDestructionAnimations[I].SetSize(ExtraDestructionAnimations[I].GetContentSize);
-        ExtraDestructionAnimations[I].SetOrigin(HalfPoint(ExtraDestructionAnimations[I].ClientSize));
+        ExtraDestructionAnimations[I]
+            .SetOrigin(HalfPoint(ExtraDestructionAnimations[I].ClientSize));
         ExtraDestructionAnimations[I].SetDepthByName('Weapon');
         ExtraDestructionAnimations[I].SetPositionModeW(True);
-        ExtraDestructionAnimations[I].LoadFrameSequenceFromText('[50,0-' + IntToStr(ExtraDestructionAnimations[I].GetMainImageFrameCount - 1) + ']');
+        ExtraDestructionAnimations[I]
+            .LoadFrameSequenceFromText(
+                '[50,0-'
+                    + IntToStr(ExtraDestructionAnimations[I].GetMainImageFrameCount - 1)
+                    + ']');
         ExtraDestructionAnimations[I].StopAutoPlayback;
         Distance := RandomIntRange(50, 100);
         Angle := HeadingDegreesToRadians(RandomIntRange(0, 360));
@@ -446,7 +539,8 @@ begin
       if TargetObject <> nil then
       begin
         DestructionAlpha := TargetObject.GetAlpha;
-        DestructionAlphaStep := (0.0 - DestructionAlpha) / (DestructionAnimation.GetMainImageFrameCount div 2 - 1);
+        DestructionAlphaStep :=
+            (0.0 - DestructionAlpha) / (DestructionAnimation.GetMainImageFrameCount div 2 - 1);
       end
       else
       begin
@@ -456,43 +550,50 @@ begin
     end
     else if DestructionEffect = 5 then
     begin
-    TargetAnimation := TgaiGI.Create(Space.MapPanel);
+      TargetAnimation := TgaiGI.Create(Space.MapPanel);
       TargetAnimation.SetImagePath('Bm.Weapon.Kamikaze');
       TargetAnimation.SetSize(TargetAnimation.GetContentSize);
       TargetAnimation.SetOrigin(HalfPoint(TargetAnimation.ClientSize));
       TargetAnimation.SetDepthByName('Weapon');
       TargetAnimation.SetPositionModeW(True);
-      TargetAnimation.LoadFrameSequenceFromText('[1,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']');
+      TargetAnimation.LoadFrameSequenceFromText(
+          '[1,0-' + IntToStr(TargetAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       TargetAnimation.StopAutoPlayback;
       TargetAnimationInterval := 3;
       if FilmSoundEffectsEnabled then
         if SoundInSpaceEnabled then
-          if Space.ContainsMapPoint(GetTargetPoint) then SoundManager.PlaySound(HitSoundPath);
+          if Space.ContainsMapPoint(GetTargetPoint) then
+            SoundManager.PlaySound(HitSoundPath);
     end
     else if DestructionEffect = 2 then
     begin
-    DestructionAnimation := TgaiGI.Create(Space.MapPanel);
+      DestructionAnimation := TgaiGI.Create(Space.MapPanel);
       DestructionAnimation.SetActive(False);
       DestructionAnimation.SetImagePath('Bm.Asteroid.Des');
       DestructionAnimation.SetSize(DestructionAnimation.GetContentSize);
       DestructionAnimation.SetOrigin(HalfPoint(DestructionAnimation.ClientSize));
       DestructionAnimation.SetDepthByName('Weapon');
       DestructionAnimation.SetPositionModeW(True);
-      DestructionAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']');
+      DestructionAnimation.LoadFrameSequenceFromText(
+          '[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       DestructionAnimation.StopAutoPlayback;
       DestructionFrameInterval := 4;
       DestructionDetachStep := DestructionAnimation.SequenceFrameCount div 3;
     end
     else if DestructionEffect = 3 then
     begin
-    DestructionAnimation := TgaiGI.Create(Space.MapPanel);
+      DestructionAnimation := TgaiGI.Create(Space.MapPanel);
       DestructionAnimation.SetActive(False);
       DestructionAnimation.SetImagePath('Bm.Asteroid.Des');
       DestructionAnimation.SetSize(DestructionAnimation.GetContentSize);
       DestructionAnimation.SetOrigin(HalfPoint(DestructionAnimation.ClientSize));
       DestructionAnimation.SetDepthByName('Weapon');
       DestructionAnimation.SetPositionModeW(True);
-      DestructionAnimation.LoadFrameSequenceFromText('[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']');
+      DestructionAnimation.LoadFrameSequenceFromText(
+          '[50,0-' + IntToStr(DestructionAnimation.GetMainImageFrameCount - 1) + ']'
+      );
       DestructionAnimation.StopAutoPlayback;
       DestructionFrameInterval := 4;
       DestructionDetachStep := DestructionAnimation.SequenceFrameCount div 5;
@@ -502,22 +603,26 @@ begin
     begin
       DestructionAnimation.SetActive(True);
       for I := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
-        if ExtraDestructionAnimations[I] <> nil then ExtraDestructionAnimations[I].SetActive(True);
+        if ExtraDestructionAnimations[I] <> nil then
+          ExtraDestructionAnimations[I].SetActive(True);
     end;
   end;
   if HasDestruction then
     if ImmediateDestruction then
       if FilmSoundEffectsEnabled then
         if SoundInSpaceEnabled then
-          if Space.ContainsMapPoint(GetTargetPoint) then SoundManager.PlaySound(HitSoundPath);
+          if Space.ContainsMapPoint(GetTargetPoint) then
+            SoundManager.PlaySound(HitSoundPath);
   if PlayShotSound and FilmSoundEffectsEnabled and SoundInSpaceEnabled then
   begin
     if Projectile <> nil then
     begin
-      if Space.ContainsMapPoint(PointToPointF(Projectile.LocalPosition)) then SoundManager.PlaySound(ShotSoundPath);
+      if Space.ContainsMapPoint(PointToPointF(Projectile.LocalPosition)) then
+        SoundManager.PlaySound(ShotSoundPath);
     end
     else if SourceAnimation <> nil then
-      if Space.ContainsMapPoint(PointToPointF(SourceAnimation.LocalPosition)) then SoundManager.PlaySound(ShotSoundPath);
+      if Space.ContainsMapPoint(PointToPointF(SourceAnimation.LocalPosition)) then
+        SoundManager.PlaySound(ShotSoundPath);
   end;
   if HitEffect <> nil then
   begin
@@ -529,9 +634,7 @@ begin
   end;
   StepIndex := 0;
 end;
-{ @end $69D068 }
 
-{ @routine $69F45C TWeaponSE_DetachFromSpace }
 procedure TWeaponSE.DetachFromSpace;
 var
   Index: Integer;
@@ -576,9 +679,7 @@ begin
     end;
   inherited DetachFromSpace;
 end;
-{ @end $69F45C }
 
-{ @routine $69F5A8 TWeaponSE_SetHit }
 procedure TWeaponSE.SetHit(Color, Damage: Integer; Destroyed, PlaySound: Boolean);
 begin
   HitColor := Color;
@@ -586,57 +687,66 @@ begin
   TargetDestroyed := Destroyed;
   PlayShotSound := PlaySound;
 end;
-{ @end $69F5A8 }
 
-{ @routine $69F5E4 TWeaponSE_SetEndpoints }
 procedure TWeaponSE.SetEndpoints(Source, Target: TObjectSE);
 begin
   RetainSpaceObject(SourceObject, Source);
   RetainSpaceObject(TargetObject, Target);
 end;
-{ @end $69F5E4 }
 
-{ @routine $69F614 TWeaponSE_GetTargetPoint }
 function TWeaponSE.GetTargetPoint: TPointF;
 begin
-  if TargetObject = nil then Result := Position
+  if TargetObject = nil then
+    Result := Position
   else if TargetObject is TShip2SE then
-    Result := (TargetObject as TShip2SE).GetTargetPoint((TargetObject as TShip2SE).GetAngle,
-      (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
-  else Result := TargetObject.Position;
+    Result :=
+        (TargetObject as TShip2SE)
+            .GetTargetPoint(
+                (TargetObject as TShip2SE).GetAngle,
+                (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
+  else
+    Result := TargetObject.Position;
 end;
-{ @end $69F614 }
 
-{ @routine $69F6B0 TWeaponSE_GetSourcePoint }
 function TWeaponSE.GetSourcePoint: TPointF;
 begin
-  if SourceObject = nil then Result := Position
+  if SourceObject = nil then
+    Result := Position
   else if SourceObject is TShip2SE then
-    Result := TShip2SE(SourceObject).GetWeaponPortPoint(SourceObject.GetAngle,
-      (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
+    Result :=
+        TShip2SE(SourceObject)
+            .GetWeaponPortPoint(
+                SourceObject.GetAngle,
+                (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
   else if SourceObject is TRuinsSE then
-    Result := TRuinsSE(SourceObject).GetWeaponPortPoint(
-      (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
-  else Result := SourceObject.Position;
+    Result :=
+        TRuinsSE(SourceObject)
+            .GetWeaponPortPoint(
+                (Cardinal(TargetObject) + Cardinal(SourceObject) + Cardinal(Self)) shr 2)
+  else
+    Result := SourceObject.Position;
 end;
-{ @end $69F6B0 }
 
-{ @routine $69F770 TWeaponSE_Advance }
 procedure TWeaponSE.Advance;
 var
   Index: Integer;
 begin
-  if not IsAttachedToSpace then Exit;
+  if not IsAttachedToSpace then
+    Exit;
   if (HitEffect <> nil) and (Projectile <> nil) then
   begin
     if not HitEffect.Started then
     begin
-      if not ProjectileFinished and (HitEffect.LeftTime >= Projectile.RemainingTicks) and HitEffect.BeforeEnd then
+      if not ProjectileFinished
+          and (HitEffect.LeftTime >= Projectile.RemainingTicks)
+          and HitEffect.BeforeEnd then
       begin
         HitEffect.Started := True;
         HitEffect.Start;
       end
-      else if not ProjectileFinished and not HitEffect.BeforeEnd and (Projectile.GetElapsedTicks >= HitEffect.LeftTime) then
+      else if not ProjectileFinished
+          and not HitEffect.BeforeEnd
+          and (Projectile.GetElapsedTicks >= HitEffect.LeftTime) then
       begin
         HitEffect.Started := True;
         HitEffect.Start;
@@ -654,29 +764,35 @@ begin
           Exit;
         end;
       end
-      else HitEffect.Advance;
+      else
+        HitEffect.Advance;
     end;
   end;
   if Projectile <> nil then
   begin
-    if not ProjectileFinished then Projectile.Advance(nil, 0);
+    if not ProjectileFinished then
+      Projectile.Advance(nil, 0);
     if not ProjectileFinished and Projectile.IsFinished then
     begin
       ProjectileFinished := True;
-      if Projectile <> nil then Projectile.SetActive(False);
+      if Projectile <> nil then
+        Projectile.SetActive(False);
       if DestructionAnimation <> nil then
       begin
         if not DestructionAnimation.Active then
         begin
           DestructionAnimation.SetActive(True);
           for Index := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
-            if ExtraDestructionAnimations[Index] <> nil then ExtraDestructionAnimations[Index].SetActive(True);
+            if ExtraDestructionAnimations[Index] <> nil then
+              ExtraDestructionAnimations[Index].SetActive(True);
           if FilmSoundEffectsEnabled then
             if SoundInSpaceEnabled then
-              if Space.ContainsMapPoint(GetTargetPoint) then SoundManager.PlaySound(HitSoundPath);
+              if Space.ContainsMapPoint(GetTargetPoint) then
+                SoundManager.PlaySound(HitSoundPath);
         end;
       end
-      else if (HitEffect = nil) and (TargetAnimation = nil) then DetachFromSpace;
+      else if (HitEffect = nil) and (TargetAnimation = nil) then
+        DetachFromSpace;
     end;
   end
   else if SourceAnimation = nil then
@@ -690,13 +806,16 @@ begin
         begin
           DestructionAnimation.SetActive(True);
           for Index := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
-            if ExtraDestructionAnimations[Index] <> nil then ExtraDestructionAnimations[Index].SetActive(True);
+            if ExtraDestructionAnimations[Index] <> nil then
+              ExtraDestructionAnimations[Index].SetActive(True);
           if FilmSoundEffectsEnabled then
             if SoundInSpaceEnabled then
-              if Space.ContainsMapPoint(GetTargetPoint) then SoundManager.PlaySound(HitSoundPath);
+              if Space.ContainsMapPoint(GetTargetPoint) then
+                SoundManager.PlaySound(HitSoundPath);
         end;
       end
-      else if (HitEffect = nil) and (TargetAnimation = nil) then DetachFromSpace;
+      else if (HitEffect = nil) and (TargetAnimation = nil) then
+        DetachFromSpace;
     end;
   end
   // The native branch checks nonnil again after the preceding nil branch.
@@ -713,13 +832,16 @@ begin
         begin
           DestructionAnimation.SetActive(True);
           for Index := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
-            if ExtraDestructionAnimations[Index] <> nil then ExtraDestructionAnimations[Index].SetActive(True);
+            if ExtraDestructionAnimations[Index] <> nil then
+              ExtraDestructionAnimations[Index].SetActive(True);
           if FilmSoundEffectsEnabled then
             if SoundInSpaceEnabled then
-              if Space.ContainsMapPoint(GetTargetPoint) then SoundManager.PlaySound(HitSoundPath);
+              if Space.ContainsMapPoint(GetTargetPoint) then
+                SoundManager.PlaySound(HitSoundPath);
         end;
       end
-      else if (HitEffect = nil) and (TargetAnimation = nil) then DetachFromSpace;
+      else if (HitEffect = nil) and (TargetAnimation = nil) then
+        DetachFromSpace;
     end
     else
     begin
@@ -736,7 +858,8 @@ begin
     begin
       TargetAnimation.Free;
       TargetAnimation := nil;
-      if DestructionAnimation = nil then DetachFromSpace;
+      if DestructionAnimation = nil then
+        DetachFromSpace;
     end
     else
     begin
@@ -751,7 +874,8 @@ begin
     begin
       Dec(DestructionDetachStep);
       if DestructionDetachStep = 0 then
-        if TargetObject <> nil then TargetObject.DetachFromSpace;
+        if TargetObject <> nil then
+          TargetObject.DetachFromSpace;
     end;
   end;
   if (DestructionAnimation <> nil) and (DestructionAnimation.Active = True) then
@@ -766,7 +890,8 @@ begin
           ExtraDestructionAnimations[Index].Free;
           ExtraDestructionAnimations[Index] := nil;
         end;
-      if (TargetAnimation = nil) and ProjectileFinished then DetachFromSpace;
+      if (TargetAnimation = nil) and ProjectileFinished then
+        DetachFromSpace;
     end
     else
     begin
@@ -775,21 +900,30 @@ begin
         DestructionAnimation.SetSequenceFrame(DestructionAnimation.SequenceFrame + 1);
         for Index := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
           if ExtraDestructionAnimations[Index] <> nil then
-            ExtraDestructionAnimations[Index].SetSequenceFrame(ExtraDestructionAnimations[Index].SequenceFrame + 1);
-        if (DestructionAnimation.SequenceFrame = DestructionDetachStep) and (TargetObject <> nil) then
+            ExtraDestructionAnimations[Index]
+                .SetSequenceFrame(ExtraDestructionAnimations[Index].SequenceFrame + 1);
+        if (DestructionAnimation.SequenceFrame = DestructionDetachStep)
+            and (TargetObject <> nil) then
           TargetObject.DetachFromSpace;
       end;
       DestructionAnimation.SetPosition(TruncatePointF(GetTargetPoint));
       for Index := Low(ExtraDestructionAnimations) to High(ExtraDestructionAnimations) do
         if ExtraDestructionAnimations[Index] <> nil then
-          ExtraDestructionAnimations[Index].SetPosition(Classes.Point(
-            DestructionAnimation.LocalPosition.X + ExtraDestructionAnimations[Index].UserValue,
-            DestructionAnimation.LocalPosition.Y + ExtraDestructionAnimations[Index].UserIndex));
+          ExtraDestructionAnimations[Index]
+              .SetPosition(
+                  Classes.Point(
+                      DestructionAnimation.LocalPosition.X
+                          + ExtraDestructionAnimations[Index].UserValue,
+                      DestructionAnimation.LocalPosition.Y
+                          + ExtraDestructionAnimations[Index].UserIndex
+                  ));
       if DestructionAlphaStep <> 0 then
       begin
         DestructionAlpha := DestructionAlpha + DestructionAlphaStep;
-        if DestructionAlpha < 0 then DestructionAlpha := 0
-        else if DestructionAlpha > 255 then DestructionAlpha := 255;
+        if DestructionAlpha < 0 then
+          DestructionAlpha := 0
+        else if DestructionAlpha > 255 then
+          DestructionAlpha := 255;
         TargetObject.SetAlpha(Round(DestructionAlpha));
       end;
     end;
@@ -807,21 +941,19 @@ begin
   end;
   Inc(StepIndex);
 end;
-{ @end $69F770 }
 
-{ @routine $6A01F0 TWeaponSE_LoadTemplate }
 procedure TWeaponSE.LoadTemplate(Block: TBlockParEC);
 var
   PaletteBlock, Palettes: TBlockParEC;
 
-  // @nested $6A0150 GetWeaponTemplateParam
-  function GetWeaponTemplateParam(Name: WideString): WideString; // @addr $6A0150 @ida "void __usercall $name(unsigned __int16 *Name@<eax>, unsigned __int16 **Result@<edx>, void *ParentFrame@<^0>);" @stackpop 0 @calls "0x6A02A2, 0x6A02BF"
+  function GetWeaponTemplateParam(Name: WideString): WideString;
   begin
     if (PaletteBlock <> nil) and (PaletteBlock.CountParams(Name) > 0) then
       Result := PaletteBlock.GetParam(Name)
     else if Block.CountParams(Name) > 0 then
       Result := Block.GetParam(Name)
-    else Result := '';
+    else
+      Result := '';
   end;
 
 begin
@@ -840,9 +972,7 @@ begin
   else if Block.CountParams('PosZ') > 0 then
     DepthExpression := Block.GetParam('PosZ');
 end;
-{ @end $6A01F0 }
 
-{ @routine $6A03D8 TWeaponEffect_Create }
 constructor TWeaponEffect.Create(AEffectIndex: Integer; AOwner: TObjectGI);
 var
   Block: TBlockParEC;
@@ -856,28 +986,25 @@ begin
   Block := GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex));
   if Block.CountParams('LeftTime') > 0 then
     LeftTime := ExtractDigitsToIntW(Block.GetParam('LeftTime'))
-  else LeftTime := 10;
+  else
+    LeftTime := 10;
   if Block.CountParams('BeforeEnd') > 0 then
     BeforeEnd := ParseEnabledNameGI(Block.GetParam('BeforeEnd'))
-  else BeforeEnd := True;
+  else
+    BeforeEnd := True;
 end;
-{ @end $6A03D8 }
 
-{ @routine $6A058C TWeaponEffect_Destroy }
 destructor TWeaponEffect.Destroy;
 begin
   Clear;
 end;
-{ @end $6A058C }
 
-{ @routine $6A05B8 TWeaponEffect_Clear }
 procedure TWeaponEffect.Clear;
 begin
-  while FirstItem <> nil do RemoveItem(FirstItem);
+  while FirstItem <> nil do
+    RemoveItem(FirstItem);
 end;
-{ @end $6A05B8 }
 
-{ @routine $6A05DC TWeaponEffect_AddItem }
 function TWeaponEffect.AddItem: PWeaponEffectItem;
 var
   Item: PWeaponEffectItem;
@@ -885,8 +1012,10 @@ begin
   New(Item);
   Item.Next := nil;
   Item.Prev := LastItem;
-  if FirstItem = nil then FirstItem := Item
-  else LastItem.Next := Item;
+  if FirstItem = nil then
+    FirstItem := Item
+  else
+    LastItem.Next := Item;
   LastItem := Item;
   Item.Image := nil;
   Item.Position := MakePointF(0, 0);
@@ -896,32 +1025,34 @@ begin
   Item.Acceleration := 0;
   Result := Item;
 end;
-{ @end $6A05DC }
 
-{ @routine $6A0680 TWeaponEffect_RemoveItem }
 procedure TWeaponEffect.RemoveItem(Item: PWeaponEffectItem);
 begin
-  if Item = nil then Exit;
+  if Item = nil then
+    Exit;
   if Item.Image <> nil then
   begin
     Item.Image.Free;
     Item.Image := nil;
   end;
-  if Item.Next <> nil then Item.Next.Prev := Item.Prev;
-  if Item.Prev <> nil then Item.Prev.Next := Item.Next;
-  if LastItem = Item then LastItem := Item.Prev;
-  if FirstItem = Item then FirstItem := Item.Next;
+  if Item.Next <> nil then
+    Item.Next.Prev := Item.Prev;
+  if Item.Prev <> nil then
+    Item.Prev.Next := Item.Next;
+  if LastItem = Item then
+    LastItem := Item.Prev;
+  if FirstItem = Item then
+    FirstItem := Item.Next;
   Dispose(Item);
 end;
-{ @end $6A0680 }
 
-{ @routine $6A071C TWeaponEffect_AddTargetEffect }
 procedure TWeaponEffect.AddTargetEffect(Index: Integer);
 var
   Block: TBlockParEC;
   Item: PWeaponEffectItem;
 begin
-  Block := GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex) + '.D:' + IntToStr(Index));
+  Block :=
+      GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex) + '.D:' + IntToStr(Index));
   Item := AddItem;
   Item.AtTarget := True;
   Item.Position := MakePointF(0, ExtractDecimalToSingleW(Block.GetParam('StartPos')));
@@ -930,13 +1061,16 @@ begin
   Item.Acceleration := ExtractDecimalToSingleW(Block.GetParam('Accel'));
   if Block.CountParams('AutoAnim') > 0 then
     Item.AutoAnimation := ParseEnabledNameGI(Block.GetParam('AutoAnim'))
-  else Item.AutoAnimation := True;
+  else
+    Item.AutoAnimation := True;
   if Block.CountParams('LoopAnim') > 0 then
     Item.LoopAnimation := ParseEnabledNameGI(Block.GetParam('LoopAnim'))
-  else Item.LoopAnimation := True;
+  else
+    Item.LoopAnimation := True;
   if Block.CountParams('SkipTime') > 0 then
     Item.SkipTime := ExtractDigitsToIntW(Block.GetParam('SkipTime'))
-  else Item.SkipTime := 0;
+  else
+    Item.SkipTime := 0;
   Item.Image := TgaiGI.Create(Owner);
   Item.Image.SetImagePath(Block.GetParam('Image'));
   Item.Image.SequenceIndex := 0;
@@ -944,27 +1078,31 @@ begin
   Item.Image.SetSize(Item.Image.GetContentSize);
   Item.Image.SetOrigin(HalfPoint(Item.Image.ClientSize));
   Item.Image.SetDepthByName(DepthExpression);
-  Item.Image.SetPosition(TruncatePointF(OffsetPointByRadiusAngle(TargetPoint, Item.Position.Y, Item.Angle)));
+  Item.Image.SetPosition(
+      TruncatePointF(OffsetPointByRadiusAngle(TargetPoint, Item.Position.Y, Item.Angle))
+  );
   Item.Image.SetPositionModeW(True);
   Item.Image.SetSequenceFrame(0);
-  if Item.SkipTime = 0 then Item.Image.RestartPlayback
-  else Item.Image.SetActive(False);
+  if Item.SkipTime = 0 then
+    Item.Image.RestartPlayback
+  else
+    Item.Image.SetActive(False);
   if Block.CountParams('LifeTime') > 0 then
     Item.Lifetime := ExtractDigitsToIntW(Block.GetParam('LifeTime'))
-  else Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
+  else
+    Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
   Item.Image.UserValue := Integer(Item);
   if Item.AutoAnimation and not Item.LoopAnimation then
     Item.Image.CycleCompleteCallback := AnimationComplete;
 end;
-{ @end $6A071C }
 
-{ @routine $6A0BBC TWeaponEffect_AddSourceEffect }
 procedure TWeaponEffect.AddSourceEffect(Index: Integer);
 var
   Block: TBlockParEC;
   Item: PWeaponEffectItem;
 begin
-  Block := GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex) + '.S:' + IntToStr(Index));
+  Block :=
+      GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex) + '.S:' + IntToStr(Index));
   Item := AddItem;
   Item.AtTarget := False;
   Item.Position := MakePointF(0, ExtractDecimalToSingleW(Block.GetParam('StartPos')));
@@ -973,13 +1111,16 @@ begin
   Item.Acceleration := ExtractDecimalToSingleW(Block.GetParam('Accel'));
   if Block.CountParams('AutoAnim') > 0 then
     Item.AutoAnimation := ParseEnabledNameGI(Block.GetParam('AutoAnim'))
-  else Item.AutoAnimation := True;
+  else
+    Item.AutoAnimation := True;
   if Block.CountParams('LoopAnim') > 0 then
     Item.LoopAnimation := ParseEnabledNameGI(Block.GetParam('LoopAnim'))
-  else Item.LoopAnimation := True;
+  else
+    Item.LoopAnimation := True;
   if Block.CountParams('SkipTime') > 0 then
     Item.SkipTime := ExtractDigitsToIntW(Block.GetParam('SkipTime'))
-  else Item.SkipTime := 0;
+  else
+    Item.SkipTime := 0;
   Item.Image := TgaiGI.Create(Owner);
   Item.Image.SetImagePath(Block.GetParam('Image'));
   Item.Image.SequenceIndex := 0;
@@ -987,21 +1128,24 @@ begin
   Item.Image.SetSize(Item.Image.GetContentSize);
   Item.Image.SetOrigin(HalfPoint(Item.Image.ClientSize));
   Item.Image.SetDepthByName(DepthExpression);
-  Item.Image.SetPosition(TruncatePointF(OffsetPointByRadiusAngle(SourcePoint, Item.Position.Y, Item.Angle)));
+  Item.Image.SetPosition(
+      TruncatePointF(OffsetPointByRadiusAngle(SourcePoint, Item.Position.Y, Item.Angle))
+  );
   Item.Image.SetPositionModeW(True);
   Item.Image.SetSequenceFrame(0);
-  if Item.SkipTime = 0 then Item.Image.RestartPlayback
-  else Item.Image.SetActive(False);
+  if Item.SkipTime = 0 then
+    Item.Image.RestartPlayback
+  else
+    Item.Image.SetActive(False);
   if Block.CountParams('LifeTime') > 0 then
     Item.Lifetime := ExtractDigitsToIntW(Block.GetParam('LifeTime'))
-  else Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
+  else
+    Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
   Item.Image.UserValue := Integer(Item);
   if Item.AutoAnimation and not Item.LoopAnimation then
     Item.Image.CycleCompleteCallback := AnimationComplete;
 end;
-{ @end $6A0BBC }
 
-{ @routine $6A105C TWeaponEffect_Start }
 procedure TWeaponEffect.Start;
 var
   Index, Count: Integer;
@@ -1010,16 +1154,17 @@ begin
   Block := GameDataConfig.GetBlockByPath('Weapon.' + IntToStr(EffectIndex));
   if Block.CountParams('AnimTakt') > 0 then
     AnimationInterval := ExtractDigitsToIntW(Block.GetParam('AnimTakt'))
-  else AnimationInterval := 1;
+  else
+    AnimationInterval := 1;
   AnimationCountdown := AnimationInterval;
   Count := Block.CountBlocks('D');
-  for Index := 0 to Count - 1 do AddTargetEffect(Index);
+  for Index := 0 to Count - 1 do
+    AddTargetEffect(Index);
   Count := Block.CountBlocks('S');
-  for Index := 0 to Count - 1 do AddSourceEffect(Index);
+  for Index := 0 to Count - 1 do
+    AddSourceEffect(Index);
 end;
-{ @end $6A105C }
 
-{ @routine $6A11E0 TWeaponEffect_Advance }
 procedure TWeaponEffect.Advance;
 var
   Item, Previous: PWeaponEffectItem;
@@ -1037,9 +1182,17 @@ begin
     if Item.Image <> nil then
     begin
       if Item.AtTarget then
-        Item.Image.SetPosition(TruncatePointF(OffsetPointByRadiusAngle(TargetPoint, Item.Position.Y, Item.Angle - 90.0)))
+        Item.Image.SetPosition(
+            TruncatePointF(
+                OffsetPointByRadiusAngle(TargetPoint, Item.Position.Y, Item.Angle - 90.0)
+            )
+        )
       else
-        Item.Image.SetPosition(TruncatePointF(OffsetPointByRadiusAngle(SourcePoint, Item.Position.Y, Item.Angle - 90.0)));
+        Item.Image.SetPosition(
+            TruncatePointF(
+                OffsetPointByRadiusAngle(SourcePoint, Item.Position.Y, Item.Angle - 90.0)
+            )
+        );
       if Item.SkipTime = 0 then
       begin
         Dec(AnimationCountdown);
@@ -1049,10 +1202,13 @@ begin
           begin
             if Item.Image.SequenceFrame = Item.Image.SequenceFrameCount - 1 then
             begin
-              if Item.LoopAnimation then Item.Image.SetSequenceFrame(0)
-              else Item.Lifetime := 0;
+              if Item.LoopAnimation then
+                Item.Image.SetSequenceFrame(0)
+              else
+                Item.Lifetime := 0;
             end
-            else Item.Image.SetSequenceFrame(Item.Image.SequenceFrame + 1);
+            else
+              Item.Image.SetSequenceFrame(Item.Image.SequenceFrame + 1);
           end;
           AnimationCountdown := AnimationInterval;
         end;
@@ -1069,12 +1225,11 @@ begin
     end;
     Previous := Item;
     Item := Item.Next;
-    if Previous.Lifetime = 0 then RemoveItem(Previous);
+    if Previous.Lifetime = 0 then
+      RemoveItem(Previous);
   end;
 end;
-{ @end $6A11E0 }
 
-{ @routine $6A13B4 TWeaponEffect_AnimationComplete }
 procedure TWeaponEffect.AnimationComplete(Sender: TObjectGI);
 var
   Item: PWeaponEffectItem;
@@ -1082,17 +1237,15 @@ begin
   Item := PWeaponEffectItem(Sender.UserValue);
   RemoveItem(Item);
 end;
-{ @end $6A13B4 }
 
-{ @routine $6A13DC TWeaponEffect_IsFinished }
 function TWeaponEffect.IsFinished: Boolean;
 begin
-  if FirstItem = nil then Result := True
-  else Result := False;
+  if FirstItem = nil then
+    Result := True
+  else
+    Result := False;
 end;
-{ @end $6A13DC }
 
-{ @routine $6A1400 TWeaponEffect_SetSourcePoint }
 procedure TWeaponEffect.SetSourcePoint(Point: TPointF);
 var
   X, Y: Single;
@@ -1100,12 +1253,12 @@ begin
   SourcePoint := Point;
   X := TargetPoint.X - SourcePoint.X;
   Y := TargetPoint.Y - SourcePoint.Y;
-  if Abs(X) < 1.0 then Direction := ArcTan2(Y, 1.0) + 2 * Pi
-  else Direction := ArcTan2(Y, X) + 2 * Pi;
+  if Abs(X) < 1.0 then
+    Direction := ArcTan2(Y, 1.0) + 2 * Pi
+  else
+    Direction := ArcTan2(Y, X) + 2 * Pi;
 end;
-{ @end $6A1400 }
 
-{ @routine $6A14BC TWeaponEffect_SetTargetPoint }
 procedure TWeaponEffect.SetTargetPoint(Point: TPointF);
 var
   X, Y: Single;
@@ -1113,12 +1266,12 @@ begin
   TargetPoint := Point;
   X := TargetPoint.X - SourcePoint.X;
   Y := TargetPoint.Y - SourcePoint.Y;
-  if Abs(X) < 1.0 then Direction := ArcTan2(Y, 1.0) + 2 * Pi
-  else Direction := ArcTan2(Y, X) + 2 * Pi;
+  if Abs(X) < 1.0 then
+    Direction := ArcTan2(Y, 1.0) + 2 * Pi
+  else
+    Direction := ArcTan2(Y, X) + 2 * Pi;
 end;
-{ @end $6A14BC }
 
-{ @routine $6A1578 InitializeWeaponVisualResources }
 procedure InitializeWeaponVisualResources;
 begin
   LoadBeamLaserPalettes;
@@ -1140,7 +1293,5 @@ begin
   LoadMissileHitAnimationPaths;
   LoadRadiationPalettes;
 end;
-{ @end $6A1578 }
-
 
 end.

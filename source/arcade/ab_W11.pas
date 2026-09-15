@@ -1,33 +1,48 @@
 unit ab_W11;
-// Unit bracket (inferred): .text 0x004F8100..0x004F8850; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TabW11 projectile family: $4F8168..$4F8851.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Struct, GI_Tail, ab_Global, ab_Object, ab_WorldImage;
+uses
+  Classes,
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  ab_Object,
+  ab_WorldImage;
 
 type
-  TabW11 = class(TabObject) // @size $E4
-  public
-    Damage: Integer; // @offset $B0
-    Image: PabWorldImage; // @offset $B4
-    Exploding: Boolean; // @offset $B8
-    LastTrailPosition: TVector3D; // @offset $C0
-    ExpireTick: Integer; // @offset $D8
-    TurnSpeed: Single; // @offset $DC
-    TrailImages: TList; // @offset $E0
-    constructor Create; // @addr $4F8168 @ida "TabW11 *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $4F8210 @ida "void __usercall $name(TabW11 *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Launch(Owner: TabObject; Amount: Integer; Offset: Single); // @addr $4F82C8 @ida "void __userpurge $name(TabW11 *Self@<eax>, TabObject *Owner@<edx>, int Amount@<ecx>, float Offset@<^0>);"
-    procedure Advance; override; // @addr $4F8470
-    procedure UpdateVisuals; override; // @addr $4F86A8
+
+  TabW11 = class;
+
+  TabW11 = class(TabObject)
+    Damage: Integer;
+    Image: PabWorldImage;
+    Exploding: Boolean;
+    GapB9: array[0..6] of Byte;
+    LastTrailPosition: TVector3D;
+    ExpireTick: Integer;
+    TurnSpeed: Single;
+    TrailImages: TList;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Launch(Owner: TabObject; Amount: Integer; Offset: Single);
   end;
 
 implementation
 
-uses ab_Ship, GlobalsV;
+uses
+  aMyFunction,
+  ab_Ship,
+  GlobalsV;
 
-{ @routine $4F8168 TabW11_Create }
 constructor TabW11.Create;
 begin
   inherited Create;
@@ -39,9 +54,7 @@ begin
   Collidable := False;
   TrailImages := TList.Create;
 end;
-{ @end $4F8168 }
 
-{ @routine $4F8210 TabW11_Destroy }
 destructor TabW11.Destroy;
 var
   Index: Integer;
@@ -53,15 +66,14 @@ begin
   end;
   if TrailImages <> nil then
   begin
-    for Index := 0 to TrailImages.Count - 1 do ab_WorldImage_Delete(TrailImages[Index]);
+    for Index := 0 to TrailImages.Count - 1 do
+      ab_WorldImage_Delete(TrailImages[Index]);
     TrailImages.Free;
     TrailImages := nil;
   end;
   inherited Destroy;
 end;
-{ @end $4F8210 }
 
-{ @routine $4F82C8 TabW11_Launch }
 procedure TabW11.Launch(Owner: TabObject; Amount: Integer; Offset: Single);
 var
   Heading, HeadingDelta: Double;
@@ -76,31 +88,38 @@ begin
   begin
     Heading := WrapHeadingDegrees(State.BearingDegrees + 90);
     HeadingDelta := HeadingDifferenceDegrees(Heading, State.BearingDegrees);
-    AdvanceSphericalBearingState(State.LongitudeDegrees, State.PolarAngleDegrees, Heading, SphereRadius, Offset);
+    AdvanceSphericalBearingState(
+        State.LongitudeDegrees,
+        State.PolarAngleDegrees,
+        Heading,
+        SphereRadius,
+        Offset
+    );
     State.BearingDegrees := WrapHeadingDegrees(Heading + HeadingDelta);
   end;
   Image := ab_WorldImage_Create(MakeVector3D(0, 0, 0), 'GAI,Bm.AB.w11_f', 'GAI,Bm.AB.w11_s', False);
   ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
 end;
-{ @end $4F82C8 }
 
-{ @routine $4F8470 TabW11_Advance }
 procedure TabW11.Advance;
 var
   Collision: TabObject;
   Enemy: TabShip;
 begin
   inherited Advance;
-  if not Exploding then ab_WorldImage_SetPosition(Image, GetWorldPosition);
+  if not Exploding then
+    ab_WorldImage_SetPosition(Image, GetWorldPosition);
   Collision := nil;
   if not Exploding then
   begin
     Collision := FindCollision;
-    if Collision = SourceObject then Collision := nil;
+    if Collision = SourceObject then
+      Collision := nil;
   end;
   if ((ArcadeTickCount > ExpireTick) or (Collision <> nil)) and not Exploding then
   begin
-    if Collision <> nil then Collision.ApplyDamage(Damage, SourceObject, False);
+    if Collision <> nil then
+      Collision.ApplyDamage(Damage, SourceObject, False);
     Exploding := True;
     ab_WorldImage_Set(Image, GetWorldPosition, 'GAI,Bm.AB.w11b_f', 'GAI,Bm.AB.w11b_s');
     ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
@@ -115,17 +134,18 @@ begin
       if Enemy <> nil then
         with BearingAndDistanceTo(Enemy) do
         begin
-          if BearingDeltaDegrees < -TurnSpeed then BearingDeltaDegrees := -TurnSpeed
-          else if BearingDeltaDegrees > TurnSpeed then BearingDeltaDegrees := TurnSpeed;
+          if BearingDeltaDegrees < -TurnSpeed then
+            BearingDeltaDegrees := -TurnSpeed
+          else if BearingDeltaDegrees > TurnSpeed then
+            BearingDeltaDegrees := TurnSpeed;
           State.BearingDegrees := State.BearingDegrees + BearingDeltaDegrees;
         end;
     end;
   end
-  else if Exploding then DeletionPending := Image.Finished;
+  else if Exploding then
+    DeletionPending := Image.Finished;
 end;
-{ @end $4F8470 }
 
-{ @routine $4F86A8 TabW11_UpdateVisuals }
 procedure TabW11.UpdateVisuals;
 var
   Entry: PabWorldImage;
@@ -145,10 +165,16 @@ begin
       for Index := 0 to TrailImages.Count - 1 do
       begin
         Entry := TrailImages[Index];
-        if Entry.Finished then Break;
+        if Entry.Finished then
+          Break;
         Entry := nil;
       end;
-      TrailPosition := MakeVector3D(Sample * Delta.X + Position.X, Sample * Delta.Y + Position.Y, Sample * Delta.Z + Position.Z);
+      TrailPosition :=
+          MakeVector3D(
+              Sample * Delta.X + Position.X,
+              Sample * Delta.Y + Position.Y,
+              Sample * Delta.Z + Position.Z
+          );
       if Entry = nil then
       begin
         Entry := ab_WorldImage_Create(TrailPosition, 'GAI,Bm.AB.w11a_f', 'GAI,Bm.AB.w11a_s', False);
@@ -166,6 +192,5 @@ begin
     LastTrailPosition := Position;
   end;
 end;
-{ @end $4F86A8 }
 
 end.

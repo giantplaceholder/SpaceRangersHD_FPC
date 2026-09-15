@@ -1,32 +1,38 @@
 unit BlockParException;
-// Unit bracket (inferred): .text 0x00471F9C..0x00472094; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses SysUtils;
+uses
+  SysUtils;
 
 type
-  EBlockPar = class(Exception) // @size $10
-  private
-    Reportable: Boolean; // @offset $0C
-  public
-    constructor Create(Message: AnsiString; AReportable: Boolean); // @addr $471FF4 @ida "EBlockPar *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, char *Message@<ecx>, bool AReportable@<^0>);"
-    function IsReportable: Boolean; // @addr $47207C @note "False suppresses the reporting flag in ExceptionInfo."
+
+  EBlockPar = class;
+
+  EBlockPar = class(Exception)
+    Reportable: Boolean;
+    GapD: array[0..2] of Byte;
+    constructor Create(Message: AnsiString; AReportable: Boolean);
+    function IsReportable: Boolean;
   end;
 
 implementation
 
-{ @routine $471FF4 EBlockPar_Create }
 constructor EBlockPar.Create(Message: AnsiString; AReportable: Boolean);
 begin
   inherited Create(Message);
   Reportable := AReportable;
 end;
-{ @end $471FF4 }
 
-{ @routine $47207C EBlockPar_IsReportable }
 function EBlockPar.IsReportable: Boolean;
-begin Result := Reportable end;
-{ @end $47207C }
+begin
+  Result := Reportable
+end;
 
 end.

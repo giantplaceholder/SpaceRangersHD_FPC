@@ -1,31 +1,37 @@
 unit TextFieldClass;
-// Unit bracket (inferred): .text 0x004DCCAC..0x004DCE6A; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Buf, EC_Struct;
+uses
+  EC_Buf,
+  EC_Struct;
 
 type
-  TTextField = class(TObjectEx) // @size 0x08
-  public
-    Text: WideString; // @offset 0x04
 
-    procedure ClearText; // @addr 0x4DCD18
-    procedure LoadTextLinesFromReader(Reader: TBufEC); // @addr 0x4DCD30 @note "Int32 line and character counts, UTF-16 text; trims lines and joins with CRLF."
+  TTextField = class;
+
+  TTextField = class(TObjectEx)
+    Text: WideString;
+    procedure ClearText;
+    procedure LoadTextLinesFromReader(Reader: TBufEC);
   end;
 
 implementation
 
-uses EC_Str;
+uses
+  EC_Str;
 
-{ @routine $4DCD18 TTextField_ClearText }
 procedure TTextField.ClearText;
 begin
   Text := '';
 end;
-{ @end $4DCD18 }
 
-{ @routine $4DCD30 TTextField_LoadTextLinesFromReader }
 procedure TTextField.LoadTextLinesFromReader(Reader: TBufEC);
 var
   Line: WideString;
@@ -37,12 +43,14 @@ begin
   begin
     CharCount := Reader.GetInt32;
     SetLength(Line, CharCount);
-    for i := 1 to CharCount do Line[i] := Reader.GetWideChar;
-    if Text <> '' then Text := Text + #13#10 + TrimWideString(Line)
-    else Text := TrimWideString(Line);
+    for i := 1 to CharCount do
+      Line[i] := Reader.GetWideChar;
+    if Text <> '' then
+      Text := Text + #13#10 + TrimWideString(Line)
+    else
+      Text := TrimWideString(Line);
   end;
   Text := TrimWideString(Text);
 end;
-{ @end $4DCD30 }
 
 end.

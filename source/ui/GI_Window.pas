@@ -1,41 +1,54 @@
 unit GI_Window;
-// Unit bracket (inferred): .text 0x004917E0..0x00492760; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_BlockPar, GI_Image, GI_MessageLoop, GI_Panel, Types;
+uses
+  EC_BlockPar,
+  GI_Image,
+  GI_MessageLoop,
+  GI_Panel,
+  Types;
 
 type
-  TWindowGI = class(TPanelGI) // @size 0x17C
-  public
-    LeftImage: TImageGI; // @offset 0x140
-    RightImage: TImageGI; // @offset 0x144
-    TopImage: TImageGI; // @offset 0x148
-    BottomImage: TImageGI; // @offset 0x14C
-    TopLeftImage: TImageGI; // @offset 0x150
-    TopRightImage: TImageGI; // @offset 0x154
-    BottomLeftImage: TImageGI; // @offset 0x158
-    BottomRightImage: TImageGI; // @offset 0x15C
-    TextureImage: TImageGI; // @offset 0x160
-    WorkSubRect: TRect; // @offset 0x164
-    MinimumSize: TPoint; // @offset 0x174
 
-    constructor Create(Owner: TObjectGI); // @addr 0x491904 @ida "TWindowGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    destructor Destroy; override; // @addr 0x491AE0 @ida "void __usercall $name(TWindowGI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    function AlignSizeToBorderTiles(Size: TPoint): TPoint; // @addr 0x491C60 @ida "void __usercall $name(TWindowGI *Self@<eax>, TPoint *Size@<edx>, TPoint *Result@<ecx>);"
-    procedure UpdateBorderLayout; // @addr 0x491DA8
-    procedure LoadFromConfigPath(const Path: WideString); override; // @addr 0x4922E8
-    procedure LoadFromBlock(Block: TBlockParEC); override; // @addr 0x49231C
-    procedure LoadWindowProperties(Block: TBlockParEC); // @addr 0x492344
-    procedure UpdateAutoGeometry; override; // @addr 0x492728
+  TWindowGI = class;
+
+  TWindowGI = class(TPanelGI)
+    LeftImage: TImageGI;
+    RightImage: TImageGI;
+    TopImage: TImageGI;
+    BottomImage: TImageGI;
+    TopLeftImage: TImageGI;
+    TopRightImage: TImageGI;
+    BottomLeftImage: TImageGI;
+    BottomRightImage: TImageGI;
+    TextureImage: TImageGI;
+    WorkSubRect: TRect;
+    MinimumSize: TPoint;
+    procedure LoadFromConfigPath(const Path: WideString); override;
+    procedure LoadFromBlock(Block: TBlockParEC); override;
+    procedure UpdateAutoGeometry; override;
+    constructor Create(Owner: TObjectGI);
+    destructor Destroy; override;
+    function AlignSizeToBorderTiles(Size: TPoint): TPoint;
+    procedure UpdateBorderLayout;
+    procedure LoadWindowProperties(Block: TBlockParEC);
   end;
 
 implementation
 
-uses Classes, GI_Main, GR_Main, Math;
+uses
+  Classes,
+  GI_Main,
+  GR_Main,
+  Math;
 
-
-{ @routine $491904 TWindowGI_Create }
 constructor TWindowGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
@@ -58,9 +71,7 @@ begin
   TextureImage := TImageGI.Create(Self);
   TextureImage.SetDepth(1000000);
 end;
-{ @end $491904 }
 
-{ @routine $491AE0 TWindowGI_Destroy }
 destructor TWindowGI.Destroy;
 begin
   if LeftImage <> nil then
@@ -110,18 +121,19 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $491AE0 }
 
-{ @routine $491C60 TWindowGI_AlignSizeToBorderTiles }
 function TWindowGI.AlignSizeToBorderTiles(Size: TPoint): TPoint;
-var BorderSize: Integer; CornerSize, TileSize: TPoint;
+var
+  BorderSize: Integer;
+  CornerSize, TileSize: TPoint;
 begin
   Size.X := Max(Size.X, MinimumSize.X);
   Size.Y := Max(Size.Y, MinimumSize.Y);
   CornerSize := TopLeftImage.GetContentSize;
   TileSize := TopRightImage.GetContentSize;
   BorderSize := CornerSize.X + TileSize.X;
-  if Size.X <= BorderSize then Result.X := BorderSize
+  if Size.X <= BorderSize then
+    Result.X := BorderSize
   else
   begin
     TileSize := TopImage.GetContentSize;
@@ -129,18 +141,18 @@ begin
   end;
   TileSize := BottomLeftImage.GetContentSize;
   BorderSize := CornerSize.Y + TileSize.Y;
-  if Size.Y <= BorderSize then Result.Y := BorderSize
+  if Size.Y <= BorderSize then
+    Result.Y := BorderSize
   else
   begin
     TileSize := LeftImage.GetContentSize;
     Result.Y := Ceil((Size.Y - BorderSize) / TileSize.Y) * TileSize.Y + BorderSize;
   end;
 end;
-{ @end $491C60 }
 
-{ @routine $491DA8 TWindowGI_UpdateBorderLayout }
 procedure TWindowGI.UpdateBorderLayout;
-var First, Last, Width, Height: Integer;
+var
+  First, Last, Width, Height: Integer;
 begin
   TopLeftImage.SetSize(TopLeftImage.GetContentSize);
   TopLeftImage.SetPosition(Classes.Point(0, 0));
@@ -149,11 +161,16 @@ begin
   BottomLeftImage.SetSize(BottomLeftImage.GetContentSize);
   BottomLeftImage.SetPosition(Classes.Point(0, ClientSize.Y - BottomLeftImage.ClientSize.Y));
   BottomRightImage.SetSize(BottomRightImage.GetContentSize);
-  BottomRightImage.SetPosition(Classes.Point(ClientSize.X - BottomRightImage.ClientSize.X,
-    ClientSize.Y - BottomRightImage.ClientSize.Y));
+  BottomRightImage.SetPosition(
+      Classes.Point(
+          ClientSize.X - BottomRightImage.ClientSize.X,
+          ClientSize.Y - BottomRightImage.ClientSize.Y
+      )
+  );
   First := TopLeftImage.ClientSize.X;
   Last := ClientSize.X - TopRightImage.ClientSize.X;
-  if Last - First <= 0 then TopImage.SetActive(False)
+  if Last - First <= 0 then
+    TopImage.SetActive(False)
   else
   begin
     TopImage.SetActive(True);
@@ -163,7 +180,8 @@ begin
   end;
   First := BottomLeftImage.ClientSize.X;
   Last := ClientSize.X - BottomRightImage.ClientSize.X;
-  if Last - First <= 0 then BottomImage.SetActive(False)
+  if Last - First <= 0 then
+    BottomImage.SetActive(False)
   else
   begin
     BottomImage.SetActive(True);
@@ -173,7 +191,8 @@ begin
   end;
   First := TopLeftImage.ClientSize.Y;
   Last := ClientSize.Y - BottomLeftImage.ClientSize.Y;
-  if Last - First <= 0 then LeftImage.SetActive(False)
+  if Last - First <= 0 then
+    LeftImage.SetActive(False)
   else
   begin
     LeftImage.SetActive(True);
@@ -183,7 +202,8 @@ begin
   end;
   First := TopRightImage.ClientSize.Y;
   Last := ClientSize.Y - BottomRightImage.ClientSize.Y;
-  if Last - First <= 0 then RightImage.SetActive(False)
+  if Last - First <= 0 then
+    RightImage.SetActive(False)
   else
   begin
     RightImage.SetActive(True);
@@ -193,8 +213,10 @@ begin
   end;
   Width := ClientSize.X - LeftImage.ClientSize.X - RightImage.ClientSize.X;
   Height := ClientSize.Y - TopImage.ClientSize.Y - BottomImage.ClientSize.Y;
-  if (Width <= 0) or (Height <= 0) or
-    ((LeftImage.ClientSize.Y <= 0) and (TopImage.ClientSize.X <= 0)) then TextureImage.SetActive(False)
+  if (Width <= 0)
+      or (Height <= 0)
+      or ((LeftImage.ClientSize.Y <= 0) and (TopImage.ClientSize.X <= 0)) then
+    TextureImage.SetActive(False)
   else
   begin
     TextureImage.SetActive(True);
@@ -204,25 +226,19 @@ begin
     TextureImage.SetImageKindY(ikyTopFill);
   end;
 end;
-{ @end $491DA8 }
 
-{ @routine $4922E8 TWindowGI_LoadFromConfigPath }
 procedure TWindowGI.LoadFromConfigPath(const Path: WideString);
 begin
   inherited LoadFromConfigPath(Path);
   LoadWindowProperties(UiStyleConfig.GetBlockByPath(Path));
 end;
-{ @end $4922E8 }
 
-{ @routine $49231C TWindowGI_LoadFromBlock }
 procedure TWindowGI.LoadFromBlock(Block: TBlockParEC);
 begin
   inherited LoadFromBlock(Block);
   LoadWindowProperties(Block);
 end;
-{ @end $49231C }
 
-{ @routine $492344 TWindowGI_LoadWindowProperties }
 procedure TWindowGI.LoadWindowProperties(Block: TBlockParEC);
 begin
   if Block.CountParams('ImageTopLeft') > 0 then
@@ -243,18 +259,17 @@ begin
     BottomImage.SetImagePath(Block.GetParam('ImageBottom'));
   if Block.CountParams('ImageTexture') > 0 then
     TextureImage.SetImagePath(Block.GetParam('ImageTexture'));
-  if Block.CountParams('WorkSubRect') > 0 then WorkSubRect := GetRectGI(Block.GetParam('WorkSubRect'));
-  if Block.CountParams('MinSize') > 0 then MinimumSize := GetPointGI(Block.GetParam('MinSize'));
+  if Block.CountParams('WorkSubRect') > 0 then
+    WorkSubRect := GetRectGI(Block.GetParam('WorkSubRect'));
+  if Block.CountParams('MinSize') > 0 then
+    MinimumSize := GetPointGI(Block.GetParam('MinSize'));
 end;
-{ @end $492344 }
 
-{ @routine $492728 TWindowGI_UpdateAutoGeometry }
 procedure TWindowGI.UpdateAutoGeometry;
 begin
   inherited UpdateAutoGeometry;
   SetSize(AlignSizeToBorderTiles(ClientSize));
   UpdateBorderLayout;
 end;
-{ @end $492728 }
 
 end.

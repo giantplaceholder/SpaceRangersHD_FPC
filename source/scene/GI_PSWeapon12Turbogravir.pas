@@ -1,81 +1,106 @@
 unit GI_PSWeapon12Turbogravir;
-// Native Turbogravir dual strands and Blue Whirl, including dormant particle states.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_MessageLoop, GI_PSWeapon, Types;
+uses
+  EC_Struct,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  Types;
 
 type
-  PTurbogravirParticle = ^TTurbogravirParticle;
-  TTurbogravirParticle = record // @size $34
-    Prev: PTurbogravirParticle; // @offset $00
-    Next: PTurbogravirParticle; // @offset $04
-    Position: TPoint; // @offset $08
-    FloatPosition: TPointF; // @offset $10
-    Color: Word; // @offset $18
-    Alpha: Byte; // @offset $1A
-    Velocity: TPoint; // @offset $1C
-    FloatVelocity: TPointF; // @offset $24
-    State: Byte; // @offset $2C
-    Unknown2E: Word; // @offset $2E Initialized to 30000; unused by native update.
-    Radius: Integer; // @offset $30
+
+  PointerToTTurbogravirParticle = ^TTurbogravirParticle;
+
+  PTurbogravirParticle = PointerToTTurbogravirParticle;
+
+  TTurbogravirParticle = record
+    Prev: PTurbogravirParticle;
+    Next: PTurbogravirParticle;
+    Position: TPoint;
+    FloatPosition: TPointF;
+    Color: Word;
+    Alpha: Byte;
+    Gap1B: array[0..0] of Byte;
+    Velocity: TPoint;
+    FloatVelocity: TPointF;
+    State: Byte;
+    Gap2D: array[0..0] of Byte;
+    Unknown2E: Word;
+    Radius: Integer;
   end;
+
   TTurbogravirPalette = array[0..8] of Single;
-  TTurbogravirPalettes = array of TTurbogravirPalette;
 
 var
-  TurbogravirPrimaryPalettes: array of TTurbogravirPalette; // @addr $88AEE4
-  TurbogravirSecondaryPalettes: array of TTurbogravirPalette; // @addr $88AEE8
+
+  TurbogravirPrimaryPalettes: array of TTurbogravirPalette;
+
+  TurbogravirSecondaryPalettes: array of TTurbogravirPalette;
 
 type
-  TPSWeapon12Turbogravir = class(TPSWeaponGI) // @size $2B4
-  public
-    OffsetTable: array[0..63] of Integer; // @offset $130
-    AlphaTable: array[0..63] of Byte; // @offset $230
-    HalfWidth: Integer; // @offset $270
-    Wavelength: Integer; // @offset $274
-    HalfWavelength: Integer; // @offset $278
-    EnabledStrands: Integer; // @offset $27C
-    PhaseMask: Integer; // @offset $280
-    FirstParticle: PTurbogravirParticle; // @offset $284
-    LastParticle: PTurbogravirParticle; // @offset $288
-    ProjectionBounds: TRect; // @offset $28C
-    LengthScale: Double; // @offset $2A0
-    OriginalLength: Double; // @offset $2A8
-    PaletteIndex: Integer; // @offset $2B0
 
-    constructor Create(Owner: TObjectGI; APaletteIndex: Integer); // @addr $693778 @ida "TPSWeapon12Turbogravir *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>, int APaletteIndex@<^0>);"
-    destructor Destroy; override; // @addr $693858 @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure BuildWaveTables; // @addr $693894
-    procedure SetPosition(Position: TPoint); override; // @addr $69395C @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, TPoint *Position@<edx>);"
-    procedure SetTargetPoint(Point: TPoint); override; // @addr $6939A0 @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, TPoint *Point@<edx>);"
-    procedure UpdateProjectionBounds; // @addr $6939F4
-    procedure UpdateHitTestBounds; override; // @addr $693D38
-    function GetLocalBounds: TRect; override; // @addr $693D98 @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, TRect *Result@<edx>);"
-    function AddParticle: PTurbogravirParticle; // @addr $693DFC
-    procedure ClearParticles; // @addr $693E74
-    procedure Invalidate; override; // @addr $693EC8 @note "Native empty override."
-    procedure InvalidateRect(Rect: TRect); override; // @addr $693ED4 @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, TRect *Rect@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override; // @addr $693FA0
-    procedure Draw(ClipRect: TRect); override; // @addr $694874 @ida "void __usercall $name(TPSWeapon12Turbogravir *Self@<eax>, TRect *ClipRect@<edx>);"
+  TPSBlueWhirlGI = class;
+
+  TPSWeapon12Turbogravir = class;
+
+  TPSWeapon12Turbogravir = class(TPSWeaponGI)
+    OffsetTable: array[0..63] of Integer;
+    AlphaTable: array[0..63] of Byte;
+    HalfWidth: Integer;
+    Wavelength: Integer;
+    HalfWavelength: Integer;
+    EnabledStrands: Integer;
+    PhaseMask: Integer;
+    FirstParticle: PTurbogravirParticle;
+    LastParticle: PTurbogravirParticle;
+    ProjectionBounds: TRect;
+    Gap29C: array[0..3] of Byte;
+    LengthScale: Double;
+    OriginalLength: Double;
+    PaletteIndex: Integer;
+    procedure UpdateHitTestBounds; override;
+    procedure SetPosition(Position: TPoint); override;
+    function GetLocalBounds: TRect; override;
+    procedure InvalidateRect(Rect: TRect); override;
+    procedure Invalidate; override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure SetTargetPoint(Point: TPoint); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
+    destructor Destroy; override;
+    procedure BuildWaveTables;
+    procedure UpdateProjectionBounds;
+    function AddParticle: PTurbogravirParticle;
+    procedure ClearParticles;
   end;
 
-  TPSBlueWhirlGI = class(TPSWeapon12Turbogravir) // @size $2B8
-  public
-    // $2B4..$2B7 is inherited alignment padding, not an additional field.
-    constructor Create(Owner: TObjectGI); // @addr $694B18 @ida "TPSBlueWhirlGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
+  TPSBlueWhirlGI = class(TPSWeapon12Turbogravir)
+    constructor Create(Owner: TObjectGI);
   end;
 
-procedure LoadTurbogravirPalettes; // @addr $694B70
+procedure LoadTurbogravirPalettes;
 
 implementation
 
-// @unit-initialization $87793C
-// @unit-finalization $694EFC
+uses
+  GlobalsV,
+  SysUtils,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  aMyFunction,
+  Globals;
 
-uses SysUtils, Math, EC_BlockPar, EC_Str, EC_Mem, GR_Main, GR_DX, aMyFunction, Globals;
-
-{ @routine $693778 TPSWeapon12Turbogravir_Create }
 constructor TPSWeapon12Turbogravir.Create(Owner: TObjectGI; APaletteIndex: Integer);
 begin
   inherited Create(Owner);
@@ -90,17 +115,13 @@ begin
   EnabledStrands := 3;
   PaletteIndex := APaletteIndex;
 end;
-{ @end $693778 }
 
-{ @routine $693858 TPSWeapon12Turbogravir_Destroy }
 destructor TPSWeapon12Turbogravir.Destroy;
 begin
   ClearParticles;
   inherited Destroy;
 end;
-{ @end $693858 }
 
-{ @routine $693894 TPSWeapon12Turbogravir_BuildWaveTables }
 procedure TPSWeapon12Turbogravir.BuildWaveTables;
 var
   I: Integer;
@@ -113,9 +134,7 @@ begin
     AlphaTable[I] := Trunc((Cos(Angle) + 1.5) * 100.0);
   end;
 end;
-{ @end $693894 }
 
-{ @routine $69395C TPSWeapon12Turbogravir_SetPosition }
 procedure TPSWeapon12Turbogravir.SetPosition(Position: TPoint);
 begin
   if (LocalPosition.X <> Position.X) or (LocalPosition.Y <> Position.Y) then
@@ -124,9 +143,7 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $69395C }
 
-{ @routine $6939A0 TPSWeapon12Turbogravir_SetTargetPoint }
 procedure TPSWeapon12Turbogravir.SetTargetPoint(Point: TPoint);
 begin
   if (TargetPoint.X <> Point.X) or (TargetPoint.Y <> Point.Y) then
@@ -135,16 +152,15 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $6939A0 }
 
-{ @routine $6939F4 TPSWeapon12Turbogravir_UpdateProjectionBounds }
 procedure TPSWeapon12Turbogravir.UpdateProjectionBounds;
 var
   Angle, Sine, Cosine, Distance, A, B, C, D: Single;
   DY: Integer;
 begin
   DY := -(TargetPoint.Y - LocalPosition.Y);
-  if DY = 0 then Inc(DY);
+  if DY = 0 then
+    Inc(DY);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, DY);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -163,9 +179,7 @@ begin
   ProjectionBounds.Top := Floor(Math.Min(Math.Min(Math.Min(A, B), C), D));
   ProjectionBounds.Bottom := Ceil(Math.Max(Math.Max(Math.Max(A, B), C), D));
 end;
-{ @end $6939F4 }
 
-{ @routine $693D38 TPSWeapon12Turbogravir_UpdateHitTestBounds }
 procedure TPSWeapon12Turbogravir.UpdateHitTestBounds;
 begin
   HitTestBounds.Left := ProjectionBounds.Left + AbsolutePosition.X;
@@ -173,9 +187,7 @@ begin
   HitTestBounds.Right := ProjectionBounds.Right + AbsolutePosition.X;
   HitTestBounds.Bottom := ProjectionBounds.Bottom + AbsolutePosition.Y;
 end;
-{ @end $693D38 }
 
-{ @routine $693D98 TPSWeapon12Turbogravir_GetLocalBounds }
 function TPSWeapon12Turbogravir.GetLocalBounds: TRect;
 begin
   Result.Left := ProjectionBounds.Left + LocalPosition.X;
@@ -183,24 +195,22 @@ begin
   Result.Right := ProjectionBounds.Right + LocalPosition.X;
   Result.Bottom := ProjectionBounds.Bottom + LocalPosition.Y;
 end;
-{ @end $693D98 }
 
-{ @routine $693DFC TPSWeapon12Turbogravir_AddParticle }
 function TPSWeapon12Turbogravir.AddParticle: PTurbogravirParticle;
 var
   Particle: PTurbogravirParticle;
 begin
   Particle := AllocEC(SizeOf(TTurbogravirParticle));
-  if LastParticle <> nil then LastParticle.Next := Particle;
+  if LastParticle <> nil then
+    LastParticle.Next := Particle;
   Particle.Prev := LastParticle;
   Particle.Next := nil;
   LastParticle := Particle;
-  if FirstParticle = nil then FirstParticle := Particle;
+  if FirstParticle = nil then
+    FirstParticle := Particle;
   Result := Particle;
 end;
-{ @end $693DFC }
 
-{ @routine $693E74 TPSWeapon12Turbogravir_ClearParticles }
 procedure TPSWeapon12Turbogravir.ClearParticles;
 var
   Particle, Current: PTurbogravirParticle;
@@ -215,21 +225,21 @@ begin
   FirstParticle := nil;
   LastParticle := nil;
 end;
-{ @end $693E74 }
 
-{ @routine $693EC8 TPSWeapon12Turbogravir_Invalidate }
 procedure TPSWeapon12Turbogravir.Invalidate;
 begin
 end;
-{ @end $693EC8 }
 
-{ @routine $693ED4 TPSWeapon12Turbogravir_InvalidateRect }
 procedure TPSWeapon12Turbogravir.InvalidateRect(Rect: TRect);
 var
   Target: TPoint;
   Intersection: TRect;
 begin
-  MessageLoop.UpdateRects.AddScreenClippedRect(HitTestBounds, Parent.ToAbsolutePoint(LocalPosition), Parent.ToAbsolutePoint(TargetPoint));
+  MessageLoop.UpdateRects.AddScreenClippedRect(
+      HitTestBounds,
+      Parent.ToAbsolutePoint(LocalPosition),
+      Parent.ToAbsolutePoint(TargetPoint)
+  );
   Target := Parent.ToAbsolutePoint(TargetPoint);
   Rect.Left := Target.X - 24;
   Rect.Right := Target.X + 24;
@@ -238,9 +248,7 @@ begin
   if IntersectRects(Intersection, Rect, GameScreenRect) then
     MessageLoop.QueueUpdateRect(Intersection);
 end;
-{ @end $693ED4 }
 
-{ @routine $693FA0 TPSWeapon12Turbogravir_Advance }
 procedure TPSWeapon12Turbogravir.Advance(Timer: PCallbackTimerGI; UserData: Integer);
 var
   I, Distance: Integer;
@@ -250,9 +258,11 @@ begin
   if (FirstParticle = nil) and (RemainingTicks > 24) then
   begin
     I := 0;
-    Distance := Trunc(Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)));
+    Distance :=
+        Trunc(Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)));
     OriginalLength := Distance;
-    if OriginalLength = 0 then OriginalLength := 1;
+    if OriginalLength = 0 then
+      OriginalLength := 1;
     LengthScale := 1;
     while I < Distance do
     begin
@@ -264,8 +274,10 @@ begin
           Particle := AddParticle;
           Particle.Position.X := X;
           Particle.Position.Y := I;
-          Particle.Color := SampleGradientColor(TurbogravirPrimaryPalettes[PaletteIndex], I / Distance * 5.0);
-          if I < 64 then Particle.Alpha := (I * AlphaTable[I and PhaseMask]) shr 6;
+          Particle.Color :=
+              SampleGradientColor(TurbogravirPrimaryPalettes[PaletteIndex], I / Distance * 5.0);
+          if I < 64 then
+            Particle.Alpha := (I * AlphaTable[I and PhaseMask]) shr 6;
           Particle.Velocity.X := 0;
           Particle.Velocity.Y := 2;
           Particle.State := 1;
@@ -273,8 +285,10 @@ begin
           Particle := AddParticle;
           Particle.Position.X := X;
           Particle.Position.Y := I + 1;
-          Particle.Color := SampleGradientColor(TurbogravirPrimaryPalettes[PaletteIndex], I / Distance * 5.0);
-          if I < 64 then Particle.Alpha := (I * AlphaTable[I and PhaseMask]) shr 6;
+          Particle.Color :=
+              SampleGradientColor(TurbogravirPrimaryPalettes[PaletteIndex], I / Distance * 5.0);
+          if I < 64 then
+            Particle.Alpha := (I * AlphaTable[I and PhaseMask]) shr 6;
           Particle.Velocity.X := 0;
           Particle.Velocity.Y := 2;
           Particle.State := 1;
@@ -286,9 +300,11 @@ begin
           Particle := AddParticle;
           Particle.Position.X := X;
           Particle.Position.Y := I;
-          Particle.Color := SampleGradientColor(TurbogravirSecondaryPalettes[PaletteIndex], I / Distance * 5.0);
+          Particle.Color :=
+              SampleGradientColor(TurbogravirSecondaryPalettes[PaletteIndex], I / Distance * 5.0);
           Particle.Alpha := AlphaTable[(I + HalfWavelength) and PhaseMask];
-          if I < 64 then Particle.Alpha := (I * AlphaTable[(I + HalfWavelength) and PhaseMask]) shr 6;
+          if I < 64 then
+            Particle.Alpha := (I * AlphaTable[(I + HalfWavelength) and PhaseMask]) shr 6;
           Particle.Velocity.X := 0;
           Particle.Velocity.Y := 2;
           Particle.State := 2;
@@ -296,9 +312,11 @@ begin
           Particle := AddParticle;
           Particle.Position.X := X;
           Particle.Position.Y := I + 1;
-          Particle.Color := SampleGradientColor(TurbogravirSecondaryPalettes[PaletteIndex], I / Distance * 5.0);
+          Particle.Color :=
+              SampleGradientColor(TurbogravirSecondaryPalettes[PaletteIndex], I / Distance * 5.0);
           Particle.Alpha := AlphaTable[(I + HalfWavelength) and PhaseMask];
-          if I < 64 then Particle.Alpha := (I * AlphaTable[(I + HalfWavelength) and PhaseMask]) shr 6;
+          if I < 64 then
+            Particle.Alpha := (I * AlphaTable[(I + HalfWavelength) and PhaseMask]) shr 6;
           Particle.Velocity.X := 0;
           Particle.Velocity.Y := 2;
           Particle.State := 2;
@@ -311,7 +329,9 @@ begin
   else
   begin
     Distance := Round(OriginalLength);
-    LengthScale := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)) / OriginalLength;
+    LengthScale :=
+        Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y))
+            / OriginalLength;
     UpdateHitTestBounds;
     Particle := FirstParticle;
     while Particle <> nil do
@@ -320,79 +340,97 @@ begin
       Particle := Particle.Next;
       case Current.State of
         1:
+        begin
+          Inc(Current.Position.Y, Current.Velocity.Y);
+          if Current.Position.Y > Distance then
           begin
-            Inc(Current.Position.Y, Current.Velocity.Y);
-            if Current.Position.Y > Distance then
-            begin
-              Dec(Current.Position.Y, Distance);
-              Current.Alpha := 0;
-            end;
-            Current.Position.X := OffsetTable[Current.Position.Y and PhaseMask];
-            if Current.Position.Y < 64 then Current.Alpha := (Current.Position.Y * AlphaTable[Current.Position.Y and PhaseMask]) shr 6
-            else Current.Alpha := AlphaTable[Current.Position.Y and PhaseMask];
+            Dec(Current.Position.Y, Distance);
+            Current.Alpha := 0;
           end;
+          Current.Position.X := OffsetTable[Current.Position.Y and PhaseMask];
+          if Current.Position.Y < 64 then
+            Current.Alpha :=
+                (Current.Position.Y * AlphaTable[Current.Position.Y and PhaseMask]) shr 6
+          else
+            Current.Alpha := AlphaTable[Current.Position.Y and PhaseMask];
+        end;
         2:
+        begin
+          Inc(Current.Position.Y, Current.Velocity.Y);
+          if Current.Position.Y > Distance then
           begin
-            Inc(Current.Position.Y, Current.Velocity.Y);
-            if Current.Position.Y > Distance then
-            begin
-              Dec(Current.Position.Y, Distance);
-              Current.Alpha := 0;
-            end;
-            Current.Position.X := OffsetTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
-            if Current.Position.Y < 64 then Current.Alpha := (Current.Position.Y * AlphaTable[(Current.Position.Y + HalfWavelength) and PhaseMask]) shr 6
-            else Current.Alpha := AlphaTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
+            Dec(Current.Position.Y, Distance);
+            Current.Alpha := 0;
           end;
+          Current.Position.X := OffsetTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
+          if Current.Position.Y < 64 then
+            Current.Alpha :=
+                (Current.Position.Y
+                        * AlphaTable[(Current.Position.Y + HalfWavelength) and PhaseMask])
+                    shr 6
+          else
+            Current.Alpha := AlphaTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
+        end;
         3:
-          begin
-            Inc(Current.Position.Y, Current.Velocity.Y);
-            I := OffsetTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
-            if I < 0 then Current.Position.X := -((Current.Radius * -I) shr 5)
-            else Current.Position.X := (Current.Radius * I) shr 5;
-            if Current.Alpha > 1 then Dec(Current.Alpha);
-            Inc(Current.Radius, 2);
-            if Current.Radius > 63 then Current.State := 255;
-          end;
+        begin
+          Inc(Current.Position.Y, Current.Velocity.Y);
+          I := OffsetTable[(Current.Position.Y + HalfWavelength) and PhaseMask];
+          if I < 0 then
+            Current.Position.X := -((Current.Radius * -I) shr 5)
+          else
+            Current.Position.X := (Current.Radius * I) shr 5;
+          if Current.Alpha > 1 then
+            Dec(Current.Alpha);
+          Inc(Current.Radius, 2);
+          if Current.Radius > 63 then
+            Current.State := 255;
+        end;
         4:
-          begin
-            Inc(Current.Position.Y, Current.Velocity.Y);
-            I := OffsetTable[Current.Position.Y and PhaseMask];
-            if I < 0 then Current.Position.X := -((Current.Radius * -I) shr 5)
-            else Current.Position.X := (Current.Radius * I) shr 5;
-            if Current.Alpha > 1 then Dec(Current.Alpha);
-            Inc(Current.Radius, 2);
-            if Current.Radius > 63 then Current.State := 255;
-          end;
+        begin
+          Inc(Current.Position.Y, Current.Velocity.Y);
+          I := OffsetTable[Current.Position.Y and PhaseMask];
+          if I < 0 then
+            Current.Position.X := -((Current.Radius * -I) shr 5)
+          else
+            Current.Position.X := (Current.Radius * I) shr 5;
+          if Current.Alpha > 1 then
+            Dec(Current.Alpha);
+          Inc(Current.Radius, 2);
+          if Current.Radius > 63 then
+            Current.State := 255;
+        end;
         5:
-          begin
-            Current.FloatPosition.Y := Current.FloatPosition.Y + Current.FloatVelocity.Y;
-            Current.FloatPosition.X := Current.FloatPosition.X + Current.FloatVelocity.X;
-            Current.Position.X := Trunc(Current.FloatPosition.X);
-            Current.Position.Y := Trunc(Current.FloatPosition.Y);
-            Current.FloatVelocity.Y := 0.95 * Current.FloatVelocity.Y;
-            Current.FloatVelocity.X := 0.95 * Current.FloatVelocity.X;
-            if Current.Alpha < 246 then Inc(Current.Alpha, 16);
-            if Current.Alpha > 245 then Current.State := 6;
-          end;
+        begin
+          Current.FloatPosition.Y := Current.FloatPosition.Y + Current.FloatVelocity.Y;
+          Current.FloatPosition.X := Current.FloatPosition.X + Current.FloatVelocity.X;
+          Current.Position.X := Trunc(Current.FloatPosition.X);
+          Current.Position.Y := Trunc(Current.FloatPosition.Y);
+          Current.FloatVelocity.Y := 0.95 * Current.FloatVelocity.Y;
+          Current.FloatVelocity.X := 0.95 * Current.FloatVelocity.X;
+          if Current.Alpha < 246 then
+            Inc(Current.Alpha, 16);
+          if Current.Alpha > 245 then
+            Current.State := 6;
+        end;
         6:
-          begin
-            Current.FloatPosition.Y := Current.FloatPosition.Y + Current.FloatVelocity.Y;
-            Current.FloatPosition.X := Current.FloatPosition.X + Current.FloatVelocity.X;
-            Current.Position.X := Trunc(Current.FloatPosition.X);
-            Current.Position.Y := Trunc(Current.FloatPosition.Y);
-            Current.FloatVelocity.Y := 0.95 * Current.FloatVelocity.Y;
-            Current.FloatVelocity.X := 0.95 * Current.FloatVelocity.X;
-            if Current.Alpha > 25 then Dec(Current.Alpha, 20);
-            if Current.Alpha < 26 then Current.State := 255;
-          end;
+        begin
+          Current.FloatPosition.Y := Current.FloatPosition.Y + Current.FloatVelocity.Y;
+          Current.FloatPosition.X := Current.FloatPosition.X + Current.FloatVelocity.X;
+          Current.Position.X := Trunc(Current.FloatPosition.X);
+          Current.Position.Y := Trunc(Current.FloatPosition.Y);
+          Current.FloatVelocity.Y := 0.95 * Current.FloatVelocity.Y;
+          Current.FloatVelocity.X := 0.95 * Current.FloatVelocity.X;
+          if Current.Alpha > 25 then
+            Dec(Current.Alpha, 20);
+          if Current.Alpha < 26 then
+            Current.State := 255;
+        end;
       end;
     end;
   end;
   Dec(RemainingTicks);
 end;
-{ @end $693FA0 }
 
-{ @routine $694874 TPSWeapon12Turbogravir_Draw }
 procedure TPSWeapon12Turbogravir.Draw(ClipRect: TRect);
 var
   Angle, Sine, Cosine, PX, PY: Double;
@@ -400,7 +438,8 @@ var
   Particle: PTurbogravirParticle;
 begin
   Y := -(TargetPoint.Y - LocalPosition.Y);
-  if Y = 0 then Inc(Y);
+  if Y = 0 then
+    Inc(Y);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, Y);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -432,27 +471,29 @@ begin
         PY := -Particle.Position.Y * LengthScale;
         X := Round(PX * Cosine - PY * Sine + AbsolutePosition.X);
         Y := Round(PX * Sine + PY * Cosine + AbsolutePosition.Y);
-        if (X >= ClipRect.Left) and (X < ClipRect.Right) and (Y >= ClipRect.Top) and (Y < ClipRect.Bottom) then
+        if (X >= ClipRect.Left)
+            and (X < ClipRect.Right)
+            and (Y >= ClipRect.Top)
+            and (Y < ClipRect.Bottom) then
           ScreenRenderBuffer.BlendPixel16(X, Y, Particle.Color, Particle.Alpha);
         Dec(X);
-        if (X >= ClipRect.Left) and (X < ClipRect.Right) and (Y >= ClipRect.Top) and (Y < ClipRect.Bottom) then
+        if (X >= ClipRect.Left)
+            and (X < ClipRect.Right)
+            and (Y >= ClipRect.Top)
+            and (Y < ClipRect.Bottom) then
           ScreenRenderBuffer.BlendPixel16(X, Y, Particle.Color, Particle.Alpha);
       end;
       Particle := Particle.Next;
     end;
   end;
 end;
-{ @end $694874 }
 
-{ @routine $694B18 TPSBlueWhirlGI_Create }
 constructor TPSBlueWhirlGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner, 0);
   EnabledStrands := 1;
 end;
-{ @end $694B18 }
 
-{ @routine $694B70 LoadTurbogravirPalettes }
 procedure LoadTurbogravirPalettes;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -477,18 +518,19 @@ begin
         begin
           Text := PaletteBlock.GetParam('Color' + IntToStr(ColorIndex));
           for PartIndex := 0 to 2 do
-            TurbogravirPrimaryPalettes[Index][3 * ColorIndex + PartIndex] := ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
+            TurbogravirPrimaryPalettes[Index][3 * ColorIndex + PartIndex] :=
+                ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
         end;
       for ColorIndex := 0 to 2 do
         if PaletteBlock.CountParams('Color' + IntToStr(ColorIndex + 3)) > 0 then
         begin
           Text := PaletteBlock.GetParam('Color' + IntToStr(ColorIndex + 3));
           for PartIndex := 0 to 2 do
-            TurbogravirSecondaryPalettes[Index][3 * ColorIndex + PartIndex] := ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
+            TurbogravirSecondaryPalettes[Index][3 * ColorIndex + PartIndex] :=
+                ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
         end;
     end;
   end;
 end;
-{ @end $694B70 }
 
 end.

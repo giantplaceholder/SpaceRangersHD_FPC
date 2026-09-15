@@ -1,37 +1,54 @@
 unit PopUp;
-// Unit bracket (inferred): .text 0x004BA424..0x004BAD9F; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Placement follows the reviewed PopUp association in reference/unit_ownership.json.
-// Native TfPopUpController VMT: $4BA470.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses GI_MessageLoop, Classes, SyncObjs;
+uses
+  GI_MessageLoop,
+  Classes,
+  SyncObjs;
 
 type
-  TfPopUpController = class(TObjectGI) // @size $13C
-  public
-    LastTick: Cardinal; // @offset $120
-    PauseRemaining: Cardinal; // @offset $124
-    MovingUp: Boolean; // @offset $128
-    MotionRemainder: Single; // @offset $12C
-    QueueLock: TCriticalSection; // @offset $130
-    TextQueue: TList; // @offset $134  Entries point to WideString cells.
-    ImageQueue: TList; // @offset $138  Parallel WideString cells for image paths.
 
-    constructor Create; // @addr $4BA54C @ida "TfPopUpController *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $4BA5D0 @note "Frees queued cells without finalizing their strings; does not call inherited Destroy." @ida "void __usercall $name(TfPopUpController *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    function CreatePopup(Text, ImagePath: WideString): TObjectGI; // @addr $4BA6B4
-    procedure QueueNotification(Text, ImagePath: WideString); // @addr $4BADB0 Enqueues parallel managed-string cells under QueueLock.
-    procedure AdvancePopups(Tick: Cardinal); // @addr $4BA8F0 @note "Drains queued notifications, advances their vertical animation, and retires off-screen controls."
+  TfPopUpController = class;
+
+  TfPopUpController = class(TObjectGI)
+    LastTick: Cardinal;
+    PauseRemaining: Cardinal;
+    MovingUp: Boolean;
+    Gap129: array[0..2] of Byte;
+    MotionRemainder: Single;
+    QueueLock: TCriticalSection;
+    TextQueue: TList;
+    ImageQueue: TList;
+    constructor Create;
+    destructor Destroy; override;
+    function CreatePopup(Text: WideString; ImagePath: WideString): TObjectGI;
+    procedure AdvancePopups(Tick: Cardinal);
+    procedure QueueNotification(Text: WideString; ImagePath: WideString);
   end;
 
 var
-  PopupController: TfPopUpController = nil; // @addr $87AA04  Created at $529098..$5290AA.
+
+  PopupController: TfPopUpController = nil;
+
 implementation
 
-uses GI_Panel, GI_Image, GI_Label, GI_Main, GR_Main, GlobalsV, Math, Types;
+uses
+  GI_Panel,
+  GI_Image,
+  GI_Label,
+  GI_Main,
+  GR_Main,
+  GlobalsV,
+  Math,
+  Types;
 
-{ @routine $4BA54C TfPopUpController_Create }
 constructor TfPopUpController.Create;
 begin
   inherited Create(nil);
@@ -39,9 +56,7 @@ begin
   TextQueue := TList.Create;
   ImageQueue := TList.Create;
 end;
-{ @end $4BA54C }
 
-{ @routine $4BA5D0 TfPopUpController_Destroy }
 destructor TfPopUpController.Destroy;
 begin
   QueueLock.Enter;
@@ -61,11 +76,12 @@ begin
   QueueLock.Leave;
   QueueLock.Free;
 end;
-{ @end $4BA5D0 }
 
-{ @routine $4BA6B4 TfPopUpController_CreatePopup }
 function TfPopUpController.CreatePopup(Text, ImagePath: WideString): TObjectGI;
-var LabelControl: TLabelGI; Icon, Background: TImageGI; Panel: TPanelGI;
+var
+  LabelControl: TLabelGI;
+  Icon, Background: TImageGI;
+  Panel: TPanelGI;
 begin
   Panel := TPanelGI.Create(Self);
   Background := TImageGI.Create(Panel);
@@ -81,7 +97,9 @@ begin
   Icon.SetActive(True);
   LabelControl := TLabelGI.Create(Panel);
   LabelControl.SetPosition(Classes.Point(Icon.LocalPosition.X + Icon.ClientSize.X + 15, 54));
-  LabelControl.SetSize(Classes.Point(Panel.ClientSize.X - Icon.ClientSize.X - Icon.LocalPosition.X - 30, 72));
+  LabelControl.SetSize(
+      Classes.Point(Panel.ClientSize.X - Icon.ClientSize.X - Icon.LocalPosition.X - 30, 72)
+  );
   LabelControl.SetFontName(NormalBoldFontName);
   LabelControl.SetTextAlignX(taxCenter);
   LabelControl.SetTextAlignY(tayCenterEx);
@@ -91,11 +109,12 @@ begin
   LabelControl.SetActive(True);
   Result := Panel;
 end;
-{ @end $4BA6B4 }
 
-{ @routine $4BA8F0 TfPopUpController_AdvancePopups }
 procedure TfPopUpController.AdvancePopups(Tick: Cardinal);
-var Popup, Previous: TObjectGI; Movement, BottomOffset: Integer; Text, ImagePath: WideString;
+var
+  Popup, Previous: TObjectGI;
+  Movement, BottomOffset: Integer;
+  Text, ImagePath: WideString;
 begin
   if TextQueue.Count > 0 then
   begin
@@ -118,22 +137,32 @@ begin
       Popup := CreatePopup(Text, ImagePath);
       if Previous = nil then
       begin
-        Popup.SetPosition(Classes.Point(GameScreenWidth - Popup.ClientSize.X - 10, GameScreenHeight + 10));
+        Popup.SetPosition(
+            Classes.Point(GameScreenWidth - Popup.ClientSize.X - 10, GameScreenHeight + 10)
+        );
         MotionRemainder := 0;
       end
-      else Popup.SetPosition(Classes.Point(GameScreenWidth - Popup.ClientSize.X - 10, Previous.LocalPosition.Y + Previous.ClientSize.Y + 10));
+      else
+        Popup.SetPosition(
+            Classes.Point(
+                GameScreenWidth - Popup.ClientSize.X - 10,
+                Previous.LocalPosition.Y + Previous.ClientSize.Y + 10
+            )
+        );
       MovingUp := True;
       PauseRemaining := 0;
     end;
     QueueLock.Leave;
   end;
-  if FirstChild = nil then LastTick := Tick
+  if FirstChild = nil then
+    LastTick := Tick
   else
   begin
     if PauseRemaining > 0 then
     begin
       PauseRemaining := Max(Tick - LastTick, PauseRemaining) - (Tick - LastTick);
-      if PauseRemaining = 0 then MovingUp := False;
+      if PauseRemaining = 0 then
+        MovingUp := False;
     end
     else
     begin
@@ -153,7 +182,9 @@ begin
           Popup := FirstChild;
           while Popup <> nil do
           begin
-            Popup.SetPosition(Classes.Point(Popup.LocalPosition.X, Popup.LocalPosition.Y - Movement));
+            Popup.SetPosition(
+                Classes.Point(Popup.LocalPosition.X, Popup.LocalPosition.Y - Movement)
+            );
             Popup := Popup.NextSibling;
           end;
         end
@@ -162,7 +193,9 @@ begin
           Popup := FirstChild;
           while Popup <> nil do
           begin
-            Popup.SetPosition(Classes.Point(Popup.LocalPosition.X, Popup.LocalPosition.Y + Movement));
+            Popup.SetPosition(
+                Classes.Point(Popup.LocalPosition.X, Popup.LocalPosition.Y + Movement)
+            );
             Popup := Popup.NextSibling;
           end;
         end;
@@ -170,15 +203,16 @@ begin
     end;
     LastTick := Tick;
     if not MovingUp then
-      while (LastChild <> nil) and (LastChild.LocalPosition.Y > GameScreenHeight) do FreeOwnedChild(LastChild);
-    if FirstChild = nil then SetActive(False);
+      while (LastChild <> nil) and (LastChild.LocalPosition.Y > GameScreenHeight) do
+        FreeOwnedChild(LastChild);
+    if FirstChild = nil then
+      SetActive(False);
   end;
 end;
-{ @end $4BA8F0 }
 
-{ @routine $4BADB0 TfPopUpController_QueueNotification }
 procedure TfPopUpController.QueueNotification(Text, ImagePath: WideString);
-var Cell: PWideString;
+var
+  Cell: PWideString;
 begin
   QueueLock.Enter;
   New(Cell);
@@ -189,6 +223,5 @@ begin
   ImageQueue.Add(Cell);
   QueueLock.Leave;
 end;
-{ @end $4BADB0 }
 
 end.

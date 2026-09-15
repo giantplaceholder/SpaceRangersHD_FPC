@@ -1,231 +1,373 @@
 unit aEFilm;
-// Unit bracket (inferred): .text 0x0080CFDC..0x008109E0; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Buf, EC_Str, EC_Struct, SE_Process, SE_Space, Types, aEObjInfo;
+uses
+  Classes,
+  EC_Buf,
+  EC_Str,
+  EC_Struct,
+  SE_Process,
+  SE_Space,
+  Types,
+  aEObjInfo;
 
 const
-  // Native serialized tags. Kind remains Byte so unknown values stay representable.
+
   efcSetObjectPosition = 0;
+
   efcSetObjectOrbitCenter = 1;
+
   efcSetObjectAlpha = 2;
+
   efcSetObjectAngle = 3;
-  efcAdvanceObject = 4; // No recovered writer; playback at $80E80F calls TObjectSE.Advance.
+
+  efcAdvanceObject = 4;
+
   efcAdvanceObjects = 5;
+
   efcSetPlanetState = 6;
+
   efcSetShipSizeAndTailMode = 7;
+
   efcSetWeaponHit = 8;
+
   efcSetWeaponEndpoints = 9;
+
   efcSetDestructionEffect = 10;
+
   efcAttachObject = 11;
+
   efcDetachObject = 12;
+
   efcReleaseObject = 13;
+
   efcReleaseWeaponEffects = 14;
+
   efcSetViewCenter = 15;
+
   efcSetRadarCenter = 16;
+
   efcSetCameraAnchor = 17;
+
   efcOpenGate = 18;
+
   efcCloseGate = 19;
+
   efcSetGateState = 20;
+
   efcSetHoleState = 21;
+
   efcSetObjectText = 22;
+
   efcSetObjectStateBuffer = 23;
-  efcBeginTrailingEffects = 24; // Playback barrier; ExecuteCommand has no action for this tag.
+
+  efcBeginTrailingEffects = 24;
+
   efcPlayPickupSound = 25;
+
   efcSetRuinsState = 26;
+
   efcSetGateSize = 27;
+
   efcPlayObjectSound = 28;
+
   efcSetGateEffectSize = 29;
+
   efcSetEffectImagePosition = 30;
+
   efcSetEffectDurationScale = 31;
 
-  FilmNullObjectIndex = 65535; // Serialized nil; -1 separately means an unlisted object.
+  FilmNullObjectIndex = 65535;
 
 type
-  TEFilmObj = class(TObject) // @size 0x1C
-  public
-    Prev: TEFilmObj; // @offset 0x04
-    Next: TEFilmObj; // @offset 0x08
-    ObjectId: Cardinal; // @offset 0x0C
-    SceneObject: TObjectSE; // @offset 0x10  Retained reference; nil after deserialization.
-    KindName: WideString; // @offset 0x14
-    GraphKey: WideString; // @offset 0x18
+
+  TEFilm = class;
+
+  TEFilmObj = class;
+
+  PointerToTEFilmByteCommand = ^TEFilmByteCommand;
+
+  PointerToTEFilmCameraEventArray = ^TEFilmCameraEventArray;
+
+  PointerToTEFilmCommand = ^TEFilmCommand;
+
+  PointerToTEFilmEndpointsCommand = ^TEFilmEndpointsCommand;
+
+  PointerToTEFilmHitCommand = ^TEFilmHitCommand;
+
+  PointerToTEFilmObjectCommand = ^TEFilmObjectCommand;
+
+  PointerToTEFilmSizeCommand = ^TEFilmSizeCommand;
+
+  PointerToTEFilmVectorCommand = ^TEFilmVectorCommand;
+
+  TEFilmObj = class(TObject)
+    Prev: TEFilmObj;
+    Next: TEFilmObj;
+    ObjectId: Cardinal;
+    SceneObject: TObjectSE;
+    KindName: WideString;
+    GraphKey: WideString;
   end;
 
-  PEFilmCommand = ^TEFilmCommand;
-  TEFilmCommand = packed record // @size 0x20
-    Prev: PEFilmCommand; // @offset 0x00
-    Next: PEFilmCommand; // @offset 0x04
-    Kind: Byte; // @offset 0x08  efc* tag; payload is interpreted through the command views below.
-    StepIndex: Integer; // @offset 0x0C
-    Payload: array[0..15] of Byte; // @offset 0x10
+  PEFilmCommand = PointerToTEFilmCommand;
+
+  TEFilmCommand = packed record
+    Prev: PEFilmCommand;
+    Next: PEFilmCommand;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Payload: array[0..15] of Byte;
   end;
 
-  PEFilmObjectCommand = ^TEFilmObjectCommand;
-  TEFilmObjectCommand = packed record // @size 0x20 Scalar object-command payload view.
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Value: Integer; // @offset 0x14
-    ExtraValue: Integer; // @offset 0x18
-    Flags: Integer; // @offset 0x1C
+  PEFilmObjectCommand = PointerToTEFilmObjectCommand;
+
+  TEFilmObjectCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Value: Integer;
+    ExtraValue: Integer;
+    Flags: Integer;
   end;
 
-  PEFilmVectorCommand = ^TEFilmVectorCommand;
-  TEFilmVectorCommand = packed record // @size 0x20
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Position: TPointF; // @offset 0x14
-    ForceMovement: Boolean; // @offset 0x1C
+  PEFilmVectorCommand = PointerToTEFilmVectorCommand;
+
+  TEFilmVectorCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Position: TPointF;
+    ForceMovement: Boolean;
+    Gap1D: array[0..2] of Byte;
   end;
 
-  PEFilmSizeCommand = ^TEFilmSizeCommand;
-  TEFilmSizeCommand = packed record // @size 0x20
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Size: TPoint; // @offset 0x14
-    TailMode: Integer; // @offset 0x1C
+  PEFilmSizeCommand = PointerToTEFilmSizeCommand;
+
+  TEFilmSizeCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Size: TPoint;
+    TailMode: Integer;
   end;
 
-  PEFilmByteCommand = ^TEFilmByteCommand;
-  TEFilmByteCommand = packed record // @size 0x20
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Value: Byte; // @offset 0x14
+  PEFilmByteCommand = PointerToTEFilmByteCommand;
+
+  TEFilmByteCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Value: Byte;
+    Gap15: array[0..10] of Byte;
   end;
 
-  PEFilmHitCommand = ^TEFilmHitCommand;
-  TEFilmHitCommand = packed record // @size 0x20
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Color: Word; // @offset 0x14
-    Damage: Integer; // @offset 0x18
-    Destroyed: Boolean; // @offset 0x1C
-    PlaySound: Boolean; // @offset 0x1D
+  PEFilmHitCommand = PointerToTEFilmHitCommand;
+
+  TEFilmHitCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Color: Word;
+    Gap16: array[0..1] of Byte;
+    Damage: Integer;
+    Destroyed: Boolean;
+    PlaySound: Boolean;
+    Gap1E: array[0..1] of Byte;
   end;
 
-  PEFilmEndpointsCommand = ^TEFilmEndpointsCommand;
-  TEFilmEndpointsCommand = packed record // @size 0x20
-    Kind: Byte; // @offset 0x08
-    StepIndex: Integer; // @offset 0x0C
-    Obj: TEFilmObj; // @offset 0x10
-    Source: TEFilmObj; // @offset 0x14
-    Target: TEFilmObj; // @offset 0x18
+  PEFilmEndpointsCommand = PointerToTEFilmEndpointsCommand;
+
+  TEFilmEndpointsCommand = packed record
+    Gap0: array[0..7] of Byte;
+    Kind: Byte;
+    Gap9: array[0..2] of Byte;
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Source: TEFilmObj;
+    Target: TEFilmObj;
+    Gap1C: array[0..3] of Byte;
   end;
 
-  PEFilmCameraEvent = ^TEFilmCameraEvent;
-  TEFilmCameraEvent = packed record // @size 0x18
-    StepIndex: Integer; // @offset 0x00
-    Priority: Integer; // @offset 0x04
-    StartPosition: TPointF; // @offset 0x08
-    EndPosition: TPointF; // @offset 0x10
+  TEFilmCameraEvent = packed record
+    StepIndex: Integer;
+    Priority: Integer;
+    StartPosition: TPointF;
+    EndPosition: TPointF;
   end;
 
-  PEFilmCameraEventArray = ^TEFilmCameraEventArray;
+  PEFilmCameraEventArray = PointerToTEFilmCameraEventArray;
+
   TEFilmCameraEventArray = array[0..0] of TEFilmCameraEvent;
-  TEFilmCameraEvents = array of TEFilmCameraEvent;
 
-  TEFilm = class(TObjectEx) // @size 0x60
-  public
-    FirstObject: TEFilmObj; // @offset 0x04
-    LastObject: TEFilmObj; // @offset 0x08
-    FirstCommand: PEFilmCommand; // @offset 0x0C
-    LastCommand: PEFilmCommand; // @offset 0x10
-    FirstFreeCommand: PEFilmCommand; // @offset 0x14
-    LastFreeCommand: PEFilmCommand; // @offset 0x18
-    CameraEvents: array of TEFilmCameraEvent; // @offset 0x1C
-    CameraEventCount: Integer; // @offset 0x20
-    StringTable: TStringsEC; // @offset 0x24
-    DataBuffers: TList; // @offset 0x28  Owned TBufEC entries.
-    SystemProcessName: WideString; // @offset 0x2C
-    MapDiameter: Integer; // @offset 0x30
-    RadarRange: Integer; // @offset 0x34
-    Turn: Integer; // @offset 0x38  Stored by TFilmFile, outside this film's serialized payload.
-    PlayerCombatRecorded: Boolean; // @offset 0x3C  Set from RecordFilm and the star player-combat flag.
-    BackgroundImage: Integer; // @offset 0x40
-    StarGenerationSeed: Cardinal; // @offset 0x44
-    InitialActivity: Integer; // @offset 0x48  Activity categories used to select film playback speed.
-    FinalActivity: Integer; // @offset 0x4C
-    CameraAnchor: TPointF; // @offset 0x50
-    ForceCameraMovement: Boolean; // @offset 0x58
-    ObjectInfo: TObject; // @offset 0x5C Native callers cast this snapshot to TEObjInfo.
-
-    constructor Create; // @addr 0x80D0DC @ida "TEFilm *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x80D154 @ida "void __usercall $name(TEFilm *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; // @addr 0x80D230
-    procedure ReserveCameraEventSlot; // @addr $80D2D4 Grows capacity and advances the used count without writing the new slot.
-    procedure RemoveObject(Obj: TEFilmObj); // @addr $80D574
-    function ObjectCount: Integer; // @addr $80D5F8
-    function FindObjectIndex(Obj: TEFilmObj): Integer; // @addr $80D6D0 Nil maps to 65535; an absent non-nil object maps to -1.
-    procedure GrowCommandPool(Count: Integer); // @addr $80D8D4
-    procedure RecycleCommands(First, Last: PEFilmCommand); // @addr $80D944 Moves an inclusive linked range to the free list.
-    procedure AppendCommand(Command: PEFilmCommand); // @addr $80D9F4
-    procedure InsertCommand(Before, Command: PEFilmCommand); // @addr $80DA48 Nil Before appends.
-    function AddCommand(StepIndex: Integer): PEFilmCommand; // @addr $80DB48 Stable insertion by step index.
-    function CommandCount: Integer; // @addr $80DBEC
-    function AllocateObject: TEFilmObj; // @addr 0x80D3C4 @note "Appends an object owned by this film."
-    function ObjToNom(Obj: TEFilmObj): Integer; // @addr 0x80D634 @note "Zero-based list index; nil maps to 65535. Raises for an object outside this film."
-    function NomToObj(Index: Integer): TEFilmObj; // @addr 0x80D730 @note "Returns a borrowed object. Index 65535 maps to nil; other missing indexes raise."
-    function FindObject(const KindName, GraphKey: WideString; ObjectId: Cardinal): TEFilmObj; // @addr 0x80D808 @note "Matches all three keys; returns a borrowed object or nil."
-    function FindObjectById(const KindName: WideString; ObjectId: Cardinal): TEFilmObj; // @addr $80D878
-    function AllocateCommand: PEFilmCommand; // @addr 0x80DAE8 @note "Returns a zeroed pooled command without linking it into the command list."
-    function AddObject(ObjectId: Cardinal; SceneObject: TObjectSE; Unused1: Integer = 0; Unused2: Integer = 0): TEFilmObj; // @addr 0x80DC28 @note "Retains SceneObject and copies its class name and graph key. Both stack arguments are unused."
-    function ContainsObject(Obj: TEFilmObj): Boolean; // @addr 0x80D7C4
-    procedure AddCameraEvent(AStepIndex: Integer; AStartPosition, AEndPosition: TPointF; APriority: Integer); // @addr 0x80D31C @ida "void __userpurge $name(TEFilm *Self@<eax>, int AStepIndex@<edx>, TPointF *AStartPosition@<ecx>, TPointF *AEndPosition@<^4>, int APriority@<^0>);"
-    procedure SetObjectPosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF); // @addr 0x80DCC4 @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TEFilmObj *Obj@<ecx>, TPointF *Position@<^0>);"
-    procedure SetObjectAlpha(StepIndex: Integer; Obj: TEFilmObj; Alpha: Byte); // @addr 0x80DD90
-    procedure SetObjectAngle(StepIndex: Integer; Obj: TEFilmObj; Angle: Byte); // @addr 0x80DDF8 @note "A full turn is 256 angle units."
-    procedure AdvanceObjects(StepIndex: Integer); // @addr 0x80DE60 @note "Queues slot 0x40 on each retained scene object."
-    procedure SetWeaponHit(StepIndex: Integer; Obj: TEFilmObj; Color: Word; Damage: Integer; Destroyed, PlaySound: Boolean); // @addr 0x80E004
-    procedure SetWeaponEndpoints(StepIndex: Integer; Obj, Source, Target: TEFilmObj); // @addr 0x80E08C @note "Source and Target may be nil; Obj must exist."
-    procedure SetDestructionEffect(StepIndex: Integer; Obj: TEFilmObj; Value: Integer); // @addr 0x80E100 @note "Playback selects TWeaponSE destruction effects: 1=bomb, 2=asteroid, 5=kamikaze; other modes include fades and immediate removal."
-    procedure AttachObject(StepIndex: Integer; Obj: TEFilmObj); // @addr 0x80E1C8
-    procedure DetachObject(StepIndex: Integer; Obj: TEFilmObj); // @addr 0x80E228
-    procedure ReleaseObject(StepIndex: Integer; Obj: TEFilmObj); // @addr 0x80E288 @note "Playback detaches and releases the scene reference, retaining the film entry."
-    procedure ReleaseWeaponEffects(StepIndex: Integer); // @addr 0x80E2BC
-    procedure CloseGate(StepIndex: Integer; Obj: TEFilmObj); // @addr 0x80E3E4 @note "Playback changes gate state 2 to 3 and resets its timer."
-    procedure SetGateState(StepIndex: Integer; Obj: TEFilmObj; State: Integer); // @addr 0x80E418
-    procedure SetGateSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer); // @addr 0x80E454
-    procedure SetHoleState(StepIndex: Integer; Obj: TEFilmObj; State: Integer); // @addr 0x80E4CC
-    procedure SetObjectText(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString); // @addr 0x80E508
-    procedure BeginTrailingEffects(StepIndex: Integer); // @addr 0x80E604 @note "Appends the kind-24 boundary consumed by film playback."
-
-    procedure SetObjectOrbitCenter(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF); // @addr $80DD40 @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TEFilmObj *Obj@<ecx>, TPointF *Position@<^0>);"
-    procedure SetPlanetState(StepIndex: Integer; Obj: TEFilmObj; RotationInterval, SurfaceMapStep: Integer; ScaleThousandths: Word; RingKind, Owner: Byte); // @addr $80DE88 Scale is decoded as a signed 16-bit value divided by 1000 during playback.
-    procedure SetShipSizeAndTailMode(StepIndex: Integer; Obj: TEFilmObj; Size: TPoint; TailMode: Integer); // @addr $80DF18 @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TEFilmObj *Obj@<ecx>, TPoint *Size@<^4>, int TailMode@<^0>);"
-    procedure SetRuinsState(StepIndex: Integer; Obj: TEFilmObj; State: Integer); // @addr $80DF9C
-    procedure SetEffectImagePosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPoint); // @addr $80E13C @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TEFilmObj *Obj@<ecx>, TPoint *Position@<^0>);"
-    procedure SetEffectDurationScale(StepIndex: Integer; Obj: TEFilmObj; Scale: Single); // @addr $80E18C @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TEFilmObj *Obj@<ecx>, float Scale@<^0>);" @note "Records the Single duration multiplier consumed by TGAIEffectSE.SetDurationScale."
-    procedure SetGateEffectSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer); // @addr $80E490
-    procedure OpenGate(StepIndex: Integer; Obj: TEFilmObj); // @addr $80E3B0
-    procedure PlayPickupSound(StepIndex: Integer; Obj: TEFilmObj); // @addr $80E62C
-    procedure SetViewCenter(StepIndex: Integer; Position: TPointF); // @addr $80E2E4 @ida "void __usercall $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TPointF *Position@<ecx>);"
-    procedure SetRadarCenter(StepIndex: Integer; Position: TPointF); // @addr $80E324 @ida "void __usercall $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TPointF *Position@<ecx>);"
-    procedure SetCameraAnchor(StepIndex: Integer; Position: TPointF; ForceMovement: Boolean); // @addr $80E364 @ida "void __userpurge $name(TEFilm *Self@<eax>, int StepIndex@<edx>, TPointF *Position@<ecx>, bool ForceMovement@<^0>);"
-    procedure PlayObjectSound(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString); // @addr $80E55C
-    procedure SetObjectStateBuffer(StepIndex: Integer; Obj: TEFilmObj; Buffer: TBufEC); // @addr $80E5B0 Transfers ownership of Buffer to the film.
-
-    procedure ExecuteCommand(Process: TProcessSE; Command: PEFilmCommand; ReplayMode: Boolean); // @addr 0x80E660
-    procedure ReleaseWeaponSceneObjects; // @addr $80F544 Detaches weapon effects and releases their retained scene references.
-    procedure ReleaseObjectReferences(Obj: TObjectSE); // @addr $80F5A4
-    procedure SaveToBuffer(Buffer: TBufEC); // @addr 0x80F610 @note "Clears Buffer. Serializes object identities and commands, excluding live scene references and Turn."
-    procedure LoadFromBuffer(Buffer: TBufEC); // @addr 0x80FFB8 @note "Clears the film and rewinds Buffer before reading. Scene objects are recreated separately."
+  TEFilm = class(TObjectEx)
+    FirstObject: TEFilmObj;
+    LastObject: TEFilmObj;
+    FirstCommand: PEFilmCommand;
+    LastCommand: PEFilmCommand;
+    FirstFreeCommand: PEFilmCommand;
+    LastFreeCommand: PEFilmCommand;
+    CameraEvents: array of TEFilmCameraEvent;
+    CameraEventCount: Integer;
+    StringTable: TStringsEC;
+    DataBuffers: TList;
+    SystemProcessName: WideString;
+    MapDiameter: Integer;
+    RadarRange: Integer;
+    Turn: Integer;
+    PlayerCombatRecorded: Boolean;
+    Gap3D: array[0..2] of Byte;
+    BackgroundImage: Integer;
+    StarGenerationSeed: Cardinal;
+    InitialActivity: Integer;
+    FinalActivity: Integer;
+    CameraAnchor: TPointF;
+    ForceCameraMovement: Boolean;
+    Gap59: array[0..2] of Byte;
+    ObjectInfo: TObject;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure ReserveCameraEventSlot;
+    procedure AddCameraEvent(
+        AStepIndex: Integer;
+        AStartPosition: TPointF;
+        AEndPosition: TPointF;
+        APriority: Integer
+    );
+    function AllocateObject: TEFilmObj;
+    procedure RemoveObject(Obj: TEFilmObj);
+    function ObjectCount: Integer;
+    function ObjToNom(Obj: TEFilmObj): Integer;
+    function FindObjectIndex(Obj: TEFilmObj): Integer;
+    function NomToObj(Index: Integer): TEFilmObj;
+    function ContainsObject(Obj: TEFilmObj): Boolean;
+    function FindObject(
+        const KindName: WideString;
+        const GraphKey: WideString;
+        ObjectId: Cardinal
+    ): TEFilmObj;
+    function FindObjectById(const KindName: WideString; ObjectId: Cardinal): TEFilmObj;
+    procedure GrowCommandPool(Count: Integer);
+    procedure RecycleCommands(First: PEFilmCommand; Last: PEFilmCommand);
+    procedure AppendCommand(Command: PEFilmCommand);
+    procedure InsertCommand(Before: PEFilmCommand; Command: PEFilmCommand);
+    function AllocateCommand: PEFilmCommand;
+    function AddCommand(StepIndex: Integer): PEFilmCommand;
+    function CommandCount: Integer;
+    function AddObject(
+        ObjectId: Cardinal;
+        SceneObject: TObjectSE;
+        Unused1: Integer = 0;
+        Unused2: Integer = 0
+    ): TEFilmObj;
+    procedure SetObjectPosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF);
+    procedure SetObjectOrbitCenter(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF);
+    procedure SetObjectAlpha(StepIndex: Integer; Obj: TEFilmObj; Alpha: Byte);
+    procedure SetObjectAngle(StepIndex: Integer; Obj: TEFilmObj; Angle: Byte);
+    procedure AdvanceObjects(StepIndex: Integer);
+    procedure SetPlanetState(
+        StepIndex: Integer;
+        Obj: TEFilmObj;
+        RotationInterval: Integer;
+        SurfaceMapStep: Integer;
+        ScaleThousandths: Word;
+        RingKind: Byte;
+        Owner: Byte
+    );
+    procedure SetShipSizeAndTailMode(
+        StepIndex: Integer;
+        Obj: TEFilmObj;
+        Size: TPoint;
+        TailMode: Integer
+    );
+    procedure SetRuinsState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
+    procedure SetWeaponHit(
+        StepIndex: Integer;
+        Obj: TEFilmObj;
+        Color: Word;
+        Damage: Integer;
+        Destroyed: Boolean;
+        PlaySound: Boolean
+    );
+    procedure SetWeaponEndpoints(
+        StepIndex: Integer;
+        Obj: TEFilmObj;
+        Source: TEFilmObj;
+        Target: TEFilmObj
+    );
+    procedure SetDestructionEffect(StepIndex: Integer; Obj: TEFilmObj; Value: Integer);
+    procedure SetEffectImagePosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPoint);
+    procedure SetEffectDurationScale(StepIndex: Integer; Obj: TEFilmObj; Scale: Single);
+    procedure AttachObject(StepIndex: Integer; Obj: TEFilmObj);
+    procedure DetachObject(StepIndex: Integer; Obj: TEFilmObj);
+    procedure ReleaseObject(StepIndex: Integer; Obj: TEFilmObj);
+    procedure ReleaseWeaponEffects(StepIndex: Integer);
+    procedure SetViewCenter(StepIndex: Integer; Position: TPointF);
+    procedure SetRadarCenter(StepIndex: Integer; Position: TPointF);
+    procedure SetCameraAnchor(StepIndex: Integer; Position: TPointF; ForceMovement: Boolean);
+    procedure OpenGate(StepIndex: Integer; Obj: TEFilmObj);
+    procedure CloseGate(StepIndex: Integer; Obj: TEFilmObj);
+    procedure SetGateState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
+    procedure SetGateSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer);
+    procedure SetGateEffectSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer);
+    procedure SetHoleState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
+    procedure SetObjectText(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString);
+    procedure PlayObjectSound(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString);
+    procedure SetObjectStateBuffer(StepIndex: Integer; Obj: TEFilmObj; Buffer: TBufEC);
+    procedure BeginTrailingEffects(StepIndex: Integer);
+    procedure PlayPickupSound(StepIndex: Integer; Obj: TEFilmObj);
+    procedure ExecuteCommand(Process: TProcessSE; Command: PEFilmCommand; ReplayMode: Boolean);
+    procedure ReleaseWeaponSceneObjects;
+    procedure ReleaseObjectReferences(Obj: TObjectSE);
+    procedure SaveToBuffer(Buffer: TBufEC);
+    procedure LoadFromBuffer(Buffer: TBufEC);
   end;
 
 const
-  FilmFormatVersion: Integer = 6; // @addr $87CD74 Native writer format, read from initialized storage.
+
+  FilmFormatVersion: Integer = 6;
 
 implementation
 
-uses SysUtils, EC_Mem, GR_Main, GR_DX, GR_GraphBuf, SE_Weapon, SE_Planet, SE_Ship2, SE_Ruins, SE_Gate, SE_Hole, SE_GAIEffect,
-  Globals, GlobalsV, aPlayer, aMyFunction, fFilm, fStarMap;
+uses
+  SysUtils,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  GR_GraphBuf,
+  SE_Weapon,
+  SE_Planet,
+  SE_Ship2,
+  SE_Ruins,
+  SE_Gate,
+  SE_Hole,
+  SE_GAIEffect,
+  Globals,
+  GlobalsV,
+  aPlayer,
+  aMyFunction,
+  fFilm,
+  fStarMap;
 
-{ @routine $80D0DC TEFilm_Create }
 constructor TEFilm.Create;
 begin
   inherited Create;
@@ -233,11 +375,10 @@ begin
   DataBuffers := TList.Create;
   ObjectInfo := TEObjInfo.Create;
 end;
-{ @end $80D0DC }
 
-{ @routine $80D154 TEFilm_Destroy }
 destructor TEFilm.Destroy;
-var NextCommand, Command: PEFilmCommand;
+var
+  NextCommand, Command: PEFilmCommand;
 begin
   Clear;
   NextCommand := FirstFreeCommand;
@@ -249,20 +390,34 @@ begin
   end;
   FirstFreeCommand := nil;
   LastFreeCommand := nil;
-  if StringTable <> nil then begin StringTable.Free; StringTable := nil end;
-  if DataBuffers <> nil then begin DataBuffers.Free; DataBuffers := nil end;
-  if ObjectInfo <> nil then begin ObjectInfo.Free; ObjectInfo := nil end;
+  if StringTable <> nil then
+  begin
+    StringTable.Free;
+    StringTable := nil
+  end;
+  if DataBuffers <> nil then
+  begin
+    DataBuffers.Free;
+    DataBuffers := nil
+  end;
+  if ObjectInfo <> nil then
+  begin
+    ObjectInfo.Free;
+    ObjectInfo := nil
+  end;
   CameraEvents := nil;
   inherited Destroy;
 end;
-{ @end $80D154 }
 
-{ @routine $80D230 TEFilm_Clear }
 procedure TEFilm.Clear;
-var I, Count: Integer; Obj: TObject;
+var
+  I, Count: Integer;
+  Obj: TObject;
 begin
-  if FirstCommand <> nil then RecycleCommands(FirstCommand, LastCommand);
-  while FirstObject <> nil do RemoveObject(LastObject);
+  if FirstCommand <> nil then
+    RecycleCommands(FirstCommand, LastCommand);
+  while FirstObject <> nil do
+    RemoveObject(LastObject);
   StringTable.Clear;
   Count := DataBuffers.Count;
   for I := 0 to Count - 1 do
@@ -273,20 +428,22 @@ begin
   DataBuffers.Clear;
   CameraEventCount := 0;
 end;
-{ @end $80D230 }
 
-{ @routine $80D2D4 TEFilm_ReserveCameraEventSlot }
 procedure TEFilm.ReserveCameraEventSlot;
 begin
-  if High(CameraEvents) <= CameraEventCount then SetLength(CameraEvents, CameraEventCount + 30);
+  if High(CameraEvents) <= CameraEventCount then
+    SetLength(CameraEvents, CameraEventCount + 30);
   Inc(CameraEventCount);
 end;
-{ @end $80D2D4 }
 
-{ @routine $80D31C TEFilm_AddCameraEvent }
-procedure TEFilm.AddCameraEvent(AStepIndex: Integer; AStartPosition, AEndPosition: TPointF; APriority: Integer);
+procedure TEFilm.AddCameraEvent(
+    AStepIndex: Integer;
+    AStartPosition, AEndPosition: TPointF;
+    APriority: Integer
+);
 begin
-  if High(CameraEvents) <= CameraEventCount then SetLength(CameraEvents, CameraEventCount + 30);
+  if High(CameraEvents) <= CameraEventCount then
+    SetLength(CameraEvents, CameraEventCount + 30);
   with CameraEvents[CameraEventCount] do
   begin
     StepIndex := AStepIndex;
@@ -296,49 +453,63 @@ begin
   end;
   Inc(CameraEventCount);
 end;
-{ @end $80D31C }
 
-{ @routine $80D3C4 TEFilm_AllocateObject }
 function TEFilm.AllocateObject: TEFilmObj;
-var Obj: TEFilmObj;
+var
+  Obj: TEFilmObj;
 begin
-  try Obj := TEFilmObj.Create except Obj := nil end;
+  try
+    Obj := TEFilmObj.Create
+  except
+    Obj := nil
+  end;
   if Obj = nil then
   begin
-    AppendLogTextThreadSafe('Failed to allocate memory for film object, trying to free some textures... ');
+    AppendLogTextThreadSafe(
+        'Failed to allocate memory for film object, trying to free some textures... '
+    );
     EvictTextureCaches(True);
-    try Obj := TEFilmObj.Create except Obj := nil end;
-    if Obj <> nil then AppendLogLineThreadSafe('success')
+    try
+      Obj := TEFilmObj.Create
+    except
+      Obj := nil
+    end;
+    if Obj <> nil then
+      AppendLogLineThreadSafe('success')
     else
     begin
       AppendLogLineThreadSafe('fail');
       raise Exception.Create('Error in TEFilm.ObjAlloc');
     end;
   end;
-  if LastObject <> nil then LastObject.Next := Obj;
+  if LastObject <> nil then
+    LastObject.Next := Obj;
   Obj.Prev := LastObject;
   Obj.Next := nil;
   LastObject := Obj;
-  if FirstObject = nil then FirstObject := Obj;
+  if FirstObject = nil then
+    FirstObject := Obj;
   Result := Obj;
 end;
-{ @end $80D3C4 }
 
-{ @routine $80D574 TEFilm_RemoveObject }
 procedure TEFilm.RemoveObject(Obj: TEFilmObj);
 begin
-  if Obj.Prev <> nil then Obj.Prev.Next := Obj.Next;
-  if Obj.Next <> nil then Obj.Next.Prev := Obj.Prev;
-  if LastObject = Obj then LastObject := Obj.Prev;
-  if FirstObject = Obj then FirstObject := Obj.Next;
+  if Obj.Prev <> nil then
+    Obj.Prev.Next := Obj.Next;
+  if Obj.Next <> nil then
+    Obj.Next.Prev := Obj.Prev;
+  if LastObject = Obj then
+    LastObject := Obj.Prev;
+  if FirstObject = Obj then
+    FirstObject := Obj.Next;
   ReleaseSpaceObject(Obj.SceneObject);
   Obj.Free;
 end;
-{ @end $80D574 }
 
-{ @routine $80D5F8 TEFilm_ObjectCount }
 function TEFilm.ObjectCount: Integer;
-var Count: Integer; Entry: TEFilmObj;
+var
+  Count: Integer;
+  Entry: TEFilmObj;
 begin
   Count := 0;
   Entry := FirstObject;
@@ -349,90 +520,118 @@ begin
   end;
   Result := Count;
 end;
-{ @end $80D5F8 }
 
-{ @routine $80D634 TEFilm_ObjToNom }
 function TEFilm.ObjToNom(Obj: TEFilmObj): Integer;
-var Index: Integer; Entry: TEFilmObj;
+var
+  Index: Integer;
+  Entry: TEFilmObj;
 begin
-  if Obj = nil then begin Result := FilmNullObjectIndex; Exit end;
+  if Obj = nil then
+  begin
+    Result := FilmNullObjectIndex;
+    Exit
+  end;
   Index := 0;
   Entry := FirstObject;
   while Entry <> nil do
   begin
-    if Entry = Obj then begin Result := Index; Exit end;
+    if Entry = Obj then
+    begin
+      Result := Index;
+      Exit
+    end;
     Inc(Index);
     Entry := Entry.Next;
   end;
   raise Exception.Create('Error in TEFilm.ObjToNom');
   Result := -1; // Retained after the native raise.
 end;
-{ @end $80D634 }
 
-{ @routine $80D6D0 TEFilm_FindObjectIndex }
 function TEFilm.FindObjectIndex(Obj: TEFilmObj): Integer;
-var Index: Integer; Entry: TEFilmObj;
+var
+  Index: Integer;
+  Entry: TEFilmObj;
 begin
-  if Obj = nil then begin Result := FilmNullObjectIndex; Exit end;
+  if Obj = nil then
+  begin
+    Result := FilmNullObjectIndex;
+    Exit
+  end;
   Index := 0;
   Entry := FirstObject;
   while Entry <> nil do
   begin
-    if Entry = Obj then begin Result := Index; Exit end;
+    if Entry = Obj then
+    begin
+      Result := Index;
+      Exit
+    end;
     Inc(Index);
     Entry := Entry.Next;
   end;
   Result := -1;
 end;
-{ @end $80D6D0 }
 
-{ @routine $80D730 TEFilm_NomToObj }
 function TEFilm.NomToObj(Index: Integer): TEFilmObj;
-var Entry: TEFilmObj;
+var
+  Entry: TEFilmObj;
 begin
-  if Index = FilmNullObjectIndex then begin Result := nil; Exit end;
+  if Index = FilmNullObjectIndex then
+  begin
+    Result := nil;
+    Exit
+  end;
   Entry := FirstObject;
   while Entry <> nil do
   begin
-    if Index = 0 then begin Result := Entry; Exit end;
+    if Index = 0 then
+    begin
+      Result := Entry;
+      Exit
+    end;
     Dec(Index);
     Entry := Entry.Next;
   end;
   raise Exception.Create('Error in TEFilm.NomToObj');
   Result := nil; // Retained after the native raise.
 end;
-{ @end $80D730 }
 
-{ @routine $80D7C4 TEFilm_ContainsObject }
 function TEFilm.ContainsObject(Obj: TEFilmObj): Boolean;
-var Entry: TEFilmObj;
+var
+  Entry: TEFilmObj;
 begin
   Entry := FirstObject;
   while Entry <> nil do
   begin
-    if Obj = Entry then begin Result := True; Exit end;
+    if Obj = Entry then
+    begin
+      Result := True;
+      Exit
+    end;
     Entry := Entry.Next;
   end;
   Result := False;
 end;
-{ @end $80D7C4 }
 
-{ @routine $80D808 TEFilm_FindObject }
 function TEFilm.FindObject(const KindName, GraphKey: WideString; ObjectId: Cardinal): TEFilmObj;
-var Entry: TEFilmObj;
+var
+  Entry: TEFilmObj;
 begin
   Entry := FirstObject;
   while Entry <> nil do
   begin
-    if (Entry.ObjectId = ObjectId) and (Entry.KindName = KindName) and (Entry.GraphKey = GraphKey) then
-    begin Result := Entry; Exit end;
+    if (Entry.ObjectId = ObjectId)
+        and (Entry.KindName = KindName)
+        and (Entry.GraphKey = GraphKey) then
+    begin
+      Result := Entry;
+      Exit
+    end;
     Entry := Entry.Next;
   end;
   Result := nil;
 end;
-{ @end $80D808 }
 
-{ @routine $80D878 TEFilm_FindObjectById }
 function TEFilm.FindObjectById(const KindName: WideString; ObjectId: Cardinal): TEFilmObj;
 var
   Entry: TEFilmObj;
@@ -449,89 +648,95 @@ begin
   end;
   Result := nil;
 end;
-{ @end $80D878 }
 
-{ @routine $80D8D4 TEFilm_GrowCommandPool }
 procedure TEFilm.GrowCommandPool(Count: Integer);
-var Command: PEFilmCommand;
+var
+  Command: PEFilmCommand;
 begin
   while Count > 0 do
   begin
     Command := AllocEC(SizeOf(TEFilmCommand));
-    if LastFreeCommand <> nil then LastFreeCommand.Next := Command;
+    if LastFreeCommand <> nil then
+      LastFreeCommand.Next := Command;
     Command.Prev := LastFreeCommand;
     Command.Next := nil;
     LastFreeCommand := Command;
-    if FirstFreeCommand = nil then FirstFreeCommand := Command;
+    if FirstFreeCommand = nil then
+      FirstFreeCommand := Command;
     Dec(Count);
   end;
 end;
-{ @end $80D8D4 }
 
-{ @routine $80D944 TEFilm_RecycleCommands }
 procedure TEFilm.RecycleCommands(First, Last: PEFilmCommand);
 begin
-  if First.Prev <> nil then First.Prev.Next := Last.Next;
-  if Last.Next <> nil then Last.Next.Prev := First.Prev;
-  if Last = LastCommand then LastCommand := First.Prev;
-  if First = FirstCommand then FirstCommand := Last.Next;
-  if LastFreeCommand <> nil then LastFreeCommand.Next := First;
+  if First.Prev <> nil then
+    First.Prev.Next := Last.Next;
+  if Last.Next <> nil then
+    Last.Next.Prev := First.Prev;
+  if Last = LastCommand then
+    LastCommand := First.Prev;
+  if First = FirstCommand then
+    FirstCommand := Last.Next;
+  if LastFreeCommand <> nil then
+    LastFreeCommand.Next := First;
   First.Prev := LastFreeCommand;
   Last.Next := nil;
   LastFreeCommand := Last;
-  if FirstFreeCommand = nil then FirstFreeCommand := First;
+  if FirstFreeCommand = nil then
+    FirstFreeCommand := First;
 end;
-{ @end $80D944 }
 
-{ @routine $80D9F4 TEFilm_AppendCommand }
 procedure TEFilm.AppendCommand(Command: PEFilmCommand);
 begin
-  if LastCommand <> nil then LastCommand.Next := Command;
+  if LastCommand <> nil then
+    LastCommand.Next := Command;
   Command.Prev := LastCommand;
   Command.Next := nil;
   LastCommand := Command;
-  if FirstCommand = nil then FirstCommand := Command;
+  if FirstCommand = nil then
+    FirstCommand := Command;
 end;
-{ @end $80D9F4 }
 
-{ @routine $80DA48 TEFilm_InsertCommand }
 procedure TEFilm.InsertCommand(Before, Command: PEFilmCommand);
 begin
   if Before <> nil then
   begin
     Command.Prev := Before.Prev;
     Command.Next := Before;
-    if Before.Prev <> nil then Before.Prev.Next := Command;
+    if Before.Prev <> nil then
+      Before.Prev.Next := Command;
     Before.Prev := Command;
-    if Before = FirstCommand then FirstCommand := Command;
+    if Before = FirstCommand then
+      FirstCommand := Command;
   end
   else
   begin
-    if LastCommand <> nil then LastCommand.Next := Command;
+    if LastCommand <> nil then
+      LastCommand.Next := Command;
     Command.Prev := LastCommand;
     Command.Next := nil;
     LastCommand := Command;
-    if FirstCommand = nil then FirstCommand := Command;
+    if FirstCommand = nil then
+      FirstCommand := Command;
   end;
 end;
-{ @end $80DA48 }
 
-{ @routine $80DAE8 TEFilm_AllocateCommand }
 function TEFilm.AllocateCommand: PEFilmCommand;
-var Command: PEFilmCommand;
+var
+  Command: PEFilmCommand;
 begin
-  if FirstFreeCommand = LastFreeCommand then GrowCommandPool(500);
+  if FirstFreeCommand = LastFreeCommand then
+    GrowCommandPool(500);
   Command := FirstFreeCommand;
   Command.Next.Prev := nil;
   FirstFreeCommand := Command.Next;
   FillChar(Command^, SizeOf(TEFilmCommand), 0);
   Result := Command;
 end;
-{ @end $80DAE8 }
 
-{ @routine $80DB48 TEFilm_AddCommand }
 function TEFilm.AddCommand(StepIndex: Integer): PEFilmCommand;
-var Command, Entry: PEFilmCommand;
+var
+  Command, Entry: PEFilmCommand;
 begin
   Command := AllocateCommand;
   Command.StepIndex := StepIndex;
@@ -552,15 +757,16 @@ begin
       end;
       Entry := Entry.Next;
     end;
-    if Entry = nil then AppendCommand(Command);
+    if Entry = nil then
+      AppendCommand(Command);
     Result := Command;
   end;
 end;
-{ @end $80DB48 }
 
-{ @routine $80DBEC TEFilm_CommandCount }
 function TEFilm.CommandCount: Integer;
-var Count: Integer; Entry: PEFilmCommand;
+var
+  Count: Integer;
+  Entry: PEFilmCommand;
 begin
   Count := 0;
   Entry := FirstCommand;
@@ -571,11 +777,14 @@ begin
   end;
   Result := Count;
 end;
-{ @end $80DBEC }
 
-{ @routine $80DC28 TEFilm_AddObject }
-function TEFilm.AddObject(ObjectId: Cardinal; SceneObject: TObjectSE; Unused1, Unused2: Integer): TEFilmObj;
-var Obj: TEFilmObj;
+function TEFilm.AddObject(
+    ObjectId: Cardinal;
+    SceneObject: TObjectSE;
+    Unused1, Unused2: Integer
+): TEFilmObj;
+var
+  Obj: TEFilmObj;
 begin
   Obj := AllocateObject;
   Obj.ObjectId := ObjectId;
@@ -584,69 +793,73 @@ begin
   Obj.GraphKey := SceneObject.GraphKey;
   Result := Obj;
 end;
-{ @end $80DC28 }
 
-{ @routine $80DCC4 TEFilm_SetObjectPosition }
 procedure TEFilm.SetObjectPosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF);
-var Command: PEFilmVectorCommand;
+var
+  Command: PEFilmVectorCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmVectorCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectPosition;
   Command.Obj := Obj;
   Command.Position := Position;
 end;
-{ @end $80DCC4 }
 
-{ @routine $80DD40 TEFilm_SetObjectOrbitCenter }
 procedure TEFilm.SetObjectOrbitCenter(StepIndex: Integer; Obj: TEFilmObj; Position: TPointF);
-var Command: PEFilmVectorCommand;
+var
+  Command: PEFilmVectorCommand;
 begin
   Command := PEFilmVectorCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectOrbitCenter;
   Command.Obj := Obj;
   Command.Position := Position;
 end;
-{ @end $80DD40 }
 
-{ @routine $80DD90 TEFilm_SetObjectAlpha }
 procedure TEFilm.SetObjectAlpha(StepIndex: Integer; Obj: TEFilmObj; Alpha: Byte);
-var Command: PEFilmByteCommand;
+var
+  Command: PEFilmByteCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmByteCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectAlpha;
   Command.Obj := Obj;
   Command.Value := Alpha;
 end;
-{ @end $80DD90 }
 
-{ @routine $80DDF8 TEFilm_SetObjectAngle }
 procedure TEFilm.SetObjectAngle(StepIndex: Integer; Obj: TEFilmObj; Angle: Byte);
-var Command: PEFilmByteCommand;
+var
+  Command: PEFilmByteCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmByteCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectAngle;
   Command.Obj := Obj;
   Command.Value := Angle;
 end;
-{ @end $80DDF8 }
 
-{ @routine $80DE60 TEFilm_AdvanceObjects }
 procedure TEFilm.AdvanceObjects(StepIndex: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcAdvanceObjects;
 end;
-{ @end $80DE60 }
 
-{ @routine $80DE88 TEFilm_SetPlanetState }
-procedure TEFilm.SetPlanetState(StepIndex: Integer; Obj: TEFilmObj; RotationInterval, SurfaceMapStep: Integer; ScaleThousandths: Word; RingKind, Owner: Byte);
-var Command: PEFilmObjectCommand;
+procedure TEFilm.SetPlanetState(
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    RotationInterval, SurfaceMapStep: Integer;
+    ScaleThousandths: Word;
+    RingKind, Owner: Byte
+);
+var
+  Command: PEFilmObjectCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetPlanetState;
   Command.Obj := Obj;
@@ -654,38 +867,49 @@ begin
   Command.ExtraValue := SurfaceMapStep;
   Command.Flags := ScaleThousandths or (Integer(Owner) shl 24);
 end;
-{ @end $80DE88 }
 
-{ @routine $80DF18 TEFilm_SetShipSizeAndTailMode }
-procedure TEFilm.SetShipSizeAndTailMode(StepIndex: Integer; Obj: TEFilmObj; Size: TPoint; TailMode: Integer);
-var Command: PEFilmSizeCommand;
+procedure TEFilm.SetShipSizeAndTailMode(
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Size: TPoint;
+    TailMode: Integer
+);
+var
+  Command: PEFilmSizeCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmSizeCommand(AddCommand(StepIndex));
   Command.Kind := efcSetShipSizeAndTailMode;
   Command.Obj := Obj;
   Command.Size := Size;
   Command.TailMode := TailMode;
 end;
-{ @end $80DF18 }
 
-{ @routine $80DF9C TEFilm_SetRuinsState }
 procedure TEFilm.SetRuinsState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetRuinsState;
   Command.Obj := Obj;
   Command.Value := State;
 end;
-{ @end $80DF9C }
 
-{ @routine $80E004 TEFilm_SetWeaponHit }
-procedure TEFilm.SetWeaponHit(StepIndex: Integer; Obj: TEFilmObj; Color: Word; Damage: Integer; Destroyed, PlaySound: Boolean);
-var Command: PEFilmHitCommand;
+procedure TEFilm.SetWeaponHit(
+    StepIndex: Integer;
+    Obj: TEFilmObj;
+    Color: Word;
+    Damage: Integer;
+    Destroyed, PlaySound: Boolean
+);
+var
+  Command: PEFilmHitCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmHitCommand(AddCommand(StepIndex));
   Command.Kind := efcSetWeaponHit;
   Command.Obj := Obj;
@@ -694,46 +918,44 @@ begin
   Command.Destroyed := Destroyed;
   Command.PlaySound := PlaySound;
 end;
-{ @end $80E004 }
 
-{ @routine $80E08C TEFilm_SetWeaponEndpoints }
 procedure TEFilm.SetWeaponEndpoints(StepIndex: Integer; Obj, Source, Target: TEFilmObj);
-var Command: PEFilmEndpointsCommand;
+var
+  Command: PEFilmEndpointsCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmEndpointsCommand(AddCommand(StepIndex));
   Command.Kind := efcSetWeaponEndpoints;
   Command.Obj := Obj;
   Command.Source := Source;
   Command.Target := Target;
 end;
-{ @end $80E08C }
 
-{ @routine $80E100 TEFilm_SetDestructionEffect }
 procedure TEFilm.SetDestructionEffect(StepIndex: Integer; Obj: TEFilmObj; Value: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetDestructionEffect;
   Command.Obj := Obj;
   Command.Value := Value;
 end;
-{ @end $80E100 }
 
-{ @routine $80E13C TEFilm_SetEffectImagePosition }
 procedure TEFilm.SetEffectImagePosition(StepIndex: Integer; Obj: TEFilmObj; Position: TPoint);
-var Command: PEFilmSizeCommand;
+var
+  Command: PEFilmSizeCommand;
 begin
   Command := PEFilmSizeCommand(AddCommand(StepIndex));
   Command.Kind := efcSetEffectImagePosition;
   Command.Obj := Obj;
   Command.Size := Position;
 end;
-{ @end $80E13C }
 
-{ @routine $80E18C TEFilm_SetEffectDurationScale }
 procedure TEFilm.SetEffectDurationScale(StepIndex: Integer; Obj: TEFilmObj; Scale: Single);
-var Command: PEFilmObjectCommand; ScaleBits: Integer absolute Scale;
+var
+  Command: PEFilmObjectCommand;
+  ScaleBits: Integer absolute Scale;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetEffectDurationScale;
@@ -741,147 +963,135 @@ begin
   // Copy the Single payload without floating-point conversion or rounding.
   Command.Value := ScaleBits;
 end;
-{ @end $80E18C }
 
-{ @routine $80E1C8 TEFilm_AttachObject }
 procedure TEFilm.AttachObject(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcAttachObject;
   Command.Obj := Obj;
 end;
-{ @end $80E1C8 }
 
-{ @routine $80E228 TEFilm_DetachObject }
 procedure TEFilm.DetachObject(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
-  if Obj = nil then raise Exception.Create('obj=nil');
+  if Obj = nil then
+    raise Exception.Create('obj=nil');
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcDetachObject;
   Command.Obj := Obj;
 end;
-{ @end $80E228 }
 
-{ @routine $80E288 TEFilm_ReleaseObject }
 procedure TEFilm.ReleaseObject(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcReleaseObject;
   Command.Obj := Obj;
 end;
-{ @end $80E288 }
 
-{ @routine $80E2BC TEFilm_ReleaseWeaponEffects }
 procedure TEFilm.ReleaseWeaponEffects(StepIndex: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcReleaseWeaponEffects;
 end;
-{ @end $80E2BC }
 
-{ @routine $80E2E4 TEFilm_SetViewCenter }
 procedure TEFilm.SetViewCenter(StepIndex: Integer; Position: TPointF);
-var Command: PEFilmVectorCommand;
+var
+  Command: PEFilmVectorCommand;
 begin
   Command := PEFilmVectorCommand(AddCommand(StepIndex));
   Command.Kind := efcSetViewCenter;
   Command.Position := Position;
 end;
-{ @end $80E2E4 }
 
-{ @routine $80E324 TEFilm_SetRadarCenter }
 procedure TEFilm.SetRadarCenter(StepIndex: Integer; Position: TPointF);
-var Command: PEFilmVectorCommand;
+var
+  Command: PEFilmVectorCommand;
 begin
   Command := PEFilmVectorCommand(AddCommand(StepIndex));
   Command.Kind := efcSetRadarCenter;
   Command.Position := Position;
 end;
-{ @end $80E324 }
 
-{ @routine $80E364 TEFilm_SetCameraAnchor }
 procedure TEFilm.SetCameraAnchor(StepIndex: Integer; Position: TPointF; ForceMovement: Boolean);
-var Command: PEFilmVectorCommand;
+var
+  Command: PEFilmVectorCommand;
 begin
   Command := PEFilmVectorCommand(AddCommand(StepIndex));
   Command.Kind := efcSetCameraAnchor;
   Command.Position := Position;
   Command.ForceMovement := ForceMovement;
 end;
-{ @end $80E364 }
 
-{ @routine $80E3B0 TEFilm_OpenGate }
 procedure TEFilm.OpenGate(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcOpenGate;
   Command.Obj := Obj;
 end;
-{ @end $80E3B0 }
 
-{ @routine $80E3E4 TEFilm_CloseGate }
 procedure TEFilm.CloseGate(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcCloseGate;
   Command.Obj := Obj;
 end;
-{ @end $80E3E4 }
 
-{ @routine $80E418 TEFilm_SetGateState }
 procedure TEFilm.SetGateState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetGateState;
   Command.Obj := Obj;
   Command.Value := State;
 end;
-{ @end $80E418 }
 
-{ @routine $80E454 TEFilm_SetGateSize }
 procedure TEFilm.SetGateSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetGateSize;
   Command.Obj := Obj;
   Command.Value := Size;
 end;
-{ @end $80E454 }
 
-{ @routine $80E490 TEFilm_SetGateEffectSize }
 procedure TEFilm.SetGateEffectSize(StepIndex: Integer; Obj: TEFilmObj; Size: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetGateEffectSize;
   Command.Obj := Obj;
   Command.Value := Size;
 end;
-{ @end $80E490 }
 
-{ @routine $80E4CC TEFilm_SetHoleState }
 procedure TEFilm.SetHoleState(StepIndex: Integer; Obj: TEFilmObj; State: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetHoleState;
   Command.Obj := Obj;
   Command.Value := State;
 end;
-{ @end $80E4CC }
 
-{ @routine $80E508 TEFilm_SetObjectText }
 procedure TEFilm.SetObjectText(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectText;
@@ -889,11 +1099,10 @@ begin
   StringTable.Add(Text);
   Command.Value := StringTable.GetCount - 1;
 end;
-{ @end $80E508 }
 
-{ @routine $80E55C TEFilm_PlayObjectSound }
 procedure TEFilm.PlayObjectSound(StepIndex: Integer; Obj: TEFilmObj; const Text: WideString);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcPlayObjectSound;
@@ -901,11 +1110,10 @@ begin
   StringTable.Add(Text);
   Command.Value := StringTable.GetCount - 1;
 end;
-{ @end $80E55C }
 
-{ @routine $80E5B0 TEFilm_SetObjectStateBuffer }
 procedure TEFilm.SetObjectStateBuffer(StepIndex: Integer; Obj: TEFilmObj; Buffer: TBufEC);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcSetObjectStateBuffer;
@@ -913,28 +1121,24 @@ begin
   DataBuffers.Add(Buffer);
   Command.Value := DataBuffers.Count - 1;
 end;
-{ @end $80E5B0 }
 
-{ @routine $80E604 TEFilm_BeginTrailingEffects }
 procedure TEFilm.BeginTrailingEffects(StepIndex: Integer);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcBeginTrailingEffects;
 end;
-{ @end $80E604 }
 
-{ @routine $80E62C TEFilm_PlayPickupSound }
 procedure TEFilm.PlayPickupSound(StepIndex: Integer; Obj: TEFilmObj);
-var Command: PEFilmObjectCommand;
+var
+  Command: PEFilmObjectCommand;
 begin
   Command := PEFilmObjectCommand(AddCommand(StepIndex));
   Command.Kind := efcPlayPickupSound;
   Command.Obj := Obj;
 end;
-{ @end $80E62C }
 
-{ @routine $80E660 TEFilm_ExecuteCommand }
 procedure TEFilm.ExecuteCommand(Process: TProcessSE; Command: PEFilmCommand; ReplayMode: Boolean);
 var
   Obj: TEFilmObj;
@@ -948,181 +1152,295 @@ begin
   try
     case Command.Kind of
       efcSetObjectPosition:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
-          PEFilmObjectCommand(Command).Obj.SceneObject.SetPosition(PEFilmVectorCommand(Command).Position);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+          PEFilmObjectCommand(Command)
+              .Obj
+              .SceneObject
+              .SetPosition(PEFilmVectorCommand(Command).Position);
       efcSetObjectOrbitCenter:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
-          PEFilmObjectCommand(Command).Obj.SceneObject.SetOrbitCenter(PEFilmVectorCommand(Command).Position);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+          PEFilmObjectCommand(Command)
+              .Obj
+              .SceneObject
+              .SetOrbitCenter(PEFilmVectorCommand(Command).Position);
       efcSetObjectAlpha:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
           PEFilmObjectCommand(Command).Obj.SceneObject.SetAlpha(PEFilmByteCommand(Command).Value);
       efcSetObjectAngle:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
           PEFilmObjectCommand(Command).Obj.SceneObject.SetAngle(PEFilmByteCommand(Command).Value);
       efcAdvanceObject:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
           PEFilmObjectCommand(Command).Obj.SceneObject.Advance;
       efcAdvanceObjects:
+      begin
+        Obj := Self.FirstObject;
+        while Obj <> nil do
         begin
-          Obj := Self.FirstObject;
-          while Obj <> nil do
-        begin
-            if Obj.SceneObject <> nil then Obj.SceneObject.Advance;
-            Obj := Obj.Next;
-          end;
+          if Obj.SceneObject <> nil then
+            Obj.SceneObject.Advance;
+          Obj := Obj.Next;
         end;
+      end;
       efcSetPlanetState:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TPlanetSE) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TPlanetSE) then
         begin
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).SetRotationTimerInterval(PEFilmObjectCommand(Command).Value and $FFFFFF);
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).SetRingKind(PEFilmObjectCommand(Command).Value shr 24);
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).SetSurfaceMapStep(PEFilmObjectCommand(Command).ExtraValue);
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).OrbitalVelocity := SmallInt(PEFilmObjectCommand(Command).Flags and $FFFF) / 1000;
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).SetMinimapOwner(PEFilmObjectCommand(Command).Flags shr 24);
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).Civilized := (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).MinimapOwner <> 6;
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE)
+              .SetRotationTimerInterval(PEFilmObjectCommand(Command).Value and $FFFFFF);
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE)
+              .SetRingKind(PEFilmObjectCommand(Command).Value shr 24);
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE)
+              .SetSurfaceMapStep(PEFilmObjectCommand(Command).ExtraValue);
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).OrbitalVelocity :=
+              SmallInt(PEFilmObjectCommand(Command).Flags and $FFFF) / 1000;
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE)
+              .SetMinimapOwner(PEFilmObjectCommand(Command).Flags shr 24);
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).Civilized :=
+              (PEFilmObjectCommand(Command).Obj.SceneObject as TPlanetSE).MinimapOwner <> 6;
         end;
       efcSetShipSizeAndTailMode:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TShip2SE) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TShip2SE) then
         begin
           Ship := PEFilmObjectCommand(Command).Obj.SceneObject as TShip2SE;
           Ship.SetSize(PEFilmSizeCommand(Command).Size);
-          if (ShipTail = 2) or ((ShipTail = 1) and (GetPlayer <> nil) and (GetPlayer.Id = Integer(PEFilmObjectCommand(Command).Obj.ObjectId))) then
+          if (ShipTail = 2)
+              or ((ShipTail = 1)
+                  and (GetPlayer <> nil)
+                  and (GetPlayer.Id = Integer(PEFilmObjectCommand(Command).Obj.ObjectId))) then
             Ship.SetTailMode(PEFilmSizeCommand(Command).TailMode)
-          else Ship.SetTailMode(0);
+          else
+            Ship.SetTailMode(0);
         end;
       efcSetRuinsState:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TRuinsSE) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TRuinsSE) then
         begin
           Ruins := PEFilmObjectCommand(Command).Obj.SceneObject as TRuinsSE;
           Ruins.SetState(PEFilmObjectCommand(Command).Value);
         end;
       efcSetWeaponHit:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE).SetHit(PEFilmHitCommand(Command).Color, PEFilmHitCommand(Command).Damage, PEFilmHitCommand(Command).Destroyed, PEFilmHitCommand(Command).PlaySound);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE)
+              .SetHit(
+                  PEFilmHitCommand(Command).Color,
+                  PEFilmHitCommand(Command).Damage,
+                  PEFilmHitCommand(Command).Destroyed,
+                  PEFilmHitCommand(Command).PlaySound);
       efcSetWeaponEndpoints:
-        begin
-          { Both endpoint scene-object tests are repeated in the native code. }
+      begin
+        { Both endpoint scene-object tests are repeated in the native code. }
         Source := nil;
-          if (PEFilmEndpointsCommand(Command).Source <> nil) and (PEFilmEndpointsCommand(Command).Source.SceneObject <> nil) and (PEFilmEndpointsCommand(Command).Source.SceneObject <> nil) then Source := PEFilmEndpointsCommand(Command).Source.SceneObject;
-          Target := nil;
-          if (PEFilmEndpointsCommand(Command).Target <> nil) and (PEFilmEndpointsCommand(Command).Target.SceneObject <> nil) and (PEFilmEndpointsCommand(Command).Target.SceneObject <> nil) then Target := PEFilmEndpointsCommand(Command).Target.SceneObject;
-          if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
-            (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE).SetEndpoints(Source, Target);
-        end;
+        if (PEFilmEndpointsCommand(Command).Source <> nil)
+            and (PEFilmEndpointsCommand(Command).Source.SceneObject <> nil)
+            and (PEFilmEndpointsCommand(Command).Source.SceneObject <> nil) then
+          Source := PEFilmEndpointsCommand(Command).Source.SceneObject;
+        Target := nil;
+        if (PEFilmEndpointsCommand(Command).Target <> nil)
+            and (PEFilmEndpointsCommand(Command).Target.SceneObject <> nil)
+            and (PEFilmEndpointsCommand(Command).Target.SceneObject <> nil) then
+          Target := PEFilmEndpointsCommand(Command).Target.SceneObject;
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE).SetEndpoints(Source, Target);
+      end;
       efcSetDestructionEffect:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE).DestructionEffect := PEFilmObjectCommand(Command).Value;
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TWeaponSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TWeaponSE).DestructionEffect :=
+              PEFilmObjectCommand(Command).Value;
       efcSetEffectImagePosition:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGAIEffectSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TGAIEffectSE).SetImagePosition(PEFilmSizeCommand(Command).Size);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGAIEffectSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TGAIEffectSE)
+              .SetImagePosition(PEFilmSizeCommand(Command).Size);
       efcSetEffectDurationScale:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGAIEffectSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TGAIEffectSE).SetDurationScale(PEFilmVectorCommand(Command).Position.X);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGAIEffectSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TGAIEffectSE)
+              .SetDurationScale(PEFilmVectorCommand(Command).Position.X);
       efcAttachObject:
+      begin
+        ErrorStep := 1;
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
         begin
-          ErrorStep := 1;
-          if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
-        begin
-            ErrorStep := 2;
-            if PEFilmObjectCommand(Command).Obj.SceneObject is TShip2SE then
+          ErrorStep := 2;
+          if PEFilmObjectCommand(Command).Obj.SceneObject is TShip2SE then
           begin
-              ErrorStep := 3;
-              with PEFilmObjectCommand(Command).Obj.SceneObject as TShip2SE do
+            ErrorStep := 3;
+            with PEFilmObjectCommand(Command).Obj.SceneObject as TShip2SE do
             begin
-                ErrorStep := 4;
-                if ((ShipTail <> 2) and ((ShipTail <> 1) or (GetPlayer = nil) or (GetPlayer.Id <> Integer(PEFilmObjectCommand(Command).Obj.ObjectId)))) or
-                  (TailMode <= 0) then SetTailMode(0);
-              end;
+              ErrorStep := 4;
+              if ((ShipTail <> 2)
+                      and ((ShipTail <> 1)
+                          or (GetPlayer = nil)
+                          or (GetPlayer.Id <> Integer(PEFilmObjectCommand(Command).Obj.ObjectId))))
+                  or (TailMode <= 0) then
+                SetTailMode(0);
             end;
-            ErrorStep := 5;
-            PEFilmObjectCommand(Command).Obj.SceneObject.AttachToSpace(SpaceProcess.Space);
           end;
+          ErrorStep := 5;
+          PEFilmObjectCommand(Command).Obj.SceneObject.AttachToSpace(SpaceProcess.Space);
         end;
+      end;
       efcDetachObject:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
           PEFilmObjectCommand(Command).Obj.SceneObject.DetachFromSpace;
       efcReleaseObject:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
         begin
           PEFilmObjectCommand(Command).Obj.SceneObject.DetachFromSpace;
           ReleaseSpaceObject(PEFilmObjectCommand(Command).Obj.SceneObject);
         end;
       efcReleaseWeaponEffects:
+      begin
+        Obj := Self.FirstObject;
+        while Obj <> nil do
         begin
-          Obj := Self.FirstObject;
-          while Obj <> nil do
-        begin
-            if (Obj.SceneObject <> nil) and (Obj.SceneObject is TWeaponSE) then
+          if (Obj.SceneObject <> nil) and (Obj.SceneObject is TWeaponSE) then
           begin
-              Obj.SceneObject.DetachFromSpace;
-              ReleaseSpaceObject(Obj.SceneObject);
-            end;
-            Obj := Obj.Next;
+            Obj.SceneObject.DetachFromSpace;
+            ReleaseSpaceObject(Obj.SceneObject);
           end;
+          Obj := Obj.Next;
         end;
+      end;
       efcSetViewCenter:
-        if ReplayMode then FilmScreen.FollowViewOffset(TruncatePointF(PEFilmVectorCommand(Command).Position))
-        else StarMapScreen.SetMapCenter(TruncatePointF(PEFilmVectorCommand(Command).Position));
+        if ReplayMode then
+          FilmScreen.FollowViewOffset(TruncatePointF(PEFilmVectorCommand(Command).Position))
+        else
+          StarMapScreen.SetMapCenter(TruncatePointF(PEFilmVectorCommand(Command).Position));
       efcSetRadarCenter:
-        begin
-          if ReplayMode then FilmScreen.CameraTarget := PEFilmVectorCommand(Command).Position;
-          SpaceProcess.RadarCenter := PEFilmVectorCommand(Command).Position;
-        end;
+      begin
+        if ReplayMode then
+          FilmScreen.CameraTarget := PEFilmVectorCommand(Command).Position;
+        SpaceProcess.RadarCenter := PEFilmVectorCommand(Command).Position;
+      end;
       efcSetCameraAnchor:
-        begin
-          CameraAnchor := PEFilmVectorCommand(Command).Position;
-          ForceCameraMovement := PEFilmVectorCommand(Command).ForceMovement;
-        end;
+      begin
+        CameraAnchor := PEFilmVectorCommand(Command).Position;
+        ForceCameraMovement := PEFilmVectorCommand(Command).ForceMovement;
+      end;
       efcOpenGate:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
           (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE).Open;
       efcCloseGate:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
           (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE).Close;
       efcSetGateState:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE).SetState(PEFilmObjectCommand(Command).Value);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE)
+              .SetState(PEFilmObjectCommand(Command).Value);
       efcSetGateSize:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE).SetSize(Classes.Point(PEFilmObjectCommand(Command).Value, PEFilmObjectCommand(Command).Value));
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateSE)
+              .SetSize(
+                  Classes.Point(
+                      PEFilmObjectCommand(Command).Value,
+                      PEFilmObjectCommand(Command).Value
+                  ));
       efcSetGateEffectSize:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateEffectSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateEffectSE).SetSize(Classes.Point(PEFilmObjectCommand(Command).Value, PEFilmObjectCommand(Command).Value));
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is TGateEffectSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as TGateEffectSE)
+              .SetSize(
+                  Classes.Point(
+                      PEFilmObjectCommand(Command).Value,
+                      PEFilmObjectCommand(Command).Value
+                  ));
       efcSetHoleState:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject is THoleSE) then
-          (PEFilmObjectCommand(Command).Obj.SceneObject as THoleSE).SetState(PEFilmObjectCommand(Command).Value);
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject is THoleSE) then
+          (PEFilmObjectCommand(Command).Obj.SceneObject as THoleSE)
+              .SetState(PEFilmObjectCommand(Command).Value);
       efcSetObjectText:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
-          PEFilmObjectCommand(Command).Obj.SceneObject.SetText(StringTable.GetTextAt(PEFilmObjectCommand(Command).Value));
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+          PEFilmObjectCommand(Command)
+              .Obj
+              .SceneObject
+              .SetText(StringTable.GetTextAt(PEFilmObjectCommand(Command).Value));
       efcPlayObjectSound:
-        if FilmSoundEffectsEnabled and SoundInSpaceEnabled and (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and
-          (PEFilmObjectCommand(Command).Obj.SceneObject.Space <> nil) and PEFilmObjectCommand(Command).Obj.SceneObject.Space.ContainsMapPoint(PEFilmObjectCommand(Command).Obj.SceneObject.Position) then
+        if FilmSoundEffectsEnabled
+            and SoundInSpaceEnabled
+            and (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject.Space <> nil)
+            and PEFilmObjectCommand(Command)
+                .Obj
+                .SceneObject
+                .Space
+                .ContainsMapPoint(PEFilmObjectCommand(Command).Obj.SceneObject.Position) then
           SoundManager.PlaySound(StringTable.GetTextAt(PEFilmObjectCommand(Command).Value));
       efcSetObjectStateBuffer:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
-          PEFilmObjectCommand(Command).Obj.SceneObject.LoadStateBuffer(TBufEC(DataBuffers[PEFilmObjectCommand(Command).Value]));
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) then
+          PEFilmObjectCommand(Command)
+              .Obj
+              .SceneObject
+              .LoadStateBuffer(TBufEC(DataBuffers[PEFilmObjectCommand(Command).Value]));
       efcPlayPickupSound:
-        if (PEFilmObjectCommand(Command).Obj <> nil) and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil) and SoundInSpaceEnabled and
-          SpaceProcess.Space.ContainsMapPoint(PEFilmObjectCommand(Command).Obj.SceneObject.Position) then SoundManager.PlaySound('Sound.Take');
+        if (PEFilmObjectCommand(Command).Obj <> nil)
+            and (PEFilmObjectCommand(Command).Obj.SceneObject <> nil)
+            and SoundInSpaceEnabled
+            and SpaceProcess.Space.ContainsMapPoint(
+                PEFilmObjectCommand(Command).Obj.SceneObject.Position) then
+          SoundManager.PlaySound('Sound.Take');
     end;
   except
     on E: Exception do
     begin
       AppendLogLineThreadSafe(E.ClassName + ' ' + E.Message);
-      AppendLogLineThreadSafe('Error in procedure TEFilm.RunOrder, order = ' + IntToStr(Command.Kind) + ', label = ' + IntToStr(ErrorStep));
+      AppendLogLineThreadSafe(
+          'Error in procedure TEFilm.RunOrder, order = '
+              + IntToStr(Command.Kind)
+              + ', label = '
+              + IntToStr(ErrorStep)
+      );
       if PEFilmObjectCommand(Command).Obj <> nil then
       begin
         AppendLogLineThreadSafe(PEFilmObjectCommand(Command).Obj.KindName);
         AppendLogLineThreadSafe(PEFilmObjectCommand(Command).Obj.GraphKey);
-        if PEFilmObjectCommand(Command).Obj.SceneObject <> nil then AppendLogLineThreadSafe(PEFilmObjectCommand(Command).Obj.SceneObject.GraphKey);
+        if PEFilmObjectCommand(Command).Obj.SceneObject <> nil then
+          AppendLogLineThreadSafe(PEFilmObjectCommand(Command).Obj.SceneObject.GraphKey);
       end;
-      raise Exception.Create('Error in procedure TEFilm.RunOrder, order = ' + IntToStr(Command.Kind) + ', label = ' + IntToStr(ErrorStep));
+      raise Exception.Create(
+          'Error in procedure TEFilm.RunOrder, order = '
+              + IntToStr(Command.Kind)
+              + ', label = '
+              + IntToStr(ErrorStep));
     end;
   end;
 end;
-{ @end $80E660 }
 
-{ @routine $80F544 TEFilm_ReleaseWeaponSceneObjects }
 procedure TEFilm.ReleaseWeaponSceneObjects;
 var
   Entry: TEFilmObj;
@@ -1139,11 +1457,10 @@ begin
     Entry := Entry.Next;
   end;
 end;
-{ @end $80F544 }
 
-{ @routine $80F5A4 TEFilm_ReleaseObjectReferences }
 procedure TEFilm.ReleaseObjectReferences(Obj: TObjectSE);
-var Entry: TEFilmObj;
+var
+  Entry: TEFilmObj;
 begin
   Entry := FirstObject;
   while Entry <> nil do
@@ -1159,9 +1476,7 @@ begin
     Entry := Entry.Next;
   end;
 end;
-{ @end $80F5A4 }
 
-{ @routine $80F610 TEFilm_SaveToBuffer }
 procedure TEFilm.SaveToBuffer(Buffer: TBufEC);
 var
   Obj: TEFilmObj;
@@ -1185,7 +1500,8 @@ begin
   Buffer.AddSingle(CameraAnchor.Y);
   Count := StringTable.GetCount;
   Buffer.AddWideChar(WideChar(Count));
-  for I := 0 to Count - 1 do Buffer.AddWideStringZ(StringTable.GetTextAt(I));
+  for I := 0 to Count - 1 do
+    Buffer.AddWideStringZ(StringTable.GetTextAt(I));
   Count := DataBuffers.Count;
   Buffer.AddWideChar(WideChar(Count));
   for I := 0 to Count - 1 do
@@ -1396,9 +1712,7 @@ begin
     end;
   (ObjectInfo as TEObjInfo).SaveToBuffer(Buffer);
 end;
-{ @end $80F610 }
 
-{ @routine $80FFB8 TEFilm_LoadFromBuffer }
 procedure TEFilm.LoadFromBuffer(Buffer: TBufEC);
 var
   I, Count: Integer;
@@ -1421,14 +1735,17 @@ begin
   RadarRange := Buffer.GetInt32;
   PlayerCombatRecorded := Buffer.GetBoolean;
   StarGenerationSeed := Buffer.GetUInt32;
-  if Version >= 2 then BackgroundImage := Buffer.GetInt32
-  else BackgroundImage := 0;
+  if Version >= 2 then
+    BackgroundImage := Buffer.GetInt32
+  else
+    BackgroundImage := 0;
   InitialActivity := Buffer.GetUInt32;
   FinalActivity := Buffer.GetUInt32;
   CameraAnchor.X := Buffer.GetSingle;
   CameraAnchor.Y := Buffer.GetSingle;
   Count := Buffer.GetWord;
-  for I := 0 to Count - 1 do StringTable.Add(Buffer.ReadWideString);
+  for I := 0 to Count - 1 do
+    StringTable.Add(Buffer.ReadWideString);
   Count := Buffer.GetWord;
   for I := 0 to Count - 1 do
   begin
@@ -1629,9 +1946,10 @@ begin
       EndPosition.Y := Buffer.GetSingle;
     end;
   end;
-  if Version > 0 then (ObjectInfo as TEObjInfo).LoadFromBuffer(Buffer, Version)
-  else (ObjectInfo as TEObjInfo).Clear;
+  if Version > 0 then
+    (ObjectInfo as TEObjInfo).LoadFromBuffer(Buffer, Version)
+  else
+    (ObjectInfo as TEObjInfo).Clear;
 end;
-{ @end $80FFB8 }
 
 end.

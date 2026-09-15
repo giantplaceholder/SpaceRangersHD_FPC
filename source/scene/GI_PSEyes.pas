@@ -1,86 +1,118 @@
 unit GI_PSEyes;
-// Unit bracket (inferred): .text 0x006989F4..0x0069A767; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native eye/lightning effect, particles and dormant line-list storage.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_MessageLoop, GI_PSWeapon, Types;
+uses
+  EC_Struct,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  Types;
 
 type
-  PEyesParticle = ^TEyesParticle;
-  TEyesParticle = record // @size $2C
-    Prev: PEyesParticle; // @offset $00
-    Next: PEyesParticle; // @offset $04
-    Origin: TPointF; // @offset $08
-    Position: TPointF; // @offset $10
-    Color: Word; // @offset $18
-    Alpha: Byte; // @offset $1A
-    Velocity: TPointF; // @offset $1C
-    State: Byte; // @offset $24
-    Countdown: Integer; // @offset $28
+
+  PointerToTEyesLine = ^TEyesLine;
+
+  PointerToTEyesParticle = ^TEyesParticle;
+
+  PEyesParticle = PointerToTEyesParticle;
+
+  TEyesParticle = record
+    Prev: PEyesParticle;
+    Next: PEyesParticle;
+    Origin: TPointF;
+    Position: TPointF;
+    Color: Word;
+    Alpha: Byte;
+    Gap1B: array[0..0] of Byte;
+    Velocity: TPointF;
+    State: Byte;
+    Gap25: array[0..2] of Byte;
+    Countdown: Integer;
   end;
-  PEyesLine = ^TEyesLine;
-  TEyesLine = packed record // @size $1C
-    Next: PEyesLine; // @offset $00
-    First: TPoint; // @offset $08
-    Last: TPoint; // @offset $10
-    Color: Word; // @offset $18
-    // Other native line-cache fields are unused by this renderer.
-    Alpha: Byte; // @offset $1B
+
+  PEyesLine = PointerToTEyesLine;
+
+  TEyesLine = packed record
+    Next: PEyesLine;
+    Gap4: array[0..3] of Byte;
+    First: TPoint;
+    Last: TPoint;
+    Color: Word;
+    Gap1A: array[0..0] of Byte;
+    Alpha: Byte;
   end;
 
   TEyesPalette = array[0..1] of Word;
 
 var
-  EyesPalettes: array of TEyesPalette; // @addr $88AF14
-  EyesWidths: array of Integer; // @addr $88AF18
-  EyesSegmentLengths: array of Integer; // @addr $88AF1C
-  EyesDispersions: array of Integer; // @addr $88AF20
-  EyesStartingAlphas: array of Integer; // @addr $88AF24
+
+  EyesPalettes: array of TEyesPalette;
+
+  EyesWidths: array of Integer;
+
+  EyesSegmentLengths: array of Integer;
+
+  EyesDispersions: array of Integer;
+
+  EyesStartingAlphas: array of Integer;
 
 type
-  TPSEyesGI = class(TPSWeaponGI) // @size $168
-  public
-    HalfWidth: Integer; // @offset $130
-    SegmentLength: Integer; // @offset $134
-    Dispersion: Integer; // @offset $138
-    StartingAlpha: Integer; // @offset $13C
-    FirstParticle: PEyesParticle; // @offset $140
-    LastParticle: PEyesParticle; // @offset $144
-    FirstLine: PEyesLine; // @offset $148
-    LastLine: PEyesLine; // @offset $14C
-    ProjectionBounds: TRect; // @offset $150
-    PrimaryColor: Word; // @offset $160
-    SecondaryColor: Word; // @offset $162
-    BeamTicks: Integer; // @offset $164
 
-    constructor Create(Owner: TObjectGI; PaletteIndex: Integer); // @addr $698BD4 @ida "TPSEyesGI *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>, int PaletteIndex@<^0>);"
-    destructor Destroy; override; // @addr $698CE4 @ida "void __usercall $name(TPSEyesGI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure SetPosition(Position: TPoint); override; // @addr $698D38 @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TPoint *Position@<edx>);"
-    procedure SetTargetPoint(Point: TPoint); override; // @addr $698D7C @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TPoint *Point@<edx>);"
-    procedure UpdateProjectionBounds; // @addr $698DD0
-    procedure UpdateHitTestBounds; override; // @addr $6990EC
-    function GetLocalBounds: TRect; override; // @addr $69914C @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TRect *Result@<edx>);"
-    function AddParticle: PEyesParticle; // @addr $6991B0
-    procedure ClearParticles; // @addr $699228
-    procedure ClearLines; // @addr $69927C
-    procedure EmitBurst(Point: TPoint; Radius: Integer); // @addr $6993C0 @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TPoint *Point@<edx>, int Radius@<ecx>);"
-    procedure Invalidate; override; // @addr $6992D0 @note "Native empty override."
-    procedure InvalidateRect(Rect: TRect); override; // @addr $6992DC @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TRect *Rect@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override; // @addr $6995B8
-    procedure Draw(ClipRect: TRect); override; // @addr $6997E8 @ida "void __usercall $name(TPSEyesGI *Self@<eax>, TRect *ClipRect@<edx>);"
+  TPSEyesGI = class;
+
+  TPSEyesGI = class(TPSWeaponGI)
+    HalfWidth: Integer;
+    SegmentLength: Integer;
+    Dispersion: Integer;
+    StartingAlpha: Integer;
+    FirstParticle: PEyesParticle;
+    LastParticle: PEyesParticle;
+    FirstLine: PEyesLine;
+    LastLine: PEyesLine;
+    ProjectionBounds: TRect;
+    PrimaryColor: Word;
+    SecondaryColor: Word;
+    BeamTicks: Integer;
+    procedure UpdateHitTestBounds; override;
+    procedure SetPosition(Position: TPoint); override;
+    function GetLocalBounds: TRect; override;
+    procedure InvalidateRect(Rect: TRect); override;
+    procedure Invalidate; override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure SetTargetPoint(Point: TPoint); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    constructor Create(Owner: TObjectGI; PaletteIndex: Integer);
+    destructor Destroy; override;
+    procedure UpdateProjectionBounds;
+    function AddParticle: PEyesParticle;
+    procedure ClearParticles;
+    procedure ClearLines;
+    procedure EmitBurst(Point: TPoint; Radius: Integer);
   end;
 
-procedure LoadEyesPalettes; // @addr $69A068
+procedure LoadEyesPalettes;
 
 implementation
 
-// @unit-initialization $877964
-// @unit-finalization $69A6E8
+uses
+  GlobalsV,
+  SysUtils,
+  Classes,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  aMyFunction,
+  Globals;
 
-uses SysUtils, Classes, Math, EC_BlockPar, EC_Str, EC_Mem, GR_Main, GR_DX, aMyFunction, Globals;
-
-{ @routine $698BD4 TPSEyesGI_Create }
 constructor TPSEyesGI.Create(Owner: TObjectGI; PaletteIndex: Integer);
 begin
   inherited Create(Owner);
@@ -97,9 +129,7 @@ begin
   LastLine := nil;
   StartingAlpha := EyesStartingAlphas[PaletteIndex];
 end;
-{ @end $698BD4 }
 
-{ @routine $698CE4 TPSEyesGI_Destroy }
 destructor TPSEyesGI.Destroy;
 begin
   InvalidateRect(HitTestBounds);
@@ -107,9 +137,7 @@ begin
   ClearParticles;
   inherited Destroy;
 end;
-{ @end $698CE4 }
 
-{ @routine $698D38 TPSEyesGI_SetPosition }
 procedure TPSEyesGI.SetPosition(Position: TPoint);
 begin
   if (LocalPosition.X <> Position.X) or (LocalPosition.Y <> Position.Y) then
@@ -118,9 +146,7 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $698D38 }
 
-{ @routine $698D7C TPSEyesGI_SetTargetPoint }
 procedure TPSEyesGI.SetTargetPoint(Point: TPoint);
 begin
   if (TargetPoint.X <> Point.X) or (TargetPoint.Y <> Point.Y) then
@@ -129,16 +155,15 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $698D7C }
 
-{ @routine $698DD0 TPSEyesGI_UpdateProjectionBounds }
 procedure TPSEyesGI.UpdateProjectionBounds;
 var
   Distance, Angle, Sine, Cosine, A, B, C, D: Single;
   DY: Integer;
 begin
   DY := -(TargetPoint.Y - LocalPosition.Y);
-  if DY = 0 then Inc(DY);
+  if DY = 0 then
+    Inc(DY);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, DY);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -157,9 +182,7 @@ begin
   ProjectionBounds.Top := Floor(Math.Min(Math.Min(Math.Min(A, B), C), D));
   ProjectionBounds.Bottom := Ceil(Math.Max(Math.Max(Math.Max(A, B), C), D));
 end;
-{ @end $698DD0 }
 
-{ @routine $6990EC TPSEyesGI_UpdateHitTestBounds }
 procedure TPSEyesGI.UpdateHitTestBounds;
 begin
   HitTestBounds.Left := ProjectionBounds.Left + AbsolutePosition.X;
@@ -167,9 +190,7 @@ begin
   HitTestBounds.Right := ProjectionBounds.Right + AbsolutePosition.X;
   HitTestBounds.Bottom := ProjectionBounds.Bottom + AbsolutePosition.Y;
 end;
-{ @end $6990EC }
 
-{ @routine $69914C TPSEyesGI_GetLocalBounds }
 function TPSEyesGI.GetLocalBounds: TRect;
 begin
   Result.Left := ProjectionBounds.Left + LocalPosition.X;
@@ -177,24 +198,22 @@ begin
   Result.Right := ProjectionBounds.Right + LocalPosition.X;
   Result.Bottom := ProjectionBounds.Bottom + LocalPosition.Y;
 end;
-{ @end $69914C }
 
-{ @routine $6991B0 TPSEyesGI_AddParticle }
 function TPSEyesGI.AddParticle: PEyesParticle;
 var
   Particle: PEyesParticle;
 begin
   Particle := AllocEC(SizeOf(TEyesParticle));
-  if LastParticle <> nil then LastParticle.Next := Particle;
+  if LastParticle <> nil then
+    LastParticle.Next := Particle;
   Particle.Prev := LastParticle;
   Particle.Next := nil;
   LastParticle := Particle;
-  if FirstParticle = nil then FirstParticle := Particle;
+  if FirstParticle = nil then
+    FirstParticle := Particle;
   Result := Particle;
 end;
-{ @end $6991B0 }
 
-{ @routine $699228 TPSEyesGI_ClearParticles }
 procedure TPSEyesGI.ClearParticles;
 var
   Particle, Current: PEyesParticle;
@@ -209,9 +228,7 @@ begin
   FirstParticle := nil;
   LastParticle := nil;
 end;
-{ @end $699228 }
 
-{ @routine $69927C TPSEyesGI_ClearLines }
 procedure TPSEyesGI.ClearLines;
 var
   Particle, Current: PEyesLine;
@@ -226,21 +243,21 @@ begin
   FirstLine := nil;
   LastLine := nil;
 end;
-{ @end $69927C }
 
-{ @routine $6992D0 TPSEyesGI_Invalidate }
 procedure TPSEyesGI.Invalidate;
 begin
 end;
-{ @end $6992D0 }
 
-{ @routine $6992DC TPSEyesGI_InvalidateRect }
 procedure TPSEyesGI.InvalidateRect(Rect: TRect);
 var
   Target: TPoint;
   Intersection: TRect;
 begin
-  MessageLoop.UpdateRects.AddScreenClippedRect(HitTestBounds, Parent.ToAbsolutePoint(LocalPosition), Parent.ToAbsolutePoint(TargetPoint));
+  MessageLoop.UpdateRects.AddScreenClippedRect(
+      HitTestBounds,
+      Parent.ToAbsolutePoint(LocalPosition),
+      Parent.ToAbsolutePoint(TargetPoint)
+  );
   Target := Parent.ToAbsolutePoint(TargetPoint);
   Rect.Left := Target.X - HalfWidth;
   Rect.Right := Target.X + HalfWidth;
@@ -249,9 +266,7 @@ begin
   if IntersectRects(Intersection, Rect, GameScreenRect) then
     MessageLoop.QueueUpdateRect(Intersection);
 end;
-{ @end $6992DC }
 
-{ @routine $6993C0 TPSEyesGI_EmitBurst }
 procedure TPSEyesGI.EmitBurst(Point: TPoint; Radius: Integer);
 var
   X, Y: Integer;
@@ -268,15 +283,17 @@ begin
       Particle.State := 1;
       Particle.Countdown := 7;
       Particle.Velocity := MakePointF(X / Radius * 1.1, Y / Radius * 1.1);
-      if Particle.Velocity.X < 0 then Particle.Velocity.X := Particle.Velocity.X - Random(11) / 16.0
-      else Particle.Velocity.X := Particle.Velocity.X + Random(11) / 16.0;
-      if Particle.Velocity.Y < 0 then Particle.Velocity.Y := Particle.Velocity.Y - Random(11) / 16.0
-      else Particle.Velocity.Y := Particle.Velocity.Y + Random(11) / 16.0;
+      if Particle.Velocity.X < 0 then
+        Particle.Velocity.X := Particle.Velocity.X - Random(11) / 16.0
+      else
+        Particle.Velocity.X := Particle.Velocity.X + Random(11) / 16.0;
+      if Particle.Velocity.Y < 0 then
+        Particle.Velocity.Y := Particle.Velocity.Y - Random(11) / 16.0
+      else
+        Particle.Velocity.Y := Particle.Velocity.Y + Random(11) / 16.0;
     end;
 end;
-{ @end $6993C0 }
 
-{ @routine $6995B8 TPSEyesGI_Advance }
 procedure TPSEyesGI.Advance(Timer: PCallbackTimerGI; UserData: Integer);
 var
   Particle, Current: PEyesParticle;
@@ -299,22 +316,31 @@ begin
       case Current.State of
         2:
         begin
-          Current.Position := MakePointF(Current.Position.X + Current.Velocity.X, Current.Position.Y + Current.Velocity.Y);
+          Current.Position :=
+              MakePointF(
+                  Current.Position.X + Current.Velocity.X,
+                  Current.Position.Y + Current.Velocity.Y
+              );
           Current.Velocity.X := 0.95 * Current.Velocity.X;
           Current.Velocity.Y := 0.95 * Current.Velocity.Y;
           Dec(Current.Countdown);
           if Current.Countdown = 0 then
-        begin
+          begin
             Current.State := 3;
             Current.Countdown := 50;
-        end;
+          end;
         end;
         3:
         begin
-          Current.Position := MakePointF(Current.Position.X + Current.Velocity.X, Current.Position.Y + Current.Velocity.Y);
+          Current.Position :=
+              MakePointF(
+                  Current.Position.X + Current.Velocity.X,
+                  Current.Position.Y + Current.Velocity.Y
+              );
           Current.Velocity.X := 0.95 * Current.Velocity.X;
           Current.Velocity.Y := 0.95 * Current.Velocity.Y;
-          if Current.Alpha > 10 then Dec(Current.Alpha, 4);
+          if Current.Alpha > 10 then
+            Dec(Current.Alpha, 4);
           Dec(Current.Countdown);
         end;
       end;
@@ -323,9 +349,7 @@ begin
   Dec(RemainingTicks);
   Dec(BeamTicks);
 end;
-{ @end $6995B8 }
 
-{ @routine $6997E8 TPSEyesGI_Draw }
 procedure TPSEyesGI.Draw(ClipRect: TRect);
 var
   Particle: PEyesParticle;
@@ -350,21 +374,29 @@ begin
     Y := AbsolutePosition.Y;
     DX := TargetPoint.X - LocalPosition.X;
     DY := TargetPoint.Y - LocalPosition.Y;
-    if Abs(DX) > Abs(DY) then Distance := Abs(DX)
-    else Distance := Abs(DY);
-    if Distance = 0 then Distance := 1;
+    if Abs(DX) > Abs(DY) then
+      Distance := Abs(DX)
+    else
+      Distance := Abs(DY);
+    if Distance = 0 then
+      Distance := 1;
     Progress := 0;
     Step := Distance div 4;
-    if Step < 1 then Step := 1;
-    if Step > SegmentLength then Step := SegmentLength;
+    if Step < 1 then
+      Step := 1;
+    if Step > SegmentLength then
+      Step := SegmentLength;
     if BeamTicks > 0 then
     begin
       P := Classes.Point(X, Y);
       while Distance - Progress > Step do
       begin
         Line.First := P;
-        P := Classes.Point(X + (Progress + Step) * DX div Distance + RandomIntRange(-Dispersion, Dispersion),
-          Y + (Progress + Step) * DY div Distance + RandomIntRange(-Dispersion, Dispersion));
+        P :=
+            Classes.Point(
+                X + (Progress + Step) * DX div Distance + RandomIntRange(-Dispersion, Dispersion),
+                Y + (Progress + Step) * DY div Distance + RandomIntRange(-Dispersion, Dispersion)
+            );
         Line.Last := P;
         Line.Alpha := (255 - StartingAlpha) * (Progress + Step) div Distance + StartingAlpha;
         Line.Color := SecondaryColor;
@@ -381,8 +413,24 @@ begin
         Shadow.Alpha := Line.Alpha;
         Shadow.Color := PrimaryColor;
         Inc(Progress, Step);
-        DrawAntialiasedLineDX(Line.First.X, Line.First.Y, Line.Last.X, Line.Last.Y, Color565ToArgb(Line.Color), Line.Alpha, @ClipRect);
-        DrawAntialiasedLineDX(Shadow.First.X, Shadow.First.Y, Shadow.Last.X, Shadow.Last.Y, Color565ToArgb(Shadow.Color), Line.Alpha, @ClipRect);
+        DrawAntialiasedLineDX(
+            Line.First.X,
+            Line.First.Y,
+            Line.Last.X,
+            Line.Last.Y,
+            Color565ToArgb(Line.Color),
+            Line.Alpha,
+            @ClipRect
+        );
+        DrawAntialiasedLineDX(
+            Shadow.First.X,
+            Shadow.First.Y,
+            Shadow.Last.X,
+            Shadow.Last.Y,
+            Color565ToArgb(Shadow.Color),
+            Line.Alpha,
+            @ClipRect
+        );
       end;
       Line.First := P;
       Line.Last := Classes.Point(X + DX, Y + DY);
@@ -400,8 +448,24 @@ begin
       end;
       Shadow.Alpha := Line.Alpha;
       Shadow.Color := PrimaryColor;
-      DrawAntialiasedLineDX(Line.First.X, Line.First.Y, Line.Last.X, Line.Last.Y, Color565ToArgb(Line.Color), Line.Alpha, @ClipRect);
-      DrawAntialiasedLineDX(Shadow.First.X, Shadow.First.Y, Shadow.Last.X, Shadow.Last.Y, Color565ToArgb(Shadow.Color), Line.Alpha, @ClipRect);
+      DrawAntialiasedLineDX(
+          Line.First.X,
+          Line.First.Y,
+          Line.Last.X,
+          Line.Last.Y,
+          Color565ToArgb(Line.Color),
+          Line.Alpha,
+          @ClipRect
+      );
+      DrawAntialiasedLineDX(
+          Shadow.First.X,
+          Shadow.First.Y,
+          Shadow.Last.X,
+          Shadow.Last.Y,
+          Color565ToArgb(Shadow.Color),
+          Line.Alpha,
+          @ClipRect
+      );
     end;
   end
   else
@@ -410,7 +474,10 @@ begin
     begin
       DX := Round(Particle.Position.X) + X;
       DY := Round(Particle.Position.Y) + Y;
-      if (DX >= ClipRect.Left) and (DX < ClipRect.Right) and (DY >= ClipRect.Top) and (DY < ClipRect.Bottom) then
+      if (DX >= ClipRect.Left)
+          and (DX < ClipRect.Right)
+          and (DY >= ClipRect.Top)
+          and (DY < ClipRect.Bottom) then
         ScreenRenderBuffer.BlendPixel16(DX, DY, Particle.Color, Particle.Alpha);
       Particle := Particle.Next;
     end;
@@ -418,21 +485,29 @@ begin
     Y := AbsolutePosition.Y;
     DX := TargetPoint.X - LocalPosition.X;
     DY := TargetPoint.Y - LocalPosition.Y;
-    if Abs(DX) > Abs(DY) then Distance := Abs(DX)
-    else Distance := Abs(DY);
-    if Distance = 0 then Distance := 1;
+    if Abs(DX) > Abs(DY) then
+      Distance := Abs(DX)
+    else
+      Distance := Abs(DY);
+    if Distance = 0 then
+      Distance := 1;
     Progress := 0;
     Step := Distance div 4;
-    if Step < 1 then Step := 1;
-    if Step > SegmentLength then Step := SegmentLength;
+    if Step < 1 then
+      Step := 1;
+    if Step > SegmentLength then
+      Step := SegmentLength;
     if BeamTicks > 0 then
     begin
       P := Classes.Point(X, Y);
       while Distance - Progress > Step do
       begin
         Line.First := P;
-        P := Classes.Point(X + (Progress + Step) * DX div Distance + RandomIntRange(-Dispersion, Dispersion),
-          Y + (Progress + Step) * DY div Distance + RandomIntRange(-Dispersion, Dispersion));
+        P :=
+            Classes.Point(
+                X + (Progress + Step) * DX div Distance + RandomIntRange(-Dispersion, Dispersion),
+                Y + (Progress + Step) * DY div Distance + RandomIntRange(-Dispersion, Dispersion)
+            );
         Line.Last := P;
         Line.Alpha := (255 - StartingAlpha) * (Progress + Step) div Distance + StartingAlpha;
         Line.Color := SecondaryColor;
@@ -449,8 +524,24 @@ begin
         Shadow.Alpha := Line.Alpha;
         Shadow.Color := PrimaryColor;
         Inc(Progress, Step);
-        ScreenRenderBuffer.DrawAlphaLine16(Line.First.X, Line.First.Y, Line.Last.X, Line.Last.Y, Line.Color, Line.Alpha, ClipRect);
-        ScreenRenderBuffer.DrawAlphaLine16(Shadow.First.X, Shadow.First.Y, Shadow.Last.X, Shadow.Last.Y, Shadow.Color, Line.Alpha, ClipRect);
+        ScreenRenderBuffer.DrawAlphaLine16(
+            Line.First.X,
+            Line.First.Y,
+            Line.Last.X,
+            Line.Last.Y,
+            Line.Color,
+            Line.Alpha,
+            ClipRect
+        );
+        ScreenRenderBuffer.DrawAlphaLine16(
+            Shadow.First.X,
+            Shadow.First.Y,
+            Shadow.Last.X,
+            Shadow.Last.Y,
+            Shadow.Color,
+            Line.Alpha,
+            ClipRect
+        );
       end;
       Line.First := P;
       Line.Last := Classes.Point(X + DX, Y + DY);
@@ -468,14 +559,28 @@ begin
       end;
       Shadow.Alpha := Line.Alpha;
       Shadow.Color := PrimaryColor;
-      ScreenRenderBuffer.DrawAlphaLine16(Line.First.X, Line.First.Y, Line.Last.X, Line.Last.Y, Line.Color, Line.Alpha, ClipRect);
-      ScreenRenderBuffer.DrawAlphaLine16(Shadow.First.X, Shadow.First.Y, Shadow.Last.X, Shadow.Last.Y, Shadow.Color, Line.Alpha, ClipRect);
+      ScreenRenderBuffer.DrawAlphaLine16(
+          Line.First.X,
+          Line.First.Y,
+          Line.Last.X,
+          Line.Last.Y,
+          Line.Color,
+          Line.Alpha,
+          ClipRect
+      );
+      ScreenRenderBuffer.DrawAlphaLine16(
+          Shadow.First.X,
+          Shadow.First.Y,
+          Shadow.Last.X,
+          Shadow.Last.Y,
+          Shadow.Color,
+          Line.Alpha,
+          ClipRect
+      );
     end;
   end;
 end;
-{ @end $6997E8 }
 
-{ @routine $69A068 LoadEyesPalettes }
 procedure LoadEyesPalettes;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -527,18 +632,22 @@ begin
         if PaletteBlock.CountParams('Color') > 0 then
         begin
           Text := PaletteBlock.GetParam('Color');
-          EyesPalettes[Index][0] := CurrentPixelFormat.PackNormalizedRgb(
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ',')));
+          EyesPalettes[Index][0] :=
+              CurrentPixelFormat.PackNormalizedRgb(
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ','))
+              );
         end;
         if PaletteBlock.CountParams('ColorDark') > 0 then
         begin
           Text := PaletteBlock.GetParam('ColorDark');
-          EyesPalettes[Index][1] := CurrentPixelFormat.PackNormalizedRgb(
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
-            ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ',')));
+          EyesPalettes[Index][1] :=
+              CurrentPixelFormat.PackNormalizedRgb(
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 0, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 1, ',')),
+                  ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, 2, ','))
+              );
         end;
         if PaletteBlock.CountParams('Width') > 0 then
           EyesWidths[Index] := ExtractDigitsToIntW(PaletteBlock.GetParam('Width'));
@@ -552,6 +661,5 @@ begin
     end;
   end;
 end;
-{ @end $69A068 }
 
 end.

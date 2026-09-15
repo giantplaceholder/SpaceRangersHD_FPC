@@ -1,40 +1,62 @@
 unit SE_Star;
-// Unit bracket (inferred): .text 0x008299EC..0x0082A24B; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_BlockPar, EC_Struct, GI_GAI, GI_Image, GI_gi, GI_MessageLoop, SE_Space, Types;
+uses
+  Classes,
+  EC_BlockPar,
+  EC_Struct,
+  GI_GAI,
+  GI_Image,
+  GI_GI,
+  GI_MessageLoop,
+  SE_Space,
+  Types;
 
 type
-  TStarSE = class(TObjectSE) // @size $78 Native VMT at $829A38; used for the first minimap drawing pass.
-  public
-    AnimationPath: WideString; // @offset $4C
-    StaticImagePath: WideString; // @offset $50 Used by TfAB.ShowSpaceInfo for the star thumbnail.
-    ImageOrigin: TPoint; // @offset $54 Loaded from SmeImage; drawing centers the control instead.
-    MapImagePath: WideString; // @offset $5C
-    MapImageOrigin: TPoint; // @offset $60
-    StaticImage: TImageGI; // @offset $68
-    Animation: TgaiGI; // @offset $6C Native Terron transformation installs its cycle callback here.
-    MapImage: TgiGI; // @offset $70
-    SavedSequenceFrameIndex: Integer; // @offset $74
-    procedure AttachToSpace(ASpace: TSpaceSE); override; // @addr $829AC0
-    procedure DetachFromSpace; override; // @addr $829DDC
-    procedure SetPosition(APosition: TPointF); override; // @addr $829E60 @ida "void __usercall $name(TStarSE *Self@<eax>, TPointF *APosition@<edx>);"
-    function GetSequenceFrameIndex: Integer; // @addr $829F20
-    procedure SetSequenceFrameIndex(FrameIndex: Integer); // @addr $829F54
-    function HitTestCursor: Boolean; override; // @addr $829F84
-    procedure DrawMap; override; // @addr $829FD8
-    procedure LoadTemplate(Block: TBlockParEC); override; // @addr $82A018
-    procedure QueueImageLoad(PendingLoads: TList; Owner: TObjectGI); override; // @addr $82A194
+
+  TStarSE = class;
+
+  TStarSE = class(TObjectSE)
+    AnimationPath: WideString;
+    StaticImagePath: WideString;
+    ImageOrigin: TPoint;
+    MapImagePath: WideString;
+    MapImageOrigin: TPoint;
+    StaticImage: TImageGI;
+    Animation: TgaiGI;
+    MapImage: TgiGI;
+    SavedSequenceFrameIndex: Integer;
+    procedure AttachToSpace(ASpace: TSpaceSE); override;
+    procedure DetachFromSpace; override;
+    procedure SetPosition(APosition: TPointF); override;
+    function HitTestCursor: Boolean; override;
+    procedure DrawMap; override;
+    procedure LoadTemplate(Block: TBlockParEC); override;
+    procedure QueueImageLoad(PendingLoads: TList; Owner: TObjectGI); override;
+    function GetSequenceFrameIndex: Integer;
+    procedure SetSequenceFrameIndex(FrameIndex: Integer);
   end;
 
 implementation
 
-uses GlobalsV, Globals, GR_Main, GI_Main, EC_Str;
-{ @routine $829AC0 TStarSE_AttachToSpace }
+uses
+  GlobalsV,
+  Globals,
+  GR_Main,
+  GI_Main,
+  EC_Str;
+
 procedure TStarSE.AttachToSpace(ASpace: TSpaceSE);
 begin
-  if IsAttachedToSpace then Exit;
+  if IsAttachedToSpace then
+    Exit;
   ConfigureLoopSound('Star');
   ConfigureRandomSound('Star');
   inherited AttachToSpace(ASpace);
@@ -52,7 +74,9 @@ begin
   begin
     Animation := TgaiGI.Create(Space.MapPanel);
     Animation.SetImagePath(AnimationPath);
-    Animation.LoadFrameSequenceFromText('[65,0-' + IntToWideString(Animation.GetMainImageFrameCount - 1) + ']');
+    Animation.LoadFrameSequenceFromText(
+        '[65,0-' + IntToWideString(Animation.GetMainImageFrameCount - 1) + ']'
+    );
     Animation.SetPositionModeW(True);
     Animation.SetDepthByName(DepthExpression);
     Animation.SetPosition(TruncatePointF(Position));
@@ -64,17 +88,18 @@ begin
   MapImage := TgiGI.Create(SpaceObjectUiLoop.ContentPanel);
   MapImage.SetPositionModeW(True);
   MapImage.SetDepthByName(DepthExpression);
-  MapImage.SetPosition(TruncatePointF(MakePointF(Position.X * Space.MinimapScale, Position.Y * Space.MinimapScale)));
+  MapImage.SetPosition(
+      TruncatePointF(MakePointF(Position.X * Space.MinimapScale, Position.Y * Space.MinimapScale))
+  );
   MapImage.SetOrigin(MapImageOrigin);
   MapImage.SetImagePath(MapImagePath);
   MapImage.SetSize(MapImage.GetContentSize);
 end;
-{ @end $829AC0 }
 
-{ @routine $829DDC TStarSE_DetachFromSpace }
 procedure TStarSE.DetachFromSpace;
 begin
-  if not IsAttachedToSpace then Exit;
+  if not IsAttachedToSpace then
+    Exit;
   if Animation <> nil then
   begin
     SavedSequenceFrameIndex := Animation.SequenceFrame;
@@ -93,38 +118,39 @@ begin
   end;
   inherited DetachFromSpace;
 end;
-{ @end $829DDC }
 
-{ @routine $829E60 TStarSE_SetPosition }
 procedure TStarSE.SetPosition(APosition: TPointF);
 begin
   inherited SetPosition(APosition);
   if IsAttachedToSpace then
   begin
-    if StaticImage <> nil then StaticImage.SetPosition(TruncatePointF(APosition));
-    if Animation <> nil then Animation.SetPosition(TruncatePointF(APosition));
-    MapImage.SetPosition(TruncatePointF(MakePointF(APosition.X * Space.MinimapScale, APosition.Y * Space.MinimapScale)));
+    if StaticImage <> nil then
+      StaticImage.SetPosition(TruncatePointF(APosition));
+    if Animation <> nil then
+      Animation.SetPosition(TruncatePointF(APosition));
+    MapImage.SetPosition(
+        TruncatePointF(
+            MakePointF(APosition.X * Space.MinimapScale, APosition.Y * Space.MinimapScale)
+        )
+    );
   end;
 end;
-{ @end $829E60 }
 
-{ @routine $829F20 TStarSE_GetSequenceFrameIndex }
 function TStarSE.GetSequenceFrameIndex: Integer;
 begin
-  if Animation = nil then Result := SavedSequenceFrameIndex
-  else Result := Animation.SequenceFrame;
+  if Animation = nil then
+    Result := SavedSequenceFrameIndex
+  else
+    Result := Animation.SequenceFrame;
 end;
-{ @end $829F20 }
 
-{ @routine $829F54 TStarSE_SetSequenceFrameIndex }
 procedure TStarSE.SetSequenceFrameIndex(FrameIndex: Integer);
 begin
   SavedSequenceFrameIndex := FrameIndex;
-  if Animation <> nil then Animation.SetSequenceFrame(FrameIndex);
+  if Animation <> nil then
+    Animation.SetSequenceFrame(FrameIndex);
 end;
-{ @end $829F54 }
 
-{ @routine $829F84 TStarSE_HitTestCursor }
 function TStarSE.HitTestCursor: Boolean;
 begin
   Result := False;
@@ -133,19 +159,17 @@ begin
     Result := False;
     Exit;
   end;
-  if StaticImage <> nil then Result := StaticImage.HitTestCursor;
-  if Animation <> nil then Result := Animation.HitTestCursor;
+  if StaticImage <> nil then
+    Result := StaticImage.HitTestCursor;
+  if Animation <> nil then
+    Result := Animation.HitTestCursor;
 end;
-{ @end $829F84 }
 
-{ @routine $829FD8 TStarSE_DrawMap }
 procedure TStarSE.DrawMap;
 begin
   MapImage.Draw(Classes.Rect(0, 0, RenderScratchBuffer.Width, RenderScratchBuffer.Height));
 end;
-{ @end $829FD8 }
 
-{ @routine $82A018 TStarSE_LoadTemplate }
 procedure TStarSE.LoadTemplate(Block: TBlockParEC);
 begin
   inherited LoadTemplate(Block);
@@ -155,9 +179,7 @@ begin
   ImageOrigin := GetPointGI(Block.GetParam('SmeImage'));
   MapImageOrigin := GetPointGI(Block.GetParam('SmeImageMap'));
 end;
-{ @end $82A018 }
 
-{ @routine $82A194 TStarSE_QueueImageLoad }
 procedure TStarSE.QueueImageLoad(PendingLoads: TList; Owner: TObjectGI);
 begin
   if not AnimStar then
@@ -181,6 +203,5 @@ begin
     Free;
   end;
 end;
-{ @end $82A194 }
 
 end.

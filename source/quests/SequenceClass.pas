@@ -1,33 +1,42 @@
 unit SequenceClass;
-// Unit bracket (inferred): .text 0x004E866C..0x004E8A25; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Struct;
+uses
+  Classes,
+  EC_Struct;
 
 type
-  TSequence = class(TObjectEx) // @size 0x14
-  public
-    // Initialized to zero; its purpose remains unresolved.
-    UnknownFlag: Byte; // @offset 0x04
-    TraversalLimit: Integer; // @offset 0x08
-    Locations: TList; // @offset 0x0C // Owns the list, not its TLocation entries.
-    Paths: TList; // @offset 0x10 // Owns the list, not its TPath entries.
 
-    constructor Create; // @addr 0x4E86C4 @ida "TSequence *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x4E8738 @ida "void __usercall $name(TSequence *Self@<eax>, __int8 DestroyFlags@<dl>);" @note "Clears member Sequence links without freeing the members."
-    procedure SetTraversalLimit(Value: Integer); // @addr 0x4E881C @note "Also updates every member's visit or traversal limit."
-    procedure RecomputeTraversalLimit; // @addr 0x4E88B4 @note "Propagates the minimum positive member limit, or zero if none."
-    procedure AddLocation(Location: Pointer); // @addr 0x4E8994
-    procedure AddPath(Path: Pointer); // @addr 0x4E89C4
-    procedure PrependPath(Path: Pointer); // @addr 0x4E89F4
+  TSequence = class;
+
+  TSequence = class(TObjectEx)
+    UnknownFlag: Byte;
+    Gap5: array[0..2] of Byte;
+    TraversalLimit: Integer;
+    Locations: TList;
+    Paths: TList;
+    constructor Create;
+    destructor Destroy; override;
+    procedure SetTraversalLimit(Value: Integer);
+    procedure RecomputeTraversalLimit;
+    procedure AddLocation(Location: Pointer);
+    procedure AddPath(Path: Pointer);
+    procedure PrependPath(Path: Pointer);
   end;
 
 implementation
 
-uses LocationClass, PathClass;
+uses
+  LocationClass,
+  PathClass;
 
-{ @routine $4E86C4 TSequence_Create }
 constructor TSequence.Create;
 begin
   inherited Create;
@@ -36,9 +45,7 @@ begin
   TraversalLimit := 0;
   UnknownFlag := 0;
 end;
-{ @end $4E86C4 }
 
-{ @routine $4E8738 TSequence_Destroy }
 destructor TSequence.Destroy;
 var
   i: Integer;
@@ -63,9 +70,7 @@ begin
   Paths := nil;
   inherited Destroy;
 end;
-{ @end $4E8738 }
 
-{ @routine $4E881C TSequence_SetTraversalLimit }
 procedure TSequence.SetTraversalLimit(Value: Integer);
 var
   i: Integer;
@@ -84,9 +89,7 @@ begin
     Path.TraversalLimit := TraversalLimit;
   end;
 end;
-{ @end $4E881C }
 
-{ @routine $4E88B4 TSequence_RecomputeTraversalLimit }
 procedure TSequence.RecomputeTraversalLimit;
 var
   i: Integer;
@@ -98,19 +101,19 @@ begin
   begin
     Location := TLocation(Locations[i]);
     if Location.VisitLimit > 0 then
-      if (TraversalLimit = 0) or (Location.VisitLimit < TraversalLimit) then TraversalLimit := Location.VisitLimit;
+      if (TraversalLimit = 0) or (Location.VisitLimit < TraversalLimit) then
+        TraversalLimit := Location.VisitLimit;
   end;
   for i := 0 to Paths.Count - 1 do
   begin
     Path := TPath(Paths[i]);
     if Path.TraversalLimit > 0 then
-      if (TraversalLimit = 0) or (Path.TraversalLimit < TraversalLimit) then TraversalLimit := Path.TraversalLimit;
+      if (TraversalLimit = 0) or (Path.TraversalLimit < TraversalLimit) then
+        TraversalLimit := Path.TraversalLimit;
   end;
   SetTraversalLimit(TraversalLimit);
 end;
-{ @end $4E88B4 }
 
-{ @routine $4E8994 TSequence_AddLocation }
 procedure TSequence.AddLocation(Location: Pointer);
 var
   Member: TLocation;
@@ -119,9 +122,7 @@ begin
   Locations.Add(Location);
   Member.Sequence := Self;
 end;
-{ @end $4E8994 }
 
-{ @routine $4E89C4 TSequence_AddPath }
 procedure TSequence.AddPath(Path: Pointer);
 var
   Member: TPath;
@@ -130,9 +131,7 @@ begin
   Paths.Add(Path);
   Member.Sequence := Self;
 end;
-{ @end $4E89C4 }
 
-{ @routine $4E89F4 TSequence_PrependPath }
 procedure TSequence.PrependPath(Path: Pointer);
 var
   Member: TPath;
@@ -141,6 +140,5 @@ begin
   Paths.Insert(0, Path);
   Member.Sequence := Self;
 end;
-{ @end $4E89F4 }
 
 end.

@@ -1,7 +1,8 @@
 /.local/
 /game/
-/target/
+/build/
 .DS_Store
+._*
 __pycache__/
 *.pyc
-._*
+.ruff_cache/

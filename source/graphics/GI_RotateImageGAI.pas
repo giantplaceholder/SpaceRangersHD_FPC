@@ -1,51 +1,76 @@
 unit GI_RotateImageGAI;
-// Unit bracket (inferred): .text 0x00496F40..0x00498448; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_BlockPar, EC_CacheGAI, EC_CacheRotateBuf, GI_MessageLoop, GR_GraphBufPal, Types, Direct3D9, GR_DX;
+uses
+  Classes,
+  EC_BlockPar,
+  EC_CacheGAI,
+  EC_CacheRotateBuf,
+  GI_MessageLoop,
+  GR_GraphBufPal,
+  Types,
+  Direct3D9,
+  GR_DX;
 
 type
-  TRotateImageGaiGI = class(TObjectGI) // @size 0x1C4
-  public
-    ImageCache: TCGaiControlEC; // @offset $120
-    RotationCache: TCRotateBufControlEC; // @offset $124
-    RotatedImage: TGraphBufPalGR; // @offset $128
-    RenderedAngle: Byte; // @offset $12C
-    RenderedFrameIndex: Integer; // @offset $130
-    FrameIndexTable: PInteger; // @offset $13C
-    FrameDelayTable: PInteger; // @offset $140
-    ImageSize: TPoint; // @offset $148
-    Vertices: array[0..3] of TScreenVertexGR; // @offset $150
-    FrameTexture: IDirect3DTexture9; // @offset $1C0
-    destructor Destroy; override; // @addr $49716C @ida "void __usercall $name(TRotateImageGaiGI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; override; // @addr $497200
-    procedure ClearFrameSequence; // @addr $497750
-    function GetFrameSourceIndex(Index: Integer): Integer; // @addr $4977C8
-    procedure LoadFromConfigPath(const Path: WideString); override; // @addr $497800
-    procedure LoadFromBlock(Block: TBlockParEC); override; // @addr $497834
-    procedure LoadImageProperties(Block: TBlockParEC); // @addr $497884
-    procedure Draw(ClipRect: TRect); override; // @addr $497BE4 @ida "void __usercall $name(TRotateImageGaiGI *Self@<eax>, TRect *ClipRect@<edx>);"
-    procedure QueueImageLoad(PendingLoads: TList); override; // @addr $498428
-    Angle: Byte; // @offset $12D
-    Alpha: Byte; // @offset $12E
-    ImageDirty: Boolean; // @offset $12F
-    FrameIndex: Integer; // @offset $134
-    FrameCount: Integer; // @offset $138
-    AnimationIndex: Integer; // @offset $144
-    procedure SetAngle(Value: Byte); // @addr $497250
-    procedure SetAlpha(Value: Byte); // @addr $497290
-    procedure SetFrame(Value: Integer); // @addr $497710
-    constructor Create(Owner: TObjectGI); // @addr $497078 @ida "TRotateImageGaiGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    procedure SetImage(Path: WideString; ImageSize, Pivot: TPoint); // @addr 0x4972D0 @ida "void __userpurge $name(TRotateImageGaiGI *Self@<eax>, unsigned __int16 *Path@<edx>, TPoint *ImageSize@<ecx>, TPoint *Pivot@<^0>);"
-    procedure UpdateAutoGeometry; override; // @addr 0x497A4C @note "Diagnostic retains TgaiGI.AfterLoad, but this is TRotateImageGaiGI's geometry-update override."
+
+  TRotateImageGaiGI = class;
+
+  TRotateImageGaiGI = class(TObjectGI)
+    ImageCache: TCGaiControlEC;
+    RotationCache: TCRotateBufControlEC;
+    RotatedImage: TGraphBufPalGR;
+    RenderedAngle: Byte;
+    Angle: Byte;
+    Alpha: Byte;
+    ImageDirty: Boolean;
+    RenderedFrameIndex: Integer;
+    FrameIndex: Integer;
+    FrameCount: Integer;
+    FrameIndexTable: PInteger;
+    FrameDelayTable: PInteger;
+    AnimationIndex: Integer;
+    ImageSize: TPoint;
+    Vertices: array[0..3] of TScreenVertexGR;
+    FrameTexture: IDirect3DTexture9;
+    procedure Clear; override;
+    procedure QueueImageLoad(PendingLoads: TList); override;
+    procedure LoadFromConfigPath(const Path: WideString); override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure LoadFromBlock(Block: TBlockParEC); override;
+    procedure UpdateAutoGeometry; override;
+    constructor Create(Owner: TObjectGI);
+    destructor Destroy; override;
+    procedure SetAngle(Value: Byte);
+    procedure SetAlpha(Value: Byte);
+    procedure SetImage(Path: WideString; ImageSize: TPoint; Pivot: TPoint);
+    procedure SetFrame(Value: Integer);
+    procedure ClearFrameSequence;
+    function GetFrameSourceIndex(Index: Integer): Integer;
+    procedure LoadImageProperties(Block: TBlockParEC);
   end;
 
 implementation
 
-uses SysUtils, Math, EC_Cache, EC_Mem, GI_GAI, GI_Main, GR_Main, GR_GraphBuf, GR_gi;
+uses
+  GlobalsV,
+  SysUtils,
+  Math,
+  EC_Cache,
+  EC_Mem,
+  GI_GAI,
+  GI_Main,
+  GR_Main,
+  GR_GraphBuf,
+  GR_gi;
 
-{ @routine $497078 TRotateImageGaiGI_Create }
 constructor TRotateImageGaiGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
@@ -61,9 +86,7 @@ begin
   AnimationIndex := -1;
   FrameTexture := nil;
 end;
-{ @end $497078 }
 
-{ @routine $49716C TRotateImageGaiGI_Destroy }
 destructor TRotateImageGaiGI.Destroy;
 begin
   ImageCache.Free;
@@ -76,9 +99,7 @@ begin
   ClearFrameSequence;
   inherited Destroy;
 end;
-{ @end $49716C }
 
-{ @routine $497200 TRotateImageGaiGI_Clear }
 procedure TRotateImageGaiGI.Clear;
 begin
   RenderedFrameIndex := 0;
@@ -89,9 +110,7 @@ begin
   Alpha := 255;
   inherited Clear;
 end;
-{ @end $497200 }
 
-{ @routine $497250 TRotateImageGaiGI_SetAngle }
 procedure TRotateImageGaiGI.SetAngle(Value: Byte);
 begin
   if Value <> Angle then
@@ -101,9 +120,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $497250 }
 
-{ @routine $497290 TRotateImageGaiGI_SetAlpha }
 procedure TRotateImageGaiGI.SetAlpha(Value: Byte);
 begin
   if Value <> Alpha then
@@ -113,9 +130,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $497290 }
 
-{ @routine $4972D0 TRotateImageGaiGI_SetImage }
 procedure TRotateImageGaiGI.SetImage(Path: WideString; ImageSize, Pivot: TPoint);
 var
   Data: TCGaiEC;
@@ -126,8 +141,19 @@ begin
   Data := AcquireCachedGai(ImageCache);
   try
     try
-      RotationCache.SetCacheKey(IntToStr(ImageSize.X) + ',' + IntToStr(ImageSize.Y) + ',' +
-        IntToStr(Data.GetCanvasSize.X) + ',' + IntToStr(Data.GetCanvasSize.Y) + ',' + IntToStr(Pivot.X) + ',' + IntToStr(Pivot.Y));
+      RotationCache.SetCacheKey(
+          IntToStr(ImageSize.X)
+              + ','
+              + IntToStr(ImageSize.Y)
+              + ','
+              + IntToStr(Data.GetCanvasSize.X)
+              + ','
+              + IntToStr(Data.GetCanvasSize.Y)
+              + ','
+              + IntToStr(Pivot.X)
+              + ','
+              + IntToStr(Pivot.Y)
+      );
     except
       raise Exception.Create('Error in TRotateImageGaiGI.SetImage');
     end;
@@ -147,9 +173,7 @@ begin
   end;
   Invalidate;
 end;
-{ @end $4972D0 }
 
-{ @routine $497710 TRotateImageGaiGI_SetFrame }
 procedure TRotateImageGaiGI.SetFrame(Value: Integer);
 begin
   if Value <> FrameIndex then
@@ -159,9 +183,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $497710 }
 
-{ @routine $497750 TRotateImageGaiGI_ClearFrameSequence }
 procedure TRotateImageGaiGI.ClearFrameSequence;
 begin
   if FrameIndexTable <> nil then
@@ -177,24 +199,18 @@ begin
   RenderedFrameIndex := 0;
   FrameCount := 0;
 end;
-{ @end $497750 }
 
-{ @routine $4977C8 TRotateImageGaiGI_GetFrameSourceIndex }
 function TRotateImageGaiGI.GetFrameSourceIndex(Index: Integer): Integer;
 begin
   Result := ReadIntegerEC(AddPointerOffset(FrameIndexTable, Index * SizeOf(Integer)));
 end;
-{ @end $4977C8 }
 
-{ @routine $497800 TRotateImageGaiGI_LoadFromConfigPath }
 procedure TRotateImageGaiGI.LoadFromConfigPath(const Path: WideString);
 begin
   inherited LoadFromConfigPath(Path);
   LoadImageProperties(UiStyleConfig.GetBlockByPath(Path));
 end;
-{ @end $497800 }
 
-{ @routine $497834 TRotateImageGaiGI_LoadFromBlock }
 procedure TRotateImageGaiGI.LoadFromBlock(Block: TBlockParEC);
 begin
   RenderedAngle := 255;
@@ -204,19 +220,23 @@ begin
   LoadImageProperties(Block);
   ImageDirty := True;
 end;
-{ @end $497834 }
 
-{ @routine $497884 TRotateImageGaiGI_LoadImageProperties }
 procedure TRotateImageGaiGI.LoadImageProperties(Block: TBlockParEC);
 begin
-  if (Block.CountParams('Image') > 0) and (Block.CountParams('Size') > 0) and (Block.CountParams('Sme') > 0) then
-    SetImage(Block.GetParam('Image'), GetPointGI(Block.GetParam('Size')), GetPointGI(Block.GetParam('Sme')));
-  if Block.CountParams('Angle') > 0 then SetAngle(StrToInt(Block.GetParam('Angle')));
-  if Block.CountParams('Trans') > 0 then SetAlpha(StrToInt(Block.GetParam('Trans')));
+  if (Block.CountParams('Image') > 0)
+      and (Block.CountParams('Size') > 0)
+      and (Block.CountParams('Sme') > 0) then
+    SetImage(
+        Block.GetParam('Image'),
+        GetPointGI(Block.GetParam('Size')),
+        GetPointGI(Block.GetParam('Sme'))
+    );
+  if Block.CountParams('Angle') > 0 then
+    SetAngle(StrToInt(Block.GetParam('Angle')));
+  if Block.CountParams('Trans') > 0 then
+    SetAlpha(StrToInt(Block.GetParam('Trans')));
 end;
-{ @end $497884 }
 
-{ @routine $497A4C TRotateImageGaiGI_UpdateAutoGeometry }
 procedure TRotateImageGaiGI.UpdateAutoGeometry;
 var
   Data: TCGaiEC;
@@ -231,8 +251,10 @@ begin
         if (AnimationIndex < 0) or (Data.GetSequenceCount <= AnimationIndex) then
           raise Exception.Create('TgaiGI.AfterLoad. Anim not found.');
         FrameCount := Data.GetSequenceFrameCount(AnimationIndex);
-        FrameIndexTable := ReAllocFromHeapREC(GaiFrameHeap, FrameIndexTable, FrameCount * SizeOf(Integer));
-        FrameDelayTable := ReAllocFromHeapREC(GaiFrameHeap, FrameDelayTable, FrameCount * SizeOf(Integer));
+        FrameIndexTable :=
+            ReAllocFromHeapREC(GaiFrameHeap, FrameIndexTable, FrameCount * SizeOf(Integer));
+        FrameDelayTable :=
+            ReAllocFromHeapREC(GaiFrameHeap, FrameDelayTable, FrameCount * SizeOf(Integer));
         Data.FillSequenceFrameIndexTable(AnimationIndex, FrameIndexTable, SizeOf(Integer));
         Data.FillSequenceFrameDelayTable(AnimationIndex, FrameDelayTable, SizeOf(Integer));
       finally
@@ -241,9 +263,7 @@ begin
     end;
   end;
 end;
-{ @end $497A4C }
 
-{ @routine $497BE4 TRotateImageGaiGI_Draw }
 procedure TRotateImageGaiGI.Draw(ClipRect: TRect);
 var
   Data: TCGaiEC;
@@ -253,11 +273,17 @@ var
   Degrees, C, S, LeftX, RightX, TopY, BottomY, CenterX, CenterY: Single;
   OldClip: TRect;
 begin
-  if (HitTestBounds.Left + ClientSize.X < 0) or (HitTestBounds.Left - ClientSize.X div 2 > GameScreenWidth) or
-    (HitTestBounds.Top + ClientSize.Y < 0) or (HitTestBounds.Top - ClientSize.Y div 2 > GameScreenHeight) then Exit;
+  if (HitTestBounds.Left + ClientSize.X < 0)
+      or (HitTestBounds.Left - ClientSize.X div 2 > GameScreenWidth)
+      or (HitTestBounds.Top + ClientSize.Y < 0)
+      or (HitTestBounds.Top - ClientSize.Y div 2 > GameScreenHeight) then
+    Exit;
   if HardwareRenderingEnabled then
   begin
-    if (RenderedAngle <> Angle) or (ImageDirty = True) or (FrameIndex <> RenderedFrameIndex) or (FrameTexture = nil) then
+    if (RenderedAngle <> Angle)
+        or (ImageDirty = True)
+        or (FrameIndex <> RenderedFrameIndex)
+        or (FrameTexture = nil) then
     begin
       ImageDirty := False;
       RenderedAngle := Angle;
@@ -267,19 +293,30 @@ begin
         Data := AcquireCachedGai(ImageCache);
         FrameTexture := Data.GetOrCreateFrameSurface(GetFrameSourceIndex(RenderedFrameIndex));
       finally
-        if Data <> nil then ImageCache.Release;
+        if Data <> nil then
+          ImageCache.Release;
       end;
     end;
     Vertices[0].Color := (Cardinal(Alpha) shl 24) or $FFFFFF;
     Vertices[1].Color := Vertices[0].Color;
     Vertices[2].Color := Vertices[0].Color;
     Vertices[3].Color := Vertices[0].Color;
-    Vertices[0].Z := 1.0; Vertices[1].Z := 1.0; Vertices[2].Z := 1.0; Vertices[3].Z := 1.0;
-    Vertices[0].Rhw := 1.0; Vertices[1].Rhw := 1.0; Vertices[2].Rhw := 1.0; Vertices[3].Rhw := 1.0;
-    Vertices[0].U := 0.0; Vertices[0].V := 0.0;
-    Vertices[1].U := 1.0; Vertices[1].V := 0.0;
-    Vertices[2].U := 1.0; Vertices[2].V := 1.0;
-    Vertices[3].U := 0.0; Vertices[3].V := 1.0;
+    Vertices[0].Z := 1.0;
+    Vertices[1].Z := 1.0;
+    Vertices[2].Z := 1.0;
+    Vertices[3].Z := 1.0;
+    Vertices[0].Rhw := 1.0;
+    Vertices[1].Rhw := 1.0;
+    Vertices[2].Rhw := 1.0;
+    Vertices[3].Rhw := 1.0;
+    Vertices[0].U := 0.0;
+    Vertices[0].V := 0.0;
+    Vertices[1].U := 1.0;
+    Vertices[1].V := 0.0;
+    Vertices[2].U := 1.0;
+    Vertices[2].V := 1.0;
+    Vertices[3].U := 0.0;
+    Vertices[3].V := 1.0;
     LeftX := -ImageSize.X / 2;
     TopY := -ImageSize.Y / 2;
     RightX := ImageSize.X / 2;
@@ -318,35 +355,58 @@ begin
         Rotation := AcquireOrCreateRotateBuf(RotationCache);
         RotatedImage.ClearPixels;
         FrameGi := Data.LoadFrameGi(GetFrameSourceIndex(RenderedFrameIndex));
-        if FrameGi.GetFormat <> 4 then RaiseWideMessage('rotate GAI 1');
-        if (FrameGi.GetContentSize.X <> Data.GetCanvasSize.X) or (FrameGi.GetContentSize.Y <> Data.GetCanvasSize.Y) then
+        if FrameGi.GetFormat <> 4 then
+          RaiseWideMessage('rotate GAI 1');
+        if (FrameGi.GetContentSize.X <> Data.GetCanvasSize.X)
+            or (FrameGi.GetContentSize.Y <> Data.GetCanvasSize.Y) then
           RaiseWideMessage('rotate GAI 2');
         IndexPlane := FrameGi.GetPlane(0);
         PalettePlane := FrameGi.GetPlane(1);
-        RotatedImage.SetPalette(PColorRGBA(PAnsiChar(FrameGi.Data) + PalettePlane.DataOffset), Cardinal(PalettePlane.DataSize) shr 2);
-        Ex_OKGR_RotateBuf_Draw_BYTE(RotatedImage.Pixels, RotatedImage.PitchBytes,
-          Pointer(PAnsiChar(FrameGi.Data) + IndexPlane.DataOffset), FrameGi.GetContentSize.X,
-          OriginPoint.X, OriginPoint.Y, Angle, Rotation.Buffer);
+        RotatedImage.SetPalette(
+            PColorRGBA(PAnsiChar(FrameGi.Data) + PalettePlane.DataOffset),
+            Cardinal(PalettePlane.DataSize) shr 2
+        );
+        Ex_OKGR_RotateBuf_Draw_BYTE(
+            RotatedImage.Pixels,
+            RotatedImage.PitchBytes,
+            Pointer(PAnsiChar(FrameGi.Data) + IndexPlane.DataOffset),
+            FrameGi.GetContentSize.X,
+            OriginPoint.X,
+            OriginPoint.Y,
+            Angle,
+            Rotation.Buffer
+        );
         { Native software alpha adjustment uses Pixels with a four-byte stride. }
         if Alpha <> 255 then
-          Ex_OKGR_Light_BYTE(AddPointerOffset(RotatedImage.Pixels, 3), 4,
-            RotatedImage.PitchBytes - RotatedImage.Width * 4, RotatedImage.Width, RotatedImage.Height, Alpha);
+          Ex_OKGR_Light_BYTE(
+              AddPointerOffset(RotatedImage.Pixels, 3),
+              4,
+              RotatedImage.PitchBytes - RotatedImage.Width * 4,
+              RotatedImage.Width,
+              RotatedImage.Height,
+              Alpha
+          );
       finally
-        if Data <> nil then ImageCache.Release;
-        if Rotation <> nil then RotationCache.Release;
+        if Data <> nil then
+          ImageCache.Release;
+        if Rotation <> nil then
+          RotationCache.Release;
       end;
     end;
-    DrawPaletteAlphaBuffer16Clipped(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-      HitTestBounds.Left, HitTestBounds.Top, RotatedImage, ClipRect);
+    DrawPaletteAlphaBuffer16Clipped(
+        ScreenRenderBuffer.GetPixels,
+        ScreenRenderBuffer.PitchBytes,
+        HitTestBounds.Left,
+        HitTestBounds.Top,
+        RotatedImage,
+        ClipRect
+    );
   end;
 end;
-{ @end $497BE4 }
 
-{ @routine $498428 TRotateImageGaiGI_QueueImageLoad }
 procedure TRotateImageGaiGI.QueueImageLoad(PendingLoads: TList);
 begin
   ImageCache.QueueLoadIfMissing(PendingLoads);
 end;
-{ @end $498428 }
 
 end.

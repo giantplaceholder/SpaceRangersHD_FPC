@@ -6,7 +6,8 @@ program Rangers;
 {$I-}
 {$R Rangers.res}
 
-uses Windows,
+uses
+  Windows,
   Classes,
   SysUtils,
   Registry,
@@ -305,41 +306,39 @@ uses Windows,
 type
   TWineGetHostVersion = procedure(var HostOS, HostVersion: PAnsiChar); stdcall;
   TWineGetBuildId = function: PAnsiChar; stdcall;
-  TAD = class(TObject) // @size $04
+  TAD = class(TObject)
   public
-    procedure ApplicationActivated(Sender: TObject); // @addr $8745D0
-    procedure ApplicationDeactivated(Sender: TObject); // @addr $874780
+    procedure ApplicationActivated(Sender: TObject);
+    procedure ApplicationDeactivated(Sender: TObject);
   end;
 
-  TSteamCallbacksThread = class(TThreadEC) // @size 0x2C
+  TSteamCallbacksThread = class(TThreadEC)
   public
 
-
-    procedure Execute; override; // @addr 0x8742B0
+    procedure Execute; override;
   end;
 
 var
-  SteamCallbackThread: TSteamCallbacksThread = nil; // @addr $8830B8
-  ApplicationEvents: TAD; // @addr $88D2B4
-  StartupTime: TSystemTime; // @addr $88D2B8
-  ArgumentIndex: Integer; // @addr $88D2C8
-  ExecutableFileName: AnsiString; // @addr $88D2CC
-  HadProtectedStatus: Boolean; // @addr $88D2D0
-  StartupTextBC: WideString; // @addr $88D2D4 Finalized by the program; no native readers identified.
-  WineModule: Cardinal; // @addr $88D2D8
-  WineGetVersion: Pointer; // @addr $88D2DC
-  WineGetHostVersion: TWineGetHostVersion; // @addr $88D2E0
-  WineNtToUnixFileName: Pointer; // @addr $88D2E4
-  WineGetBuildId: TWineGetBuildId; // @addr $88D2E8
-  WineHostOS: PAnsiChar; // @addr $88D2EC
-  WineHostVersion: PAnsiChar; // @addr $88D2F0
-  LanguageBuffer: PStartupWideString; // @addr $88D2F4
-  LanguageFileName: AnsiString; // @addr $88D2F8
-  LanguageLine: AnsiString; // @addr $88D2FC
-  StartupText: WideString; // @addr $88D300
-  LanguageFile: TextFile; // @addr $88D304
+  SteamCallbackThread: TSteamCallbacksThread = nil;
+  ApplicationEvents: TAD;
+  StartupTime: TSystemTime;
+  ArgumentIndex: Integer;
+  ExecutableFileName: AnsiString;
+  HadProtectedStatus: Boolean;
+  StartupTextBC: WideString;
+  WineModule: Cardinal;
+  WineGetVersion: Pointer;
+  WineGetHostVersion: TWineGetHostVersion;
+  WineNtToUnixFileName: Pointer;
+  WineGetBuildId: TWineGetBuildId;
+  WineHostOS: PAnsiChar;
+  WineHostVersion: PAnsiChar;
+  LanguageBuffer: PStartupWideString;
+  LanguageFileName: AnsiString;
+  LanguageLine: AnsiString;
+  StartupText: WideString;
+  LanguageFile: TextFile;
 
-{ @routine $8742B0 TSteamCallbacksThread_Execute }
 procedure TSteamCallbacksThread.Execute;
 var
   CurrentTick, LastCallbackTick: Cardinal;
@@ -356,10 +355,10 @@ begin
     SysUtils.Sleep(100);
   end;
 end;
-{ @end $8742B0 }
 
-{ @routine $874300 ClearReadOnlyAttributesRecursive }
-procedure ClearReadOnlyAttributesRecursive(DirectoryPath: WideString); // @addr 0x874300 @note "Changes the process working directory and does not restore it; paths pass through the ANSI filesystem API."
+procedure ClearReadOnlyAttributesRecursive(
+    DirectoryPath: WideString
+); { Changes the process working directory and does not restore it; paths pass through the ANSI filesystem API. }
 var
   SearchHandle: THandle;
   FindData: TWin32FindDataA;
@@ -370,7 +369,8 @@ begin
   begin
     repeat
       if (FindData.dwFileAttributes and FILE_ATTRIBUTE_READONLY) <> 0 then
-        if SetFileAttributesA(FindData.cFileName, FILE_ATTRIBUTE_NORMAL) then;
+        if SetFileAttributesA(FindData.cFileName, FILE_ATTRIBUTE_NORMAL) then
+          ;
     until not Windows.FindNextFile(SearchHandle, FindData);
     Windows.FindClose(SearchHandle);
   end;
@@ -379,17 +379,16 @@ begin
   begin
     repeat
       if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
-        if (AnsiString(FindData.cFileName) <> '.') and
-           (AnsiString(FindData.cFileName) <> '..') then
-          ClearReadOnlyAttributesRecursive(DirectoryPath + '\' + WideString(AnsiString(FindData.cFileName)));
+        if (AnsiString(FindData.cFileName) <> '.') and (AnsiString(FindData.cFileName) <> '..') then
+          ClearReadOnlyAttributesRecursive(
+              DirectoryPath + '\' + WideString(AnsiString(FindData.cFileName))
+          );
     until not Windows.FindNextFile(SearchHandle, FindData);
     Windows.FindClose(SearchHandle);
   end;
 end;
-{ @end $874300 }
 
-{ @routine $874510 HandleApplicationActivated }
-procedure HandleApplicationActivated; // @addr 0x874510
+procedure HandleApplicationActivated;
 var
   Buffer: TSoundBuffer;
 begin
@@ -399,8 +398,10 @@ begin
     Buffer := SoundManager.FirstBuffer;
     while Buffer <> nil do
     begin
-      if Buffer.Streaming then Buffer.SetVolume(MusicVolume * MusicVolumeScale)
-      else Buffer.SetVolume(SoundVolume);
+      if Buffer.Streaming then
+        Buffer.SetVolume(MusicVolume * MusicVolumeScale)
+      else
+        Buffer.SetVolume(SoundVolume);
       Buffer := Buffer.Next;
     end;
   end;
@@ -409,33 +410,34 @@ begin
     FullFrameRedrawRequested := True;
     (TObject(RegisteredScreens[Ord(CurrentScreenId)]) as TMessageLoopGI).InvalidateViewport;
   end;
-  if MemorySnapshotActive then RestoreGameFromMemorySnapshot;
+  if MemorySnapshotActive then
+    RestoreGameFromMemorySnapshot;
 end;
-{ @end $874510 }
 
-{ @routine $8745D0 TAD_ApplicationActivated }
 procedure TAD.ApplicationActivated(Sender: TObject);
 begin
   HandleApplicationActivated;
 end;
-{ @end $8745D0 }
 
-{ @routine $8745E8 HandleApplicationDeactivated }
-procedure HandleApplicationDeactivated; // @addr 0x8745E8
+procedure HandleApplicationDeactivated;
 var
   WaitResult: Cardinal;
   Events: array[0..1] of THandle;
   EventPointer: Pointer;
 begin
-  if WindowedModeRequested then Exit;
+  if WindowedModeRequested then
+    Exit;
   RuntimeActive := False;
   Exit;
   // Native O- code retains the following disabled snapshot/wait path.
-  if ExitScreenLoop then;
+  if ExitScreenLoop then
+    ;
   if (NewGameGenerationThread <> nil) and NewGameGenerationThread.IsRunning then
     NewGameGenerationThread.WaitForIdle(INFINITE);
-  if GetPlayer = nil then Exit;
-  if Galaxy = nil then Exit;
+  if GetPlayer = nil then
+    Exit;
+  if Galaxy = nil then
+    Exit;
   if IsTurnCalculationRunning then
   begin
     Events[0] := TurnCalculationThread.IdleEvent;
@@ -448,9 +450,11 @@ begin
         SetEvent(ScriptUiAbortEvent);
         SysUtils.Sleep(1);
       end
-      else Break;
+      else
+        Break;
     until False;
-    if WaitResult = WAIT_OBJECT_0 then;
+    if WaitResult = WAIT_OBJECT_0 then
+      ;
   end;
   if GetPlayer.InNormalSpace and not PlayerStarDayPrepared then
   begin
@@ -467,46 +471,48 @@ begin
           SetEvent(ScriptUiAbortEvent);
           SysUtils.Sleep(1);
         end
-        else Break;
+        else
+          Break;
       until False;
-      if WaitResult = WAIT_OBJECT_0 then;
+      if WaitResult = WAIT_OBJECT_0 then
+        ;
     end;
   end;
   ResetEvent(ScriptUiAbortEvent);
   if (GameLoadScreen.LoadThread <> nil) and GameLoadScreen.LoadThread.IsRunning then
     GameLoadScreen.LoadThread.WaitForIdle(INFINITE);
-  if not MemorySnapshotActive then SaveGameToMemorySnapshot;
+  if not MemorySnapshotActive then
+    SaveGameToMemorySnapshot;
 end;
-{ @end $8745E8 }
 
-{ @routine $874780 TAD_ApplicationDeactivated }
 procedure TAD.ApplicationDeactivated(Sender: TObject);
 begin
   HandleApplicationDeactivated;
 end;
-{ @end $874780 }
 
-{ @routine $874798 HandleMessageIdle }
-procedure HandleMessageIdle; // @addr $874798 @note "Checks background work, but this build performs no idle action. Assigned to GR_Main.OnMessageIdle. Removing the empty tests changes native behavior and bytes."
+procedure HandleMessageIdle; { Checks background work, but this build performs no idle action. Assigned to GR_Main.OnMessageIdle. Removing the empty tests changes native behavior and bytes. }
 begin
-  if MemorySnapshotActive then Exit;
-  if Galaxy = nil then Exit;
-  if (NewGameGenerationThread <> nil) and NewGameGenerationThread.IsRunning then Exit;
-  if (GameLoadScreen <> nil) and GameLoadScreen.IsLoading then Exit;
-  if IsTurnCalculationRunning then Exit;
+  if MemorySnapshotActive then
+    Exit;
+  if Galaxy = nil then
+    Exit;
+  if (NewGameGenerationThread <> nil) and NewGameGenerationThread.IsRunning then
+    Exit;
+  if (GameLoadScreen <> nil) and GameLoadScreen.IsLoading then
+    Exit;
+  if IsTurnCalculationRunning then
+    Exit;
 end;
-{ @end $874798 }
 
-{ @routine $8747E8 HandleMessageResume }
-procedure HandleMessageResume; // @addr $8747E8 @note "Empty conditional callback assigned to GR_Main.OnMessageResume."
+procedure HandleMessageResume; { Empty conditional callback assigned to GR_Main.OnMessageResume. }
 begin
-  if MemorySnapshotActive then Exit;
-  if Galaxy = nil then Exit;
+  if MemorySnapshotActive then
+    Exit;
+  if Galaxy = nil then
+    Exit;
 end;
-{ @end $8747E8 }
 
-{ @routine $8747FC PurgeCacheDirectoryFiles }
-procedure PurgeCacheDirectoryFiles; // @addr 0x8747FC @note "Nonrecursive; restores the previous working directory."
+procedure PurgeCacheDirectoryFiles; { Nonrecursive; restores the previous working directory. }
 var
   FileName, OldDirectory: AnsiString;
   Search: TSearchRec;
@@ -524,10 +530,9 @@ begin
   end;
   SetCurrentDir(OldDirectory);
 end;
-{ @end $8747FC }
 
-{ @routine $874A0C CollectInstallLanguageCodes }
-function CollectInstallLanguageCodes: WideString; // @addr 0x874A0C @ida "void __usercall $name(unsigned __int16 **Result@<eax>);" @note "Comma-separated lowercase names from INSTALL_*.txt in the current directory."
+function CollectInstallLanguageCodes:
+    WideString; { Comma-separated lowercase names from INSTALL_*.txt in the current directory. }
 var
   FileName, LanguageCode: WideString;
   LowerCode: AnsiString;
@@ -542,20 +547,17 @@ begin
       NameLength := Length(FileName);
       LanguageCode := Copy(FileName, 9, NameLength - 12);
       LowerCode := AnsiLowerCase(AnsiString(LanguageCode));
-      if Result = '' then Result := WideString(LowerCode)
-      else Result := Result + ',' + WideString(LowerCode);
+      if Result = '' then
+        Result := WideString(LowerCode)
+      else
+        Result := Result + ',' + WideString(LowerCode);
     until SysUtils.FindNext(Search) <> 0;
     SysUtils.FindClose(Search);
   end;
 end;
-{ @end $874A0C }
 
-
-{$I RecoveredExports.inc}
-
-{ @routine $877ABC start }
 begin
-  // @unit-finalization $874B98
+
   DecimalSeparator := '.';
   MainRuntimeThreadId := GetCurrentThreadId;
   GR_Main.CCInterface := TCCInterface.Create;
@@ -570,7 +572,12 @@ begin
   Application.OnActivate := ApplicationEvents.ApplicationActivated;
   Application.OnDeactivate := ApplicationEvents.ApplicationDeactivated;
   if OpenEvent(EVENT_MODIFY_STATE, False, 'EG_SpaceRangers_Run') <> 0 then
-    Windows.MessageBox(0, 'Please terminate already running instance of the game!', 'Space Rangers', MB_ICONERROR)
+    Windows.MessageBox(
+        0,
+        'Please terminate already running instance of the game!',
+        'Space Rangers',
+        MB_ICONERROR
+    )
   else
   begin
     CreateEvent(nil, True, True, 'EG_SpaceRangers_Run');
@@ -584,7 +591,12 @@ begin
       ClearReadOnlyAttributesRecursive(ExtractFileDirW(WideString(ExecutableFileName)));
       SetCurrentDir(AnsiString(ExtractFileDirW(WideString(ExecutableFileName))));
     end;
-    WriteRegistryStringLegacy(HKEY_LOCAL_MACHINE, 'SOFTWARE\CLASSES\avifile\Extensions\VDO', '', '{00020000-0000-0000-C000-000000000046}');
+    WriteRegistryStringLegacy(
+        HKEY_LOCAL_MACHINE,
+        'SOFTWARE\CLASSES\avifile\Extensions\VDO',
+        '',
+        '{00020000-0000-0000-C000-000000000046}'
+    );
     Randomize;
     repeat
       try
@@ -595,11 +607,15 @@ begin
           AvailableLanguageCodes := '';
           RequestedLanguage := '';
           InitializeAchievementDefinitions;
-          if not SkipModsOnReload then InitializePlatformRuntimeAndMainWindow;
+          if not SkipModsOnReload then
+            InitializePlatformRuntimeAndMainWindow;
           SteamInitialized := False;
           if InstallConfig.CountParamsByPath('GameDistributor') > 0 then
           begin
-            StartupText := WideString(LowerCase(AnsiString(InstallConfig.GetParamByPathOrMarker('GameDistributor'))));
+            StartupText :=
+                WideString(
+                    LowerCase(AnsiString(InstallConfig.GetParamByPathOrMarker('GameDistributor')))
+                );
             if StartupText = 'steam' then
             begin
               AppendLogLineThreadSafe('GameDistributor=Steam');
@@ -607,12 +623,22 @@ begin
               SetLength(SelectedLanguage, 255);
               SetLength(AvailableLanguageCodes, 255);
               SteamInitialized := SteamInit(SelectedLanguage, AvailableLanguageCodes);
-              if not SteamInitialized then AppendLogLineThreadSafe('Steam not initialized');
+              if not SteamInitialized then
+                AppendLogLineThreadSafe('Steam not initialized');
             end
-            else if StartupText = 'gog' then AppendLogLineThreadSafe('GameDistributor=GOG')
-            else AppendLogLineThreadSafe(AnsiString('GameDistributor=Unknown(' + InstallConfig.GetParamByPathOrMarker('GameDistributor') + ')'));
+            else if StartupText = 'gog' then
+              AppendLogLineThreadSafe('GameDistributor=GOG')
+            else
+              AppendLogLineThreadSafe(
+                  AnsiString(
+                      'GameDistributor=Unknown('
+                          + InstallConfig.GetParamByPathOrMarker('GameDistributor')
+                          + ')'
+                  )
+              );
           end
-          else AppendLogLineThreadSafe('GameDistributor=None');
+          else
+            AppendLogLineThreadSafe('GameDistributor=None');
           if SteamInitialized then
           begin
             LanguageBuffer := @SelectedLanguage;
@@ -657,63 +683,98 @@ begin
             @WineGetHostVersion := GetProcAddress(WineModule, 'wine_get_host_version');
             WineNtToUnixFileName := GetProcAddress(WineModule, 'wine_nt_to_unix_file_name');
             @WineGetBuildId := GetProcAddress(WineModule, 'wine_get_build_id');
-            RunningUnderWine := (WineGetVersion <> nil) or Assigned(WineGetHostVersion) or
-              (WineNtToUnixFileName <> nil) or Assigned(WineGetBuildId);
+            RunningUnderWine :=
+                (WineGetVersion <> nil)
+                    or Assigned(WineGetHostVersion)
+                    or (WineNtToUnixFileName <> nil)
+                    or Assigned(WineGetBuildId);
             if RunningUnderWine then
             begin
               AppendLogLineThreadSafe('----------------------------------');
               AppendLogLineThreadSafe('NOTICE: Game is launched under Wine or Proton!');
-              AppendLogLineThreadSafe('NOTICE: Game may work as it does on Windows - or be funky, bug out and crash.');
-              AppendLogLineThreadSafe('NOTICE: Please refer to https://www.protondb.com/app/214730 if you having any issues');
-              AppendLogLineThreadSafe('NOTICE: MacOS users may try to ask for help on https://www.reddit.com/r/macgaming/ or https://www.reddit.com/r/wine_gaming/');
+              AppendLogLineThreadSafe(
+                  'NOTICE: Game may work as it does on Windows - or be funky, bug out and crash.'
+              );
+              AppendLogLineThreadSafe(
+                  'NOTICE: Please refer to https://www.protondb.com/app/214730 if you having any issues'
+              );
+              AppendLogLineThreadSafe(
+                  'NOTICE: MacOS users may try to ask for help on https://www.reddit.com/r/macgaming/ or https://www.reddit.com/r/wine_gaming/'
+              );
               AppendLogLineThreadSafe('----------------------------------');
               if Assigned(WineGetHostVersion) then
               begin
                 WineGetHostVersion(WineHostOS, WineHostVersion);
                 AppendLogTextThreadSafe('Host OS=');
                 // Native startup reports Darwin as Linux; retain that behavior.
-                if AnsiString(WineHostOS) = 'Darwin' then AppendLogTextThreadSafe('Linux')
-                else AppendLogTextThreadSafe(AnsiString(WineHostOS));
+                if AnsiString(WineHostOS) = 'Darwin' then
+                  AppendLogTextThreadSafe('Linux')
+                else
+                  AppendLogTextThreadSafe(AnsiString(WineHostOS));
                 AppendLogLineThreadSafe(' ' + AnsiString(ShortString(WineHostVersion)));
               end
-              else AppendLogLineThreadSafe('Can''t detect host OS, wine_get_host_version() not found');
-              if Assigned(WineGetBuildId) then AppendLogLineThreadSafe('Wine=' + AnsiString(WineGetBuildId()))
-              else AppendLogLineThreadSafe('Can''t detect Wine build version, wine_get_build_id() not found');
+              else
+                AppendLogLineThreadSafe('Can''t detect host OS, wine_get_host_version() not found');
+              if Assigned(WineGetBuildId) then
+                AppendLogLineThreadSafe('Wine=' + AnsiString(WineGetBuildId()))
+              else
+                AppendLogLineThreadSafe(
+                    'Can''t detect Wine build version, wine_get_build_id() not found'
+                );
             end;
             FreeLibrary(WineModule);
           end;
           HadProtectedStatus := False;
           GetSystemTime(StartupTime);
-          AppendOptionalDebugLogLine(Format('=== Start %d-%.2d-%.2d %.2d.%.2d.%.2d.%.3d',
-            [StartupTime.wYear, StartupTime.wMonth, StartupTime.wDay, StartupTime.wHour,
-             StartupTime.wMinute, StartupTime.wSecond, StartupTime.wMilliseconds]));
+          AppendOptionalDebugLogLine(
+              Format(
+                  '=== Start %d-%.2d-%.2d %.2d.%.2d.%.2d.%.3d',
+                  [
+                      StartupTime.wYear,
+                      StartupTime.wMonth,
+                      StartupTime.wDay,
+                      StartupTime.wHour,
+                      StartupTime.wMinute,
+                      StartupTime.wSecond,
+                      StartupTime.wMilliseconds
+                  ]
+              )
+          );
           while True do
           begin
-            if ReloadScriptTemplates or ReloadModsRequested then LoadDatConfigAndModOverrides;
+            if ReloadScriptTemplates or ReloadModsRequested then
+              LoadDatConfigAndModOverrides;
             if ReloadModsRequested then
             begin
               LoadSelectedModInstallBlocks;
-              if not LoadConfiguredPackages then raise Exception.Create('Error while openning package files');
+              if not LoadConfiguredPackages then
+                raise Exception.Create('Error while openning package files');
               ReloadModsRequested := False;
             end;
             InitializeRuntimeAndSettings;
             InitializeGlobalUiRuntime;
             InitializeRobotRuntime;
-            if SteamCallbackThread = nil then SteamCallbackThread := TSteamCallbacksThread.Create;
-            if not SteamCallbackThread.IsRunning and SteamInitialized then SteamCallbackThread.Start;
+            if SteamCallbackThread = nil then
+              SteamCallbackThread := TSteamCallbacksThread.Create;
+            if not SteamCallbackThread.IsRunning and SteamInitialized then
+              SteamCallbackThread.Start;
             timeBeginPeriod(1);
             if Galaxy <> nil then
             begin
               Galaxy.RefreshAllShipDerivedState;
               Galaxy.ReapplyInterfaceOverrides;
               Galaxy.BindScriptImports;
-              if HadProtectedStatus then; // Native retains this disabled status check.
+              if HadProtectedStatus then
+                ; // Native retains this disabled status check.
             end;
-            if BuildVersionMismatch then Break;
+            if BuildVersionMismatch then
+              Break;
             RequestedScreenId := screenLoad;
             ScreenLoadMode := 0;
-            if PostLoadScreenId = screenArcadeBattle then PostLoadScreenId := screenMainMenu;
-            if ScreenUsesCompositeLoadAssets(PostLoadScreenId) then ScreenLoadMode := 3;
+            if PostLoadScreenId = screenArcadeBattle then
+              PostLoadScreenId := screenMainMenu;
+            if ScreenUsesCompositeLoadAssets(PostLoadScreenId) then
+              ScreenLoadMode := 3;
             RunMainScreenStateLoop;
             timeEndPeriod(1);
             HadProtectedStatus := False;
@@ -726,7 +787,8 @@ begin
             FinalizeRobotRuntime;
             FinalizeGlobalUiRuntime;
             FinalizeRuntimeAndSettings;
-            if ((RequestedScreenId = screenNone) and (PostLoadScreenId = screenNone)) or ExitScreenLoop then
+            if ((RequestedScreenId = screenNone) and (PostLoadScreenId = screenNone))
+                or ExitScreenLoop then
             begin
               FreeDatConfigRoots;
               Break;
@@ -743,10 +805,12 @@ begin
           SkipModsOnReload := False;
           if Galaxy <> nil then
           begin
-            if IsTurnCalculationRunning then WaitForTurnCalculation;
+            if IsTurnCalculationRunning then
+              WaitForTurnCalculation;
             Galaxy.Free;
             Galaxy := nil;
-            if MemorySnapshotBuffer <> nil then MemorySnapshotBuffer.Free;
+            if MemorySnapshotBuffer <> nil then
+              MemorySnapshotBuffer.Free;
             MemorySnapshotBuffer := nil;
             MemorySnapshotActive := False;
           end;
@@ -763,7 +827,12 @@ begin
           PurgeCacheDirectoryFiles;
         except
           if not SuppressModRetryPrompt and (SelectedMods <> '') and not SkipModsOnReload then
-            if Windows.MessageBox(MainWindowHandle, 'Failed to launch, do you want to try restarting without mods?', 'Exception:', MB_OKCANCEL or MB_ICONERROR) = IDOK then
+            if Windows.MessageBox(
+                    MainWindowHandle,
+                    'Failed to launch, do you want to try restarting without mods?',
+                    'Exception:',
+                    MB_OKCANCEL or MB_ICONERROR)
+                = IDOK then
             begin
               ResetScriptHostRuntimeState;
               ResetInstalledPackageState;
@@ -775,11 +844,13 @@ begin
           if Galaxy <> nil then
           begin
             // Native passes the +$28 event field, not the +$08 thread handle.
-            if IsTurnCalculationRunning then TerminateThread(TurnCalculationThread.IdleEvent, 0);
+            if IsTurnCalculationRunning then
+              TerminateThread(TurnCalculationThread.IdleEvent, 0);
             Galaxy.Free;
             Galaxy := nil;
           end;
-          if MemorySnapshotBuffer <> nil then MemorySnapshotBuffer.Free;
+          if MemorySnapshotBuffer <> nil then
+            MemorySnapshotBuffer.Free;
           MemorySnapshotBuffer := nil;
           MemorySnapshotActive := False;
           FinalizeGlobalUiRuntime;
@@ -796,9 +867,13 @@ begin
         end;
       except
         on StartupException: Exception do
-          AppendLogLineThreadSafe('Exception ' + StartupException.ClassName + ' with message ' + StartupException.Message);
+          AppendLogLineThreadSafe(
+              'Exception '
+                  + StartupException.ClassName
+                  + ' with message '
+                  + StartupException.Message
+          );
       end;
     until not SkipModsOnReload;
   end;
 end.
-{ @end $877ABC }

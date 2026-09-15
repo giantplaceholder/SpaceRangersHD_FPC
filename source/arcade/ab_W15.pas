@@ -1,36 +1,50 @@
 unit ab_W15;
-// Unit bracket (inferred): .text 0x004F9A6C..0x004FA119; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TabW15 projectile family: $4F9AD4..$4FA11A.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_Tail, ab_Global, ab_Object, ab_WorldImage;
+uses
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  ab_Object,
+  ab_WorldImage;
 
 type
-  TabW15 = class(TabObject) // @size $C8
-  public
-    Damage: Integer; // @offset $B0
-    Image: PabWorldImage; // @offset $B4
-    Phase: Integer; // @offset $B8
-    TurnSpeed: Single; // @offset $BC
-    TurnBias: Single; // @offset $C0
-    ExpireTick: Integer; // @offset $C4
-    constructor Create; // @addr $4F9AD4 @ida "TabW15 *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $4F9BC8 @ida "void __usercall $name(TabW15 *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Launch(Owner: TabObject; Amount: Integer; Angle: Single); // @addr $4F9C24 @ida "void __userpurge $name(TabW15 *Self@<eax>, TabObject *Owner@<edx>, int Amount@<ecx>, float Angle@<^0>);"
-    procedure Explode; // @addr $4F9D40
-    procedure Advance; override; // @addr $4F9DFC
-    procedure UpdateVisuals; override; // @addr $4FA108
+
+  TabW15 = class;
+
+  TabW15 = class(TabObject)
+    Damage: Integer;
+    Image: PabWorldImage;
+    Phase: Integer;
+    TurnSpeed: Single;
+    TurnBias: Single;
+    ExpireTick: Integer;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Launch(Owner: TabObject; Amount: Integer; Angle: Single);
+    procedure Explode;
   end;
 
 var
-  W15ProjectileCount: Integer = 0; // @addr $87ACF0
+
+  W15ProjectileCount: Integer = 0;
 
 implementation
 
-uses GlobalsV, ab_Ship, aMyFunction;
+uses
+  GlobalsV,
+  ab_Ship,
+  aMyFunction;
 
-{ @routine $4F9AD4 TabW15_Create }
 constructor TabW15.Create;
 var
   Obj: TabObject;
@@ -57,9 +71,7 @@ begin
     end;
   end;
 end;
-{ @end $4F9AD4 }
 
-{ @routine $4F9BC8 TabW15_Destroy }
 destructor TabW15.Destroy;
 begin
   if Image <> nil then
@@ -70,9 +82,7 @@ begin
   Dec(W15ProjectileCount);
   inherited Destroy;
 end;
-{ @end $4F9BC8 }
 
-{ @routine $4F9C24 TabW15_Launch }
 procedure TabW15.Launch(Owner: TabObject; Amount: Integer; Angle: Single);
 begin
   SourceObject := Owner;
@@ -84,9 +94,7 @@ begin
   Image := ab_WorldImage_Create(MakeVector3D(0, 0, 0), 'GAI,Bm.AB.w15_f', 'GAI,Bm.AB.w15_s', False);
   ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
 end;
-{ @end $4F9C24 }
 
-{ @routine $4F9D40 TabW15_Explode }
 procedure TabW15.Explode;
 begin
   Phase := 2;
@@ -94,29 +102,33 @@ begin
   ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
   ab_WorldImage_SetLooping(Image, False);
 end;
-{ @end $4F9D40 }
 
-{ @routine $4F9DFC TabW15_Advance }
 procedure TabW15.Advance;
 var
   Collision: TabObject;
   Enemy: TabShip;
 begin
   inherited Advance;
-  if Phase <> 2 then ab_WorldImage_SetPosition(Image, GetWorldPosition);
+  if Phase <> 2 then
+    ab_WorldImage_SetPosition(Image, GetWorldPosition);
   if ArcadeTickCount mod 150 = 0 then
     TurnBias := RandomIntRange(25, 40) * (RandomIntRange(0, 1) * 2 - 1);
   Collision := nil;
   if Phase <> 2 then
   begin
     Collision := FindCollision;
-    if (Collision <> nil) and (SourceObject <> nil) and (Collision is TabShip) and
-      (TabShip(SourceObject).Enemies.IndexOf(Collision) < 0) then Collision := nil;
-    if Collision = SourceObject then Collision := nil;
+    if (Collision <> nil)
+        and (SourceObject <> nil)
+        and (Collision is TabShip)
+        and (TabShip(SourceObject).Enemies.IndexOf(Collision) < 0) then
+      Collision := nil;
+    if Collision = SourceObject then
+      Collision := nil;
   end;
   if ((ArcadeTickCount > ExpireTick) or (Collision <> nil)) and (Phase <> 2) then
   begin
-    if Collision <> nil then Collision.ApplyDamage(Damage, SourceObject, False);
+    if Collision <> nil then
+      Collision.ApplyDamage(Damage, SourceObject, False);
     Phase := 2;
     ab_WorldImage_Set(Image, GetWorldPosition, 'GAI,Bm.AB.w15a_f', 'GAI,Bm.AB.w15a_s');
     ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
@@ -137,21 +149,21 @@ begin
         with BearingAndDistanceTo(Enemy) do
         begin
           BearingDeltaDegrees := BearingDeltaDegrees + TurnBias;
-          if BearingDeltaDegrees < -TurnSpeed then BearingDeltaDegrees := -TurnSpeed
-          else if BearingDeltaDegrees > TurnSpeed then BearingDeltaDegrees := TurnSpeed;
+          if BearingDeltaDegrees < -TurnSpeed then
+            BearingDeltaDegrees := -TurnSpeed
+          else if BearingDeltaDegrees > TurnSpeed then
+            BearingDeltaDegrees := TurnSpeed;
           State.BearingDegrees := State.BearingDegrees + BearingDeltaDegrees;
         end;
     end;
   end
-  else if Phase = 2 then DeletionPending := Image.Finished;
+  else if Phase = 2 then
+    DeletionPending := Image.Finished;
 end;
-{ @end $4F9DFC }
 
-{ @routine $4FA108 TabW15_UpdateVisuals }
 procedure TabW15.UpdateVisuals;
 begin
   inherited UpdateVisuals;
 end;
-{ @end $4FA108 }
 
 end.

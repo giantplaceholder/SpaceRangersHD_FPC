@@ -1,36 +1,49 @@
 unit EC_FileStream;
-// Unit bracket (inferred): .text 0x0045F028..0x0045F644; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Thread, EC_File, SyncObjs;
+uses
+  EC_Thread,
+  EC_File,
+  SyncObjs;
 
 type
-  TFileStreamEC = class(TThreadEC) // @size $58
-  public
-    BlockSize: Integer; // @offset $2C
-    BufferCapacity: Integer; // @offset $30
-    ReadBuffer: Pointer; // @offset $34
-    ReadAvailable: Integer; // @offset $38
-    ReadPosition: Integer; // @offset $3C
-    FillBuffer: Pointer; // @offset $40
-    FillAvailable: Integer; // @offset $44
-    SourceFile: TFileEC; // @offset $48
-    FileSize: Integer; // @offset $4C
-    EndOfFile: Boolean; // @offset $50
-    BufferLock: TCriticalSection; // @offset $54
-    constructor Create(BufferBytes: Integer; const FileName: WideString); // @addr $45F088 @ida "TFileStreamEC *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, int BufferBytes@<ecx>, unsigned __int16 *FileName@<^0>);"
-    destructor Destroy; override; // @addr $45F184 @ida "void __usercall $name(TFileStreamEC *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure SwapBuffers; // @addr $45F254
-    function Read(Destination: Pointer; ByteCount: Integer): Integer; // @addr $45F3B0
-    procedure Execute; override; // @addr $45F2A8
+
+  TFileStreamEC = class;
+
+  TFileStreamEC = class(TThreadEC)
+    BlockSize: Integer;
+    BufferCapacity: Integer;
+    ReadBuffer: Pointer;
+    ReadAvailable: Integer;
+    ReadPosition: Integer;
+    FillBuffer: Pointer;
+    FillAvailable: Integer;
+    SourceFile: TFileEC;
+    FileSize: Integer;
+    EndOfFile: Boolean;
+    Gap51: array[0..2] of Byte;
+    BufferLock: TCriticalSection;
+    procedure Execute; override;
+    constructor Create(BufferBytes: Integer; const FileName: WideString);
+    destructor Destroy; override;
+    procedure SwapBuffers;
+    function Read(Destination: Pointer; ByteCount: Integer): Integer;
   end;
 
 implementation
 
-uses SysUtils, EC_Mem, Windows;
+uses
+  SysUtils,
+  EC_Mem,
+  Windows;
 
-{ @routine $45F088 TFileStreamEC_Create }
 constructor TFileStreamEC.Create(BufferBytes: Integer; const FileName: WideString);
 begin
   inherited Create;
@@ -47,13 +60,12 @@ begin
   SetPriority(ThreadPriorityLowest);
   Start;
 end;
-{ @end $45F088 }
 
-{ @routine $45F184 TFileStreamEC_Destroy }
 destructor TFileStreamEC.Destroy;
 begin
   RequestStop;
-  if IsRunning then WaitForIdle(INFINITE);
+  if IsRunning then
+    WaitForIdle(INFINITE);
   if SourceFile <> nil then
   begin
     SourceFile.Free;
@@ -78,9 +90,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $45F184 }
 
-{ @routine $45F254 TFileStreamEC_SwapBuffers }
 procedure TFileStreamEC.SwapBuffers;
 var
   Buffer: Pointer;
@@ -94,9 +104,7 @@ begin
   FillAvailable := Available;
   ReadPosition := 0;
 end;
-{ @end $45F254 }
 
-{ @routine $45F2A8 TFileStreamEC_Execute }
 procedure TFileStreamEC.Execute;
 var
   ByteCount: Integer;
@@ -124,13 +132,12 @@ begin
     end;
     SourceFile.ReadBuffer(AddPointerOffset(FillBuffer, FillAvailable), ByteCount);
     Inc(FillAvailable, ByteCount);
-    if Integer(SourceFile.GetPointer) > FileSize then EndOfFile := True;
+    if Integer(SourceFile.GetPointer) > FileSize then
+      EndOfFile := True;
     SysUtils.Sleep(0);
   end;
 end;
-{ @end $45F2A8 }
 
-{ @routine $45F3B0 TFileStreamEC_Read }
 function TFileStreamEC.Read(Destination: Pointer; ByteCount: Integer): Integer;
 var
   Chunk, Total: Integer;
@@ -138,7 +145,8 @@ begin
   Total := 0;
   BufferLock.Enter;
   Chunk := ByteCount;
-  if Chunk > ReadAvailable then Chunk := ReadAvailable;
+  if Chunk > ReadAvailable then
+    Chunk := ReadAvailable;
   if Chunk > 0 then
   begin
     CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
@@ -162,7 +170,8 @@ begin
   while True do
   begin
     Chunk := ByteCount;
-    if Chunk > ReadAvailable then Chunk := ReadAvailable;
+    if Chunk > ReadAvailable then
+      Chunk := ReadAvailable;
     if Chunk > 0 then
     begin
       CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
@@ -172,10 +181,12 @@ begin
       Dec(ByteCount, Chunk);
       Inc(Total, Chunk);
     end;
-    if ByteCount <= 0 then Break;
+    if ByteCount <= 0 then
+      Break;
     SwapBuffers;
     Chunk := ByteCount;
-    if Chunk > ReadAvailable then Chunk := ReadAvailable;
+    if Chunk > ReadAvailable then
+      Chunk := ReadAvailable;
     if Chunk > 0 then
     begin
       CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
@@ -185,7 +196,8 @@ begin
       Dec(ByteCount, Chunk);
       Inc(Total, Chunk);
     end;
-    if (ByteCount <= 0) or EndOfFile then Break;
+    if (ByteCount <= 0) or EndOfFile then
+      Break;
     Chunk := BufferCapacity;
     if FileSize - Integer(SourceFile.GetPointer) < Chunk then
       Chunk := FileSize - Integer(SourceFile.GetPointer);
@@ -196,11 +208,12 @@ begin
     end;
     SourceFile.ReadBuffer(AddPointerOffset(FillBuffer, FillAvailable), Chunk);
     Inc(FillAvailable, Chunk);
-    if Integer(SourceFile.GetPointer) > FileSize then EndOfFile := True;
+    if Integer(SourceFile.GetPointer) > FileSize then
+      EndOfFile := True;
   end;
-  if not EndOfFile then Start;
+  if not EndOfFile then
+    Start;
   Result := Total;
 end;
-{ @end $45F3B0 }
 
 end.

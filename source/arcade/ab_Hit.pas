@@ -1,48 +1,83 @@
 unit ab_Hit;
-// Unit bracket (inferred): .text 0x0054CC0C..0x0054E2BC; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, GI_MessageLoop, ab_Object;
+uses
+  Classes,
+  GI_MessageLoop,
+  ab_Object;
 
 type
-  TabHit = class(TabObject) // @size $D0
-  public
-    Health: Integer; // @offset $B0
-    MaxHealth: Integer; // @offset $B4
-    DisruptUntilTick: Integer; // @offset $B8
-    EffectOriginSpread: Integer; // @offset $BC
-    TurnSpeedScale: Double; // @offset $C0
-    Effects: TList; // @offset $C8
-    StateCC: Boolean; // @offset $CC  Default True; boss transition behavior still under recovery.
 
-    constructor Create; // @addr $54CC74 @ida "TabHit *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $54CCFC @ida "void __usercall $name(TabHit *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override; // @addr $54CD94
-    procedure UpdateState; override; // @addr $54D6B8
-    procedure Advance; override; // @addr $54D760
-    procedure UpdateVisuals; override; // @addr $54DCB4
-    procedure ExplosionComplete(Sender: TObjectGI); // @addr $54DD54
-    procedure KellerBreakupComplete(Sender: TObjectGI); // @addr $54DDB0
-    procedure KellerDeathComplete(Sender: TObjectGI); // @addr $54E258
-    procedure HitEffectComplete(Sender: TObjectGI); // @addr $54E284
+  TabHit = class;
+
+  TabHit = class(TabObject)
+    Health: Integer;
+    MaxHealth: Integer;
+    DisruptUntilTick: Integer;
+    EffectOriginSpread: Integer;
+    TurnSpeedScale: Double;
+    Effects: TList;
+    StateCC: Boolean;
+    GapCD: array[0..2] of Byte;
+    procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override;
+    procedure UpdateState; override;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure ExplosionComplete(Sender: TObjectGI);
+    procedure KellerBreakupComplete(Sender: TObjectGI);
+    procedure KellerDeathComplete(Sender: TObjectGI);
+    procedure HitEffectComplete(Sender: TObjectGI);
   end;
 
 var
-  KellerFragments: array[0..3] of TabHit; // @addr $88A7A8 Native objects are TabShip instances.
-  // Advance and KellerBreakupComplete iterate the four fragment slots, indices 0..3.
-  KellerFragmentDistances: array[0..3] of Double; // @addr $88A7B8
-  KellerFragmentValuesAC: array[0..3] of Double; // @addr $88A7D8 Initialized by breakup; later use under review.
-  KellerBreakupTicks: Integer; // @addr $88A7F8
-  KellerSplitActive: Boolean; // @addr $88A7FC
-  KellerFinishRequested: Boolean; // @addr $88A7FD
-  KellerDeathPending: Boolean; // @addr $88A7FE
+
+  KellerFragments: array[0..3] of TabHit;
+
+  KellerFragmentDistances: array[0..3] of Double;
+
+  KellerFragmentValuesAC: array[0..3] of Double;
+
+  KellerBreakupTicks: Integer;
+
+  KellerSplitActive: Boolean;
+
+  KellerFinishRequested: Boolean;
+
+  KellerDeathPending: Boolean;
 
 implementation
 
-uses aKling, Math, SysUtils, Globals, GR_Main, aConst, abWall, aMyFunction, ab_MainForm, EC_Struct, GI_Tail, ab_Global, GI_GAI, GlobalsV, ab_Ship, ab_ShipAI, SE_Ruins, aGalaxy, aPlayer;
+uses
+  Types,
+  aKling,
+  Math,
+  SysUtils,
+  Globals,
+  GR_Main,
+  aConst,
+  abWall,
+  aMyFunction,
+  ab_MainForm,
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  GI_GAI,
+  GlobalsV,
+  ab_Ship,
+  ab_ShipAI,
+  SE_Ruins,
+  aGalaxy,
+  aPlayer;
 
-{ @routine $54CC74 TabHit_Create }
 constructor TabHit.Create;
 begin
   inherited Create;
@@ -52,9 +87,7 @@ begin
   Effects := TList.Create;
   StateCC := True;
 end;
-{ @end $54CC74 }
 
-{ @routine $54CCFC TabHit_Destroy }
 destructor TabHit.Destroy;
 var
   Index: Integer;
@@ -72,9 +105,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $54CCFC }
 
-{ @routine $54CD94 TabHit_ApplyDamage }
 procedure TabHit.ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean);
 var
   Frame: Integer;
@@ -85,19 +116,35 @@ begin
   if Health > 0 then
   begin
     Invulnerable := (Galaxy <> nil) and (Galaxy.GodModEnabled = 1) and (PlayerArcadeShip = Self);
-    if (Self <> KellerFragments[0]) and (Self <> KellerFragments[1]) and
-      (Self <> KellerFragments[2]) and (Self <> KellerFragments[3]) then
+    if (Self <> KellerFragments[0])
+        and (Self <> KellerFragments[1])
+        and (Self <> KellerFragments[2])
+        and (Self <> KellerFragments[3]) then
       if Source <> nil then
         if (Self is TabShip) and (Source is TabShip) then
-          if (Source as TabShip).Enemies.IndexOf(Self) < 0 then Amount := Amount div 4;
+          if (Source as TabShip).Enemies.IndexOf(Self) < 0 then
+            Amount := Amount div 4;
     if (PlayerArcadeShip = Self) and (GetPlayer <> nil) then
     begin
-      if ArcadeAutopilotEnabled then Amount := Round(Amount * 0.7);
+      if ArcadeAutopilotEnabled then
+        Amount := Round(Amount * 0.7);
       if KellerArcadeShip <> nil then
-        Amount := Round(RemapClamped(GetPlayer.BlackHoleKillCount + GetPlayer.HyperspaceKillCount, 5, 70, 0.1, 1) * Amount);
-      Amount := Round(Amount * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].ArcadeDamageTakenScale);
+        Amount :=
+            Round(
+                RemapClamped(
+                        GetPlayer.BlackHoleKillCount + GetPlayer.HyperspaceKillCount,
+                        5,
+                        70,
+                        0.1,
+                        1)
+                    * Amount
+            );
+      Amount :=
+          Round(Amount * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].ArcadeDamageTakenScale);
     end;
-    if (KellerArcadeShip = Self) and ((PlayerArcadeShip = nil) or (PlayerArcadeShip.Health <= 0)) then Amount := 0;
+    if (KellerArcadeShip = Self)
+        and ((PlayerArcadeShip = nil) or (PlayerArcadeShip.Health <= 0)) then
+      Amount := 0;
     if Disrupt then
     begin
       if ArcadeTickCount < DisruptUntilTick then
@@ -106,17 +153,26 @@ begin
         if (PlayerArcadeShip = Self) and (DisruptUntilTick - ArcadeTickCount > 350) then
           DisruptUntilTick := ArcadeTickCount + 350;
       end
-      else DisruptUntilTick := ArcadeTickCount + Amount;
-      if not Invulnerable then Health := Max(0, Health - 2);
+      else
+        DisruptUntilTick := ArcadeTickCount + Amount;
+      if not Invulnerable then
+        Health := Max(0, Health - 2);
     end
-    else if not Invulnerable then Health := Max(0, Health - Amount);
-    if (KellerAuxiliaryShip <> nil) and (KellerArcadeShip = Self) and (Health <= 0) then Health := 100;
+    else if not Invulnerable then
+      Health := Max(0, Health - Amount);
+    if (KellerAuxiliaryShip <> nil) and (KellerArcadeShip = Self) and (Health <= 0) then
+      Health := 100;
     if (KellerArcadeShip = Self) and (Health = 0) then
     begin
       Animation := ((Self as TabShip).Visual as TRuinsSE).Animation;
       Frame := Animation.SequenceFrame;
-      Animation.LoadFrameSequenceFromText('[20,0-' + IntToStr(Animation.GetMainImageFrameCount - 1) +
-        '][20,0-' + IntToStr(Animation.GetMainImageFrameCount - 1) + ']');
+      Animation.LoadFrameSequenceFromText(
+          '[20,0-'
+              + IntToStr(Animation.GetMainImageFrameCount - 1)
+              + '][20,0-'
+              + IntToStr(Animation.GetMainImageFrameCount - 1)
+              + ']'
+      );
       Animation.SetSequenceFrame(Frame);
       Animation.CycleCompleteCallback := KellerBreakupComplete;
       StateCC := False;
@@ -129,11 +185,12 @@ begin
         begin
           Effect := TgaiGI.Create(ArcadeBattleScreen.WorldPanel);
           Effects.Add(Effect);
-            if IsDepthBeforeSphereHorizon(GetProjectedPosition.Z) then
+          if IsDepthBeforeSphereHorizon(GetProjectedPosition.Z) then
           begin
             if (KellerArcadeShip = Self) or (KellerAuxiliaryShip = Self) then
               TgaiGI(Effect).SetImagePath('Bm.Weapon.ExplM')
-            else TgaiGI(Effect).SetImagePath('Bm.Weapon.Expl' + IntToStr(RandomIntRange(0, 1)));
+            else
+              TgaiGI(Effect).SetImagePath('Bm.Weapon.Expl' + IntToStr(RandomIntRange(0, 1)));
             Effect.SetDepth(ExplosionFrontDepth);
           end
           else
@@ -150,12 +207,17 @@ begin
           Effect.SetActive(True);
           if Self is TabWall then
           begin
-            if RandomIntRange(0, 1) = 0 then SoundManager.PlaySound('Sound.ab_Expl0')
-            else SoundManager.PlaySound('Sound.ab_Expl1');
+            if RandomIntRange(0, 1) = 0 then
+              SoundManager.PlaySound('Sound.ab_Expl0')
+            else
+              SoundManager.PlaySound('Sound.ab_Expl1');
           end
-          else SoundManager.PlaySound(ArcadeExplosionSounds[RandomIntRange(0, High(ArcadeExplosionSounds))]);
+          else
+            SoundManager
+                .PlaySound(ArcadeExplosionSounds[RandomIntRange(0, High(ArcadeExplosionSounds))]);
         end
-        else DeletionPending := True;
+        else
+          DeletionPending := True;
       end
       else
       begin
@@ -163,7 +225,7 @@ begin
         begin
           Effect := TgaiGI.Create(ArcadeBattleScreen.WorldPanel);
           Effects.Add(Effect);
-            if IsDepthBeforeSphereHorizon(GetProjectedPosition.Z) then
+          if IsDepthBeforeSphereHorizon(GetProjectedPosition.Z) then
           begin
             TgaiGI(Effect).SetImagePath('Bm.AB.hit00_f');
             Effect.SetDepth(HitFrontDepth);
@@ -176,20 +238,25 @@ begin
           TgaiGI(Effect).SequenceIndex := 0;
           Effect.UpdateAutoGeometry;
           Effect.SetSize(TgaiGI(Effect).GetContentSize);
-          Effect.SetOrigin(Classes.Point(Effect.ClientSize.X div 2 + RandomIntRange(-EffectOriginSpread div 4, EffectOriginSpread div 4),
-            Effect.ClientSize.Y div 2 + RandomIntRange(-EffectOriginSpread div 4, EffectOriginSpread div 4)));
+          Effect.SetOrigin(
+              Classes.Point(
+                  Effect.ClientSize.X div 2
+                      + RandomIntRange(-EffectOriginSpread div 4, EffectOriginSpread div 4),
+                  Effect.ClientSize.Y div 2
+                      + RandomIntRange(-EffectOriginSpread div 4, EffectOriginSpread div 4)
+              )
+          );
           TgaiGI(Effect).CycleCompleteCallback := HitEffectComplete;
           TgaiGI(Effect).RestartPlayback;
           Effect.SetActive(True);
-          if PlayerArcadeShip = Self then SoundManager.PlaySound(ArcadeHitSounds[RandomIntRange(0, High(ArcadeHitSounds))]);
+          if PlayerArcadeShip = Self then
+            SoundManager.PlaySound(ArcadeHitSounds[RandomIntRange(0, High(ArcadeHitSounds))]);
         end;
       end;
     end;
   end;
 end;
-{ @end $54CD94 }
 
-{ @routine $54D6B8 TabHit_UpdateState }
 procedure TabHit.UpdateState;
 begin
   if ArcadeTickCount < DisruptUntilTick then
@@ -212,9 +279,7 @@ begin
   end;
   inherited UpdateState;
 end;
-{ @end $54D6B8 }
 
-{ @routine $54D760 TabHit_Advance }
 procedure TabHit.Advance;
 var
   Index: Integer;
@@ -233,8 +298,12 @@ begin
   if (KellerArcadeShip = Self) and (KellerFragments[0] <> nil) then
   begin
     Inc(KellerBreakupTicks);
-    if (KellerBreakupTicks > 150) and (GetPlayer <> nil) and (KellerShip <> nil)
-      and (PlayerArcadeShip <> nil) and (PlayerArcadeShip.Health > 0) and KellerFinishRequested then
+    if (KellerBreakupTicks > 150)
+        and (GetPlayer <> nil)
+        and (KellerShip <> nil)
+        and (PlayerArcadeShip <> nil)
+        and (PlayerArcadeShip.Health > 0)
+        and KellerFinishRequested then
     begin
       for Index := 0 to 3 do
       begin
@@ -259,20 +328,32 @@ begin
         begin
           KellerFragmentDistances[Index] := Max(KellerFragmentDistances[Index], Bearing.Distance);
           OutwardAnimation := (TabShip(KellerFragments[Index]).Visual as TRuinsSE).Animation;
-          OutwardAnimation.SetSequenceFrame(Round((OutwardAnimation.SequenceFrameCount div 2) * (KellerBreakupTicks / 150)));
+          OutwardAnimation.SetSequenceFrame(
+              Round((OutwardAnimation.SequenceFrameCount div 2) * (KellerBreakupTicks / 150))
+          );
         end
         else
         begin
           InwardAnimation := (TabShip(KellerFragments[Index]).Visual as TRuinsSE).Animation;
-          InwardAnimation.SetSequenceFrame(Min(InwardAnimation.SequenceFrameCount - 1,
-            Round((InwardAnimation.SequenceFrameCount div 2) * (KellerBreakupTicks / 150))));
+          InwardAnimation.SetSequenceFrame(
+              Min(
+                  InwardAnimation.SequenceFrameCount - 1,
+                  Round((InwardAnimation.SequenceFrameCount div 2) * (KellerBreakupTicks / 150))
+              )
+          );
           KellerFragments[Index].Velocity.X := 0;
           KellerFragments[Index].Velocity.Y := 0;
           KellerFragments[Index].State := State;
-          KellerFragments[Index].State.BearingDegrees := WrapHeadingDegrees(Bearing.BearingDeltaDegrees);
+          KellerFragments[Index].State.BearingDegrees :=
+              WrapHeadingDegrees(Bearing.BearingDeltaDegrees);
           ArcDistance := (1 - (KellerBreakupTicks - 150) / 150) * KellerFragmentDistances[Index];
-          AdvanceSphericalBearingState(KellerFragments[Index].State.LongitudeDegrees,
-            KellerFragments[Index].State.PolarAngleDegrees, KellerFragments[Index].State.BearingDegrees, SphereRadius, ArcDistance);
+          AdvanceSphericalBearingState(
+              KellerFragments[Index].State.LongitudeDegrees,
+              KellerFragments[Index].State.PolarAngleDegrees,
+              KellerFragments[Index].State.BearingDegrees,
+              SphereRadius,
+              ArcDistance
+          );
           if KellerBreakupTicks >= 300 then
           begin
             KellerFragments[Index].DeletionPending := True;
@@ -312,9 +393,7 @@ begin
     end;
   end;
 end;
-{ @end $54D760 }
 
-{ @routine $54DCB4 TabHit_UpdateVisuals }
 procedure TabHit.UpdateVisuals;
 var
   Effect: TObjectGI;
@@ -330,24 +409,22 @@ begin
     Effect.SetPosition(Classes.Point(Round(Position.X), Round(Position.Y)));
   end;
 end;
-{ @end $54DCB4 }
 
-{ @routine $54DD54 TabHit_ExplosionComplete }
 procedure TabHit.ExplosionComplete(Sender: TObjectGI);
 begin
   Effects.Delete(Effects.IndexOf(Sender));
   Sender.Free;
   if Effects.Count <= 0 then
-    if Health <= 0 then DeletionPending := True;
+    if Health <= 0 then
+      DeletionPending := True;
 end;
-{ @end $54DD54 }
 
-{ @routine $54DDB0 TabHit_KellerBreakupComplete }
 procedure TabHit.KellerBreakupComplete(Sender: TObjectGI);
 var
   Index: Integer;
   Ship: TabShip;
-  Angle, SourceLongitude, SourcePolarAngle, TargetLongitude, TargetPolarAngle, Bearing, Distance: Double;
+  Angle, SourceLongitude, SourcePolarAngle, TargetLongitude, TargetPolarAngle, Bearing, Distance:
+      Double;
   TargetPoint, SourcePoint: TPoint;
   Animation, FragmentAnimation: TgaiGI;
 begin
@@ -359,7 +436,10 @@ begin
   end;
   KellerBreakupTicks := 0;
   KellerFinishRequested := False;
-  SourcePoint := ArcadeBattleScreen.WorldPanel.ToAbsolutePoint(((Self as TabShip).Visual as TRuinsSE).Animation.LocalPosition);
+  SourcePoint :=
+      ArcadeBattleScreen.WorldPanel.ToAbsolutePoint(
+          ((Self as TabShip).Visual as TRuinsSE).Animation.LocalPosition
+      );
   if not ArcadeBattleScreen.ScreenPointToSphere(SourcePoint, SourceLongitude, SourcePolarAngle) then
   begin
     SourceLongitude := -1e20;
@@ -391,10 +471,14 @@ begin
     Ship.StateCC := False;
     Ship.MaxSpeed := 10; // Native overwrites the earlier value.
     KellerFragments[Index] := Ship;
-    if Index = 0 then Angle := HeadingDegreesToRadians(0)
-    else if Index = 1 then Angle := HeadingDegreesToRadians(240)
-    else if Index = 2 then Angle := HeadingDegreesToRadians(120)
-    else Angle := HeadingDegreesToRadians(270);
+    if Index = 0 then
+      Angle := HeadingDegreesToRadians(0)
+    else if Index = 1 then
+      Angle := HeadingDegreesToRadians(240)
+    else if Index = 2 then
+      Angle := HeadingDegreesToRadians(120)
+    else
+      Angle := HeadingDegreesToRadians(270);
     Ship.Velocity.X := Sin(Angle) * 10;
     Ship.Velocity.Y := Cos(Angle) * -10;
     if SourceLongitude > -1e10 then
@@ -403,8 +487,16 @@ begin
       TargetPoint.Y := SourcePoint.Y - Round(Cos(Angle) * 100);
       if ArcadeBattleScreen.ScreenPointToSphere(TargetPoint, TargetLongitude, TargetPolarAngle) then
       begin
-        ComputeSphericalBearingAndDistance(Bearing, Distance, SourceLongitude, SourcePolarAngle, 0,
-          TargetLongitude, TargetPolarAngle, SphereRadius);
+        ComputeSphericalBearingAndDistance(
+            Bearing,
+            Distance,
+            SourceLongitude,
+            SourcePolarAngle,
+            0,
+            TargetLongitude,
+            TargetPolarAngle,
+            SphereRadius
+        );
         Bearing := HeadingDegreesToRadians(WrapHeadingDegrees(Bearing));
         Ship.Velocity.X := Sin(Bearing) * 10;
         Ship.Velocity.Y := -Cos(Bearing) * 10;
@@ -419,22 +511,17 @@ begin
     FragmentAnimation.StopAutoPlayback;
   end;
 end;
-{ @end $54DDB0 }
 
-{ @routine $54E258 TabHit_KellerDeathComplete }
 procedure TabHit.KellerDeathComplete(Sender: TObjectGI);
 begin
   DeletionPending := True;
   (Self as TabShip).DetachVisual;
 end;
-{ @end $54E258 }
 
-{ @routine $54E284 TabHit_HitEffectComplete }
 procedure TabHit.HitEffectComplete(Sender: TObjectGI);
 begin
   Effects.Delete(Effects.IndexOf(Sender));
   Sender.Free;
 end;
-{ @end $54E284 }
 
 end.

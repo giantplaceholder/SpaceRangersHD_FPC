@@ -1,37 +1,56 @@
 unit GI_RotateImage2;
-// Unit bracket (inferred): .text 0x00494314..0x00494EA0; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_BlockPar, EC_CacheBitmap, EC_CacheRotateBuf, GI_MessageLoop, GR_GraphBuf, Types;
+uses
+  EC_BlockPar,
+  EC_CacheBitmap,
+  EC_CacheRotateBuf,
+  GI_MessageLoop,
+  GR_GraphBuf,
+  Types;
 
 type
-  TRotateImage2GI = class(TObjectGI) // @size 0x130
-  public
-    ImageCache: TCBitmapControlEC; // @offset 0x120
-    RotationCache: TCRotateBufControlEC; // @offset 0x124
-    RotatedImage: TGraphBufGR; // @offset 0x128
-    RenderedAngle: Byte; // @offset 0x12C
-    Angle: Byte; // @offset 0x12D
-    Alpha: Byte; // @offset 0x12E
-    ImageDirty: Boolean; // @offset 0x12F
 
-    constructor Create(Owner: TObjectGI); // @addr 0x494438 @ida "TRotateImage2GI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    destructor Destroy; override; // @addr 0x49451C @ida "void __usercall $name(TRotateImage2GI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; override; // @addr 0x494598 @note "Preserves cache keys and the allocated image buffer."
-    procedure SetAngle(Value: Byte); // @addr 0x4945D4 @note "A full turn has 256 steps."
-    procedure SetAlpha(Value: Byte); // @addr 0x494614
-    procedure SetImage(Path: WideString; ImageSize, Pivot: TPoint); // @addr 0x494654 @ida "void __userpurge $name(TRotateImage2GI *Self@<eax>, unsigned __int16 *Path@<edx>, TPoint *ImageSize@<ecx>, TPoint *Pivot@<^0>);" @note "Appends ?RGBA to Path; replaces size and origin with a centered square enclosing all rotations."
-    procedure LoadFromConfigPath(const Path: WideString); override; // @addr 0x494A0C
-    procedure LoadFromBlock(Block: TBlockParEC); override; // @addr 0x494A40
-    procedure LoadImageProperties(Block: TBlockParEC); // @addr 0x494A90
-    procedure Draw(ClipRect: TRect); override; // @addr 0x494C58 @ida "void __usercall $name(TRotateImage2GI *Self@<eax>, TRect *ClipRect@<edx>);"
+  TRotateImage2GI = class;
+
+  TRotateImage2GI = class(TObjectGI)
+    ImageCache: TCBitmapControlEC;
+    RotationCache: TCRotateBufControlEC;
+    RotatedImage: TGraphBufGR;
+    RenderedAngle: Byte;
+    Angle: Byte;
+    Alpha: Byte;
+    ImageDirty: Boolean;
+    procedure Clear; override;
+    procedure LoadFromConfigPath(const Path: WideString); override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure LoadFromBlock(Block: TBlockParEC); override;
+    constructor Create(Owner: TObjectGI);
+    destructor Destroy; override;
+    procedure SetAngle(Value: Byte);
+    procedure SetAlpha(Value: Byte);
+    procedure SetImage(Path: WideString; ImageSize: TPoint; Pivot: TPoint);
+    procedure LoadImageProperties(Block: TBlockParEC);
   end;
 
 implementation
 
-uses Classes, SysUtils, Math, EC_Cache, EC_Mem, GR_Main, GI_Main;
-{ @routine $494438 TRotateImage2GI_Create }
+uses
+  Classes,
+  SysUtils,
+  Math,
+  EC_Cache,
+  EC_Mem,
+  GR_Main,
+  GI_Main;
+
 constructor TRotateImage2GI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
@@ -46,9 +65,7 @@ begin
   Alpha := 255;
   ImageDirty := True;
 end;
-{ @end $494438 }
 
-{ @routine $49451C TRotateImage2GI_Destroy }
 destructor TRotateImage2GI.Destroy;
 begin
   ImageCache.Free;
@@ -59,9 +76,7 @@ begin
   RotatedImage := nil;
   inherited Destroy;
 end;
-{ @end $49451C }
 
-{ @routine $494598 TRotateImage2GI_Clear }
 procedure TRotateImage2GI.Clear;
 begin
   ImageDirty := True;
@@ -70,9 +85,7 @@ begin
   Alpha := 255;
   inherited Clear;
 end;
-{ @end $494598 }
 
-{ @routine $4945D4 TRotateImage2GI_SetAngle }
 procedure TRotateImage2GI.SetAngle(Value: Byte);
 begin
   if Value <> Angle then
@@ -82,9 +95,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $4945D4 }
 
-{ @routine $494614 TRotateImage2GI_SetAlpha }
 procedure TRotateImage2GI.SetAlpha(Value: Byte);
 begin
   if Value <> Alpha then
@@ -94,9 +105,7 @@ begin
     Invalidate;
   end;
 end;
-{ @end $494614 }
 
-{ @routine $494654 TRotateImage2GI_SetImage }
 procedure TRotateImage2GI.SetImage(Path: WideString; ImageSize, Pivot: TPoint);
 var
   Image: TCBitmapEC;
@@ -105,8 +114,19 @@ begin
   ImageCache.SetCacheKey(Path + '?RGBA');
   Image := AcquireOrCreateBitmap(ImageCache);
   try
-    RotationCache.SetCacheKey(IntToStr(ImageSize.X) + ',' + IntToStr(ImageSize.Y) + ',' +
-      IntToStr(Cardinal(Image.Bitmap.Width)) + ',' + IntToStr(Cardinal(Image.Bitmap.Height)) + ',' + IntToStr(Pivot.X) + ',' + IntToStr(Pivot.Y));
+    RotationCache.SetCacheKey(
+        IntToStr(ImageSize.X)
+            + ','
+            + IntToStr(ImageSize.Y)
+            + ','
+            + IntToStr(Cardinal(Image.Bitmap.Width))
+            + ','
+            + IntToStr(Cardinal(Image.Bitmap.Height))
+            + ','
+            + IntToStr(Pivot.X)
+            + ','
+            + IntToStr(Pivot.Y)
+    );
     Radius := Sqr(Pivot.X - 0) + Sqr(Pivot.Y - 0);
     Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - ImageSize.Y));
     Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - 0));
@@ -122,17 +142,13 @@ begin
   end;
   Invalidate;
 end;
-{ @end $494654 }
 
-{ @routine $494A0C TRotateImage2GI_LoadFromConfigPath }
 procedure TRotateImage2GI.LoadFromConfigPath(const Path: WideString);
 begin
   inherited LoadFromConfigPath(Path);
   LoadImageProperties(UiStyleConfig.GetBlockByPath(Path));
 end;
-{ @end $494A0C }
 
-{ @routine $494A40 TRotateImage2GI_LoadFromBlock }
 procedure TRotateImage2GI.LoadFromBlock(Block: TBlockParEC);
 begin
   RenderedAngle := 255;
@@ -142,26 +158,33 @@ begin
   LoadImageProperties(Block);
   ImageDirty := True;
 end;
-{ @end $494A40 }
 
-{ @routine $494A90 TRotateImage2GI_LoadImageProperties }
 procedure TRotateImage2GI.LoadImageProperties(Block: TBlockParEC);
 begin
-  if (Block.CountParams('Image') > 0) and (Block.CountParams('Size') > 0) and (Block.CountParams('Sme') > 0) then
-    SetImage(Block.GetParam('Image'), GetPointGI(Block.GetParam('Size')), GetPointGI(Block.GetParam('Sme')));
-  if Block.CountParams('Angle') > 0 then SetAngle(StrToInt(Block.GetParam('Angle')));
-  if Block.CountParams('Trans') > 0 then SetAlpha(StrToInt(Block.GetParam('Trans')));
+  if (Block.CountParams('Image') > 0)
+      and (Block.CountParams('Size') > 0)
+      and (Block.CountParams('Sme') > 0) then
+    SetImage(
+        Block.GetParam('Image'),
+        GetPointGI(Block.GetParam('Size')),
+        GetPointGI(Block.GetParam('Sme'))
+    );
+  if Block.CountParams('Angle') > 0 then
+    SetAngle(StrToInt(Block.GetParam('Angle')));
+  if Block.CountParams('Trans') > 0 then
+    SetAlpha(StrToInt(Block.GetParam('Trans')));
 end;
-{ @end $494A90 }
 
-{ @routine $494C58 TRotateImage2GI_Draw }
 procedure TRotateImage2GI.Draw(ClipRect: TRect);
 var
   Image: TCBitmapEC;
   Rotation: TCRotateBufEC;
 begin
-  if (HitTestBounds.Left + ClientSize.X < 0) or (HitTestBounds.Left - ClientSize.X div 2 > GameScreenWidth) or
-    (HitTestBounds.Top + ClientSize.Y < 0) or (HitTestBounds.Top - ClientSize.Y div 2 > GameScreenHeight) then Exit;
+  if (HitTestBounds.Left + ClientSize.X < 0)
+      or (HitTestBounds.Left - ClientSize.X div 2 > GameScreenWidth)
+      or (HitTestBounds.Top + ClientSize.Y < 0)
+      or (HitTestBounds.Top - ClientSize.Y div 2 > GameScreenHeight) then
+    Exit;
   if (RenderedAngle <> Angle) or (ImageDirty = True) then
   begin
     ImageDirty := False;
@@ -172,19 +195,40 @@ begin
       Image := AcquireOrCreateBitmap(ImageCache);
       Rotation := AcquireOrCreateRotateBuf(RotationCache);
       RotatedImage.ClearPixels;
-      Ex_OKGR_RotateBuf_Draw_DWORD(RotatedImage.GetPixels, RotatedImage.PitchBytes, Image.Bitmap.GetPixels,
-        Image.Bitmap.PitchBytes, OriginPoint.X, OriginPoint.Y, Angle, Rotation.Buffer);
+      Ex_OKGR_RotateBuf_Draw_DWORD(
+          RotatedImage.GetPixels,
+          RotatedImage.PitchBytes,
+          Image.Bitmap.GetPixels,
+          Image.Bitmap.PitchBytes,
+          OriginPoint.X,
+          OriginPoint.Y,
+          Angle,
+          Rotation.Buffer
+      );
       if Alpha <> 255 then
-        Ex_OKGR_Light_BYTE(AddPointerOffset(RotatedImage.GetPixels, 3), 4,
-          RotatedImage.PitchBytes - 4 * RotatedImage.Width, RotatedImage.Width, RotatedImage.Height, Alpha);
+        Ex_OKGR_Light_BYTE(
+            AddPointerOffset(RotatedImage.GetPixels, 3),
+            4,
+            RotatedImage.PitchBytes - 4 * RotatedImage.Width,
+            RotatedImage.Width,
+            RotatedImage.Height,
+            Alpha
+        );
     finally
-      if Image <> nil then ImageCache.Release;
-      if Rotation <> nil then RotationCache.Release;
+      if Image <> nil then
+        ImageCache.Release;
+      if Rotation <> nil then
+        RotationCache.Release;
     end;
   end;
-  DrawAlphaGraphBuffer16Clipped(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-    HitTestBounds.Left, HitTestBounds.Top, RotatedImage, ClipRect);
+  DrawAlphaGraphBuffer16Clipped(
+      ScreenRenderBuffer.GetPixels,
+      ScreenRenderBuffer.PitchBytes,
+      HitTestBounds.Left,
+      HitTestBounds.Top,
+      RotatedImage,
+      ClipRect
+  );
 end;
-{ @end $494C58 }
 
 end.

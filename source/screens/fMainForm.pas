@@ -1,60 +1,89 @@
 unit fMainForm;
-// Unit bracket (inferred): .text 0x006814D0..0x006843C5; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_BlockPar, GI_MessageLoop, Types, fPanelLoad;
+uses
+  EC_BlockPar,
+  GI_MessageLoop,
+  Types,
+  fPanelLoad;
 
 type
-  TfMainForm = class(TMessageLoopGI) // @size 0xF4
-  public
-    BackgroundTimer: PCallbackTimerGI; // @offset 0xD0
-    BackgroundScrollOffset: Integer; // @offset 0xD4
-    LastMenuShipAnimation: Integer; // @offset 0xD8
-    LastGaalShipAnimation: Integer; // @offset 0xDC
-    MenuTextState: WideString; // @offset $E0 Cleared on open; other use remains unresolved.
-    PopupState: Integer; // @offset $EC Cleared when closing PanelAB.
-    LoadPanel: TfPanelLoad; // @offset 0xF0
 
-    constructor Create; // @addr 0x68157C @ida "TfMainForm *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x6815D4 @ida "void __usercall $name(TfMainForm *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure InitializeLayout; override; // @addr 0x68162C
-    procedure OnOpen; override; // @addr 0x682B18
-    procedure OnClose; override; // @addr 0x68384C
-    procedure SelectMusic; override; // @addr 0x68437C
-    procedure ExecuteUiCode(Block: TBlockParEC; Key: Cardinal); override; // @addr 0x6843A8
-    procedure QuitClicked(Sender: TObjectGI); // @addr 0x683864
-    procedure NewGameClicked(Sender: TObjectGI); // @addr 0x683910
-    procedure AchievementsClicked(Sender: TObjectGI); // @addr 0x683954
-    procedure LoadGameClicked(Sender: TObjectGI); // @addr 0x6839B0
-    procedure SettingsClicked(Sender: TObjectGI); // @addr 0x683A14
-    procedure ScoresClicked(Sender: TObjectGI); // @addr 0x683A70
-    procedure AboutClicked(Sender: TObjectGI); // @addr 0x683A98
-    procedure RobotBattleClicked(Sender: TObjectGI); // @addr 0x68423C
-    procedure TextQuestClicked(Sender: TObjectGI); // @addr 0x684288
-    procedure ArcadeBattleClicked(Sender: TObjectGI); // @addr 0x6842D4
-    procedure ModsClicked(Sender: TObjectGI); // @addr 0x684320
-    procedure MenuShipAnimationFinished(Sender: TObjectGI); // @addr 0x683D80
-    procedure GaalShipAnimationFinished(Sender: TObjectGI); // @addr 0x683F68
-    procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal); // @addr 0x683ACC
-    procedure MainPanelMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint); // @addr 0x683D54 @ida "void __userpurge $name(TfMainForm *Self@<eax>, TObjectGI *Sender@<edx>, unsigned int KeyState@<ecx>, TPoint *Point@<^0>);"
-    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer); // @addr 0x684120
-    procedure ClosePopup; // @addr 0x6841DC
+  TfMainForm = class;
+
+  TfMainForm = class(TMessageLoopGI)
+    BackgroundTimer: PCallbackTimerGI;
+    BackgroundScrollOffset: Integer;
+    LastMenuShipAnimation: Integer;
+    LastGaalShipAnimation: Integer;
+    MenuTextState: WideString;
+    GapE4: array[0..7] of Byte;
+    PopupState: Integer;
+    LoadPanel: TfPanelLoad;
+    procedure OnOpen; override;
+    procedure OnClose; override;
+    procedure SelectMusic; override;
+    procedure InitializeLayout; override;
+    procedure ExecuteUiCode(Block: TBlockParEC; Key: Cardinal); override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure QuitClicked(Sender: TObjectGI);
+    procedure NewGameClicked(Sender: TObjectGI);
+    procedure AchievementsClicked(Sender: TObjectGI);
+    procedure LoadGameClicked(Sender: TObjectGI);
+    procedure SettingsClicked(Sender: TObjectGI);
+    procedure ScoresClicked(Sender: TObjectGI);
+    procedure AboutClicked(Sender: TObjectGI);
+    procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
+    procedure MainPanelMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
+    procedure MenuShipAnimationFinished(Sender: TObjectGI);
+    procedure GaalShipAnimationFinished(Sender: TObjectGI);
+    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ClosePopup;
+    procedure RobotBattleClicked(Sender: TObjectGI);
+    procedure TextQuestClicked(Sender: TObjectGI);
+    procedure ArcadeBattleClicked(Sender: TObjectGI);
+    procedure ModsClicked(Sender: TObjectGI);
   end;
 
 implementation
 
-uses Classes, Windows, SysUtils, GR_Main, Globals, GlobalsV, GI_GraphButton, GI_GAI, GI_MessageBox, GI_Label, GI_Image, EC_Str, aMyFunction, aScript, aConst, fShip2, fSaveManager, fMods, Robot;
+uses
+  aGalaxy,
+  aSaveLoad,
+  Classes,
+  Windows,
+  SysUtils,
+  GR_Main,
+  Globals,
+  GlobalsV,
+  GI_GraphButton,
+  GI_GAI,
+  GI_MessageBox,
+  GI_Label,
+  GI_Image,
+  EC_Str,
+  aMyFunction,
+  aScript,
+  aConst,
+  fShip2,
+  fSaveManager,
+  fMods,
+  Robot;
 
-{ @routine $68157C TfMainForm_Create }
 constructor TfMainForm.Create;
 begin
   inherited Create;
   LoadPanel := TfPanelLoad.Create;
 end;
-{ @end $68157C }
 
-{ @routine $6815D4 TfMainForm_Destroy }
 destructor TfMainForm.Destroy;
 begin
   if LoadPanel <> nil then
@@ -64,9 +93,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $6815D4 }
 
-{ @routine $68162C TfMainForm_InitializeLayout }
 procedure TfMainForm.InitializeLayout;
 var
   OffsetX, OffsetY, LogoShift: Integer;
@@ -80,21 +107,49 @@ begin
   begin
     if Cardinal(GameScreenWidth) >= 1280 then
     begin
-      SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight));
+      SetPosition(
+          Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight)
+      );
       SetText(ReplaceAllWideString(LocalizedText('FormMain.Version'), '<Value>', '2.1.2500'));
       LogoShift := 0;
     end
     else
     begin
-      SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - 7));
+      SetPosition(
+          Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - 7)
+      );
       SetText(ReplaceAllWideString(LocalizedText('FormMain.Version2'), '<Value>', '2.1.2500'));
       LogoShift := 16;
     end;
   end;
-  with GetByName('LogoElemental') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - LogoShift));
-  with GetByName('Logo1C') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - LogoShift));
-  with GetByName('LogoKatauri') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - LogoShift));
-  with GetByName('LogoSNK') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth, LocalPosition.Y + ExtraScreenHeight - LogoShift));
+  with GetByName('LogoElemental') do
+    SetPosition(
+        Classes.Point(
+            LocalPosition.X + ExtraScreenWidth,
+            LocalPosition.Y + ExtraScreenHeight - LogoShift
+        )
+    );
+  with GetByName('Logo1C') do
+    SetPosition(
+        Classes.Point(
+            LocalPosition.X + ExtraScreenWidth,
+            LocalPosition.Y + ExtraScreenHeight - LogoShift
+        )
+    );
+  with GetByName('LogoKatauri') do
+    SetPosition(
+        Classes.Point(
+            LocalPosition.X + ExtraScreenWidth,
+            LocalPosition.Y + ExtraScreenHeight - LogoShift
+        )
+    );
+  with GetByName('LogoSNK') do
+    SetPosition(
+        Classes.Point(
+            LocalPosition.X + ExtraScreenWidth,
+            LocalPosition.Y + ExtraScreenHeight - LogoShift
+        )
+    );
   if (ExtraScreenWidth <> 0) or (ExtraScreenHeight <> 0) then
   begin
     ViewportRect := Classes.Rect(0, 0, GameScreenWidth, GameScreenHeight);
@@ -103,7 +158,8 @@ begin
     if Cardinal(GameScreenWidth) >= 1600 then
     begin
       OffsetX := -250;
-      if (Cardinal(GameScreenHeight) >= 900) and (Cardinal(GameScreenHeight) < 1040) then OffsetY := (1040 - GameScreenHeight) shr 1;
+      if (Cardinal(GameScreenHeight) >= 900) and (Cardinal(GameScreenHeight) < 1040) then
+        OffsetY := (1040 - GameScreenHeight) shr 1;
     end;
     with GetByName('MainPanel') do
     begin
@@ -115,30 +171,93 @@ begin
           SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
           SetSize(Classes.Point(GameScreenWidth, ClientSize.Y));
         end
-        else SetSize(Classes.Point(GameScreenWidth, GameScreenHeight));
+        else
+          SetSize(Classes.Point(GameScreenWidth, GameScreenHeight));
       end;
-      with FindByNameRecursive('MicroText') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('Circle') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('New') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('Score') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('Achievements') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('Load') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('Settings') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('About') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('Exit') do SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + OffsetX, LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY));
-      with FindByNameRecursive('AnimAddonShip') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadRobot') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadQuest') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadAB') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('Mods') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadRobotCnt') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadQuestCnt') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LoadABCnt') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('ModsCnt') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LRobot') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LQuest') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LAB') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
-      with FindByNameRecursive('LMods') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('MicroText') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('Circle') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('New') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('Score') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('Achievements') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('Load') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('Settings') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('About') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('Exit') do
+        SetPosition(
+            Classes.Point(
+                LocalPosition.X + ExtraScreenWidth div 2 + OffsetX,
+                LocalPosition.Y + ExtraScreenHeight div 2 + OffsetY
+            )
+        );
+      with FindByNameRecursive('AnimAddonShip') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadRobot') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadQuest') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadAB') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('Mods') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadRobotCnt') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadQuestCnt') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LoadABCnt') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('ModsCnt') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LRobot') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LQuest') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LAB') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('LMods') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
       if ExtraScreenWidth > 0 then
       begin
         CaptionControl := FindByNameRecursive('Caption');
@@ -152,7 +271,10 @@ begin
               SetPosition(Classes.Point((GameScreenWidth - ClientSize.X) div 2, 57));
               SetImagePath('Bm.FormMain3.CaptionLarge');
             end
-            else SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y));
+            else
+              SetPosition(
+                  Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y)
+              );
           end;
         end
         else
@@ -163,18 +285,43 @@ begin
             begin
               SetSize(Classes.Point(843, 218));
               SetPosition(Classes.Point((GameScreenWidth - ClientSize.X) div 2, 57));
-              Extension := ExtractFileExtNoDotW(Trim(LowerCase(AnsiString(CacheDataRoot.FindEntry('Bm').ChildData.FindEntry('FormMain3').ChildData.FindEntry('CaptionLarge').SharedFileRef.FileRef.FileName))));
-              if Extension = 'gai' then SetImagePath('GAI,Bm.FormMain3.CaptionLarge')
-              else SetImagePath('GI,Bm.FormMain3.CaptionLarge');
+              Extension :=
+                  ExtractFileExtNoDotW(
+                      Trim(
+                          LowerCase(
+                              AnsiString(
+                                  CacheDataRoot
+                                      .FindEntry('Bm')
+                                      .ChildData
+                                      .FindEntry('FormMain3')
+                                      .ChildData
+                                      .FindEntry('CaptionLarge')
+                                      .SharedFileRef
+                                      .FileRef
+                                      .FileName
+                              )
+                          )
+                      )
+                  );
+              if Extension = 'gai' then
+                SetImagePath('GAI,Bm.FormMain3.CaptionLarge')
+              else
+                SetImagePath('GI,Bm.FormMain3.CaptionLarge');
             end
-            else SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y));
+            else
+              SetPosition(
+                  Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y)
+              );
           end;
         end;
         with FindByNameRecursive('CaptionBlur') as TImageGI do
         begin
           if (Cardinal(GameScreenWidth) >= 1600) and (Cardinal(GameScreenHeight) >= 900) then
             SetPosition(Classes.Point((GameScreenWidth - ClientSize.X) div 2 - 7, -29))
-          else SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y));
+          else
+            SetPosition(
+                Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y)
+            );
         end;
         with FindByNameRecursive('SubName') as TImageGI do
         begin
@@ -184,10 +331,14 @@ begin
             SetSize(Classes.Point(932, 76));
             SetPosition(Classes.Point((GameScreenWidth - ClientSize.X) div 2 - 54, 320));
           end
-          else SetPosition(Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y));
+          else
+            SetPosition(
+                Classes.Point(LocalPosition.X + ExtraScreenWidth div 2 + 50, LocalPosition.Y)
+            );
         end;
       end;
-      with FindByNameRecursive('Planet') do SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
+      with FindByNameRecursive('Planet') do
+        SetPosition(Classes.Point(LocalPosition.X, LocalPosition.Y + ExtraScreenHeight));
     end;
   end;
   AppendLogLineThreadSafe('ok');
@@ -196,28 +347,33 @@ begin
     SetActive(RobotInterface <> nil);
     UpCallback := RobotBattleClicked;
   end;
-  with GetByName('LoadQuest') as TGraphButtonGI do UpCallback := TextQuestClicked;
-  with GetByName('LoadAB') as TGraphButtonGI do UpCallback := ArcadeBattleClicked;
-  with GetByName('Mods') as TGraphButtonGI do UpCallback := ModsClicked;
+  with GetByName('LoadQuest') as TGraphButtonGI do
+    UpCallback := TextQuestClicked;
+  with GetByName('LoadAB') as TGraphButtonGI do
+    UpCallback := ArcadeBattleClicked;
+  with GetByName('Mods') as TGraphButtonGI do
+    UpCallback := ModsClicked;
 end;
-{ @end $68162C }
 
-{ @routine $682B18 TfMainForm_OnOpen }
 procedure TfMainForm.OnOpen;
-var I: Integer;
+var
+  I: Integer;
 begin
   SuppressModRetryPrompt := True;
   LoadPanel.OnOpen;
   LastMenuShipAnimation := -1;
   LastGaalShipAnimation := -1;
   MenuTextState := '';
-  if MemorySnapshotBuffer <> nil then MemorySnapshotBuffer.Free;
+  if MemorySnapshotBuffer <> nil then
+    MemorySnapshotBuffer.Free;
   MemorySnapshotBuffer := nil;
   MemorySnapshotActive := False;
-  if (Galaxy <> nil) and not Galaxy.Destroying then Galaxy.Free;
+  if (Galaxy <> nil) and not Galaxy.Destroying then
+    Galaxy.Free;
   Galaxy := nil;
   // Retained native wait follows clearing the global, even on the standalone path.
-  while (Galaxy <> nil) and Galaxy.Destroying do SysUtils.Sleep(1);
+  while (Galaxy <> nil) and Galaxy.Destroying do
+    SysUtils.Sleep(1);
   I := 0;
   while FindControlByPath('TempGAI' + IntToStr(I)) <> nil do
   begin
@@ -230,7 +386,8 @@ begin
   (GetByName('Load') as TGraphButtonGI).UpCallback := LoadGameClicked;
   (GetByName('Settings') as TGraphButtonGI).UpCallback := SettingsClicked;
   (GetByName('Achievements') as TGraphButtonGI).UpCallback := AchievementsClicked;
-  with GetByName('Score') as TGraphButtonGI do UpCallback := ScoresClicked;
+  with GetByName('Score') as TGraphButtonGI do
+    UpCallback := ScoresClicked;
   (GetByName('About') as TGraphButtonGI).UpCallback := AboutClicked;
   SelectMusic;
   GetByName('MainPanel').KeyDownCallback := MainPanelKeyDown;
@@ -240,7 +397,8 @@ begin
     CancelCallbackTimer(BackgroundTimer);
     BackgroundTimer := nil;
   end;
-  if AnimMainFon then BackgroundTimer := ScheduleCallbackTimer(40, 40, ScrollBackground);
+  if AnimMainFon then
+    BackgroundTimer := ScheduleCallbackTimer(40, 40, ScrollBackground);
   ScrollBackground(nil, 0);
   if GetByName('Logo1C') is TgaiGI then
     with GetByName('Logo1C') as TgaiGI do
@@ -314,14 +472,22 @@ begin
         SetActive(True);
       end;
   end
-  else if FindControlByPath('AnimGaalShip') <> nil then GetByName('AnimGaalShip').SetActive(False);
-  with GetByName('LoadRobotCnt') as TLabelGI do SetText(LoadRobotScreen.GetCompletionSummary);
-  with GetByName('LoadQuestCnt') as TLabelGI do SetText(LoadQuestScreen.GetCompletionSummary);
-  with GetByName('LoadABCnt') as TLabelGI do SetText(LoadArcadeScreen.GetCatalogSummary);
+  else if FindControlByPath('AnimGaalShip') <> nil then
+    GetByName('AnimGaalShip').SetActive(False);
+  with GetByName('LoadRobotCnt') as TLabelGI do
+    SetText(LoadRobotScreen.GetCompletionSummary);
+  with GetByName('LoadQuestCnt') as TLabelGI do
+    SetText(LoadQuestScreen.GetCompletionSummary);
+  with GetByName('LoadABCnt') as TLabelGI do
+    SetText(LoadArcadeScreen.GetCatalogSummary);
   with GetByName('ModsCnt') as TLabelGI do
   begin
-    if SkipModsOnReload then SetText('<color=255,0,0>' + IntToWideString(CountDelimitedPartsW(SelectedMods, ',')) + '</color>')
-    else SetText(IntToWideString(CountDelimitedPartsW(SelectedMods, ',')));
+    if SkipModsOnReload then
+      SetText(
+          '<color=255,0,0>' + IntToWideString(CountDelimitedPartsW(SelectedMods, ',')) + '</color>'
+      )
+    else
+      SetText(IntToWideString(CountDelimitedPartsW(SelectedMods, ',')));
   end;
   if ShowWineWarning then
   begin
@@ -334,27 +500,25 @@ begin
     ShowMessageBoxGI(Self, LocalizedColorText('Warning.XonarDetected'), mbgCancel or mbgUnused04);
   end;
 end;
-{ @end $682B18 }
 
-{ @routine $68384C TfMainForm_OnClose }
 procedure TfMainForm.OnClose;
 begin
   LoadPanel.OnClose;
 end;
-{ @end $68384C }
 
-{ @routine $683864 TfMainForm_QuitClicked }
 procedure TfMainForm.QuitClicked(Sender: TObjectGI);
 begin
-  if ShowMessageBoxGI(Self, LanguageDataConfig.GetParamByPathOrMarker('FormMain.MsgExit'), mbgOK or mbgCancel or mbgQuestion) = mbgResultOK then
+  if ShowMessageBoxGI(
+          Self,
+          LanguageDataConfig.GetParamByPathOrMarker('FormMain.MsgExit'),
+          mbgOK or mbgCancel or mbgQuestion)
+      = mbgResultOK then
   begin
     RequestedScreenId := screenNone;
     RequestClose(1);
   end;
 end;
-{ @end $683864 }
 
-{ @routine $683910 TfMainForm_NewGameClicked }
 procedure TfMainForm.NewGameClicked(Sender: TObjectGI);
 begin
   ShipScreen.SelectedHoldKind := phkEmpty;
@@ -362,9 +526,7 @@ begin
   RequestedScreenId := screenNewGame;
   RequestClose(1);
 end;
-{ @end $683910 }
 
-{ @routine $683954 TfMainForm_AchievementsClicked }
 procedure TfMainForm.AchievementsClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -375,9 +537,7 @@ begin
   RequestedScreenId := screenAchievements;
   RequestClose(1);
 end;
-{ @end $683954 }
 
-{ @routine $6839B0 TfMainForm_LoadGameClicked }
 procedure TfMainForm.LoadGameClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -389,9 +549,7 @@ begin
   RequestedScreenId := screenSaveManager;
   RequestClose(1);
 end;
-{ @end $6839B0 }
 
-{ @routine $683A14 TfMainForm_SettingsClicked }
 procedure TfMainForm.SettingsClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -402,36 +560,34 @@ begin
   RequestedScreenId := screenSettings;
   RequestClose(1);
 end;
-{ @end $683A14 }
 
-{ @routine $683A70 TfMainForm_ScoresClicked }
 procedure TfMainForm.ScoresClicked(Sender: TObjectGI);
 begin
   RequestedScreenId := screenScores;
   RequestClose(1);
 end;
-{ @end $683A70 }
 
-{ @routine $683A98 TfMainForm_AboutClicked }
 procedure TfMainForm.AboutClicked(Sender: TObjectGI);
 begin
   AboutScreen.ReturnToScores := False;
   RequestedScreenId := screenAbout;
   RequestClose(1);
 end;
-{ @end $683A98 }
 
-{ @routine $683ACC TfMainForm_MainPanelKeyDown }
 procedure TfMainForm.MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
 begin
-  if IsVirtualKeyDown(VK_CONTROL) or IsVirtualKeyDown(VK_SHIFT) or IsVirtualKeyDown(VK_MENU) then Exit;
+  if IsVirtualKeyDown(VK_CONTROL) or IsVirtualKeyDown(VK_SHIFT) or IsVirtualKeyDown(VK_MENU) then
+    Exit;
   if Key = Ord('Q') then
   begin
     TGraphButtonGI(GetByName('LoadQuest')).ExecuteOnPressCode;
     TextQuestClicked(nil);
   end
-  else if (Key = Ord('R')) and IsInstallFeatureEnabled('Robot') and
-    (RobotInterface <> nil) and (RobotInterface.Support = 0) and (FindControlByPath('PanelRL') = nil) then
+  else if (Key = Ord('R'))
+      and IsInstallFeatureEnabled('Robot')
+      and (RobotInterface <> nil)
+      and (RobotInterface.Support = 0)
+      and (FindControlByPath('PanelRL') = nil) then
   begin
     TGraphButtonGI(GetByName('LoadRobot')).ExecuteOnPressCode;
     RobotBattleClicked(nil);
@@ -441,7 +597,8 @@ begin
     TGraphButtonGI(GetByName('LoadAB')).ExecuteOnPressCode;
     ArcadeBattleClicked(nil);
   end
-  else if Key = Ord('M') then ModsClicked(nil)
+  else if Key = Ord('M') then
+    ModsClicked(nil)
   else if (Key = VK_F3) or (Key = Ord('L')) then
   begin
     TGraphButtonGI(GetByName('Load')).ExecuteOnPressCode;
@@ -452,8 +609,10 @@ begin
   end
   else if Key = VK_ESCAPE then
   begin
-    if FindControlByPath('PanelAB') <> nil then ClosePopup
-    else QuitClicked(nil);
+    if FindControlByPath('PanelAB') <> nil then
+      ClosePopup
+    else
+      QuitClicked(nil);
   end
   else if (Key = Ord('N')) or (Key = VK_RETURN) then
   begin
@@ -466,18 +625,15 @@ begin
     SettingsClicked(nil);
   end;
 end;
-{ @end $683ACC }
 
-{ @routine $683D54 TfMainForm_MainPanelMouseMove }
 procedure TfMainForm.MainPanelMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
 begin
   RefreshTimerTick;
 end;
-{ @end $683D54 }
 
-{ @routine $683D80 TfMainForm_MenuShipAnimationFinished }
 procedure TfMainForm.MenuShipAnimationFinished(Sender: TObjectGI);
-var Index: Integer;
+var
+  Index: Integer;
 begin
   Index := 1;
   repeat
@@ -497,11 +653,10 @@ begin
     RestartPlayback;
   end;
 end;
-{ @end $683D80 }
 
-{ @routine $683F68 TfMainForm_GaalShipAnimationFinished }
 procedure TfMainForm.GaalShipAnimationFinished(Sender: TObjectGI);
-var Index: Integer;
+var
+  Index: Integer;
 begin
   Index := 1;
   repeat
@@ -521,11 +676,10 @@ begin
     RestartPlayback;
   end;
 end;
-{ @end $683F68 }
 
-{ @routine $684120 TfMainForm_ScrollBackground }
 procedure TfMainForm.ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
-var Offset: Integer;
+var
+  Offset: Integer;
 begin
   Inc(BackgroundScrollOffset);
   with GetByName('ImageFon1') do
@@ -533,13 +687,13 @@ begin
     Offset := BackgroundScrollOffset mod ClientSize.X;
     SetPosition(Classes.Point(0 - Offset, 0));
   end;
-  with GetByName('ImageFon2') do SetPosition(Classes.Point(ClientSize.X - Offset, 0));
+  with GetByName('ImageFon2') do
+    SetPosition(Classes.Point(ClientSize.X - Offset, 0));
 end;
-{ @end $684120 }
 
-{ @routine $6841DC TfMainForm_ClosePopup }
 procedure TfMainForm.ClosePopup;
-var Control: TObjectGI;
+var
+  Control: TObjectGI;
 begin
   PopupState := 0;
   if FindControlByPath('PanelAB') <> nil then
@@ -549,9 +703,7 @@ begin
     Control.Free;
   end;
 end;
-{ @end $6841DC }
 
-{ @routine $68423C TfMainForm_RobotBattleClicked }
 procedure TfMainForm.RobotBattleClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -561,9 +713,7 @@ begin
   RequestedScreenId := screenLoadRobot;
   RequestClose(1);
 end;
-{ @end $68423C }
 
-{ @routine $684288 TfMainForm_TextQuestClicked }
 procedure TfMainForm.TextQuestClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -573,9 +723,7 @@ begin
   RequestedScreenId := screenLoadQuest;
   RequestClose(1);
 end;
-{ @end $684288 }
 
-{ @routine $6842D4 TfMainForm_ArcadeBattleClicked }
 procedure TfMainForm.ArcadeBattleClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -585,9 +733,7 @@ begin
   RequestedScreenId := screenLoadArcade;
   RequestClose(1);
 end;
-{ @end $6842D4 }
 
-{ @routine $684320 TfMainForm_ModsClicked }
 procedure TfMainForm.ModsClicked(Sender: TObjectGI);
 begin
   SetCursorActive(False);
@@ -601,20 +747,15 @@ begin
     RequestClose(1);
   end;
 end;
-{ @end $684320 }
 
-{ @routine $68437C TfMainForm_SelectMusic }
 procedure TfMainForm.SelectMusic;
 begin
   MusicManager.PlayCategory('Base');
 end;
-{ @end $68437C }
 
-{ @routine $6843A8 TfMainForm_ExecuteUiCode }
 procedure TfMainForm.ExecuteUiCode(Block: TBlockParEC; Key: Cardinal);
 begin
   ExecuteGameplayUiCode(Block, Key);
 end;
-{ @end $6843A8 }
 
 end.

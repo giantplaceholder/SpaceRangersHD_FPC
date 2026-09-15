@@ -1,34 +1,49 @@
 unit ab_W10;
-// Unit bracket (inferred): .text 0x004F783C..0x004F80AB; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TabW10 projectile family: $4F78A4..$4F80AC.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Struct, GI_Tail, ab_Global, ab_Object, ab_WorldImage;
+uses
+  Classes,
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  ab_Object,
+  ab_WorldImage;
 
 type
-  TabW10 = class(TabObject) // @size $E4
-  public
-    Damage: Integer; // @offset $B0
-    Image: PabWorldImage; // @offset $B4
-    Exploding: Boolean; // @offset $B8
-    TrailDistance: Single; // @offset $BC
-    LastTrailPosition: TVector3D; // @offset $C0
-    ExpireTick: Integer; // @offset $D8
-    TurnSpeed: Single; // @offset $DC
-    TrailImages: TList; // @offset $E0
-    constructor Create; // @addr $4F78A4 @ida "TabW10 *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $4F794C @ida "void __usercall $name(TabW10 *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Launch(Owner: TabObject; Amount: Integer; Offset: Single); // @addr $4F7A04 @ida "void __userpurge $name(TabW10 *Self@<eax>, TabObject *Owner@<edx>, int Amount@<ecx>, float Offset@<^0>);"
-    procedure Advance; override; // @addr $4F7BB4
-    procedure UpdateVisuals; override; // @addr $4F7E2C
+
+  TabW10 = class;
+
+  TabW10 = class(TabObject)
+    Damage: Integer;
+    Image: PabWorldImage;
+    Exploding: Boolean;
+    GapB9: array[0..2] of Byte;
+    TrailDistance: Single;
+    LastTrailPosition: TVector3D;
+    ExpireTick: Integer;
+    TurnSpeed: Single;
+    TrailImages: TList;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Launch(Owner: TabObject; Amount: Integer; Offset: Single);
   end;
 
 implementation
 
-uses ab_Ship, GlobalsV;
+uses
+  aMyFunction,
+  ab_Ship,
+  GlobalsV;
 
-{ @routine $4F78A4 TabW10_Create }
 constructor TabW10.Create;
 begin
   inherited Create;
@@ -40,9 +55,7 @@ begin
   Collidable := False;
   TrailImages := TList.Create;
 end;
-{ @end $4F78A4 }
 
-{ @routine $4F794C TabW10_Destroy }
 destructor TabW10.Destroy;
 var
   Index: Integer;
@@ -54,15 +67,14 @@ begin
   end;
   if TrailImages <> nil then
   begin
-    for Index := 0 to TrailImages.Count - 1 do ab_WorldImage_Delete(TrailImages[Index]);
+    for Index := 0 to TrailImages.Count - 1 do
+      ab_WorldImage_Delete(TrailImages[Index]);
     TrailImages.Free;
     TrailImages := nil;
   end;
   inherited Destroy;
 end;
-{ @end $4F794C }
 
-{ @routine $4F7A04 TabW10_Launch }
 procedure TabW10.Launch(Owner: TabObject; Amount: Integer; Offset: Single);
 var
   Heading, HeadingDelta: Double;
@@ -77,16 +89,20 @@ begin
   begin
     Heading := WrapHeadingDegrees(State.BearingDegrees + 90);
     HeadingDelta := HeadingDifferenceDegrees(Heading, State.BearingDegrees);
-    AdvanceSphericalBearingState(State.LongitudeDegrees, State.PolarAngleDegrees, Heading, SphereRadius, Offset);
+    AdvanceSphericalBearingState(
+        State.LongitudeDegrees,
+        State.PolarAngleDegrees,
+        Heading,
+        SphereRadius,
+        Offset
+    );
     State.BearingDegrees := WrapHeadingDegrees(Heading + HeadingDelta);
   end;
   TrailDistance := 0;
   Image := ab_WorldImage_Create(MakeVector3D(0, 0, 0), 'GAI,Bm.AB.w10_f', 'GAI,Bm.AB.w10_s', False);
   ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
 end;
-{ @end $4F7A04 }
 
-{ @routine $4F7BB4 TabW10_Advance }
 procedure TabW10.Advance;
 var
   Collision: TabObject;
@@ -102,11 +118,13 @@ begin
   if not Exploding then
   begin
     Collision := FindCollision;
-    if Collision = SourceObject then Collision := nil;
+    if Collision = SourceObject then
+      Collision := nil;
   end;
   if ((ArcadeTickCount > ExpireTick) or (Collision <> nil)) and not Exploding then
   begin
-    if Collision <> nil then Collision.ApplyDamage(Damage, SourceObject, False);
+    if Collision <> nil then
+      Collision.ApplyDamage(Damage, SourceObject, False);
     Exploding := True;
     ab_WorldImage_Set(Image, GetWorldPosition, 'GAI,Bm.AB.w10b_f', 'GAI,Bm.AB.w10b_s');
     ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
@@ -121,17 +139,18 @@ begin
       if Enemy <> nil then
         with BearingAndDistanceTo(Enemy) do
         begin
-          if BearingDeltaDegrees < -TurnSpeed then BearingDeltaDegrees := -TurnSpeed
-          else if BearingDeltaDegrees > TurnSpeed then BearingDeltaDegrees := TurnSpeed;
+          if BearingDeltaDegrees < -TurnSpeed then
+            BearingDeltaDegrees := -TurnSpeed
+          else if BearingDeltaDegrees > TurnSpeed then
+            BearingDeltaDegrees := TurnSpeed;
           State.BearingDegrees := State.BearingDegrees + BearingDeltaDegrees;
         end;
     end;
   end
-  else if Exploding then DeletionPending := Image.Finished;
+  else if Exploding then
+    DeletionPending := Image.Finished;
 end;
-{ @end $4F7BB4 }
 
-{ @routine $4F7E2C TabW10_UpdateVisuals }
 procedure TabW10.UpdateVisuals;
 var
   Entry: PabWorldImage;
@@ -146,7 +165,8 @@ begin
     for Index := 0 to TrailImages.Count - 1 do
     begin
       Entry := TrailImages[Index];
-      if Entry.Finished then Break;
+      if Entry.Finished then
+        Break;
       Entry := nil;
     end;
     if Entry = nil then
@@ -166,12 +186,18 @@ begin
     for Index := 0 to TrailImages.Count - 1 do
     begin
       Entry := TrailImages[Index];
-      if Entry.Finished then Break;
+      if Entry.Finished then
+        Break;
       Entry := nil;
     end;
     // Native midpoint samples deliberately use the W01 trail asset.
     Position := GetWorldPosition;
-    Position := MakeVector3D((Position.X + LastTrailPosition.X) / 2, (Position.Y + LastTrailPosition.Y) / 2, (Position.Z + LastTrailPosition.Z) / 2);
+    Position :=
+        MakeVector3D(
+            (Position.X + LastTrailPosition.X) / 2,
+            (Position.Y + LastTrailPosition.Y) / 2,
+            (Position.Z + LastTrailPosition.Z) / 2
+        );
     if Entry = nil then
     begin
       Entry := ab_WorldImage_Create(Position, 'GAI,Bm.AB.w01a_f', '', False);
@@ -188,6 +214,5 @@ begin
     LastTrailPosition := GetWorldPosition;
   end;
 end;
-{ @end $4F7E2C }
 
 end.

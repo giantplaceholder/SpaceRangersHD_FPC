@@ -1,27 +1,33 @@
 unit GI_PSMissileHit;
-// Unit bracket (inferred): .text 0x0069B05C..0x0069B27B; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Unit bracket (inferred): .itext 0x0087796C..0x00877973; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native animation palette resources; this effect uses the shared GAI control.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
 type
-  TGAISet = array[0..0] of WideString;
-  TMissileHitAnimationPaths = array of TGAISet;
 
-procedure LoadMissileHitAnimationPaths; // @addr $69B080
+  TGAISet = array[0..0] of WideString;
 
 var
-  MissileHitAnimationPaths: array of TGAISet; // @addr $88AF2C
+
+  MissileHitAnimationPaths: array of TGAISet;
+
+procedure LoadMissileHitAnimationPaths;
 
 implementation
 
-// @unit-initialization $87796C
-// @unit-finalization $69B23C
+uses
+  GR_Main,
+  SysUtils,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  Globals;
 
-uses SysUtils, Math, EC_BlockPar, EC_Str, Globals;
-
-{ @routine $69B080 LoadMissileHitAnimationPaths }
 procedure LoadMissileHitAnimationPaths;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -45,6 +51,5 @@ begin
     end;
   end;
 end;
-{ @end $69B080 }
 
 end.

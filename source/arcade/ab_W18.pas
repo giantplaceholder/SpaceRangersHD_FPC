@@ -1,33 +1,47 @@
 unit ab_W18;
-// Unit bracket (inferred): .text 0x004FB2AC..0x004FBA29; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TabW18 projectile family: $4FB314..$4FBA2A.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_Tail, ab_Global, ab_Object, ab_WorldImage;
+uses
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  ab_Object,
+  ab_WorldImage;
 
 type
-  TabW18 = class(TabObject) // @size $CC
-  public
-    Damage: Integer; // @offset $B0
-    Image: PabWorldImage; // @offset $B4
-    Exploding: Boolean; // @offset $B8
-    ExpireTick: Integer; // @offset $BC
-    OrbitAngle: Single; // @offset $C0
-    AngleCorrection: Single; // @offset $C4
-    OrbitRadius: Single; // @offset $C8
-    constructor Create; // @addr $4FB314 @ida "TabW18 *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $4FB3A0 @ida "void __usercall $name(TabW18 *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Launch(Owner: TabObject; Amount: Integer; Angle: Single); // @addr $4FB3F8 @ida "void __userpurge $name(TabW18 *Self@<eax>, TabObject *Owner@<edx>, int Amount@<ecx>, float Angle@<^0>);"
-    procedure Advance; override; // @addr $4FB524
-    procedure UpdateVisuals; override; // @addr $4FBA18
+
+  TabW18 = class;
+
+  TabW18 = class(TabObject)
+    Damage: Integer;
+    Image: PabWorldImage;
+    Exploding: Boolean;
+    GapB9: array[0..2] of Byte;
+    ExpireTick: Integer;
+    OrbitAngle: Single;
+    AngleCorrection: Single;
+    OrbitRadius: Single;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Launch(Owner: TabObject; Amount: Integer; Angle: Single);
   end;
 
 implementation
 
-uses GlobalsV, ab_Ship;
+uses
+  aMyFunction,
+  GlobalsV,
+  ab_Ship;
 
-{ @routine $4FB314 TabW18_Create }
 constructor TabW18.Create;
 begin
   inherited Create;
@@ -38,9 +52,7 @@ begin
   CollisionRadius := 1;
   Collidable := False;
 end;
-{ @end $4FB314 }
 
-{ @routine $4FB3A0 TabW18_Destroy }
 destructor TabW18.Destroy;
 begin
   if Image <> nil then
@@ -50,9 +62,7 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $4FB3A0 }
 
-{ @routine $4FB3F8 TabW18_Launch }
 procedure TabW18.Launch(Owner: TabObject; Amount: Integer; Angle: Single);
 begin
   SourceObject := Owner;
@@ -66,9 +76,7 @@ begin
   ab_WorldImage_SetFrameMode(Image, afmRandomStart);
   ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
 end;
-{ @end $4FB3F8 }
 
-{ @routine $4FB524 TabW18_Advance }
 procedure TabW18.Advance;
 var
   Collision, NextNeighbor, Obj: TabObject;
@@ -79,18 +87,28 @@ begin
   begin
     if SourceObject <> nil then
     begin
-      if OrbitRadius < 150 then OrbitRadius := OrbitRadius + 0.5;
-      if OrbitRadius < 100 then OrbitRadius := OrbitRadius + 0.5;
-      if OrbitRadius < 50 then OrbitRadius := OrbitRadius + 0.5;
+      if OrbitRadius < 150 then
+        OrbitRadius := OrbitRadius + 0.5;
+      if OrbitRadius < 100 then
+        OrbitRadius := OrbitRadius + 0.5;
+      if OrbitRadius < 50 then
+        OrbitRadius := OrbitRadius + 0.5;
       if ArcadeTickCount mod 3 = 1 then
       begin
         OrbitAngle := WrapHeadingDegrees(OrbitAngle + 3.75 + AngleCorrection);
         AngleCorrection := 0;
       end
-      else OrbitAngle := WrapHeadingDegrees(OrbitAngle + 3.75);
-      State := AdvanceSphericalStateOnCurrentSphere(
-        MakeSphericalBearingState(SourceObject.State.LongitudeDegrees,
-          SourceObject.State.PolarAngleDegrees, OrbitAngle), OrbitRadius);
+      else
+        OrbitAngle := WrapHeadingDegrees(OrbitAngle + 3.75);
+      State :=
+          AdvanceSphericalStateOnCurrentSphere(
+              MakeSphericalBearingState(
+                  SourceObject.State.LongitudeDegrees,
+                  SourceObject.State.PolarAngleDegrees,
+                  OrbitAngle
+              ),
+              OrbitRadius
+          );
       if ArcadeTickCount mod 3 = 0 then
       begin
         Collision := nil;
@@ -100,7 +118,9 @@ begin
         Obj := FirstArcadeObject;
         while Obj <> nil do
         begin
-          if (Obj is TabW18) and (Obj <> Self) and ((Obj as TabW18).SourceObject = SourceObject) then
+          if (Obj is TabW18)
+              and (Obj <> Self)
+              and ((Obj as TabW18).SourceObject = SourceObject) then
           begin
             Delta := WrapSignedHeadingDegrees((Obj as TabW18).OrbitAngle - OrbitAngle);
             if (Delta < 0) and ((Collision = nil) or (NegativeDelta < Delta)) then
@@ -117,9 +137,11 @@ begin
           Obj := Obj.Next;
         end;
         if Collision <> nil then
-          (Collision as TabW18).AngleCorrection := (Collision as TabW18).AngleCorrection - (180 + NegativeDelta) * 0.03;
+          (Collision as TabW18).AngleCorrection :=
+              (Collision as TabW18).AngleCorrection - (180 + NegativeDelta) * 0.03;
         if NextNeighbor <> nil then
-          (NextNeighbor as TabW18).AngleCorrection := (NextNeighbor as TabW18).AngleCorrection + (180 - PositiveDelta) * 0.03;
+          (NextNeighbor as TabW18).AngleCorrection :=
+              (NextNeighbor as TabW18).AngleCorrection + (180 - PositiveDelta) * 0.03;
       end;
     end;
     Velocity := MakePointF(0, 0);
@@ -129,9 +151,11 @@ begin
   if not Exploding then
   begin
     Collision := FindCollision;
-    if Collision = SourceObject then Collision := nil;
+    if Collision = SourceObject then
+      Collision := nil;
   end;
-  if ((ArcadeTickCount > ExpireTick) or (Collision <> nil) or (SourceObject = nil)) and not Exploding then
+  if ((ArcadeTickCount > ExpireTick) or (Collision <> nil) or (SourceObject = nil))
+      and not Exploding then
   begin
     if Collision <> nil then
     begin
@@ -143,15 +167,13 @@ begin
     ab_WorldImage_SetDepth(Image, HitFrontDepth, HitBackDepth);
     ab_WorldImage_SetLooping(Image, False);
   end
-  else if Exploding then DeletionPending := Image.Finished;
+  else if Exploding then
+    DeletionPending := Image.Finished;
 end;
-{ @end $4FB524 }
 
-{ @routine $4FBA18 TabW18_UpdateVisuals }
 procedure TabW18.UpdateVisuals;
 begin
   inherited UpdateVisuals;
 end;
-{ @end $4FBA18 }
 
 end.

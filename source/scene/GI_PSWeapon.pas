@@ -1,55 +1,59 @@
 unit GI_PSWeapon;
-// Unit bracket (inferred): .text 0x004DC45C..0x004DC732; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses GI_MessageLoop, Types;
+uses
+  GI_MessageLoop,
+  Types;
 
 type
-  TPSWeaponGI = class(TObjectGI) // @size 0x130
-  public
-    TargetPoint: TPoint; // @offset $120
-    RemainingTicks: Integer; // @offset 0x128
-    LifetimeTicks: Integer; // @offset 0x12C
 
-    constructor Create(Owner: TObjectGI); // @addr 0x4DC588 @ida "TPSWeaponGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    procedure SetTargetPoint(Point: TPoint); virtual; abstract; // @slot $C8 @ida "void __usercall $name(TPSWeaponGI *Self@<eax>, TPoint *Point@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); virtual; abstract; // @slot $CC
-    function IsFinished: Boolean; // @addr $4DC5F0
-    function GetElapsedTicks: Integer; virtual; // @addr 0x4DC610 @slot 0xD0 @note "Returns LifetimeTicks minus RemainingTicks without clamping."
-    function SampleGradientColor(const ColorValues: array of Single; Phase: Single): Cardinal; // @addr 0x4DC638 @ida "unsigned int __userpurge $name@<eax>(TPSWeaponGI *Self@<eax>, float *ColorValues@<edx>, int ColorValuesHigh@<ecx>, float Phase@<^0>);" @note "Cyclic interpolation of normalized RGB triples in the current pixel format. Requires at least one triple and nonnegative Phase; trailing incomplete triples are ignored."
+  TPSWeaponGI = class;
+
+  TPSWeaponGI = class(TObjectGI)
+    TargetPoint: TPoint;
+    RemainingTicks: Integer;
+    LifetimeTicks: Integer;
+    procedure SetTargetPoint(Point: TPoint); virtual; abstract;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); virtual; abstract;
+    function GetElapsedTicks: Integer; virtual;
+    constructor Create(Owner: TObjectGI);
+    function IsFinished: Boolean;
+    function SampleGradientColor(const ColorValues: array of Single; Phase: Single): Cardinal;
   end;
 
 implementation
 
-uses GR_Main;
+uses
+  GR_Main;
 
-
-{ @routine $4DC588 TPSWeaponGI_Create }
 constructor TPSWeaponGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
   LifetimeTicks := 65;
   RemainingTicks := LifetimeTicks;
 end;
-{ @end $4DC588 }
 
-{ @routine $4DC5F0 TPSWeaponGI_IsFinished }
 function TPSWeaponGI.IsFinished: Boolean;
 begin
   Result := RemainingTicks <= 0;
 end;
-{ @end $4DC5F0 }
 
-{ @routine $4DC610 TPSWeaponGI_GetElapsedTicks }
 function TPSWeaponGI.GetElapsedTicks: Integer;
 begin
   Result := LifetimeTicks - RemainingTicks;
 end;
-{ @end $4DC610 }
 
-{ @routine $4DC638 TPSWeaponGI_SampleGradientColor }
-function TPSWeaponGI.SampleGradientColor(const ColorValues: array of Single; Phase: Single): Cardinal;
+function TPSWeaponGI.SampleGradientColor(
+    const ColorValues: array of Single;
+    Phase: Single
+): Cardinal;
 var
   Count, Index, NextIndex: Integer;
   Fraction: Single;
@@ -59,12 +63,16 @@ begin
   Fraction := Phase - Index;
   Index := Index mod Count;
   NextIndex := Index + 1;
-  if NextIndex >= Count then NextIndex := 0;
-  Result := CurrentPixelFormat.PackNormalizedRgb(
-    (ColorValues[3 * NextIndex] - ColorValues[3 * Index]) * Fraction + ColorValues[3 * Index],
-    (ColorValues[3 * NextIndex + 1] - ColorValues[3 * Index + 1]) * Fraction + ColorValues[3 * Index + 1],
-    (ColorValues[3 * NextIndex + 2] - ColorValues[3 * Index + 2]) * Fraction + ColorValues[3 * Index + 2]);
+  if NextIndex >= Count then
+    NextIndex := 0;
+  Result :=
+      CurrentPixelFormat.PackNormalizedRgb(
+          (ColorValues[3 * NextIndex] - ColorValues[3 * Index]) * Fraction + ColorValues[3 * Index],
+          (ColorValues[3 * NextIndex + 1] - ColorValues[3 * Index + 1]) * Fraction
+              + ColorValues[3 * Index + 1],
+          (ColorValues[3 * NextIndex + 2] - ColorValues[3 * Index + 2]) * Fraction
+              + ColorValues[3 * Index + 2]
+      );
 end;
-{ @end $4DC638 }
 
 end.

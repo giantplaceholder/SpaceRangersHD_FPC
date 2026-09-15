@@ -1,102 +1,163 @@
 unit ab_Space;
-// Unit bracket (inferred): .text 0x0054F680..0x005539D3; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native TabSpace VMT at $54F6CC; field recovery is incomplete.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, EC_Struct, GI_GAI, Types;
+uses
+  Classes,
+  EC_Struct,
+  GI_GAI,
+  Types;
 
 type
-  TabSpace = class(TObjectEx) // @size $6C
-  public
-    Prev: TabSpace; // @offset $04
-    Next: TabSpace; // @offset $08
-    GridPosition: TPoint; // @offset $0C
-    MapPosition: TPoint; // @offset $14
-    IncomingCount: Integer; // @offset $20
-    OutgoingCount: Integer; // @offset $24
-    Color28: Cardinal; // @offset $28 Map rendering color; precise role pending.
-    Color2C: Cardinal; // @offset $2C
-    Color30: Cardinal; // @offset $30
-    Color34: Cardinal; // @offset $34
-    MapPath: WideString; // @offset $3C Arena resource path.
-    BoundaryKind: Integer; // @offset $40 1 for the synthetic start/end nodes.
-    PortalSlotCount: Integer; // @offset $44 Used by exit-index shuffling; initializer still under review.
-    AppearanceIndex: Integer; // @offset $38 Six difficulty/visual variants, each with six palette entries.
-    Danger: Double; // @offset $48 Local encounter difficulty, used for danger text, visuals and rewards.
-    ApproachDanger: Double; // @offset $50 Minimum accumulated predecessor danger, followed by graph pruning.
-    RouteCost: Double; // @offset $58 Temporary reverse-search cost for the selected route.
-    Objects: TList; // @offset $60 Owned objects associated with this space.
-    ImageActive: Boolean; // @offset $64
-    Image: TgaiGI; // @offset $68
-    constructor Create; // @addr $54F6E8 @ida "TabSpace *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $54F774 @ida "void __usercall $name(TabSpace *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure UpdateVisuals; // @addr $54F7DC Empty native update hook.
-    procedure Update; // @addr $54FAF0
-    procedure ClearVisuals; // @addr $54F7C8
-    procedure ClearImage; // @addr $54FAC0
-    procedure ClearObjects; // @addr $54FB04
-    procedure UpdateApproachDanger; // @addr $5527B0
-    procedure PruneApproachDanger; // @addr $5527F4 Native instance receiver is unused; visits the complete graph.
-    function GetDangerText: WideString; // @addr $5528EC @ida "void __usercall $name(TabSpace *Self@<eax>, unsigned __int16 **Result@<edx>);"
-    procedure CreateImage; // @addr $54F7E8
-    procedure PopulateObjects; // @addr $54FB50
-    procedure PopulateHoleEncounter; // @addr $5508B0
-    procedure PopulateScriptedEncounter; // @addr $551D88
-    procedure PopulateKellerEncounter; // @addr $551F30
-    procedure RecountLinks; // @addr $552CD8
+
+  TabSpace = class;
+
+  PointerToTabSpaceLink = ^TabSpaceLink;
+
+  TabSpace = class(TObjectEx)
+    Prev: TabSpace;
+    Next: TabSpace;
+    GridPosition: TPoint;
+    MapPosition: TPoint;
+    Gap1C: array[0..3] of Byte;
+    IncomingCount: Integer;
+    OutgoingCount: Integer;
+    Color28: Cardinal;
+    Color2C: Cardinal;
+    Color30: Cardinal;
+    Color34: Cardinal;
+    AppearanceIndex: Integer;
+    MapPath: WideString;
+    BoundaryKind: Integer;
+    PortalSlotCount: Integer;
+    Danger: Double;
+    ApproachDanger: Double;
+    RouteCost: Double;
+    Objects: TList;
+    ImageActive: Boolean;
+    Gap65: array[0..2] of Byte;
+    Image: TgaiGI;
+    constructor Create;
+    destructor Destroy; override;
+    procedure ClearVisuals;
+    procedure UpdateVisuals;
+    procedure CreateImage;
+    procedure ClearImage;
+    procedure Update;
+    procedure ClearObjects;
+    procedure PopulateObjects;
+    procedure PopulateHoleEncounter;
+    procedure PopulateScriptedEncounter;
+    procedure PopulateKellerEncounter;
+    procedure UpdateApproachDanger;
+    procedure PruneApproachDanger;
+    function GetDangerText: WideString;
+    procedure RecountLinks;
   end;
 
-  PabSpaceLink = ^TabSpaceLink;
-  TabSpaceLink = record // @size $6C Allocation size verified at $552DA4; remaining fields unresolved.
-    Prev: PabSpaceLink; // @offset $00
-    Next: PabSpaceLink; // @offset $04
-    First: TabSpace; // @offset $08
-    Last: TabSpace; // @offset $0C
-    ExitIndex: Integer; // @offset $10
-    Points: array[0..10] of TPoint; // @offset $14 Arrow outline and halo geometry.
+  PabSpaceLink = PointerToTabSpaceLink;
+
+  TabSpaceLink = record
+    Prev: PabSpaceLink;
+    Next: PabSpaceLink;
+    First: TabSpace;
+    Last: TabSpace;
+    ExitIndex: Integer;
+    Points: array[0..10] of TPoint;
   end;
 
-procedure ab_Space_UpdateApproachDanger; // @addr $552D38
-procedure ab_Space_CreateImages; // @addr $552BC8
-procedure ab_Space_ClearImages; // @addr $552BF4
-procedure ab_SpaceLink_Invalidate; // @addr $552F58
-procedure ab_SpaceLink_BuildGeometry; // @addr $5530B8
-procedure ab_SpaceLink_Draw; // @addr $553548
-procedure ab_SpaceLink_ClearImages; // @addr $553524
-procedure ab_Space_Clear; // @addr $552A7C
-function ab_Space_Add: TabSpace; // @addr $552AB4
-procedure ab_Space_Delete(Space: TabSpace); // @addr $552B18
-function ab_Space_Find(GridPosition: TPoint): TabSpace; // @addr $552C54 @ida "TabSpace *__usercall $name@<eax>(TPoint *GridPosition@<eax>);"
-procedure ab_Space_RecountLinks; // @addr $552CAC
-procedure ab_SpaceLink_Clear; // @addr $552D8C
-function ab_SpaceLink_Add: PabSpaceLink; // @addr $552DA4
-procedure ab_SpaceLink_Delete(Link: PabSpaceLink); // @addr $552E04
-procedure ab_SpaceLink_Connect(First, Last: TabSpace); // @addr $552E6C
-function ab_SpaceLink_Find(First, Last: TabSpace): PabSpaceLink; // @addr $552E98
-function ab_SpaceLink_FindExit(First: TabSpace; ExitIndex: Integer): PabSpaceLink; // @addr $552F04
-
 var
-  FirstArcadeSpace: TabSpace = nil; // @addr $87AEEC
-  LastArcadeSpace: TabSpace = nil; // @addr $87AEF0
-  CurrentArcadeSpace: TabSpace = nil; // @addr $87AEF4
-  NextArcadeSpace: TabSpace = nil; // @addr $87AEF8 Destination selected before entering a space.
-  StartArcadeSpace: TabSpace = nil; // @addr $87AEFC
-  EndArcadeSpace: TabSpace = nil; // @addr $87AF00
-  HoveredArcadeSpace: TabSpace = nil; // @addr $87AF04
-  FirstArcadeSpaceLink: PabSpaceLink = nil; // @addr $87AF08
-  LastArcadeSpaceLink: PabSpaceLink = nil; // @addr $87AF0C
 
-procedure ab_Space_Update; // @addr $552C28
+  FirstArcadeSpace: TabSpace = nil;
 
-var
-  ArcadeKellerEncounter: Boolean; // @addr $88A800
+  LastArcadeSpace: TabSpace = nil;
+
+  CurrentArcadeSpace: TabSpace = nil;
+
+  NextArcadeSpace: TabSpace = nil;
+
+  StartArcadeSpace: TabSpace = nil;
+
+  EndArcadeSpace: TabSpace = nil;
+
+  HoveredArcadeSpace: TabSpace = nil;
+
+  FirstArcadeSpaceLink: PabSpaceLink = nil;
+
+  LastArcadeSpaceLink: PabSpaceLink = nil;
+
+  ArcadeKellerEncounter: Boolean;
+
+procedure ab_Space_Clear;
+
+function ab_Space_Add: TabSpace;
+
+procedure ab_Space_Delete(Space: TabSpace);
+
+procedure ab_Space_CreateImages;
+
+procedure ab_Space_ClearImages;
+
+procedure ab_Space_Update;
+
+function ab_Space_Find(GridPosition: TPoint): TabSpace;
+
+procedure ab_Space_RecountLinks;
+
+procedure ab_Space_UpdateApproachDanger;
+
+procedure ab_SpaceLink_Clear;
+
+function ab_SpaceLink_Add: PabSpaceLink;
+
+procedure ab_SpaceLink_Delete(Link: PabSpaceLink);
+
+procedure ab_SpaceLink_Connect(First: TabSpace; Last: TabSpace);
+
+function ab_SpaceLink_Find(First: TabSpace; Last: TabSpace): PabSpaceLink;
+
+function ab_SpaceLink_FindExit(First: TabSpace; ExitIndex: Integer): PabSpaceLink;
+
+procedure ab_SpaceLink_Invalidate;
+
+procedure ab_SpaceLink_BuildGeometry;
+
+procedure ab_SpaceLink_ClearImages;
+
+procedure ab_SpaceLink_Draw;
 
 implementation
 
-uses aKling, SysUtils, Math, EC_Mem, GR_Main, GR_DX, Globals, GlobalsV, GI_Tail, ab_Global, aConst, aMyFunction, aPlayer, aGalaxy, aItem, aGalaxyStruct, ab_ShipAI, ab_Item, ab_Ship, ab_W, ab_MainForm, ab_Hit;
+uses
+  aKling,
+  SysUtils,
+  Math,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  Globals,
+  GlobalsV,
+  GI_Tail,
+  ab_Global,
+  aConst,
+  aMyFunction,
+  aPlayer,
+  aGalaxy,
+  aItem,
+  aGalaxyStruct,
+  ab_ShipAI,
+  ab_Item,
+  ab_Ship,
+  ab_W,
+  ab_MainForm,
+  ab_Hit;
 
-{ @routine $54F6E8 TabSpace_Create }
 constructor TabSpace.Create;
 begin
   inherited Create;
@@ -105,9 +166,7 @@ begin
   Objects := TList.Create;
   ImageActive := False;
 end;
-{ @end $54F6E8 }
 
-{ @routine $54F774 TabSpace_Destroy }
 destructor TabSpace.Destroy;
 begin
   ClearVisuals;
@@ -116,22 +175,16 @@ begin
   Objects := nil;
   inherited Destroy;
 end;
-{ @end $54F774 }
 
-{ @routine $54F7C8 TabSpace_ClearVisuals }
 procedure TabSpace.ClearVisuals;
 begin
   ClearImage;
 end;
-{ @end $54F7C8 }
 
-{ @routine $54F7DC TabSpace_UpdateVisuals }
 procedure TabSpace.UpdateVisuals;
 begin
 end;
-{ @end $54F7DC }
 
-{ @routine $54F7E8 TabSpace_CreateImage }
 procedure TabSpace.CreateImage;
 begin
   ImageActive := True;
@@ -154,9 +207,7 @@ begin
     Image.RestartPlayback;
   end;
 end;
-{ @end $54F7E8 }
 
-{ @routine $54FAC0 TabSpace_ClearImage }
 procedure TabSpace.ClearImage;
 begin
   if Image <> nil then
@@ -166,26 +217,21 @@ begin
   end;
   ImageActive := False;
 end;
-{ @end $54FAC0 }
 
-{ @routine $54FAF0 TabSpace_Update }
 procedure TabSpace.Update;
 begin
   UpdateVisuals;
 end;
-{ @end $54FAF0 }
 
-{ @routine $54FB04 TabSpace_ClearObjects }
 procedure TabSpace.ClearObjects;
 var
   Index: Integer;
 begin
-  for Index := 0 to Objects.Count - 1 do TObject(Objects[Index]).Free;
+  for Index := 0 to Objects.Count - 1 do
+    TObject(Objects[Index]).Free;
   Objects.Clear;
 end;
-{ @end $54FB04 }
 
-{ @routine $54FB50 TabSpace_PopulateObjects }
 procedure TabSpace.PopulateObjects;
 var
   Ship: TabShipAI;
@@ -195,21 +241,50 @@ var
   Scale: Single;
 begin
   ClearObjects;
-  if GetPlayer = nil then Exit;
+  if GetPlayer = nil then
+    Exit;
   case Integer(Round(Danger)) of
-    0: if ArcadeBattleScreen.RandomRange(0, 100) > 90 then Count := ArcadeBattleScreen.RandomRange(1, 2) else Count := 0;
-    1..20: if ArcadeBattleScreen.RandomRange(0, 100) > 80 then Count := ArcadeBattleScreen.RandomRange(2, 3) else Count := 0;
-    21..30: if ArcadeBattleScreen.RandomRange(0, 100) > 50 then Count := ArcadeBattleScreen.RandomRange(2, 3) else Count := 0;
-    31..60: if ArcadeBattleScreen.RandomRange(0, 100) > 10 then Count := ArcadeBattleScreen.RandomRange(2, 4) else Count := 0;
-    61..90: if ArcadeBattleScreen.RandomRange(0, 100) > 5 then Count := ArcadeBattleScreen.RandomRange(2, 5) else Count := 0;
+    0:
+      if ArcadeBattleScreen.RandomRange(0, 100) > 90 then
+        Count := ArcadeBattleScreen.RandomRange(1, 2)
+      else
+        Count := 0;
+    1..20:
+      if ArcadeBattleScreen.RandomRange(0, 100) > 80 then
+        Count := ArcadeBattleScreen.RandomRange(2, 3)
+      else
+        Count := 0;
+    21..30:
+      if ArcadeBattleScreen.RandomRange(0, 100) > 50 then
+        Count := ArcadeBattleScreen.RandomRange(2, 3)
+      else
+        Count := 0;
+    31..60:
+      if ArcadeBattleScreen.RandomRange(0, 100) > 10 then
+        Count := ArcadeBattleScreen.RandomRange(2, 4)
+      else
+        Count := 0;
+    61..90:
+      if ArcadeBattleScreen.RandomRange(0, 100) > 5 then
+        Count := ArcadeBattleScreen.RandomRange(2, 5)
+      else
+        Count := 0;
     91..100: Count := ArcadeBattleScreen.RandomRange(4, 5);
-  else Count := ArcadeBattleScreen.RandomRange(4, 5);
+  else
+    Count := ArcadeBattleScreen.RandomRange(4, 5);
   end;
   if Count > 0 then
-    if ArcadeBattleScreen.RandomRange(0, 100) < RemapClamped(GetPlayer.HyperspaceKillCount, 20, 300, 0, 90) then Count := 0;
-  if GetPlayer.HyperspaceKillCount < 4 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then Count := Min(Count, 2)
-  else if GetPlayer.HyperspaceKillCount < 10 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then Count := Min(Count, 3);
-  if GetPlayer.HyperspaceKillCount = 0 then Count := 1;
+    if ArcadeBattleScreen.RandomRange(0, 100)
+        < RemapClamped(GetPlayer.HyperspaceKillCount, 20, 300, 0, 90) then
+      Count := 0;
+  if GetPlayer.HyperspaceKillCount
+      < 4 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then
+    Count := Min(Count, 2)
+  else if GetPlayer.HyperspaceKillCount
+      < 10 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then
+    Count := Min(Count, 3);
+  if GetPlayer.HyperspaceKillCount = 0 then
+    Count := 1;
   Minimum := Round(RemapClamped(Galaxy.TechLevel, 3, 8, 0, 6));
   Maximum := Round(RemapClamped(Galaxy.TechLevel, 3, 8, 5, 11));
   VisualIndex := ArcadeBattleScreen.RandomRange(1, 5);
@@ -222,24 +297,43 @@ begin
       5..12: Scale := RemapClamped(GetPlayer.HyperspaceKillCount, 5, 12, 0.5, 0.8);
       13..30: Scale := RemapClamped(GetPlayer.HyperspaceKillCount, 13, 30, 0.8, 1);
       31..80: Scale := RemapClamped(GetPlayer.HyperspaceKillCount, 31, 80, 1, 1.3);
-    else Scale := RemapClamped(GetPlayer.HyperspaceKillCount, 81, 100, 1.3, 1.6);
+    else
+      Scale := RemapClamped(GetPlayer.HyperspaceKillCount, 81, 100, 1.3, 1.6);
     end;
     Scale := RemapClamped(Danger, 0, 100, 0.8, 1.2) * Scale;
-    Scale := RemapClamped(GetPlayer.Wealth, Galaxy.AverageRangerCapital / 2, Galaxy.MaxRangerWealth, 0.8, 1.1) * Scale;
+    Scale :=
+        RemapClamped(
+                GetPlayer.Wealth,
+                Galaxy.AverageRangerCapital / 2,
+                Galaxy.MaxRangerWealth,
+                0.8,
+                1.1)
+            * Scale;
     Scale := RemapClamped(GetPlayer.StrengthInBestRanger, 0.2, 1, 0.5, 1.2) * Scale;
-    Scale := Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
-    if Index = 0 then Scale := ArcadeBattleScreen.RandomFloat(1, 1.3) * Scale
-    else if Index = 1 then Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
-    else Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
+    Scale :=
+        Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    if Index = 0 then
+      Scale := ArcadeBattleScreen.RandomFloat(1, 1.3) * Scale
+    else if Index = 1 then
+      Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
+    else
+      Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
     Hitpoints := Round(Max(150, Min(GetPlayer.GetHull.Weight * 1.2, 525 * Scale)));
-    Ship.CreateShipVisual('Ship.HS.' + IntToStr(IncrementWrapped(VisualIndex, 1, 5)), Round(RemapClamped(Hitpoints, 150, 900, 50, 80)));
+    Ship.CreateShipVisual(
+        'Ship.HS.' + IntToStr(IncrementWrapped(VisualIndex, 1, 5)),
+        Round(RemapClamped(Hitpoints, 150, 900, 50, 80))
+    );
     Hitpoints := Round(Galaxy.GetArcadeHitpointsModifier * Hitpoints);
     Ship.MaxHealth := Hitpoints;
     Ship.Health := Hitpoints;
     Ship.MaxSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 7, 5);
-    Ship.MaxSpeed := Ship.MaxSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.MaxSpeed :=
+        Ship.MaxSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.TurnSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 3, 2);
-    Ship.TurnSpeed := Ship.TurnSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.TurnSpeed :=
+        Ship.TurnSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.Thrust := 0;
     Ship.WeaponCount := 0;
     Kind := ArcadeBattleScreen.RandomRange(Minimum, Maximum);
@@ -247,17 +341,26 @@ begin
     if Index = 0 then
     begin
       Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-      if (GetPlayer.StrengthInBestRanger > 0.9) or (GetPlayer.WealthInBestRanger > 0.9) then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+      if (GetPlayer.StrengthInBestRanger > 0.9) or (GetPlayer.WealthInBestRanger > 0.9) then
+        Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
     end;
-    if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-    if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-    for WeaponIndex := 0 to Ship.WeaponCount - 1 do Ship.Weapons[WeaponIndex].Damage := Round(Galaxy.GetArcadeDamageModifier * Ship.Weapons[WeaponIndex].Damage);
+    if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then
+      Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+    if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then
+      Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+    for WeaponIndex := 0 to Ship.WeaponCount - 1 do
+      Ship.Weapons[WeaponIndex].Damage :=
+          Round(Galaxy.GetArcadeDamageModifier * Ship.Weapons[WeaponIndex].Damage);
     Ship.PrimaryWeapon := 0;
     Ship.EncounterTag := 1;
     Objects.Add(Ship);
   end;
   Kind := 0;
-  MineralBudget := Min(CargoHookLevelStats[8].PickupPower, GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice);
+  MineralBudget :=
+      Min(
+          CargoHookLevelStats[8].PickupPower,
+          GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice
+      );
   MineralBudget := Round(RemapClamped(Danger + ApproachDanger, 0, 250, 0.2, 1.2) * MineralBudget);
   MineralBudget := Round(RemapClamped(Count, 0, 4, 0.8, 1.2) * MineralBudget);
   for Index := 1 to 8 do
@@ -265,7 +368,14 @@ begin
     Item := TGoods.Create;
     with Item as TGoods do
     begin
-      Count := Min(Round(ArcadeBattleScreen.RandomFloat(0.6, 1.3) * CargoHookLevelStats[Galaxy.TechLevel].PickupPower), ArcadeBattleScreen.RandomRange(MineralBudget div 8, MineralBudget div 2)) + 1;
+      Count :=
+          Min(
+                  Round(
+                      ArcadeBattleScreen.RandomFloat(0.6, 1.3)
+                          * CargoHookLevelStats[Galaxy.TechLevel].PickupPower
+                  ),
+                  ArcadeBattleScreen.RandomRange(MineralBudget div 8, MineralBudget div 2))
+              + 1;
       Inc(Kind, Count);
       Init(t_Minerals, Count);
       NaturalFlag := True;
@@ -273,12 +383,11 @@ begin
     ArcadeItem := TabItem.Create;
     ArcadeItem.SetItem(Item);
     Objects.Add(ArcadeItem);
-    if Kind > MineralBudget then Break;
+    if Kind > MineralBudget then
+      Break;
   end;
 end;
-{ @end $54FB50 }
 
-{ @routine $5508B0 TabSpace_PopulateHoleEncounter }
 procedure TabSpace.PopulateHoleEncounter;
 var
   Item: TItem;
@@ -287,11 +396,15 @@ var
   Ship: TabShipAI;
   Scale: Single;
 begin
-  if GetPlayer = nil then Exit;
+  if GetPlayer = nil then
+    Exit;
   Count := ArcadeBattleScreen.RandomRange(2, 4);
   Count := Min(6, Count + Round(RemapClamped(Galaxy.TechLevel, 4, 8, 0, 2)));
-  if GetPlayer.BlackHoleKillCount = 0 then Count := 1
-  else if GetPlayer.BlackHoleKillCount < 5 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then Count := Min(Count, 2);
+  if GetPlayer.BlackHoleKillCount = 0 then
+    Count := 1
+  else if GetPlayer.BlackHoleKillCount
+      < 5 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor then
+    Count := Min(Count, 2);
   Minimum := Round(RemapClamped(Galaxy.RefreshTechLevel, 3, 8, 0, 6));
   Maximum := Round(RemapClamped(Galaxy.RefreshTechLevel, 3, 8, 6, 15));
   VisualIndex := ArcadeBattleScreen.RandomRange(0, 2);
@@ -304,26 +417,48 @@ begin
       6..12: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 6, 12, 0.6, 0.8);
       13..23: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 13, 23, 0.8, 1);
       24..40: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 24, 40, 1, 1.3);
-    else Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 41, 100, 1.3, 1.6);
+    else
+      Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 41, 100, 1.3, 1.6);
     end;
-    Scale := Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
-    Scale := RemapClamped(GetPlayer.Wealth, Galaxy.AverageRangerCapital / 2, Galaxy.MaxRangerWealth, 0.8, 1.1) * Scale;
+    Scale :=
+        Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Scale :=
+        RemapClamped(
+                GetPlayer.Wealth,
+                Galaxy.AverageRangerCapital / 2,
+                Galaxy.MaxRangerWealth,
+                0.8,
+                1.1)
+            * Scale;
     Scale := RemapClamped(GetPlayer.StrengthInBestRanger, 0.2, 1, 0.5, 1.1) * Scale;
-    if Index = 0 then Scale := ArcadeBattleScreen.RandomFloat(1, 1.5) * Scale
-    else if Index = 1 then Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
-    else Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
-    if GetPlayer.BlackHoleKillCount = 0 then Hitpoints := 150
-    else Hitpoints := Round(Max(150, Min(GetPlayer.GetHull.Weight * 1.2, 525 * Scale)));
-    Ship.CreateShipVisual('Ship.X.' + IntToStr(IncrementWrapped(VisualIndex, 0, 2)), Round(RemapClamped(Hitpoints, 150, 900, 50, 80)));
-    if Galaxy <> nil then Hitpoints := Round(Galaxy.GetArcadeHitpointsModifier * Hitpoints);
+    if Index = 0 then
+      Scale := ArcadeBattleScreen.RandomFloat(1, 1.5) * Scale
+    else if Index = 1 then
+      Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
+    else
+      Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
+    if GetPlayer.BlackHoleKillCount = 0 then
+      Hitpoints := 150
+    else
+      Hitpoints := Round(Max(150, Min(GetPlayer.GetHull.Weight * 1.2, 525 * Scale)));
+    Ship.CreateShipVisual(
+        'Ship.X.' + IntToStr(IncrementWrapped(VisualIndex, 0, 2)),
+        Round(RemapClamped(Hitpoints, 150, 900, 50, 80))
+    );
+    if Galaxy <> nil then
+      Hitpoints := Round(Galaxy.GetArcadeHitpointsModifier * Hitpoints);
     Ship.MaxHealth := Hitpoints;
     Ship.Health := Hitpoints;
     Ship.MaxSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 7, 5);
     Ship.MaxSpeed := RemapClamped(GetPlayer.BlackHoleKillCount, 0, 30, 0.6, 1) * Ship.MaxSpeed;
-    Ship.MaxSpeed := Ship.MaxSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.MaxSpeed :=
+        Ship.MaxSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.TurnSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 4, 3);
     Ship.TurnSpeed := RemapClamped(GetPlayer.BlackHoleKillCount, 0, 30, 0.6, 1) * Ship.TurnSpeed;
-    Ship.TurnSpeed := Ship.TurnSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.TurnSpeed :=
+        Ship.TurnSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.Thrust := 0;
     Ship.WeaponCount := 0;
     Kind := ArcadeBattleScreen.RandomRange(Minimum, Maximum);
@@ -332,29 +467,45 @@ begin
     if Index = 0 then
     begin
       Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-      if ((GetPlayer.BlackHoleKillCount > 0) and (GetPlayer.StrengthInBestRanger > 0.9)) or (GetPlayer.WealthInBestRanger > 0.9) then
+      if ((GetPlayer.BlackHoleKillCount > 0) and (GetPlayer.StrengthInBestRanger > 0.9))
+          or (GetPlayer.WealthInBestRanger > 0.9) then
         Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
     end;
     if GetPlayer.BlackHoleKillCount > 0 then
     begin
-      if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-      if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+      if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then
+        Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+      if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then
+        Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
     end;
     if Galaxy <> nil then
-      for WeaponIndex := 0 to Ship.WeaponCount - 1 do Ship.Weapons[WeaponIndex].Damage := Round(Galaxy.GetArcadeDamageModifier * Ship.Weapons[WeaponIndex].Damage);
+      for WeaponIndex := 0 to Ship.WeaponCount - 1 do
+        Ship.Weapons[WeaponIndex].Damage :=
+            Round(Galaxy.GetArcadeDamageModifier * Ship.Weapons[WeaponIndex].Damage);
     Ship.PrimaryWeapon := 0;
     Ship.EncounterTag := 1;
     Objects.Add(Ship);
   end;
   Kind := 0;
-  MineralBudget := Min(CargoHookLevelStats[8].PickupPower, GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice);
+  MineralBudget :=
+      Min(
+          CargoHookLevelStats[8].PickupPower,
+          GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice
+      );
   MineralBudget := Round(RemapClamped(Count, 2, 4, 0.8, 1.2) * MineralBudget);
   for Index := 1 to 8 do
   begin
     Item := TGoods.Create;
     with Item as TGoods do
     begin
-      Count := Min(Round(ArcadeBattleScreen.RandomFloat(0.6, 1.3) * CargoHookLevelStats[Galaxy.TechLevel].PickupPower), ArcadeBattleScreen.RandomRange(MineralBudget div 8, MineralBudget div 2)) + 1;
+      Count :=
+          Min(
+                  Round(
+                      ArcadeBattleScreen.RandomFloat(0.6, 1.3)
+                          * CargoHookLevelStats[Galaxy.TechLevel].PickupPower
+                  ),
+                  ArcadeBattleScreen.RandomRange(MineralBudget div 8, MineralBudget div 2))
+              + 1;
       Inc(Kind, Count);
       Init(t_Minerals, Count);
       NaturalFlag := True;
@@ -362,12 +513,11 @@ begin
     ArcadeItem := TabItem.Create;
     ArcadeItem.SetItem(Item);
     Objects.Add(ArcadeItem);
-    if Kind > MineralBudget then Break;
+    if Kind > MineralBudget then
+      Break;
   end;
 end;
-{ @end $5508B0 }
 
-{ @routine $551D88 TabSpace_PopulateScriptedEncounter }
 procedure TabSpace.PopulateScriptedEncounter;
 var
   Kind: Integer;
@@ -376,8 +526,8 @@ var
   Ship: TabShipAI;
   Minimum, Maximum, J: Integer;
   OtherShip: TabShip;
-  // @nested $5514C8 InitializeScriptedEncounterShip
-  procedure InitializeScriptedEncounterShip; // @addr $5514C8 @ida "void __cdecl $name(void *ParentFrame);"
+
+  procedure InitializeScriptedEncounterShip;
   var
     WeaponIndex, Hitpoints: Integer;
   begin
@@ -387,14 +537,26 @@ var
       6..12: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 6, 12, 0.6, 0.8);
       13..23: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 13, 23, 0.8, 1);
       24..40: Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 24, 40, 1, 1.3);
-    else Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 41, 100, 1.3, 1.6);
+    else
+      Scale := RemapClamped(GetPlayer.BlackHoleKillCount, 41, 100, 1.3, 1.6);
     end;
-    Scale := Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
-    Scale := RemapClamped(GetPlayer.Wealth, Galaxy.AverageRangerCapital / 2, Galaxy.MaxRangerWealth, 0.8, 1.1) * Scale;
+    Scale :=
+        Scale * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Scale :=
+        RemapClamped(
+                GetPlayer.Wealth,
+                Galaxy.AverageRangerCapital / 2,
+                Galaxy.MaxRangerWealth,
+                0.8,
+                1.1)
+            * Scale;
     Scale := RemapClamped(GetPlayer.StrengthInBestRanger, 0.2, 1, 0.5, 1.1) * Scale;
-    if Index = 0 then Scale := ArcadeBattleScreen.RandomFloat(1, 1.5) * Scale
-    else if Index = 1 then Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
-    else Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
+    if Index = 0 then
+      Scale := ArcadeBattleScreen.RandomFloat(1, 1.5) * Scale
+    else if Index = 1 then
+      Scale := ArcadeBattleScreen.RandomFloat(0.7, 1.1) * Scale
+    else
+      Scale := ArcadeBattleScreen.RandomFloat(0.2, 0.6) * Scale;
     if Ship.ConvertedFromGameShip then
     begin
       Ship.Health := Ship.Health * Ship.HealthScalePercent div 100;
@@ -404,17 +566,23 @@ var
     begin
       Hitpoints := Round(Max(150, Min(GetPlayer.GetHull.Weight * 1.2, 525 * Scale)));
       Hitpoints := Ship.HealthScalePercent * Hitpoints div 100;
-      if Ship.SpawnGraphKey[1] = 'R' then Ship.CreateRuinsVisual(Ship.SpawnGraphKey, 128)
-      else Ship.CreateShipVisual(Ship.SpawnGraphKey, Round(RemapClamped(Hitpoints, 150, 900, 50, 80)));
+      if Ship.SpawnGraphKey[1] = 'R' then
+        Ship.CreateRuinsVisual(Ship.SpawnGraphKey, 128)
+      else
+        Ship.CreateShipVisual(Ship.SpawnGraphKey, Round(RemapClamped(Hitpoints, 150, 900, 50, 80)));
       Ship.MaxHealth := Hitpoints;
       Ship.Health := Hitpoints;
     end;
     Ship.MaxSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 7, 5);
     Ship.MaxSpeed := RemapClamped(GetPlayer.BlackHoleKillCount, 0, 30, 0.6, 1) * Ship.MaxSpeed;
-    Ship.MaxSpeed := Ship.MaxSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.MaxSpeed :=
+        Ship.MaxSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.TurnSpeed := RemapClamped(Ship.VisualDiameter, 50, 80, 4, 3);
     Ship.TurnSpeed := RemapClamped(GetPlayer.BlackHoleKillCount, 0, 30, 0.6, 1) * Ship.TurnSpeed;
-    Ship.TurnSpeed := Ship.TurnSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.TurnSpeed :=
+        Ship.TurnSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.Thrust := 0;
     if not Ship.ConvertedFromGameShip then
     begin
@@ -425,29 +593,35 @@ var
       if Index = 0 then
       begin
         Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-        if ((GetPlayer.BlackHoleKillCount > 0) and (GetPlayer.StrengthInBestRanger > 0.9)) or (GetPlayer.WealthInBestRanger > 0.9) then
+        if ((GetPlayer.BlackHoleKillCount > 0) and (GetPlayer.StrengthInBestRanger > 0.9))
+            or (GetPlayer.WealthInBestRanger > 0.9) then
           Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
       end;
       if GetPlayer.BlackHoleKillCount > 0 then
       begin
-        if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
-        if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+        if (GetPlayer.StrengthInBestRanger > 0.7) or (GetPlayer.WealthInBestRanger > 0.7) then
+          Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
+        if ArcadeBattleScreen.RandomRange(0, Round(Danger)) < Danger then
+          Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
       end;
     end;
     for WeaponIndex := 0 to Ship.WeaponCount - 1 do
-      Ship.Weapons[WeaponIndex].Damage := Ship.Weapons[WeaponIndex].Damage * Ship.DamageScalePercent div 100;
+      Ship.Weapons[WeaponIndex].Damage :=
+          Ship.Weapons[WeaponIndex].Damage * Ship.DamageScalePercent div 100;
     Ship.PrimaryWeapon := 0;
     Ship.EncounterTag := 1;
   end;
 begin
-  if (GetPlayer = nil) or (ActiveArcadeRequestShips = nil) then Exit;
+  if (GetPlayer = nil) or (ActiveArcadeRequestShips = nil) then
+    Exit;
   Minimum := Round(RemapClamped(Galaxy.RefreshTechLevel, 3, 8, 0, 6));
   Maximum := Round(RemapClamped(Galaxy.RefreshTechLevel, 3, 8, 6, 15));
   for Index := 0 to ActiveArcadeRequestShips.Count - 1 do
   begin
     Ship := TabShipAI(ActiveArcadeRequestShips[Index]);
     InitializeScriptedEncounterShip;
-    if Ship.Team = 1 then PlayerArcadeShip.AddTrackedShip(Ship)
+    if Ship.Team = 1 then
+      PlayerArcadeShip.AddTrackedShip(Ship)
     else
     begin
       PlayerArcadeShip.AddEnemy(Ship);
@@ -457,15 +631,14 @@ begin
       if J <> Index then
       begin
         OtherShip := TabShip(ActiveArcadeRequestShips[J]);
-        if Ship.Team <> OtherShip.Team then Ship.AddEnemy(OtherShip);
+        if Ship.Team <> OtherShip.Team then
+          Ship.AddEnemy(OtherShip);
       end;
     Objects.Add(Ship);
   end;
   ActiveArcadeRequestShips.Clear;
 end;
-{ @end $551D88 }
 
-{ @routine $551F30 TabSpace_PopulateKellerEncounter }
 procedure TabSpace.PopulateKellerEncounter;
 var
   Ship: TabShipAI;
@@ -476,25 +649,41 @@ begin
   Ship.CreateRuinsVisual('Ruins.Keller', 128);
   case GetPlayer.BlackHoleKillCount + GetPlayer.HyperspaceKillCount of
     0..10: Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 2));
-    11..20: Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1.6));
-    21..52: Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1.3));
-  else Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1));
+    11..20:
+      Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1.6));
+    21..52:
+      Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1.3));
+  else
+    Ship.MaxHealth := Max(2000, RoundAndTruncateToHundreds(KellerShip.GetHull.Weight / 1));
   end;
   case GetPlayer.BlackHoleKillCount + GetPlayer.HyperspaceKillCount of
     0..10: Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 2));
-    11..20: Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1.5));
-    21..52: Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1.3));
-  else Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1));
+    11..20:
+      Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1.5));
+    21..52:
+      Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1.3));
+  else
+    Ship.Health := Max(1000, RoundAndTruncateToHundreds(KellerShip.GetHull.HullPoints / 1));
   end;
-  Ship.Health := Round(Ship.Health * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor);
-  if Ship.Health > Ship.MaxHealth then Ship.Health := Ship.MaxHealth;
+  Ship.Health :=
+      Round(
+          Ship.Health
+              * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor
+      );
+  if Ship.Health > Ship.MaxHealth then
+    Ship.Health := Ship.MaxHealth;
   Ship.MaxSpeed := 6;
-  Ship.MaxSpeed := Ship.MaxSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+  Ship.MaxSpeed :=
+      Ship.MaxSpeed
+          * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
   Ship.TurnSpeed := 3;
-  Ship.TurnSpeed := Ship.TurnSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+  Ship.TurnSpeed :=
+      Ship.TurnSpeed
+          * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
   Ship.Thrust := 0;
   Ship.WeaponCount := KellerShip.WeaponCount;
-  for I := 0 to KellerShip.WeaponCount - 1 do ab_Weapon_InitializeFromInfo(@Ship.Weapons[I], KellerShip.Weapons[I + 1].GetWeaponInfo);
+  for I := 0 to KellerShip.WeaponCount - 1 do
+    ab_Weapon_InitializeFromInfo(@Ship.Weapons[I], KellerShip.Weapons[I + 1].GetWeaponInfo);
   Ship.PrimaryWeapon := 0;
   Ship.EncounterTag := 1;
   Objects.Add(Ship);
@@ -518,18 +707,37 @@ begin
     else
     begin
       VisualIndex := ArcadeBattleScreen.RandomRange(3, 5);
-      Ship.CreateShipVisual('Ship.Keller.K' + IntToStr(VisualIndex), 90 - 10 * VisualIndex + ArcadeBattleScreen.RandomRange(0, 10));
-      Ship.Health := Round((100 * (8 - VisualIndex)) * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor);
+      Ship.CreateShipVisual(
+          'Ship.Keller.K' + IntToStr(VisualIndex),
+          90 - 10 * VisualIndex + ArcadeBattleScreen.RandomRange(0, 10)
+      );
+      Ship.Health :=
+          Round(
+              (100 * (8 - VisualIndex))
+                  * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor
+          );
     end;
     Ship.MaxHealth := Ship.Health;
     Ship.MaxSpeed := 7;
-    Ship.MaxSpeed := Ship.MaxSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.MaxSpeed :=
+        Ship.MaxSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.TurnSpeed := 4;
-    Ship.TurnSpeed := Ship.TurnSpeed * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
+    Ship.TurnSpeed :=
+        Ship.TurnSpeed
+            * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[6]].QuestTimeAndExperienceFactor;
     Ship.Thrust := 0;
     Ship.WeaponCount := 0;
-    if I = 0 then begin Minimum := 8; Maximum := 13; end
-    else begin Minimum := 5; Maximum := 10; end;
+    if I = 0 then
+    begin
+      Minimum := 8;
+      Maximum := 13;
+    end
+    else
+    begin
+      Minimum := 5;
+      Maximum := 10;
+    end;
     Kind := ArcadeBattleScreen.RandomRange(Minimum, Maximum);
     Ship.AddWeapon(Kind);
     Ship.AddWeapon(IncrementWrapped(Kind, Minimum, Maximum));
@@ -538,13 +746,10 @@ begin
     Objects.Add(Ship);
   end;
 end;
-{ @end $551F30 }
 
-{ @routine $5527B0 TabSpace_UpdateApproachDanger }
 procedure TabSpace.UpdateApproachDanger;
 
-  // @nested $5526EC FindApproachDanger
-  function FindApproachDanger(Space: TabSpace; Accumulated: Single): Single; // @addr $5526EC @ida "float __userpurge $name@<st0>(TabSpace *Space@<eax>, float Accumulated@<^0>, void *ParentFrame@<^4>);" @stackpop 4 @calls "0x552777,0x5527dd"
+  function FindApproachDanger(Space: TabSpace; Accumulated: Single): Single;
   var
     Link: PabSpaceLink;
     Candidate: Single;
@@ -566,7 +771,8 @@ procedure TabSpace.UpdateApproachDanger;
       if Link.Last = Space then
       begin
         Candidate := FindApproachDanger(Link.First, Accumulated + Link.First.Danger);
-        if Candidate < Result then Result := Candidate;
+        if Candidate < Result then
+          Result := Candidate;
       end;
       Link := Link.Next;
     end;
@@ -580,9 +786,7 @@ begin
   end;
   ApproachDanger := FindApproachDanger(Self, 0);
 end;
-{ @end $5527B0 }
 
-{ @routine $5527F4 TabSpace_PruneApproachDanger }
 procedure TabSpace.PruneApproachDanger;
 var
   Changed: Boolean;
@@ -601,7 +805,8 @@ begin
         Link := FirstArcadeSpaceLink;
         while Link <> nil do
         begin
-          if (Link.First = Space) and (Link.Last.ApproachDanger > 0) then Break;
+          if (Link.First = Space) and (Link.Last.ApproachDanger > 0) then
+            Break;
           Link := Link.Next;
         end;
         if Link <> nil then
@@ -609,7 +814,8 @@ begin
           Link := FirstArcadeSpaceLink;
           while Link <> nil do
           begin
-            if (Link.Last = Space) and (Link.First.ApproachDanger > 0) then Break;
+            if (Link.Last = Space) and (Link.First.ApproachDanger > 0) then
+              Break;
             Link := Link.Next;
           end;
           if Link = nil then
@@ -623,56 +829,60 @@ begin
     end;
   end;
 end;
-{ @end $5527F4 }
 
-{ @routine $5528EC TabSpace_GetDangerText }
 function TabSpace.GetDangerText: WideString;
 begin
   Result := '';
-  if Danger = 0 then Result := LocalizedColorText('FormAB.DangerMini')
-  else if Danger < 40 then Result := LocalizedColorText('FormAB.DangerSmall')
-  else if Danger < 70 then Result := LocalizedColorText('FormAB.DangerAverage')
-  else if Danger < 90 then Result := LocalizedColorText('FormAB.DangerBig')
-  else Result := LocalizedColorText('FormAB.DangerHuge');
+  if Danger = 0 then
+    Result := LocalizedColorText('FormAB.DangerMini')
+  else if Danger < 40 then
+    Result := LocalizedColorText('FormAB.DangerSmall')
+  else if Danger < 70 then
+    Result := LocalizedColorText('FormAB.DangerAverage')
+  else if Danger < 90 then
+    Result := LocalizedColorText('FormAB.DangerBig')
+  else
+    Result := LocalizedColorText('FormAB.DangerHuge');
 end;
-{ @end $5528EC }
 
-{ @routine $552A7C ab_Space_Clear }
 procedure ab_Space_Clear;
 begin
   ab_SpaceLink_Clear;
-  while not (FirstArcadeSpace = nil) do ab_Space_Delete(LastArcadeSpace);
+  while not (FirstArcadeSpace = nil) do
+    ab_Space_Delete(LastArcadeSpace);
   CurrentArcadeSpace := nil;
   NextArcadeSpace := nil;
   StartArcadeSpace := nil;
   EndArcadeSpace := nil;
 end;
-{ @end $552A7C }
 
-{ @routine $552AB4 ab_Space_Add }
 function ab_Space_Add: TabSpace;
 var
   Space: TabSpace;
 begin
   Space := TabSpace.Create;
-  if LastArcadeSpace <> nil then LastArcadeSpace.Next := Space;
+  if LastArcadeSpace <> nil then
+    LastArcadeSpace.Next := Space;
   Space.Prev := LastArcadeSpace;
   Space.Next := nil;
   LastArcadeSpace := Space;
-  if FirstArcadeSpace = nil then FirstArcadeSpace := Space;
+  if FirstArcadeSpace = nil then
+    FirstArcadeSpace := Space;
   Result := Space;
 end;
-{ @end $552AB4 }
 
-{ @routine $552B18 ab_Space_Delete }
 procedure ab_Space_Delete(Space: TabSpace);
 var
   Link, Removing: PabSpaceLink;
 begin
-  if Space.Prev <> nil then Space.Prev.Next := Space.Next;
-  if Space.Next <> nil then Space.Next.Prev := Space.Prev;
-  if LastArcadeSpace = Space then LastArcadeSpace := Space.Prev;
-  if FirstArcadeSpace = Space then FirstArcadeSpace := Space.Next;
+  if Space.Prev <> nil then
+    Space.Prev.Next := Space.Next;
+  if Space.Next <> nil then
+    Space.Next.Prev := Space.Prev;
+  if LastArcadeSpace = Space then
+    LastArcadeSpace := Space.Prev;
+  if FirstArcadeSpace = Space then
+    FirstArcadeSpace := Space.Next;
   Link := FirstArcadeSpaceLink;
   while Link <> nil do
   begin
@@ -683,9 +893,7 @@ begin
   end;
   Space.Free;
 end;
-{ @end $552B18 }
 
-{ @routine $552BC8 ab_Space_CreateImages }
 procedure ab_Space_CreateImages;
 var
   Space: TabSpace;
@@ -697,9 +905,7 @@ begin
     Space := Space.Next;
   end;
 end;
-{ @end $552BC8 }
 
-{ @routine $552BF4 ab_Space_ClearImages }
 procedure ab_Space_ClearImages;
 var
   Space: TabSpace;
@@ -712,9 +918,7 @@ begin
     Space := Space.Next;
   end;
 end;
-{ @end $552BF4 }
 
-{ @routine $552C28 ab_Space_Update }
 procedure ab_Space_Update;
 var
   Space: TabSpace;
@@ -726,9 +930,7 @@ begin
     Space := Space.Next;
   end;
 end;
-{ @end $552C28 }
 
-{ @routine $552C54 ab_Space_Find }
 function ab_Space_Find(GridPosition: TPoint): TabSpace;
 var
   Space: TabSpace;
@@ -745,9 +947,7 @@ begin
   end;
   Result := nil;
 end;
-{ @end $552C54 }
 
-{ @routine $552CAC ab_Space_RecountLinks }
 procedure ab_Space_RecountLinks;
 var
   Space: TabSpace;
@@ -759,9 +959,7 @@ begin
     Space := Space.Next;
   end;
 end;
-{ @end $552CAC }
 
-{ @routine $552CD8 TabSpace_RecountLinks }
 procedure TabSpace.RecountLinks;
 var
   Link: PabSpaceLink;
@@ -771,14 +969,14 @@ begin
   Link := FirstArcadeSpaceLink;
   while Link <> nil do
   begin
-    if Link.First = Self then Inc(OutgoingCount)
-    else if Link.Last = Self then Inc(IncomingCount);
+    if Link.First = Self then
+      Inc(OutgoingCount)
+    else if Link.Last = Self then
+      Inc(IncomingCount);
     Link := Link.Next;
   end;
 end;
-{ @end $552CD8 }
 
-{ @routine $552D38 ab_Space_UpdateApproachDanger }
 procedure ab_Space_UpdateApproachDanger;
 var
   Space: TabSpace;
@@ -796,42 +994,41 @@ begin
     Space := Space.Next;
   end;
 end;
-{ @end $552D38 }
 
-{ @routine $552D8C ab_SpaceLink_Clear }
 procedure ab_SpaceLink_Clear;
 begin
-  while not (FirstArcadeSpaceLink = nil) do ab_SpaceLink_Delete(LastArcadeSpaceLink);
+  while not (FirstArcadeSpaceLink = nil) do
+    ab_SpaceLink_Delete(LastArcadeSpaceLink);
 end;
-{ @end $552D8C }
 
-{ @routine $552DA4 ab_SpaceLink_Add }
 function ab_SpaceLink_Add: PabSpaceLink;
 var
   Link: PabSpaceLink;
 begin
   Link := AllocClearEC(SizeOf(TabSpaceLink));
-  if LastArcadeSpaceLink <> nil then LastArcadeSpaceLink.Next := Link;
+  if LastArcadeSpaceLink <> nil then
+    LastArcadeSpaceLink.Next := Link;
   Link.Prev := LastArcadeSpaceLink;
   Link.Next := nil;
   LastArcadeSpaceLink := Link;
-  if FirstArcadeSpaceLink = nil then FirstArcadeSpaceLink := Link;
+  if FirstArcadeSpaceLink = nil then
+    FirstArcadeSpaceLink := Link;
   Result := Link;
 end;
-{ @end $552DA4 }
 
-{ @routine $552E04 ab_SpaceLink_Delete }
 procedure ab_SpaceLink_Delete(Link: PabSpaceLink);
 begin
-  if Link.Prev <> nil then Link.Prev.Next := Link.Next;
-  if Link.Next <> nil then Link.Next.Prev := Link.Prev;
-  if LastArcadeSpaceLink = Link then LastArcadeSpaceLink := Link.Prev;
-  if FirstArcadeSpaceLink = Link then FirstArcadeSpaceLink := Link.Next;
+  if Link.Prev <> nil then
+    Link.Prev.Next := Link.Next;
+  if Link.Next <> nil then
+    Link.Next.Prev := Link.Prev;
+  if LastArcadeSpaceLink = Link then
+    LastArcadeSpaceLink := Link.Prev;
+  if FirstArcadeSpaceLink = Link then
+    FirstArcadeSpaceLink := Link.Next;
   FreeEC(Link);
 end;
-{ @end $552E04 }
 
-{ @routine $552E6C ab_SpaceLink_Connect }
 procedure ab_SpaceLink_Connect(First, Last: TabSpace);
 var
   Link: PabSpaceLink;
@@ -840,9 +1037,7 @@ begin
   Link.First := First;
   Link.Last := Last;
 end;
-{ @end $552E6C }
 
-{ @routine $552E98 ab_SpaceLink_Find }
 function ab_SpaceLink_Find(First, Last: TabSpace): PabSpaceLink;
 var
   Link: PabSpaceLink;
@@ -850,8 +1045,8 @@ begin
   Link := FirstArcadeSpaceLink;
   while Link <> nil do
   begin
-    if ((Link.First = First) and (Link.Last = Last)) or
-       ((Link.First = Last) and (Link.Last = First)) then
+    if ((Link.First = First) and (Link.Last = Last))
+        or ((Link.First = Last) and (Link.Last = First)) then
     begin
       Result := Link;
       Exit;
@@ -860,9 +1055,7 @@ begin
   end;
   Result := nil;
 end;
-{ @end $552E98 }
 
-{ @routine $552F04 ab_SpaceLink_FindExit }
 function ab_SpaceLink_FindExit(First: TabSpace; ExitIndex: Integer): PabSpaceLink;
 var
   Link: PabSpaceLink;
@@ -879,9 +1072,7 @@ begin
   end;
   Result := nil;
 end;
-{ @end $552F04 }
 
-{ @routine $552F58 ab_SpaceLink_Invalidate }
 procedure ab_SpaceLink_Invalidate;
 var
   Link: PabSpaceLink;
@@ -912,9 +1103,7 @@ begin
     Link := Link.Next;
   end;
 end;
-{ @end $552F58 }
 
-{ @routine $5530B8 ab_SpaceLink_BuildGeometry }
 procedure ab_SpaceLink_BuildGeometry;
 var
   First, Last: TPointF;
@@ -940,34 +1129,51 @@ begin
     WidthY := GiScalePixels(7) * DirectionY;
     Link.Points[0] := Classes.Point(Round(First.X - WidthY), Round(First.Y + WidthX));
     Link.Points[1] := Classes.Point(Round(First.X + WidthY), Round(First.Y - WidthX));
-    Link.Points[2] := Classes.Point(Round(Last.X + WidthY - DirectionX * 2), Round(Last.Y - WidthX - DirectionY * 2));
-    Link.Points[3] := Classes.Point(Round(Last.X - WidthY - DirectionX * 2), Round(Last.Y + WidthX - DirectionY * 2));
+    Link.Points[2] :=
+        Classes.Point(
+            Round(Last.X + WidthY - DirectionX * 2),
+            Round(Last.Y - WidthX - DirectionY * 2)
+        );
+    Link.Points[3] :=
+        Classes.Point(
+            Round(Last.X - WidthY - DirectionX * 2),
+            Round(Last.Y + WidthX - DirectionY * 2)
+        );
     Link.Points[7] := Classes.Point(Round(First.X - 0.7 * WidthY), Round(0.7 * WidthX + First.Y));
     Link.Points[8] := Classes.Point(Round(0.7 * WidthY + First.X), Round(First.Y - 0.7 * WidthX));
-    Link.Points[9] := Classes.Point(Round(0.7 * WidthY + Last.X - DirectionX * 2), Round(Last.Y - 0.7 * WidthX - DirectionY * 2));
-    Link.Points[10] := Classes.Point(Round(Last.X - 0.7 * WidthY - DirectionX * 2), Round(0.7 * WidthX + Last.Y - DirectionY * 2));
+    Link.Points[9] :=
+        Classes.Point(
+            Round(0.7 * WidthY + Last.X - DirectionX * 2),
+            Round(Last.Y - 0.7 * WidthX - DirectionY * 2)
+        );
+    Link.Points[10] :=
+        Classes.Point(
+            Round(Last.X - 0.7 * WidthY - DirectionX * 2),
+            Round(0.7 * WidthX + Last.Y - DirectionY * 2)
+        );
     WidthX := DirectionX * ArrowLength * 0.4;
     WidthY := DirectionY * ArrowLength * 0.4;
     Link.Points[4] := Classes.Point(Round(Last.X - WidthY), Round(Last.Y + WidthX));
-    Link.Points[5] := Classes.Point(Round(DirectionX * ArrowLength + Last.X), Round(DirectionY * ArrowLength + Last.Y));
+    Link.Points[5] :=
+        Classes.Point(
+            Round(DirectionX * ArrowLength + Last.X),
+            Round(DirectionY * ArrowLength + Last.Y)
+        );
     Link.Points[6] := Classes.Point(Round(Last.X + WidthY), Round(Last.Y - WidthX));
     Link := Link.Next;
   end;
 end;
-{ @end $5530B8 }
 
-{ @routine $553524 ab_SpaceLink_ClearImages }
 procedure ab_SpaceLink_ClearImages;
 var
   Link: PabSpaceLink;
 begin
   { The native routine retains this traversal without any per-link action. }
   Link := FirstArcadeSpaceLink;
-  while Link <> nil do Link := Link.Next;
+  while Link <> nil do
+    Link := Link.Next;
 end;
-{ @end $553524 }
 
-{ @routine $553548 ab_SpaceLink_Draw }
 procedure ab_SpaceLink_Draw;
 var
   Link: PabSpaceLink;
@@ -981,47 +1187,133 @@ begin
     ColorOffset := Link.Last.AppearanceIndex * 6;
     if HardwareRenderingEnabled then
     begin
-      DrawGradientLine(Link.Points[7].X + OffsetX, Link.Points[7].Y + OffsetY, $40FFFFFF,
-        Link.Points[10].X + OffsetX, Link.Points[10].Y + OffsetY, $C0FFFFFF, @GameScreenRect);
-      DrawGradientLine(Link.Points[8].X + OffsetX, Link.Points[8].Y + OffsetY, $40FFFFFF,
-        Link.Points[9].X + OffsetX, Link.Points[9].Y + OffsetY, $C0FFFFFF, @GameScreenRect);
+      DrawGradientLine(
+          Link.Points[7].X + OffsetX,
+          Link.Points[7].Y + OffsetY,
+          $40FFFFFF,
+          Link.Points[10].X + OffsetX,
+          Link.Points[10].Y + OffsetY,
+          $C0FFFFFF,
+          @GameScreenRect
+      );
+      DrawGradientLine(
+          Link.Points[8].X + OffsetX,
+          Link.Points[8].Y + OffsetY,
+          $40FFFFFF,
+          Link.Points[9].X + OffsetX,
+          Link.Points[9].Y + OffsetY,
+          $C0FFFFFF,
+          @GameScreenRect
+      );
       DrawColoredTriangle(
-        Link.Points[0].X + OffsetX, Link.Points[0].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3],
-        Link.Points[1].X + OffsetX, Link.Points[1].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3],
-        Link.Points[2].X + OffsetX, Link.Points[2].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2], True, @GameScreenRect);
+          Link.Points[0].X + OffsetX,
+          Link.Points[0].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          Link.Points[1].X + OffsetX,
+          Link.Points[1].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          Link.Points[2].X + OffsetX,
+          Link.Points[2].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          True,
+          @GameScreenRect
+      );
       DrawColoredTriangle(
-        Link.Points[2].X + OffsetX, Link.Points[2].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2],
-        Link.Points[3].X + OffsetX, Link.Points[3].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2],
-        Link.Points[0].X + OffsetX, Link.Points[0].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3], True, @GameScreenRect);
+          Link.Points[2].X + OffsetX,
+          Link.Points[2].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          Link.Points[3].X + OffsetX,
+          Link.Points[3].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          Link.Points[0].X + OffsetX,
+          Link.Points[0].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          True,
+          @GameScreenRect
+      );
       DrawColoredTriangle(
-        Link.Points[4].X + OffsetX, Link.Points[4].Y + OffsetY, ArcadeMapPalette[ColorOffset + 1],
-        Link.Points[5].X + OffsetX, Link.Points[5].Y + OffsetY, ArcadeMapPalette[ColorOffset],
-        Link.Points[6].X + OffsetX, Link.Points[6].Y + OffsetY, ArcadeMapPalette[ColorOffset + 1], True, @GameScreenRect);
+          Link.Points[4].X + OffsetX,
+          Link.Points[4].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 1],
+          Link.Points[5].X + OffsetX,
+          Link.Points[5].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset],
+          Link.Points[6].X + OffsetX,
+          Link.Points[6].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 1],
+          True,
+          @GameScreenRect
+      );
     end
     else
     begin
-      DrawGradientLine16Clipped(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-        Link.Points[7].X + OffsetX, Link.Points[7].Y + OffsetY, $40FFFFFF,
-        Link.Points[10].X + OffsetX, Link.Points[10].Y + OffsetY, $C0FFFFFF, GameScreenRect);
-      DrawGradientLine16Clipped(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-        Link.Points[8].X + OffsetX, Link.Points[8].Y + OffsetY, $40FFFFFF,
-        Link.Points[9].X + OffsetX, Link.Points[9].Y + OffsetY, $C0FFFFFF, GameScreenRect);
-      TriangleRasterizer16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-        Link.Points[0].X + OffsetX, Link.Points[0].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3],
-        Link.Points[1].X + OffsetX, Link.Points[1].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3],
-        Link.Points[2].X + OffsetX, Link.Points[2].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2], @GameScreenRect);
-      TriangleRasterizer16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-        Link.Points[2].X + OffsetX, Link.Points[2].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2],
-        Link.Points[3].X + OffsetX, Link.Points[3].Y + OffsetY, ArcadeMapPalette[ColorOffset + 2],
-        Link.Points[0].X + OffsetX, Link.Points[0].Y + OffsetY, ArcadeMapPalette[ColorOffset + 3], @GameScreenRect);
-      TriangleRasterizer16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-        Link.Points[4].X + OffsetX, Link.Points[4].Y + OffsetY, ArcadeMapPalette[ColorOffset + 1],
-        Link.Points[5].X + OffsetX, Link.Points[5].Y + OffsetY, ArcadeMapPalette[ColorOffset],
-        Link.Points[6].X + OffsetX, Link.Points[6].Y + OffsetY, ArcadeMapPalette[ColorOffset + 1], @GameScreenRect);
+      DrawGradientLine16Clipped(
+          ScreenRenderBuffer.GetPixels,
+          ScreenRenderBuffer.PitchBytes,
+          Link.Points[7].X + OffsetX,
+          Link.Points[7].Y + OffsetY,
+          $40FFFFFF,
+          Link.Points[10].X + OffsetX,
+          Link.Points[10].Y + OffsetY,
+          $C0FFFFFF,
+          GameScreenRect
+      );
+      DrawGradientLine16Clipped(
+          ScreenRenderBuffer.GetPixels,
+          ScreenRenderBuffer.PitchBytes,
+          Link.Points[8].X + OffsetX,
+          Link.Points[8].Y + OffsetY,
+          $40FFFFFF,
+          Link.Points[9].X + OffsetX,
+          Link.Points[9].Y + OffsetY,
+          $C0FFFFFF,
+          GameScreenRect
+      );
+      TriangleRasterizer16(
+          ScreenRenderBuffer.GetPixels,
+          ScreenRenderBuffer.PitchBytes,
+          Link.Points[0].X + OffsetX,
+          Link.Points[0].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          Link.Points[1].X + OffsetX,
+          Link.Points[1].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          Link.Points[2].X + OffsetX,
+          Link.Points[2].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          @GameScreenRect
+      );
+      TriangleRasterizer16(
+          ScreenRenderBuffer.GetPixels,
+          ScreenRenderBuffer.PitchBytes,
+          Link.Points[2].X + OffsetX,
+          Link.Points[2].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          Link.Points[3].X + OffsetX,
+          Link.Points[3].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 2],
+          Link.Points[0].X + OffsetX,
+          Link.Points[0].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 3],
+          @GameScreenRect
+      );
+      TriangleRasterizer16(
+          ScreenRenderBuffer.GetPixels,
+          ScreenRenderBuffer.PitchBytes,
+          Link.Points[4].X + OffsetX,
+          Link.Points[4].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 1],
+          Link.Points[5].X + OffsetX,
+          Link.Points[5].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset],
+          Link.Points[6].X + OffsetX,
+          Link.Points[6].Y + OffsetY,
+          ArcadeMapPalette[ColorOffset + 1],
+          @GameScreenRect
+      );
     end;
     Link := Link.Next;
   end;
 end;
-{ @end $553548 }
 
 end.

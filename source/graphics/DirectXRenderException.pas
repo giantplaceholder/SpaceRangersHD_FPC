@@ -1,35 +1,40 @@
 unit DirectXRenderException;
-// Unit bracket (inferred): .text 0x004C5900..0x004C5A8E; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses SysUtils;
+uses
+  SysUtils;
 
 type
-  EDirectXRender = class(Exception) // @size $10
-  public
-    ErrorCode: Integer; // @offset $0C
-    constructor Create(Message: AnsiString); // @addr $4C595C @ida "EDirectXRender * __usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, char *Message@<ecx>);"
-    constructor CreateCode(Message: AnsiString; Code: Integer); // @addr $4C59D8 @ida "EDirectXRender * __userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, char *Message@<ecx>, int Code@<^0>);"
+
+  EDirectXRender = class;
+
+  EDirectXRender = class(Exception)
+    ErrorCode: Integer;
+    constructor Create(Message: AnsiString);
+    constructor CreateCode(Message: AnsiString; Code: Integer);
   end;
 
 implementation
 
-uses GR_Main;
+uses
+  GR_Main;
 
-{ @routine $4C595C EDirectXRender_Create }
 constructor EDirectXRender.Create(Message: AnsiString);
 begin
   inherited Create(Message);
 end;
-{ @end $4C595C }
 
-{ @routine $4C59D8 EDirectXRender_CreateCode }
 constructor EDirectXRender.CreateCode(Message: AnsiString; Code: Integer);
 begin
   inherited Create(Message + ' = ' + Direct3DErrorText(Code));
   ErrorCode := Code;
 end;
-{ @end $4C59D8 }
 
 end.

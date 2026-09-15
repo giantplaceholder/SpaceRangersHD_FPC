@@ -1,65 +1,91 @@
 unit GI_PSWeapon01Laser;
-// Native laser particle beam, configurable width, duration and gradient palette.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Struct, GI_MessageLoop, GI_PSWeapon, Types;
+uses
+  EC_Struct,
+  GI_MessageLoop,
+  GI_PSWeapon,
+  Types;
 
 type
-  PBeamLaserParticle = ^TBeamLaserParticle;
-  TBeamLaserParticle = record // @size $20
-    Prev: PBeamLaserParticle; // @offset $00
-    Next: PBeamLaserParticle; // @offset $04
-    Position: TPointF; // @offset $08
-    Color: Word; // @offset $10
-    Alpha: Byte; // @offset $12
-    Velocity: TPointF; // @offset $14
-    State: Byte; // @offset $1C
+
+  PointerToTBeamLaserParticle = ^TBeamLaserParticle;
+
+  PBeamLaserParticle = PointerToTBeamLaserParticle;
+
+  TBeamLaserParticle = record
+    Prev: PBeamLaserParticle;
+    Next: PBeamLaserParticle;
+    Position: TPointF;
+    Color: Word;
+    Alpha: Byte;
+    Gap13: array[0..0] of Byte;
+    Velocity: TPointF;
+    State: Byte;
+    Gap1D: array[0..2] of Byte;
   end;
+
   TBeamLaserPalette = array[0..8] of Single;
-  TBeamLaserPalettes = array of TBeamLaserPalette;
 
 var
-  BeamLaserPalettes: array of TBeamLaserPalette; // @addr $88AA80
-  BeamLaserWidths: array of Single; // @addr $88AA84
-  BeamLaserDurations: array of Integer; // @addr $88AA88
+
+  BeamLaserPalettes: array of TBeamLaserPalette;
+
+  BeamLaserWidths: array of Single;
+
+  BeamLaserDurations: array of Integer;
 
 type
-  TPSWeapon01Laser = class(TPSWeaponGI) // @size $164
-  public
-    HalfWidth: Single; // @offset $130
-    FirstParticle: PBeamLaserParticle; // @offset $134
-    LastParticle: PBeamLaserParticle; // @offset $138
-    ProjectionBounds: TRect; // @offset $13C
-    OriginalLength: Double; // @offset $150
-    LengthScale: Double; // @offset $158
-    PaletteIndex: Integer; // @offset $160
 
-    constructor Create(Owner: TObjectGI; APaletteIndex: Integer); // @addr $686ED8 @ida "TPSWeapon01Laser *__userpurge $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>, int APaletteIndex@<^0>);"
-    destructor Destroy; override; // @addr $686F88 @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure SetPosition(Position: TPoint); override; // @addr $686FC4 @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, TPoint *Position@<edx>);"
-    procedure SetTargetPoint(Point: TPoint); override; // @addr $687008 @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, TPoint *Point@<edx>);"
-    procedure UpdateProjectionBounds; // @addr $68705C
-    procedure UpdateHitTestBounds; override; // @addr $687394
-    function GetLocalBounds: TRect; override; // @addr $6873F4 @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, TRect *Result@<edx>);"
-    function AddParticle: PBeamLaserParticle; // @addr $687458
-    procedure RemoveParticle(Particle: PBeamLaserParticle); // @addr $6874D0
-    procedure ClearParticles; // @addr $687550
-    procedure InvalidateRect(Rect: TRect); override; // @addr $6875A4 @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, TRect *Rect@<edx>);"
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override; // @addr $687670
-    procedure Draw(ClipRect: TRect); override; // @addr $687D6C @ida "void __usercall $name(TPSWeapon01Laser *Self@<eax>, TRect *ClipRect@<edx>);"
+  TPSWeapon01Laser = class;
+
+  TPSWeapon01Laser = class(TPSWeaponGI)
+    HalfWidth: Single;
+    FirstParticle: PBeamLaserParticle;
+    LastParticle: PBeamLaserParticle;
+    ProjectionBounds: TRect;
+    Gap14C: array[0..3] of Byte;
+    OriginalLength: Double;
+    LengthScale: Double;
+    PaletteIndex: Integer;
+    procedure UpdateHitTestBounds; override;
+    procedure SetPosition(Position: TPoint); override;
+    function GetLocalBounds: TRect; override;
+    procedure InvalidateRect(Rect: TRect); override;
+    procedure Draw(ClipRect: TRect); override;
+    procedure SetTargetPoint(Point: TPoint); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
+    destructor Destroy; override;
+    procedure UpdateProjectionBounds;
+    function AddParticle: PBeamLaserParticle;
+    procedure RemoveParticle(Particle: PBeamLaserParticle);
+    procedure ClearParticles;
   end;
 
-procedure LoadBeamLaserPalettes; // @addr $687F84
+procedure LoadBeamLaserPalettes;
 
 implementation
 
-// @unit-initialization $8778EC
-// @unit-finalization $6882E4
+uses
+  GlobalsV,
+  SysUtils,
+  Math,
+  EC_BlockPar,
+  EC_Str,
+  EC_Mem,
+  GR_Main,
+  GR_DX,
+  aMyFunction,
+  Globals;
 
-uses SysUtils, Math, EC_BlockPar, EC_Str, EC_Mem, GR_Main, GR_DX, aMyFunction, Globals;
-
-{ @routine $686ED8 TPSWeapon01Laser_Create }
 constructor TPSWeapon01Laser.Create(Owner: TObjectGI; APaletteIndex: Integer);
 begin
   inherited Create(Owner);
@@ -70,17 +96,13 @@ begin
   UpdateProjectionBounds;
   PaletteIndex := APaletteIndex;
 end;
-{ @end $686ED8 }
 
-{ @routine $686F88 TPSWeapon01Laser_Destroy }
 destructor TPSWeapon01Laser.Destroy;
 begin
   ClearParticles;
   inherited Destroy;
 end;
-{ @end $686F88 }
 
-{ @routine $686FC4 TPSWeapon01Laser_SetPosition }
 procedure TPSWeapon01Laser.SetPosition(Position: TPoint);
 begin
   if (LocalPosition.X <> Position.X) or (LocalPosition.Y <> Position.Y) then
@@ -89,9 +111,7 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $686FC4 }
 
-{ @routine $687008 TPSWeapon01Laser_SetTargetPoint }
 procedure TPSWeapon01Laser.SetTargetPoint(Point: TPoint);
 begin
   if (TargetPoint.X <> Point.X) or (TargetPoint.Y <> Point.Y) then
@@ -100,16 +120,15 @@ begin
     UpdateProjectionBounds;
   end;
 end;
-{ @end $687008 }
 
-{ @routine $68705C TPSWeapon01Laser_UpdateProjectionBounds }
 procedure TPSWeapon01Laser.UpdateProjectionBounds;
 var
   Angle, Sine, Cosine, Distance, A, B, C, D: Single;
   DY: Integer;
 begin
   DY := -(TargetPoint.Y - LocalPosition.Y);
-  if DY = 0 then Inc(DY);
+  if DY = 0 then
+    Inc(DY);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, DY);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -128,9 +147,7 @@ begin
   ProjectionBounds.Top := Floor(Math.Min(Math.Min(Math.Min(A, B), C), D));
   ProjectionBounds.Bottom := Ceil(Math.Max(Math.Max(Math.Max(A, B), C), D));
 end;
-{ @end $68705C }
 
-{ @routine $687394 TPSWeapon01Laser_UpdateHitTestBounds }
 procedure TPSWeapon01Laser.UpdateHitTestBounds;
 begin
   HitTestBounds.Left := ProjectionBounds.Left + AbsolutePosition.X;
@@ -138,9 +155,7 @@ begin
   HitTestBounds.Right := ProjectionBounds.Right + AbsolutePosition.X;
   HitTestBounds.Bottom := ProjectionBounds.Bottom + AbsolutePosition.Y;
 end;
-{ @end $687394 }
 
-{ @routine $6873F4 TPSWeapon01Laser_GetLocalBounds }
 function TPSWeapon01Laser.GetLocalBounds: TRect;
 begin
   Result.Left := ProjectionBounds.Left + LocalPosition.X;
@@ -148,35 +163,35 @@ begin
   Result.Right := ProjectionBounds.Right + LocalPosition.X;
   Result.Bottom := ProjectionBounds.Bottom + LocalPosition.Y;
 end;
-{ @end $6873F4 }
 
-{ @routine $687458 TPSWeapon01Laser_AddParticle }
 function TPSWeapon01Laser.AddParticle: PBeamLaserParticle;
 var
   Particle: PBeamLaserParticle;
 begin
   Particle := AllocEC(SizeOf(TBeamLaserParticle));
-  if LastParticle <> nil then LastParticle.Next := Particle;
+  if LastParticle <> nil then
+    LastParticle.Next := Particle;
   Particle.Prev := LastParticle;
   Particle.Next := nil;
   LastParticle := Particle;
-  if FirstParticle = nil then FirstParticle := Particle;
+  if FirstParticle = nil then
+    FirstParticle := Particle;
   Result := Particle;
 end;
-{ @end $687458 }
 
-{ @routine $6874D0 TPSWeapon01Laser_RemoveParticle }
 procedure TPSWeapon01Laser.RemoveParticle(Particle: PBeamLaserParticle);
 begin
-  if Particle.Prev <> nil then Particle.Prev.Next := Particle.Next;
-  if Particle.Next <> nil then Particle.Next.Prev := Particle.Prev;
-  if LastParticle = Particle then LastParticle := Particle.Prev;
-  if FirstParticle = Particle then FirstParticle := Particle.Next;
+  if Particle.Prev <> nil then
+    Particle.Prev.Next := Particle.Next;
+  if Particle.Next <> nil then
+    Particle.Next.Prev := Particle.Prev;
+  if LastParticle = Particle then
+    LastParticle := Particle.Prev;
+  if FirstParticle = Particle then
+    FirstParticle := Particle.Next;
   FreeEC(Particle);
 end;
-{ @end $6874D0 }
 
-{ @routine $687550 TPSWeapon01Laser_ClearParticles }
 procedure TPSWeapon01Laser.ClearParticles;
 var
   Particle, Current: PBeamLaserParticle;
@@ -191,15 +206,17 @@ begin
   FirstParticle := nil;
   LastParticle := nil;
 end;
-{ @end $687550 }
 
-{ @routine $6875A4 TPSWeapon01Laser_InvalidateRect }
 procedure TPSWeapon01Laser.InvalidateRect(Rect: TRect);
 var
   Target: TPoint;
   Intersection: TRect;
 begin
-  MessageLoop.UpdateRects.AddScreenClippedRect(HitTestBounds, Parent.ToAbsolutePoint(LocalPosition), Parent.ToAbsolutePoint(TargetPoint));
+  MessageLoop.UpdateRects.AddScreenClippedRect(
+      HitTestBounds,
+      Parent.ToAbsolutePoint(LocalPosition),
+      Parent.ToAbsolutePoint(TargetPoint)
+  );
   Target := Parent.ToAbsolutePoint(TargetPoint);
   Rect.Left := Target.X - 24;
   Rect.Right := Target.X + 24;
@@ -208,9 +225,7 @@ begin
   if IntersectRects(Intersection, Rect, GameScreenRect) then
     MessageLoop.QueueUpdateRect(Intersection);
 end;
-{ @end $6875A4 }
 
-{ @routine $687670 TPSWeapon01Laser_Advance }
 procedure TPSWeapon01Laser.Advance(Timer: PCallbackTimerGI; UserData: Integer);
 var
   I, Power, FadeThreshold: Integer;
@@ -225,7 +240,8 @@ begin
     I := 0;
     Distance := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y));
     OriginalLength := Distance;
-    if OriginalLength = 0 then OriginalLength := 1;
+    if OriginalLength = 0 then
+      OriginalLength := 1;
     LengthScale := 1;
     Angle := 0;
     Alpha := 0;
@@ -249,8 +265,10 @@ begin
       Particle.Alpha := Alpha;
       Particle.Velocity := MakePointF(0, 10);
       Particle.State := 1;
-      if Alpha + 4 < 255 then Inc(Alpha, 4)
-      else Alpha := 255;
+      if Alpha + 4 < 255 then
+        Inc(Alpha, 4)
+      else
+        Alpha := 255;
       Inc(I);
       Angle := Angle + 10.0;
     end;
@@ -258,7 +276,9 @@ begin
   else
   begin
     Distance := OriginalLength;
-    LengthScale := Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y)) / OriginalLength;
+    LengthScale :=
+        Sqrt(Sqr(TargetPoint.X - LocalPosition.X) + Sqr(TargetPoint.Y - LocalPosition.Y))
+            / OriginalLength;
     UpdateHitTestBounds;
     Particle := FirstParticle;
     while Particle <> nil do
@@ -267,59 +287,65 @@ begin
       Particle := Particle.Next;
       case Current.State of
         1:
+        begin
+          Current.Position.X := Current.Position.X + Current.Velocity.X;
+          Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
+          if Current.Alpha + 4 < 255 then
+            Inc(Current.Alpha, 4)
+          else
+            Current.Alpha := 255;
+          if Current.Position.Y > Distance then
           begin
-            Current.Position.X := Current.Position.X + Current.Velocity.X;
-            Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
-            if Current.Alpha + 4 < 255 then Inc(Current.Alpha, 4)
-            else Current.Alpha := 255;
-            if Current.Position.Y > Distance then
+            for I := 1 to 1 do
             begin
-              for I := 1 to 1 do
-              begin
-                Spark := AddParticle;
-                Spark.Position.X := Current.Position.X;
-                Spark.Position.Y := Current.Position.Y;
-                Spark.Color := Current.Color;
-                Angle := Random(16) / 8.0 * Pi;
-                Power := Random(50);
-                Spark.Velocity.X := Sin(Angle) * (Power + 50) / 50.0;
-                Spark.Velocity.Y := Cos(Angle) * (Power + 50) / 50.0;
-                Spark.State := 2;
-                Power := (Current.Alpha shr 1) - Random(100);
-                if Power < 0 then Power := 0;
-                Spark.Alpha := Power;
-              end;
-              Current.Position.Y := Current.Position.Y - Distance;
-              Current.Alpha := 0;
+              Spark := AddParticle;
+              Spark.Position.X := Current.Position.X;
+              Spark.Position.Y := Current.Position.Y;
+              Spark.Color := Current.Color;
+              Angle := Random(16) / 8.0 * Pi;
+              Power := Random(50);
+              Spark.Velocity.X := Sin(Angle) * (Power + 50) / 50.0;
+              Spark.Velocity.Y := Cos(Angle) * (Power + 50) / 50.0;
+              Spark.State := 2;
+              Power := (Current.Alpha shr 1) - Random(100);
+              if Power < 0 then
+                Power := 0;
+              Spark.Alpha := Power;
             end;
-            if RemainingTicks < FadeThreshold then RemoveParticle(Current);
+            Current.Position.Y := Current.Position.Y - Distance;
+            Current.Alpha := 0;
           end;
+          if RemainingTicks < FadeThreshold then
+            RemoveParticle(Current);
+        end;
         2:
-          begin
-            Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
-            Current.Position.X := Current.Position.X + Current.Velocity.X;
-            Current.Velocity.Y := 0.95 * Current.Velocity.Y;
-            Current.Velocity.X := 0.95 * Current.Velocity.X;
-            if Current.Alpha < 246 then Inc(Current.Alpha, 16);
-            if Current.Alpha > 245 then Current.State := 3;
-          end;
+        begin
+          Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
+          Current.Position.X := Current.Position.X + Current.Velocity.X;
+          Current.Velocity.Y := 0.95 * Current.Velocity.Y;
+          Current.Velocity.X := 0.95 * Current.Velocity.X;
+          if Current.Alpha < 246 then
+            Inc(Current.Alpha, 16);
+          if Current.Alpha > 245 then
+            Current.State := 3;
+        end;
         3:
-          begin
-            Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
-            Current.Position.X := Current.Position.X + Current.Velocity.X;
-            Current.Velocity.Y := 0.95 * Current.Velocity.Y;
-            Current.Velocity.X := 0.95 * Current.Velocity.X;
-            if Current.Alpha > 25 then Dec(Current.Alpha, 26);
-            if Current.Alpha < 26 then RemoveParticle(Current);
-          end;
+        begin
+          Current.Position.Y := Current.Position.Y + Current.Velocity.Y;
+          Current.Position.X := Current.Position.X + Current.Velocity.X;
+          Current.Velocity.Y := 0.95 * Current.Velocity.Y;
+          Current.Velocity.X := 0.95 * Current.Velocity.X;
+          if Current.Alpha > 25 then
+            Dec(Current.Alpha, 26);
+          if Current.Alpha < 26 then
+            RemoveParticle(Current);
+        end;
       end;
     end;
   end;
   Dec(RemainingTicks);
 end;
-{ @end $687670 }
 
-{ @routine $687D6C TPSWeapon01Laser_Draw }
 procedure TPSWeapon01Laser.Draw(ClipRect: TRect);
 var
   Angle, Sine, Cosine, PX, PY: Single;
@@ -327,7 +353,8 @@ var
   X, Y: Integer;
 begin
   Y := -(TargetPoint.Y - LocalPosition.Y);
-  if Y = 0 then Inc(Y);
+  if Y = 0 then
+    Inc(Y);
   Angle := ArcTan2(TargetPoint.X - LocalPosition.X, Y);
   Sine := Sin(Angle);
   Cosine := Cos(Angle);
@@ -353,15 +380,16 @@ begin
       PY := -Particle.Position.Y * LengthScale;
       X := Round(PX * Cosine - PY * Sine + AbsolutePosition.X);
       Y := Round(PX * Sine + PY * Cosine + AbsolutePosition.Y);
-      if (X >= ClipRect.Left) and (X < ClipRect.Right) and (Y >= ClipRect.Top) and (Y < ClipRect.Bottom) then
+      if (X >= ClipRect.Left)
+          and (X < ClipRect.Right)
+          and (Y >= ClipRect.Top)
+          and (Y < ClipRect.Bottom) then
         ScreenRenderBuffer.BlendPixel16(X, Y, Particle.Color, Particle.Alpha);
       Particle := Particle.Next;
     end;
   end;
 end;
-{ @end $687D6C }
 
-{ @routine $687F84 LoadBeamLaserPalettes }
 procedure LoadBeamLaserPalettes;
 var
   Block, PaletteBlock: TBlockParEC;
@@ -387,17 +415,19 @@ begin
         begin
           Text := PaletteBlock.GetParam('Color' + IntToStr(ColorIndex));
           for PartIndex := 0 to 2 do
-            BeamLaserPalettes[Index][3 * ColorIndex + PartIndex] := ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
+            BeamLaserPalettes[Index][3 * ColorIndex + PartIndex] :=
+                ExtractDecimalToSingleW(ExtractDelimitedPartW(Text, PartIndex, ','));
         end;
       if PaletteBlock.CountParams('Width') > 0 then
         BeamLaserWidths[Index] := ExtractDecimalToSingleW(PaletteBlock.GetParam('Width'))
-      else BeamLaserWidths[Index] := 2.0;
+      else
+        BeamLaserWidths[Index] := 2.0;
       if PaletteBlock.CountParams('Time') > 0 then
         BeamLaserDurations[Index] := ExtractDigitsToIntW(PaletteBlock.GetParam('Time'))
-      else BeamLaserDurations[Index] := 40;
+      else
+        BeamLaserDurations[Index] := 40;
     end;
   end;
 end;
-{ @end $687F84 }
 
 end.

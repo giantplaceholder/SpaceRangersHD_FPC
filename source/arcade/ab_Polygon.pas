@@ -1,66 +1,104 @@
 unit ab_Polygon;
-// Unit bracket (inferred): .text 0x0053A7F8..0x0053B54F; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Unit bracket (inferred): .itext 0x00877860..0x00877867; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
-// Native anonymous RTTI and initialization-table evidence identify this unit.
-// Ordinary routines occupy $53A8F4..$53B4FE; $53B500 is compiler finalization.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Buf, EC_Struct, ab_StopLine;
+uses
+  EC_Buf,
+  EC_Struct,
+  ab_StopLine;
 
 type
-  TabPolygonVertex = record // @size $08
-    Point: PabStopPoint; // @offset $00
-    Color: PCardinal; // @offset $04
-  end;
-  PabPolygon = ^TabPolygon;
-  TabPolygon = record // @size $34
-    Prev: PabPolygon; // @offset $00
-    Next: PabPolygon; // @offset $04
-    Vertices: array[0..2] of TabPolygonVertex; // @offset $08
-    MapValue30: Integer; // @offset $30  Serialized value; meaning not yet established.
-  end;
-  PabPolygonGroup = ^TabOptGroup;
-  // Native record RTTI at $53A818.
-  TabOptGroup = record // @size $68
-    Polygons: array of PabPolygon; // @offset $00
-    Corners: array[0..3] of TVector3D; // @offset $08
-  end;
-  PabPolygonCell = ^TabOptUnit;
-  // Native record RTTI at $53A884.
-  TabOptUnit = record // @size $08
-    Points: array of PabStopPoint; // @offset $00
-    Groups: array of PabPolygonGroup; // @offset $04
+
+  PointerToTabPolygon = ^TabPolygon;
+
+  PointerToTabOptGroup = ^TabOptGroup;
+
+  PointerToTabOptUnit = ^TabOptUnit;
+
+  TabPolygonVertex = record
+    Point: PabStopPoint;
+    Color: PCardinal;
   end;
 
-procedure ab_Polygon_Clear; // @addr $53A8F4
-function ab_Polygon_Count: Integer; // @addr $53A924
-procedure ab_Polygon_ClearVisibility; // @addr $53A958
-procedure ab_Polygon_LoadVisibility(Buffer: TBufEC); // @addr $53AA34
-procedure ab_Polygon_SelectVisibilityCell; // @addr $53AE84
-procedure ab_Polygon_ProjectVisiblePoints; // @addr $53AF30
-procedure ab_Polygon_QueueUpdateRects; // @addr $53AFE4
-procedure ab_Polygon_Draw; // @addr $53B264
-procedure ab_Polygon_Load(Buffer: TBufEC); // @addr $53B400
+  PabPolygon = PointerToTabPolygon;
+
+  TabPolygon = record
+    Prev: PabPolygon;
+    Next: PabPolygon;
+    Vertices: array[0..2] of TabPolygonVertex;
+    Gap20: array[0..15] of Byte;
+    MapValue30: Integer;
+  end;
+
+  PabPolygonGroup = PointerToTabOptGroup;
+
+  TabOptGroup = record
+    Polygons: array of PabPolygon;
+    Gap4: array[0..3] of Byte;
+    Corners: array[0..3] of TVector3D;
+  end;
+
+  PabPolygonCell = PointerToTabOptUnit;
+
+  TabOptUnit = record
+    Points: array of PabStopPoint;
+    Groups: array of PabPolygonGroup;
+  end;
 
 var
-  FirstPolygon: PabPolygon = nil; // @addr $87AED4
-  LastPolygon: PabPolygon = nil; // @addr $87AED8
-  PolygonStorage: PabPolygon; // @addr $88A78C
-  PolygonGroups: array of TabOptGroup; // @addr $88A790
-  PolygonCells: array of TabOptUnit; // @addr $88A794
-  LongitudeCellCount: Integer; // @addr $88A798
-  PolarCellCount: Integer; // @addr $88A79C
-  CurrentPolygonCell: PabPolygonCell; // @addr $88A7A0
+
+  FirstPolygon: PabPolygon = nil;
+
+  LastPolygon: PabPolygon = nil;
+
+  PolygonStorage: PabPolygon;
+
+  PolygonGroups: array of TabOptGroup;
+
+  PolygonCells: array of TabOptUnit;
+
+  LongitudeCellCount: Integer;
+
+  PolarCellCount: Integer;
+
+  CurrentPolygonCell: PabPolygonCell;
+
+procedure ab_Polygon_Clear;
+
+function ab_Polygon_Count: Integer;
+
+procedure ab_Polygon_ClearVisibility;
+
+procedure ab_Polygon_LoadVisibility(Buffer: TBufEC);
+
+procedure ab_Polygon_SelectVisibilityCell;
+
+procedure ab_Polygon_ProjectVisiblePoints;
+
+procedure ab_Polygon_QueueUpdateRects;
+
+procedure ab_Polygon_Draw;
+
+procedure ab_Polygon_Load(Buffer: TBufEC);
 
 implementation
 
-// @unit-initialization $877860
-// @unit-finalization $53B500
+uses
+  Classes,
+  EC_Mem,
+  GI_Tail,
+  ab_Global,
+  GR_Main,
+  GR_DX,
+  Globals,
+  GlobalsV;
 
-uses Classes, EC_Mem, GI_Tail, ab_Global, GR_Main, GR_DX, Globals, GlobalsV;
-
-{ @routine $53A8F4 ab_Polygon_Clear }
 procedure ab_Polygon_Clear;
 begin
   ab_Polygon_ClearVisibility;
@@ -72,9 +110,7 @@ begin
   FirstPolygon := nil;
   LastPolygon := nil;
 end;
-{ @end $53A8F4 }
 
-{ @routine $53A924 ab_Polygon_Count }
 function ab_Polygon_Count: Integer;
 var
   Polygon: PabPolygon;
@@ -87,9 +123,7 @@ begin
     Polygon := Polygon.Next;
   end;
 end;
-{ @end $53A924 }
 
-{ @routine $53A958 ab_Polygon_ClearVisibility }
 procedure ab_Polygon_ClearVisibility;
 var
   Index: Integer;
@@ -99,14 +133,13 @@ begin
     PolygonCells[Index].Points := nil;
     PolygonCells[Index].Groups := nil;
   end;
-  for Index := 0 to High(PolygonGroups) do PolygonGroups[Index].Polygons := nil;
+  for Index := 0 to High(PolygonGroups) do
+    PolygonGroups[Index].Polygons := nil;
   PolygonGroups := nil;
   PolygonCells := nil;
   CurrentPolygonCell := nil;
 end;
-{ @end $53A958 }
 
-{ @routine $53AA34 ab_Polygon_LoadVisibility }
 procedure ab_Polygon_LoadVisibility(Buffer: TBufEC);
 var
   Index, ItemIndex, Count: Integer;
@@ -195,30 +228,30 @@ begin
   Polygons := nil;
   CurrentPolygonCell := nil;
 end;
-{ @end $53AA34 }
 
-{ @routine $53AE84 ab_Polygon_SelectVisibilityCell }
 procedure ab_Polygon_SelectVisibilityCell;
 var
   LongitudeIndex, PolarIndex: Integer;
 begin
   LongitudeIndex := Round(SphereViewState.LongitudeDegrees / 360 * LongitudeCellCount);
-  if LongitudeIndex >= LongitudeCellCount then LongitudeIndex := 0;
+  if LongitudeIndex >= LongitudeCellCount then
+    LongitudeIndex := 0;
   PolarIndex := Round(SphereViewState.PolarAngleDegrees / 180 * (PolarCellCount - 1));
-  if PolarIndex >= PolarCellCount then RaiseWideMessage('ab_OptCur');
+  if PolarIndex >= PolarCellCount then
+    RaiseWideMessage('ab_OptCur');
   CurrentPolygonCell := @PolygonCells[LongitudeIndex * PolarCellCount + PolarIndex];
 end;
-{ @end $53AE84 }
 
-{ @routine $53AF30 ab_Polygon_ProjectVisiblePoints }
 procedure ab_Polygon_ProjectVisiblePoints;
 var
   Index, Count: Integer;
   Point: PabStopPoint;
   Projected: TVector3D;
 begin
-  if CurrentPolygonCell = nil then Exit;
-  if CurrentPolygonCell.Points = nil then Exit;
+  if CurrentPolygonCell = nil then
+    Exit;
+  if CurrentPolygonCell.Points = nil then
+    Exit;
   Count := High(CurrentPolygonCell.Points) + 1;
   for Index := 0 to Count - 1 do
   begin
@@ -229,9 +262,7 @@ begin
     Point.ScreenY := ArcadeBattleScreen.WorldCenterY + Round(Projected.Y);
   end;
 end;
-{ @end $53AF30 }
 
-{ @routine $53AFE4 ab_Polygon_QueueUpdateRects }
 procedure ab_Polygon_QueueUpdateRects;
 var
   Index, Count: Integer;
@@ -240,8 +271,10 @@ var
   CenterX, CenterY: Integer;
   Projected: TVector3D;
 begin
-  if CurrentPolygonCell = nil then Exit;
-  if CurrentPolygonCell.Groups = nil then Exit;
+  if CurrentPolygonCell = nil then
+    Exit;
+  if CurrentPolygonCell.Groups = nil then
+    Exit;
   CenterX := ArcadeBattleScreen.WorldCenterX;
   CenterY := ArcadeBattleScreen.WorldCenterY;
   Count := High(CurrentPolygonCell.Groups) + 1;
@@ -254,34 +287,53 @@ begin
     MinY := Projected.Y;
     MaxY := Projected.Y;
     Projected := ProjectPointByMatrix(SphereProjectionMatrix, Group.Corners[1]);
-    if Projected.X < MinX then MinX := Projected.X
-    else if Projected.X > MaxX then MaxX := Projected.X;
-    if Projected.Y < MinY then MinY := Projected.Y
-    else if Projected.Y > MaxY then MaxY := Projected.Y;
+    if Projected.X < MinX then
+      MinX := Projected.X
+    else if Projected.X > MaxX then
+      MaxX := Projected.X;
+    if Projected.Y < MinY then
+      MinY := Projected.Y
+    else if Projected.Y > MaxY then
+      MaxY := Projected.Y;
     Projected := ProjectPointByMatrix(SphereProjectionMatrix, Group.Corners[2]);
-    if Projected.X < MinX then MinX := Projected.X
-    else if Projected.X > MaxX then MaxX := Projected.X;
-    if Projected.Y < MinY then MinY := Projected.Y
-    else if Projected.Y > MaxY then MaxY := Projected.Y;
+    if Projected.X < MinX then
+      MinX := Projected.X
+    else if Projected.X > MaxX then
+      MaxX := Projected.X;
+    if Projected.Y < MinY then
+      MinY := Projected.Y
+    else if Projected.Y > MaxY then
+      MaxY := Projected.Y;
     Projected := ProjectPointByMatrix(SphereProjectionMatrix, Group.Corners[3]);
-    if Projected.X < MinX then MinX := Projected.X
-    else if Projected.X > MaxX then MaxX := Projected.X;
-    if Projected.Y < MinY then MinY := Projected.Y
-    else if Projected.Y > MaxY then MaxY := Projected.Y;
-    ArcadeBattleScreen.QueueUpdateRect(Classes.Rect(CenterX + Round(MinX), CenterY + Round(MinY), CenterX + Round(MaxX) + 1, CenterY + Round(MaxY) + 1));
+    if Projected.X < MinX then
+      MinX := Projected.X
+    else if Projected.X > MaxX then
+      MaxX := Projected.X;
+    if Projected.Y < MinY then
+      MinY := Projected.Y
+    else if Projected.Y > MaxY then
+      MaxY := Projected.Y;
+    ArcadeBattleScreen.QueueUpdateRect(
+        Classes.Rect(
+            CenterX + Round(MinX),
+            CenterY + Round(MinY),
+            CenterX + Round(MaxX) + 1,
+            CenterY + Round(MaxY) + 1
+        )
+    );
   end;
 end;
-{ @end $53AFE4 }
 
-{ @routine $53B264 ab_Polygon_Draw }
 procedure ab_Polygon_Draw;
 var
   GroupIndex, GroupCount, PolygonIndex, PolygonCount: Integer;
   Group: PabPolygonGroup;
   Polygon: PabPolygon;
 begin
-  if CurrentPolygonCell = nil then Exit;
-  if CurrentPolygonCell.Groups = nil then Exit;
+  if CurrentPolygonCell = nil then
+    Exit;
+  if CurrentPolygonCell.Groups = nil then
+    Exit;
   GroupCount := High(CurrentPolygonCell.Groups) + 1;
   for GroupIndex := 0 to GroupCount - 1 do
   begin
@@ -291,20 +343,38 @@ begin
     begin
       Polygon := Group.Polygons[PolygonIndex];
       if HardwareRenderingEnabled then
-        DrawColoredTriangle(Polygon.Vertices[0].Point.ScreenX, Polygon.Vertices[0].Point.ScreenY, Polygon.Vertices[0].Color^,
-          Polygon.Vertices[1].Point.ScreenX, Polygon.Vertices[1].Point.ScreenY, Polygon.Vertices[1].Color^,
-          Polygon.Vertices[2].Point.ScreenX, Polygon.Vertices[2].Point.ScreenY, Polygon.Vertices[2].Color^, True, @GameScreenRect)
+        DrawColoredTriangle(
+            Polygon.Vertices[0].Point.ScreenX,
+            Polygon.Vertices[0].Point.ScreenY,
+            Polygon.Vertices[0].Color^,
+            Polygon.Vertices[1].Point.ScreenX,
+            Polygon.Vertices[1].Point.ScreenY,
+            Polygon.Vertices[1].Color^,
+            Polygon.Vertices[2].Point.ScreenX,
+            Polygon.Vertices[2].Point.ScreenY,
+            Polygon.Vertices[2].Color^,
+            True,
+            @GameScreenRect
+        )
       else
-        TriangleRasterizer16(ScreenRenderBuffer.GetPixels, ScreenRenderBuffer.PitchBytes,
-          Polygon.Vertices[0].Point.ScreenX, Polygon.Vertices[0].Point.ScreenY, Polygon.Vertices[0].Color^,
-          Polygon.Vertices[1].Point.ScreenX, Polygon.Vertices[1].Point.ScreenY, Polygon.Vertices[1].Color^,
-          Polygon.Vertices[2].Point.ScreenX, Polygon.Vertices[2].Point.ScreenY, Polygon.Vertices[2].Color^, @GameScreenRect);
+        TriangleRasterizer16(
+            ScreenRenderBuffer.GetPixels,
+            ScreenRenderBuffer.PitchBytes,
+            Polygon.Vertices[0].Point.ScreenX,
+            Polygon.Vertices[0].Point.ScreenY,
+            Polygon.Vertices[0].Color^,
+            Polygon.Vertices[1].Point.ScreenX,
+            Polygon.Vertices[1].Point.ScreenY,
+            Polygon.Vertices[1].Color^,
+            Polygon.Vertices[2].Point.ScreenX,
+            Polygon.Vertices[2].Point.ScreenY,
+            Polygon.Vertices[2].Color^,
+            @GameScreenRect
+        );
     end;
   end;
 end;
-{ @end $53B264 }
 
-{ @routine $53B400 ab_Polygon_Load }
 procedure ab_Polygon_Load(Buffer: TBufEC);
 var
   Index, Count, Vertex: Integer;
@@ -312,25 +382,28 @@ var
 begin
   ab_Polygon_Clear;
   Count := Buffer.GetInt32;
-  if Count < 1 then Exit;
+  if Count < 1 then
+    Exit;
   PolygonStorage := AllocClearEC(Count * SizeOf(TabPolygon));
   Polygon := PolygonStorage;
   for Index := 0 to Count - 1 do
   begin
-    if LastPolygon <> nil then LastPolygon.Next := Polygon;
+    if LastPolygon <> nil then
+      LastPolygon.Next := Polygon;
     Polygon.Prev := LastPolygon;
     Polygon.Next := nil;
     LastPolygon := Polygon;
-    if FirstPolygon = nil then FirstPolygon := Polygon;
+    if FirstPolygon = nil then
+      FirstPolygon := Polygon;
     Polygon.MapValue30 := Buffer.GetInt32;
     for Vertex := 0 to 2 do
     begin
       Polygon.Vertices[Vertex].Point := StopPointIndex[Buffer.GetInt32];
-      Polygon.Vertices[Vertex].Color := Pointer(PAnsiChar(ArcadeMapColorBuffer.Data) + Buffer.GetInt32);
+      Polygon.Vertices[Vertex].Color :=
+          Pointer(PAnsiChar(ArcadeMapColorBuffer.Data) + Buffer.GetInt32);
     end;
     Polygon := Pointer(PAnsiChar(Polygon) + SizeOf(TabPolygon));
   end;
 end;
-{ @end $53B400 }
 
 end.

@@ -1,41 +1,63 @@
 unit abWall;
-// Grouped by TabWall's native VMT; original unit boundary unresolved.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses Classes, GI_MessageLoop, ab_Object, ab_Hit, ab_StopLine, ab_WorldImage, ab_Zone;
+uses
+  Classes,
+  GI_MessageLoop,
+  ab_Object,
+  ab_Hit,
+  ab_StopLine,
+  ab_WorldImage,
+  ab_Zone;
 
 type
-  TabWall = class(TabHit) // @size $E0
-  public
-    Zone: PabZone; // @offset $D0
-    WorldImage: PabWorldImage; // @offset $D4
-    DirectionFrameCount: Integer; // @offset $D8
-    StopPoint: PabStopPoint; // @offset $DC
-    constructor Create; // @addr $501618 @ida "TabWall *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr $50169C @ida "void __usercall $name(TabWall *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure BindZone(Value: PabZone); // @addr $5016F4
-    procedure AttachVisual; // @addr $5018B4 @note "Empty in this native version; called after arena wall setup."
-    procedure QueueImageLoad(PendingLoads: TList; Owner: TObjectGI); override; // @addr $5018C0
-    procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override; // @addr $5018D4
-    procedure UpdateState; override; // @addr $5019F0
-    procedure Advance; override; // @addr $501A04
-    procedure UpdateVisuals; override; // @addr $501A94
+
+  TabWall = class;
+
+  TabWall = class(TabHit)
+    Zone: PabZone;
+    WorldImage: PabWorldImage;
+    DirectionFrameCount: Integer;
+    StopPoint: PabStopPoint;
+    procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override;
+    procedure UpdateState; override;
+    procedure Advance; override;
+    procedure UpdateVisuals; override;
+    procedure QueueImageLoad(PendingLoads: TList; Owner: TObjectGI); override;
+    constructor Create;
+    destructor Destroy; override;
+    procedure BindZone(Value: PabZone);
+    procedure AttachVisual;
   end;
 
-function ab_Wall_FindZone(Zone: PabZone): TabWall; // @addr $501BE4
-procedure ab_Wall_BuildBarrierImages; // @addr $501CB4
-
 var
-  BarrierColor: Cardinal = $30FFAC00; // @addr $87ACF4
-  // Native index local starts at zero and increments at $501E6A to the bound 2.
-  BarrierHaloColors: array[0..1] of Cardinal = ($40FFDB00, $20FFAC00); // @addr $87ACF8 @indexrefs "$501E3F,$501E4F"
+
+  BarrierColor: Cardinal = $30FFAC00;
+
+  BarrierHaloColors: array[0..1] of Cardinal = ($40FFDB00, $20FFAC00);
+
+function ab_Wall_FindZone(Zone: PabZone): TabWall;
+
+procedure ab_Wall_BuildBarrierImages;
 
 implementation
 
-uses Math, EC_Str, EC_Struct, GI_Tail, ab_Global, GR_Main;
+uses
+  aMyFunction,
+  Math,
+  EC_Str,
+  EC_Struct,
+  GI_Tail,
+  ab_Global,
+  GR_Main;
 
-{ @routine $501618 TabWall_Create }
 constructor TabWall.Create;
 begin
   inherited Create;
@@ -45,9 +67,7 @@ begin
   MaxHealth := 200;
   WallCollisionEnabled := True;
 end;
-{ @end $501618 }
 
-{ @routine $50169C TabWall_Destroy }
 destructor TabWall.Destroy;
 begin
   if WorldImage <> nil then
@@ -57,19 +77,23 @@ begin
   end;
   inherited Destroy;
 end;
-{ @end $50169C }
 
-{ @routine $5016F4 TabWall_BindZone }
 procedure TabWall.BindZone(Value: PabZone);
 begin
   Zone := Value;
   if Value.Name <> '' then
   begin
-    WorldImage := ab_WorldImage_Create(MakeVector3D(0, 0, 0),
-      'GAI,Bm.ABWall.' + GiResourceSuffix + '.' + Value.Name, '', True);
+    WorldImage :=
+        ab_WorldImage_Create(
+            MakeVector3D(0, 0, 0),
+            'GAI,Bm.ABWall.' + GiResourceSuffix + '.' + Value.Name,
+            '',
+            True
+        );
     ab_WorldImage_SetDepth(WorldImage, WorldImageFrontDepth, WorldImageBackDepth);
     DirectionFrameCount := CountDelimitedPartsW(Value.Name, '_');
-    DirectionFrameCount := ExtractDigitsToIntW(ExtractDelimitedPartW(Value.Name, DirectionFrameCount - 1, '_'));
+    DirectionFrameCount :=
+        ExtractDigitsToIntW(ExtractDelimitedPartW(Value.Name, DirectionFrameCount - 1, '_'));
   end;
   DirectionFrameCount := 32; // Native overwrites the parsed count above.
   EffectOriginSpread := GiScalePixels(20);
@@ -79,21 +103,15 @@ begin
   CollisionRadius := 11;
   ZoneRadius := Value.Radius;
 end;
-{ @end $5016F4 }
 
-{ @routine $5018B4 TabWall_AttachVisual }
 procedure TabWall.AttachVisual;
 begin
 end;
-{ @end $5018B4 }
 
-{ @routine $5018C0 TabWall_QueueImageLoad }
 procedure TabWall.QueueImageLoad(PendingLoads: TList; Owner: TObjectGI);
 begin
 end;
-{ @end $5018C0 }
 
-{ @routine $5018D4 TabWall_ApplyDamage }
 procedure TabWall.ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean);
 var
   Line, Next, Auxiliary: PabStopLine;
@@ -118,12 +136,14 @@ begin
           begin
             Auxiliary := Next;
             Next := Next.Next;
-            if Auxiliary.UserValue = Integer(Line) then ab_StopLine_Delete(Auxiliary);
+            if Auxiliary.UserValue = Integer(Line) then
+              ab_StopLine_Delete(Auxiliary);
           end;
         end;
         Line := Line.Next;
       end;
-      if Changed then ab_StopLine_BuildCollisionList;
+      if Changed then
+        ab_StopLine_BuildCollisionList;
     end;
     if Health <= 0 then
     begin
@@ -132,16 +152,12 @@ begin
     end;
   end;
 end;
-{ @end $5018D4 }
 
-{ @routine $5019F0 TabWall_UpdateState }
 procedure TabWall.UpdateState;
 begin
   inherited UpdateState;
 end;
-{ @end $5019F0 }
 
-{ @routine $501A04 TabWall_Advance }
 procedure TabWall.Advance;
 begin
   if Health = 0 then
@@ -157,9 +173,7 @@ begin
   else if WorldImage <> nil then
     ab_WorldImage_SetPosition(WorldImage, GetWorldPosition);
 end;
-{ @end $501A04 }
 
-{ @routine $501A94 TabWall_UpdateVisuals }
 procedure TabWall.UpdateVisuals;
 var
   Frame: Integer;
@@ -173,15 +187,20 @@ begin
     Position := ProjectPointByMatrix(SphereProjectionMatrix, Position);
     Value := RadiansToHeadingDegrees(ArcTan2(Position.X, -Position.Y));
     Frame := Round(Value / 360 * DirectionFrameCount);
-    if Frame >= DirectionFrameCount then Frame := 0;
+    if Frame >= DirectionFrameCount then
+      Frame := 0;
     Value := Sqrt(Sqr(Position.X) + Sqr(Position.Y)) / SphereProjectedRadius;
-    Inc(Frame, Round((WorldImage.Image.GaiImageControl.SequenceFrameCount / DirectionFrameCount - 1) * Value) * DirectionFrameCount);
+    Inc(
+        Frame,
+        Round(
+                (WorldImage.Image.GaiImageControl.SequenceFrameCount / DirectionFrameCount - 1)
+                    * Value)
+            * DirectionFrameCount
+    );
     WorldImage.Image.GaiImageControl.SetSequenceFrame(Frame);
   end;
 end;
-{ @end $501A94 }
 
-{ @routine $501BE4 ab_Wall_FindZone }
 function ab_Wall_FindZone(Zone: PabZone): TabWall;
 var
   Obj: TabObject;
@@ -198,17 +217,14 @@ begin
   end;
   Result := nil;
 end;
-{ @end $501BE4 }
 
-{ @routine $501CB4 ab_Wall_BuildBarrierImages }
 procedure ab_Wall_BuildBarrierImages;
 var
   Line, ImageLine: PabStopLine;
   First, Last: PabStopPoint;
   Index: Integer;
 
-  // @nested $501C4C FindStopPoint
-  function FindStopPoint(Point: PabStopPoint): TabWall; // @addr $501C4C @ida "TabWall *__usercall $name@<eax>(TabStopPoint *Point@<eax>, void *ParentFrame@<^0>);" @stackpop 0 @calls "0x501ce2,0x501CF7"
+  function FindStopPoint(Point: PabStopPoint): TabWall;
   var
     Obj: TabObject;
   begin
@@ -229,7 +245,9 @@ begin
   Line := FirstStopLine;
   while Line <> nil do
   begin
-    if Line.Collidable and (FindStopPoint(Line.First) <> nil) and (FindStopPoint(Line.Last) <> nil) then
+    if Line.Collidable
+        and (FindStopPoint(Line.First) <> nil)
+        and (FindStopPoint(Line.Last) <> nil) then
     begin
       ImageLine := ab_StopLine_Add;
       ImageLine.UserValue := Integer(Line);
@@ -266,6 +284,5 @@ begin
     Line := Line.Next;
   end;
 end;
-{ @end $501CB4 }
 
 end.

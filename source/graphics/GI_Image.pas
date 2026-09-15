@@ -1,78 +1,93 @@
 unit GI_Image;
-// Unit bracket (inferred): .text 0x0047EABC..0x0047FE00; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_BlockPar, GI_GAI, GI_MessageLoop, GI_Main, GI_AImage, GI_AlphaImage, GI_GI, GI_TransImage, GI_SimpleImage, GI_GraphBuf, Classes, Types;
+uses
+  EC_BlockPar,
+  GI_GAI,
+  GI_MessageLoop,
+  GI_Main,
+  GI_AImage,
+  GI_AlphaImage,
+  GI_GI,
+  GI_TransImage,
+  GI_SimpleImage,
+  GI_GraphBuf,
+  Classes,
+  Types;
 
 type
-  TImageGI = class(TObjectGI) // @size 0x144
-  public
-    SimpleImageControl: TSimpleImageGI; // @offset 0x120
-    TransImageControl: TTransImageGI; // @offset 0x124
-    AlphaImageControl: TAlphaImageGI; // @offset 0x128
-    GiImageControl: TgiGI; // @offset 0x12C
-    AnimImageControl: TAImageGI; // @offset 0x130
-    GaiImageControl: TgaiGI; // @offset 0x134
-    GraphBufControl: TGraphBufGI; // @offset 0x138
-    ImagePath: WideString; // @offset 0x13C
-    AutoUpdateFlags: Cardinal; // @offset 0x140
 
-    constructor Create(Owner: TObjectGI); // @addr 0x47EBEC @ida "TImageGI *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>, TObjectGI *Owner@<ecx>);"
-    destructor Destroy; override; // @addr 0x47EC34 @ida "void __usercall $name(TImageGI *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; override; // @addr 0x47EC68
-    procedure SetImagePath(Path: WideString); // @addr 0x47EC7C @note "Empty paths remove the child; unknown modes raise."
-    function GetImagePath: WideString; // @addr 0x47F334 @ida "void __usercall $name(TImageGI *Self@<eax>, unsigned __int16 **Result@<edx>);"
-    function GetContentSize: TPoint; // @addr 0x47F358 @ida "void __usercall $name(TImageGI *Self@<eax>, TPoint *Result@<edx>);"
-    function GetContentOrigin: TPoint; // @addr 0x47F474 @ida "void __usercall $name(TImageGI *Self@<eax>, TPoint *Result@<edx>);" @note "Only GI children supply an origin; other kinds return (0,0)."
-    procedure SetImageKindX(Value: TImageKindXGI); // @addr 0x47F4B0
-    procedure SetImageKindY(Value: TImageKindYGI); // @addr 0x47F5A0
-    procedure SetHalfAlpha(Value: Boolean); // @addr 0x47F690 @note "Only affects Simple, Trans and Anim children."
-    function GetAlpha: Byte; // @addr 0x47F6FC @note "Returns GI/GAI alpha, or 255 for other kinds."
-    procedure SetAlpha(Value: Byte); // @addr 0x47F750 @note "Only affects GI/GAI children."
-    procedure SetSize(Size: TPoint); override; // @addr 0x47F79C @ida "void __usercall $name(TImageGI *Self@<eax>, TPoint *Size@<edx>);"
-    procedure SetOrigin(Origin: TPoint); override; // @addr 0x47F89C @ida "void __usercall $name(TImageGI *Self@<eax>, TPoint *Origin@<edx>);"
-    function HitTestPixel(Point: TPoint): Boolean; // @addr 0x47F9AC @ida "bool __usercall $name@<al>(TImageGI *Self@<eax>, TPoint *Point@<edx>);" @note "Returns false for kinds other than Alpha, Anim, GI and GAI."
-    function GetVisualCenter: TPoint; // @addr 0x47FA54 @ida "void __usercall $name(TImageGI *Self@<eax>, TPoint *Result@<edx>);" @note "Only GI and GraphBuf write the result; other kinds leave it untouched."
-    procedure RestartPlayback; // @addr 0x47FAA0
-    procedure StopPlayback; // @addr 0x47FAC4
-    procedure LoadFromConfigPath(const Path: WideString); override; // @addr 0x47FAE8
-    procedure LoadFromBlock(Block: TBlockParEC); override; // @addr 0x47FB1C
-    procedure LoadImageProperties(Block: TBlockParEC); // @addr 0x47FB44
-    procedure UpdateAutoGeometry; override; // @addr 0x47FCDC @note "Auto-geometry bit 0 uses content origin; bit 1 uses content size."
-    procedure SetHardwareMirrorHorizontal(Value: Boolean); // @addr $47FE04 Delegates to the GAI or GI child.
-    procedure QueueImageLoad(PendingLoads: TList); override; // @addr 0x47FD58 @note "GI and GraphBuf children are skipped."
+  TImageGI = class;
+
+  TImageGI = class(TObjectGI)
+    SimpleImageControl: TSimpleImageGI;
+    TransImageControl: TTransImageGI;
+    AlphaImageControl: TAlphaImageGI;
+    GiImageControl: TgiGI;
+    AnimImageControl: TAImageGI;
+    GaiImageControl: TgaiGI;
+    GraphBufControl: TGraphBufGI;
+    ImagePath: WideString;
+    AutoUpdateFlags: Cardinal;
+    procedure Clear; override;
+    procedure SetSize(Size: TPoint); override;
+    procedure SetOrigin(Origin: TPoint); override;
+    procedure QueueImageLoad(PendingLoads: TList); override;
+    procedure LoadFromConfigPath(const Path: WideString); override;
+    procedure LoadFromBlock(Block: TBlockParEC); override;
+    procedure UpdateAutoGeometry; override;
+    constructor Create(Owner: TObjectGI);
+    destructor Destroy; override;
+    procedure SetImagePath(Path: WideString);
+    function GetImagePath: WideString;
+    function GetContentSize: TPoint;
+    function GetContentOrigin: TPoint;
+    procedure SetImageKindX(Value: TImageKindXGI);
+    procedure SetImageKindY(Value: TImageKindYGI);
+    procedure SetHalfAlpha(Value: Boolean);
+    function GetAlpha: Byte;
+    procedure SetAlpha(Value: Byte);
+    function HitTestPixel(Point: TPoint): Boolean;
+    function GetVisualCenter: TPoint;
+    procedure RestartPlayback;
+    procedure StopPlayback;
+    procedure LoadImageProperties(Block: TBlockParEC);
+    procedure SetHardwareMirrorHorizontal(Value: Boolean);
   end;
 
 implementation
 
-uses SysUtils, GlobalsV, EC_Str, GR_Main;
+uses
+  SysUtils,
+  GlobalsV,
+  EC_Str,
+  GR_Main;
 
-
-{ @routine $47EBEC TImageGI_Create }
 constructor TImageGI.Create(Owner: TObjectGI);
 begin
   inherited Create(Owner);
 end;
-{ @end $47EBEC }
 
-{ @routine $47EC34 TImageGI_Destroy }
 destructor TImageGI.Destroy;
 begin
   inherited Destroy;
 end;
-{ @end $47EC34 }
 
-{ @routine $47EC68 TImageGI_Clear }
 procedure TImageGI.Clear;
 begin
   inherited Clear;
 end;
-{ @end $47EC68 }
 
-{ @routine $47EC7C TImageGI_SetImagePath }
 procedure TImageGI.SetImagePath(Path: WideString);
-var Mode: WideString;
+var
+  Mode: WideString;
 begin
   if ImagePath <> Path then
   begin
@@ -181,209 +196,240 @@ begin
           GaiImageControl.RestartPlayback;
         end;
       end
-      else raise Exception.Create('TImageGI.SetImage. Path=' + Path);
+      else
+        raise Exception.Create('TImageGI.SetImage. Path=' + Path);
     end;
   end;
 end;
-{ @end $47EC7C }
 
-{ @routine $47F334 TImageGI_GetImagePath }
 function TImageGI.GetImagePath: WideString;
 begin
   Result := ImagePath;
 end;
-{ @end $47F334 }
 
-{ @routine $47F358 TImageGI_GetContentSize }
 function TImageGI.GetContentSize: TPoint;
 begin
-  if SimpleImageControl <> nil then Result := SimpleImageControl.GetContentSize
-  else if TransImageControl <> nil then Result := TransImageControl.GetContentSize
-  else if AlphaImageControl <> nil then Result := AlphaImageControl.GetContentSize
-  else if GiImageControl <> nil then Result := GiImageControl.GetContentSize
-  else if AnimImageControl <> nil then Result := AnimImageControl.GetContentSize
-  else if GaiImageControl <> nil then Result := GaiImageControl.GetContentSize
-  else if GraphBufControl <> nil then Result := Classes.Point(GraphBufControl.GraphBuf.Width, GraphBufControl.GraphBuf.Height)
-  else Result := Classes.Point(0, 0);
+  if SimpleImageControl <> nil then
+    Result := SimpleImageControl.GetContentSize
+  else if TransImageControl <> nil then
+    Result := TransImageControl.GetContentSize
+  else if AlphaImageControl <> nil then
+    Result := AlphaImageControl.GetContentSize
+  else if GiImageControl <> nil then
+    Result := GiImageControl.GetContentSize
+  else if AnimImageControl <> nil then
+    Result := AnimImageControl.GetContentSize
+  else if GaiImageControl <> nil then
+    Result := GaiImageControl.GetContentSize
+  else if GraphBufControl <> nil then
+    Result := Classes.Point(GraphBufControl.GraphBuf.Width, GraphBufControl.GraphBuf.Height)
+  else
+    Result := Classes.Point(0, 0);
 end;
-{ @end $47F358 }
 
-{ @routine $47F474 TImageGI_GetContentOrigin }
 function TImageGI.GetContentOrigin: TPoint;
 begin
-  if GiImageControl <> nil then Result := GiImageControl.GetContentOrigin
-  else Result := Classes.Point(0, 0);
+  if GiImageControl <> nil then
+    Result := GiImageControl.GetContentOrigin
+  else
+    Result := Classes.Point(0, 0);
 end;
-{ @end $47F474 }
 
-{ @routine $47F4B0 TImageGI_SetImageKindX }
 procedure TImageGI.SetImageKindX(Value: TImageKindXGI);
 begin
-  if SimpleImageControl <> nil then SimpleImageControl.SetImageKindX(Value)
-  else if TransImageControl <> nil then TransImageControl.SetImageKindX(Value)
-  else if AlphaImageControl <> nil then AlphaImageControl.SetImageKindX(Value)
-  else if GiImageControl <> nil then GiImageControl.SetImageKindX(Value)
-  else if AnimImageControl <> nil then AnimImageControl.SetImageKindX(Value)
-  else if GaiImageControl <> nil then GaiImageControl.SetImageKindX(Value)
-  else if GraphBufControl <> nil then GraphBufControl.SetImageKindX(Value);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.SetImageKindX(Value)
+  else if TransImageControl <> nil then
+    TransImageControl.SetImageKindX(Value)
+  else if AlphaImageControl <> nil then
+    AlphaImageControl.SetImageKindX(Value)
+  else if GiImageControl <> nil then
+    GiImageControl.SetImageKindX(Value)
+  else if AnimImageControl <> nil then
+    AnimImageControl.SetImageKindX(Value)
+  else if GaiImageControl <> nil then
+    GaiImageControl.SetImageKindX(Value)
+  else if GraphBufControl <> nil then
+    GraphBufControl.SetImageKindX(Value);
 end;
-{ @end $47F4B0 }
 
-{ @routine $47F5A0 TImageGI_SetImageKindY }
 procedure TImageGI.SetImageKindY(Value: TImageKindYGI);
 begin
-  if SimpleImageControl <> nil then SimpleImageControl.SetImageKindY(Value)
-  else if TransImageControl <> nil then TransImageControl.SetImageKindY(Value)
-  else if AlphaImageControl <> nil then AlphaImageControl.SetImageKindY(Value)
-  else if GiImageControl <> nil then GiImageControl.SetImageKindY(Value)
-  else if AnimImageControl <> nil then AnimImageControl.SetImageKindY(Value)
-  else if GaiImageControl <> nil then GaiImageControl.SetImageKindY(Value)
-  else if GraphBufControl <> nil then GraphBufControl.SetImageKindY(Value);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.SetImageKindY(Value)
+  else if TransImageControl <> nil then
+    TransImageControl.SetImageKindY(Value)
+  else if AlphaImageControl <> nil then
+    AlphaImageControl.SetImageKindY(Value)
+  else if GiImageControl <> nil then
+    GiImageControl.SetImageKindY(Value)
+  else if AnimImageControl <> nil then
+    AnimImageControl.SetImageKindY(Value)
+  else if GaiImageControl <> nil then
+    GaiImageControl.SetImageKindY(Value)
+  else if GraphBufControl <> nil then
+    GraphBufControl.SetImageKindY(Value);
 end;
-{ @end $47F5A0 }
 
-{ @routine $47F690 TImageGI_SetHalfAlpha }
 procedure TImageGI.SetHalfAlpha(Value: Boolean);
 begin
-  if SimpleImageControl <> nil then SimpleImageControl.SetHalfAlpha(Value)
-  else if TransImageControl <> nil then TransImageControl.SetHalfAlpha(Value)
-  else if AnimImageControl <> nil then AnimImageControl.SetHalfAlpha(Value);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.SetHalfAlpha(Value)
+  else if TransImageControl <> nil then
+    TransImageControl.SetHalfAlpha(Value)
+  else if AnimImageControl <> nil then
+    AnimImageControl.SetHalfAlpha(Value);
 end;
-{ @end $47F690 }
 
-{ @routine $47F6FC TImageGI_GetAlpha }
 function TImageGI.GetAlpha: Byte;
 begin
-  if GiImageControl <> nil then Result := GiImageControl.Alpha
-  else if GaiImageControl <> nil then Result := GaiImageControl.Alpha
-  else Result := 255;
+  if GiImageControl <> nil then
+    Result := GiImageControl.Alpha
+  else if GaiImageControl <> nil then
+    Result := GaiImageControl.Alpha
+  else
+    Result := 255;
 end;
-{ @end $47F6FC }
 
-{ @routine $47F750 TImageGI_SetAlpha }
 procedure TImageGI.SetAlpha(Value: Byte);
 begin
-  if GiImageControl <> nil then GiImageControl.SetAlpha(Value)
-  else if GaiImageControl <> nil then GaiImageControl.SetAlpha(Value);
+  if GiImageControl <> nil then
+    GiImageControl.SetAlpha(Value)
+  else if GaiImageControl <> nil then
+    GaiImageControl.SetAlpha(Value);
 end;
-{ @end $47F750 }
 
-{ @routine $47F79C TImageGI_SetSize }
 procedure TImageGI.SetSize(Size: TPoint);
 begin
   inherited SetSize(Size);
-  if SimpleImageControl <> nil then SimpleImageControl.SetSize(Size)
-  else if TransImageControl <> nil then TransImageControl.SetSize(Size)
-  else if AlphaImageControl <> nil then AlphaImageControl.SetSize(Size)
-  else if GiImageControl <> nil then GiImageControl.SetSize(Size)
-  else if AnimImageControl <> nil then AnimImageControl.SetSize(Size)
-  else if GaiImageControl <> nil then GaiImageControl.SetSize(Size)
-  else if GraphBufControl <> nil then GraphBufControl.SetSize(Size);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.SetSize(Size)
+  else if TransImageControl <> nil then
+    TransImageControl.SetSize(Size)
+  else if AlphaImageControl <> nil then
+    AlphaImageControl.SetSize(Size)
+  else if GiImageControl <> nil then
+    GiImageControl.SetSize(Size)
+  else if AnimImageControl <> nil then
+    AnimImageControl.SetSize(Size)
+  else if GaiImageControl <> nil then
+    GaiImageControl.SetSize(Size)
+  else if GraphBufControl <> nil then
+    GraphBufControl.SetSize(Size);
 end;
-{ @end $47F79C }
 
-{ @routine $47F89C TImageGI_SetOrigin }
 procedure TImageGI.SetOrigin(Origin: TPoint);
-var Position: TPoint;
+var
+  Position: TPoint;
 begin
   inherited SetOrigin(Origin);
   Position.X := -Origin.X;
   Position.Y := -Origin.Y;
-  if SimpleImageControl <> nil then SimpleImageControl.SetPosition(Position)
-  else if TransImageControl <> nil then TransImageControl.SetPosition(Position)
-  else if AlphaImageControl <> nil then AlphaImageControl.SetPosition(Position)
-  else if GiImageControl <> nil then GiImageControl.SetPosition(Position)
-  else if AnimImageControl <> nil then AnimImageControl.SetPosition(Position)
-  else if GaiImageControl <> nil then GaiImageControl.SetPosition(Position)
-  else if GraphBufControl <> nil then GraphBufControl.SetPosition(Position);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.SetPosition(Position)
+  else if TransImageControl <> nil then
+    TransImageControl.SetPosition(Position)
+  else if AlphaImageControl <> nil then
+    AlphaImageControl.SetPosition(Position)
+  else if GiImageControl <> nil then
+    GiImageControl.SetPosition(Position)
+  else if AnimImageControl <> nil then
+    AnimImageControl.SetPosition(Position)
+  else if GaiImageControl <> nil then
+    GaiImageControl.SetPosition(Position)
+  else if GraphBufControl <> nil then
+    GraphBufControl.SetPosition(Position);
 end;
-{ @end $47F89C }
 
-{ @routine $47F9AC TImageGI_HitTestPixel }
 function TImageGI.HitTestPixel(Point: TPoint): Boolean;
 begin
-  if AlphaImageControl <> nil then Result := AlphaImageControl.HitTestPixel(Point)
-  else if AnimImageControl <> nil then Result := AnimImageControl.HitTest(Point)
-  else if GiImageControl <> nil then Result := GiImageControl.HitTestPixel(Point)
-  else if GaiImageControl <> nil then Result := GaiImageControl.HitTestPixel(Point)
-  else Result := False;
+  if AlphaImageControl <> nil then
+    Result := AlphaImageControl.HitTestPixel(Point)
+  else if AnimImageControl <> nil then
+    Result := AnimImageControl.HitTest(Point)
+  else if GiImageControl <> nil then
+    Result := GiImageControl.HitTestPixel(Point)
+  else if GaiImageControl <> nil then
+    Result := GaiImageControl.HitTestPixel(Point)
+  else
+    Result := False;
 end;
-{ @end $47F9AC }
 
-{ @routine $47FA54 TImageGI_GetVisualCenter }
 function TImageGI.GetVisualCenter: TPoint;
 begin
-  if GiImageControl <> nil then Result := GiImageControl.GetVisualCenter
-  else if GraphBufControl <> nil then Result := GraphBufControl.GetVisualCenter;
+  if GiImageControl <> nil then
+    Result := GiImageControl.GetVisualCenter
+  else if GraphBufControl <> nil then
+    Result := GraphBufControl.GetVisualCenter;
 end;
-{ @end $47FA54 }
 
-{ @routine $47FAA0 TImageGI_RestartPlayback }
 procedure TImageGI.RestartPlayback;
 begin
-  if GaiImageControl <> nil then GaiImageControl.RestartPlayback;
+  if GaiImageControl <> nil then
+    GaiImageControl.RestartPlayback;
 end;
-{ @end $47FAA0 }
 
-{ @routine $47FAC4 TImageGI_StopPlayback }
 procedure TImageGI.StopPlayback;
 begin
-  if GaiImageControl <> nil then GaiImageControl.StopAutoPlayback;
+  if GaiImageControl <> nil then
+    GaiImageControl.StopAutoPlayback;
 end;
-{ @end $47FAC4 }
 
-{ @routine $47FAE8 TImageGI_LoadFromConfigPath }
 procedure TImageGI.LoadFromConfigPath(const Path: WideString);
 begin
   inherited LoadFromConfigPath(Path);
   LoadImageProperties(UiStyleConfig.GetBlockByPath(Path));
 end;
-{ @end $47FAE8 }
 
-{ @routine $47FB1C TImageGI_LoadFromBlock }
 procedure TImageGI.LoadFromBlock(Block: TBlockParEC);
 begin
   inherited LoadFromBlock(Block);
   LoadImageProperties(Block);
 end;
-{ @end $47FB1C }
 
-{ @routine $47FB44 TImageGI_LoadImageProperties }
 procedure TImageGI.LoadImageProperties(Block: TBlockParEC);
 begin
-  if Block.CountParams('Image') > 0 then SetImagePath(Block.GetParam('Image'));
-  if Block.CountParams('KindX') > 0 then SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
-  if Block.CountParams('KindY') > 0 then SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
-  if Block.CountParams('HalfAlpha') > 0 then SetHalfAlpha(ParseEnabledNameGI(Block.GetParam('HalfAlpha')));
-  if Block.CountParams('Auto') > 0 then AutoUpdateFlags := ParseAutoGeometryFlagsGI(Block.GetParam('Auto'));
+  if Block.CountParams('Image') > 0 then
+    SetImagePath(Block.GetParam('Image'));
+  if Block.CountParams('KindX') > 0 then
+    SetImageKindX(ParseImageKindXName(Block.GetParam('KindX')));
+  if Block.CountParams('KindY') > 0 then
+    SetImageKindY(ParseImageKindYName(Block.GetParam('KindY')));
+  if Block.CountParams('HalfAlpha') > 0 then
+    SetHalfAlpha(ParseEnabledNameGI(Block.GetParam('HalfAlpha')));
+  if Block.CountParams('Auto') > 0 then
+    AutoUpdateFlags := ParseAutoGeometryFlagsGI(Block.GetParam('Auto'));
 end;
-{ @end $47FB44 }
 
-{ @routine $47FCDC TImageGI_UpdateAutoGeometry }
 procedure TImageGI.UpdateAutoGeometry;
 begin
   inherited UpdateAutoGeometry;
-  if (AutoUpdateFlags and agfPosition) = agfPosition then SetPosition(Parent.ToLocalPoint(GetContentOrigin));
-  if (AutoUpdateFlags and agfSize) = agfSize then SetSize(GetContentSize);
+  if (AutoUpdateFlags and agfPosition) = agfPosition then
+    SetPosition(Parent.ToLocalPoint(GetContentOrigin));
+  if (AutoUpdateFlags and agfSize) = agfSize then
+    SetSize(GetContentSize);
 end;
-{ @end $47FCDC }
 
-{ @routine $47FD58 TImageGI_QueueImageLoad }
 procedure TImageGI.QueueImageLoad(PendingLoads: TList);
 begin
-  if SimpleImageControl <> nil then SimpleImageControl.QueueImageLoad(PendingLoads)
-  else if TransImageControl <> nil then TransImageControl.QueueImageLoad(PendingLoads)
-  else if AlphaImageControl <> nil then AlphaImageControl.QueueImageLoad(PendingLoads)
-  else if AnimImageControl <> nil then AnimImageControl.QueueImageLoad(PendingLoads)
-  else if GaiImageControl <> nil then GaiImageControl.QueueImageLoad(PendingLoads);
+  if SimpleImageControl <> nil then
+    SimpleImageControl.QueueImageLoad(PendingLoads)
+  else if TransImageControl <> nil then
+    TransImageControl.QueueImageLoad(PendingLoads)
+  else if AlphaImageControl <> nil then
+    AlphaImageControl.QueueImageLoad(PendingLoads)
+  else if AnimImageControl <> nil then
+    AnimImageControl.QueueImageLoad(PendingLoads)
+  else if GaiImageControl <> nil then
+    GaiImageControl.QueueImageLoad(PendingLoads);
 end;
-{ @end $47FD58 }
 
-{ @routine $47FE04 TImageGI_SetHardwareMirrorHorizontal }
 procedure TImageGI.SetHardwareMirrorHorizontal(Value: Boolean);
 begin
-  if GaiImageControl <> nil then GaiImageControl.SetHardwareMirrorHorizontal(Value)
-  else if GiImageControl <> nil then GiImageControl.SetHardwareMirrorHorizontal(Value);
+  if GaiImageControl <> nil then
+    GaiImageControl.SetHardwareMirrorHorizontal(Value)
+  else if GiImageControl <> nil then
+    GiImageControl.SetHardwareMirrorHorizontal(Value);
 end;
-{ @end $47FE04 }
+
 end.

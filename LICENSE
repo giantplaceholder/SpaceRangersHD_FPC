@@ -1,13 +1,12 @@
-License scope (paths relative to the repository root)
+License scope
 
-The MIT license below applies only to original project-authored material in:
-- toolchain/, tests/, docs/, and .github/ (including their subdirectories);
-- decomp, README.md, NOTICE.md, Cargo.toml, Cargo.lock, project.toml,
-  .editorconfig, .gitattributes, and .gitignore.
+The MIT license below applies to custom additions and modifications made for
+this FPC port. The underlying game decompilation and third-party components
+retain their existing terms. See NOTICE.md for attribution.
 
 MIT License
 
-Copyright (c) 2026 pakompom and contributors
+Copyright (c) 2026 Space Rangers HD FPC contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

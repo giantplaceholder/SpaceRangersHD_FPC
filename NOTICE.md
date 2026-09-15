@@ -1,22 +1,26 @@
-# Attribution and rights
+# Attribution
 
-This project is an independent reconstruction. It is not affiliated with or
-endorsed by the game's developers or publisher, and does not grant rights to
-the original game, its assets, or third-party software.
+This unofficial port is based on the reconstructed Delphi source for
+**Space Rangers HD: A War Apart**.
+It is not affiliated with the game's developers or publisher.
 
-- Developers: SNK Games, Elemental Games and Katauri Interactive.
+- Game developers: SNK Games, Elemental Games, and Katauri Interactive.
 - Publisher: Fulqrum Publishing.
-- © 2013 Fulqrum Publishing Ltd. All rights reserved.
-- © 2024 СНК-Games.
+- Original game notices: © 2013 Fulqrum Publishing Ltd.; © 2024 СНК-Games.
+- Decompilation: [SpaceRangersHD_decomp](https://github.com/pakompom/SpaceRangersHD_decomp).
+- FGInt and FGIntRSA: Walied Othman; original license headers are retained in
+  [FGInt.pas](source/runtime/FGInt.pas) and [FGIntRSA.pas](source/runtime/FGIntRSA.pas).
+- Software renderer: [OKGF](https://github.com/pakompom/okgf), under its
+  [MIT license](vendor/okgf/LICENSE); bundled SoftFloat has its own
+  [BSD 3-Clause license](vendor/okgf/vendor/softfloat/COPYING.txt).
+- Compiler and runtime: [Free Pascal](https://www.freepascal.org/), with
+  [source and license details](vendor/fpc/PORT.md).
 
-The MIT license covers original project-authored material in `toolchain/`,
-`tests/`, `docs/`, `.github/`, and the root files listed in `LICENSE`.
-It excludes `source/`, `reference/`, `toolchain/delphi/native-*.tsv`, and any
-recovered or third-party material elsewhere in the repository. Existing notices
-and license terms continue to apply, including Walied Othman's notices and terms
-in FGInt and FGIntRSA.
+The recovered game and third-party sources retain their original terms; they
+are not covered by this project’s MIT license. Third-party source retains its
+original notices and terms. Free Pascal and image libraries remain subject to
+their respective licenses.
 
-Delphi, its runtime libraries, and the downloaded tools remain subject to their
-respective owners' terms. Download locations identify reproducible inputs and
-are not an assertion that those inputs are freely licensed. Compiler binaries,
-game executables, game data, and IDA databases are not included in Git.
+Custom additions and modifications made for this FPC port are licensed under
+the [MIT license](LICENSE). The underlying game decompilation retains its
+existing terms.

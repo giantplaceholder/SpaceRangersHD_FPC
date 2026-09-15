@@ -1,60 +1,25 @@
-# Space Rangers HD: A War Apart - Decompilation
+# Space Rangers HD — Free Pascal Port
 
-*Космические рейнджеры HD: Революция*
+A Free Pascal port of **Space Rangers HD: A War Apart**, based on the
+recovered Delphi source and intended to preserve the original game behavior.
 
-A decompilation project recovering the game’s Delphi source code. The recovered
-source compiles to a **byte-for-byte identical** `Rangers.exe`.
+The source was generated from
+[SpaceRangersHD_decomp at `2082a83`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/2082a833b19465e625d81e8fbb0c7c98ab58ebf6),
+which reconstructs the **2026-08-11 prerelease** build.
 
-Both binaries report game version **2.1.2500** (file version `2.1.2500.0`).
+## Layout
 
-| Branch | Build | Distribution | Size (bytes) |
-| --- | --- | --- | ---: |
-| [`main`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/main) | 2026-08-11 | Prerelease | 4,999,680 |
-| [`build-2025-10-13`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/build-2025-10-13) | 2025-10-13 | Steam/GOG release | 4,995,584 |
+- `source/`: game source, organized by subsystem.
+- `tools/`: build, run, compiler bootstrap, and formatting scripts.
+- `native/`: OKGF build integration.
+- `vendor/okgf/`: pinned [OKGF](https://github.com/pakompom/okgf) submodule.
+- `vendor/fpc/`: pinned [FPC fork](https://github.com/pakompom/fpc_sr) submodule.
 
-<details>
-<summary>SHA-256 checksums</summary>
+## Documentation
 
-Prerelease (2026-08-11):
+- [Build setup](BUILDING.md)
+- [Delphi-to-FPC changes](CHANGES.md)
+- [Attribution](NOTICE.md) and [license](LICENSE)
+- [Personal branch with enhancements](https://github.com/pakompom/SpaceRangersHD_FPC/tree/personal)
 
-```text
-f00343363043cbb9c2d10c1216e9f4c37b5eaa5e4d58f37a45284cae528fdc1d
-```
-
-Steam/GOG release (2025-10-13):
-
-```text
-83300344af802bc51e64389c58f047e5afdf195c133048098be3881fae29ed98
-```
-
-</details>
-
-**AI disclosure:** This decompilation project was carried out almost entirely by
-GPT-6 Astra in Codex, with some human steering.
-
-Install the [prerequisites](docs/development.md#setup), then run:
-
-```sh
-./decomp setup
-./decomp verify
-```
-
-Setup downloads and prepares the Delphi toolchain. Verification checks the whole
-executable against the original SHA-256. Game data comes from your installed game.
-
-[Development and progress reports](docs/development.md) ·
-[Pascal annotations](docs/declarations.md)
-
-See also:
-
-- [okgf](https://github.com/pakompom/okgf) - a portable C reimplementation of
-  the game's `okgf.dll`, useful for ports to other platforms.
-- [MatrixGame](https://github.com/twoweeks/MatrixGame) - the published source
-  code for the 3D planetary battle engine used by Space Rangers 2, Reboot and
-  Revolution.
-- [SpaceRangersHD_FPC](https://github.com/pakompom/SpaceRangersHD_FPC) - a
-  personal Free Pascal port provided as an example of adapting the recovered
-  code to other platforms; it is experimental and not community-maintained.
-
-Unofficial; not affiliated with the game's developers or publisher.
-See [rights and attribution](NOTICE.md) and the [tooling license](LICENSE).
+Development uses LLMs such as GPT-6 Astra through Codex.

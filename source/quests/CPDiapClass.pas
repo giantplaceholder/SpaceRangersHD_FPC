@@ -1,65 +1,69 @@
 unit CPDiapClass;
-// Unit bracket (inferred): .text 0x004DD770..0x004DE488; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses EC_Buf, EC_Struct, ValueListClass;
+uses
+  EC_Buf,
+  EC_Struct,
+  ValueListClass;
 
 type
-  TCPDiapazone = class(TObjectEx) // @size 0x10
-  public
-    // Owned Delphi dynamic arrays, indexed 0..RangeCount-1; inclusive bounds.
-    RangeStarts: array of Int64; // @offset 0x04
-    RangeEnds: array of Int64; // @offset 0x08
-    RangeCount: Integer; // @offset 0x0C
 
-    constructor Create; // @addr 0x4DD828 @ida "TCPDiapazone *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    destructor Destroy; override; // @addr 0x4DD874 @ida "void __usercall $name(TCPDiapazone *Self@<eax>, __int8 DestroyFlags@<dl>);"
-    procedure Clear; // @addr 0x4DD8B0
-    procedure LoadFromReader(Reader: TBufEC); // @addr 0x4DD904
-    procedure LoadFromText(Text: WideString); // @addr 0x4DE214 @note "Accepts [a..b;c] or [ahb;c]. Endpoints beyond +/-200000000 can expand intervals unexpectedly; '..' normalization can overread."
-    procedure LoadFromValues(var Source: TValuesList); // @addr 0x4DDDF0 @note "Ignores Source.AcceptListed."
-    procedure Assign(var Source: TCPDiapazone); // @addr 0x4DDEB0
-    procedure Append(var Source: TCPDiapazone); // @addr 0x4DDF74 @note "Preserves overlapping and duplicate ranges."
-    procedure AddRange(MinValue, MaxValue: Int64); // @addr 0x4DE068 @ida "void __userpurge $name(TCPDiapazone *Self@<eax>, __int64 MinValue@<^8>, __int64 MaxValue@<^0>);" @note "Swaps reversed bounds; does not merge ranges."
-    procedure AddValue(Value: Extended); // @addr 0x4DE12C @ida "void __userpurge $name(TCPDiapazone *Self@<eax>, _TBYTE Value@<^0>);" @note "Truncates to Int64; caught conversion errors preserve existing ranges."
-    function GetMinimum: Int64; // @addr 0x4DD948 @ida "__int64 __usercall $name@<edx:eax>(TCPDiapazone *Self@<eax>);" @note "Requires at least one range."
-    function GetMaximum: Int64; // @addr 0x4DD9C0 @ida "__int64 __usercall $name@<edx:eax>(TCPDiapazone *Self@<eax>);" @note "Requires at least one range."
-    function Contains(Value: Extended): Boolean; // @addr 0x4DDC10 @ida "bool __userpurge $name@<al>(TCPDiapazone *Self@<eax>, _TBYTE Value@<^0>);" @note "Rounds with System.Round first."
-    function GetRandomValue: Integer; // @addr 0x4DDA5C @note "Zero when empty. Sampling weights overlaps repeatedly; lengths and results are 32-bit."
-    function ToText: WideString; // @addr 0x4DDC94 @ida "void __usercall $name(TCPDiapazone *Self@<eax>, unsigned __int16 **Result@<edx>);" @note "Uses [ahb;c] and signed low 32-bit endpoints; empty output is '['."
+  TCPDiapazone = class;
+
+  TCPDiapazone = class(TObjectEx)
+    RangeStarts: array of Int64;
+    RangeEnds: array of Int64;
+    RangeCount: Integer;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Clear;
+    procedure LoadFromReader(Reader: TBufEC);
+    function GetMinimum: Int64;
+    function GetMaximum: Int64;
+    function GetRandomValue: Integer;
+    function Contains(Value: Extended): Boolean;
+    function ToText: WideString;
+    procedure LoadFromValues(var Source: TValuesList);
+    procedure Assign(var Source: TCPDiapazone);
+    procedure Append(var Source: TCPDiapazone);
+    procedure AddRange(MinValue: Int64; MaxValue: Int64);
+    procedure AddValue(Value: Extended);
+    procedure LoadFromText(Text: WideString);
   end;
 
 implementation
 
-uses EC_Str, SysUtils, TextFieldClass;
+uses
+  EC_Str,
+  SysUtils,
+  TextFieldClass;
 
-{ @routine $4DD828 TCPDiapazone_Create }
 constructor TCPDiapazone.Create;
 begin
   inherited Create;
   Clear;
 end;
-{ @end $4DD828 }
 
-{ @routine $4DD874 TCPDiapazone_Destroy }
 destructor TCPDiapazone.Destroy;
 begin
   Clear;
   inherited Destroy;
 end;
-{ @end $4DD874 }
 
-{ @routine $4DD8B0 TCPDiapazone_Clear }
 procedure TCPDiapazone.Clear;
 begin
   RangeCount := 0;
   SetLength(RangeStarts, RangeCount);
   SetLength(RangeEnds, RangeCount);
 end;
-{ @end $4DD8B0 }
 
-{ @routine $4DD904 TCPDiapazone_LoadFromReader }
 procedure TCPDiapazone.LoadFromReader(Reader: TBufEC);
 var
   Text: TTextField;
@@ -69,31 +73,27 @@ begin
   LoadFromText(Text.Text);
   Text.Destroy;
 end;
-{ @end $4DD904 }
 
-{ @routine $4DD948 TCPDiapazone_GetMinimum }
 function TCPDiapazone.GetMinimum: Int64;
 var
   i: Integer;
 begin
   Result := RangeStarts[0];
   for i := 0 to RangeCount - 1 do
-    if RangeStarts[i] <= Result then Result := RangeStarts[i];
+    if RangeStarts[i] <= Result then
+      Result := RangeStarts[i];
 end;
-{ @end $4DD948 }
 
-{ @routine $4DD9C0 TCPDiapazone_GetMaximum }
 function TCPDiapazone.GetMaximum: Int64;
 var
   i: Integer;
 begin
   Result := RangeEnds[0];
   for i := 0 to RangeCount - 1 do
-    if RangeEnds[i] >= Result then Result := RangeEnds[i];
+    if RangeEnds[i] >= Result then
+      Result := RangeEnds[i];
 end;
-{ @end $4DD9C0 }
 
-{ @routine $4DDA5C TCPDiapazone_GetRandomValue }
 function TCPDiapazone.GetRandomValue: Integer;
 var
   i, RandomValue: Integer;
@@ -121,9 +121,7 @@ begin
       end;
   end;
 end;
-{ @end $4DDA5C }
 
-{ @routine $4DDC10 TCPDiapazone_Contains }
 function TCPDiapazone.Contains(Value: Extended): Boolean;
 var
   i: Integer;
@@ -132,12 +130,11 @@ begin
   Rounded := System.Round(Value);
   Result := True;
   for i := 0 to RangeCount - 1 do
-    if (RangeStarts[i] <= Rounded) and (RangeEnds[i] >= Rounded) then Exit;
+    if (RangeStarts[i] <= Rounded) and (RangeEnds[i] >= Rounded) then
+      Exit;
   Result := False;
 end;
-{ @end $4DDC10 }
 
-{ @routine $4DDC94 TCPDiapazone_ToText }
 function TCPDiapazone.ToText: WideString;
 var
   i: Integer;
@@ -145,15 +142,17 @@ begin
   Result := '[';
   for i := 0 to RangeCount - 1 do
   begin
-    if RangeStarts[i] = RangeEnds[i] then Result := Result + IntToWideString(RangeStarts[i])
-    else Result := Result + IntToWideString(RangeStarts[i]) + 'h' + IntToWideString(RangeEnds[i]);
-    if i < RangeCount - 1 then Result := Result + ';'
-    else Result := Result + ']';
+    if RangeStarts[i] = RangeEnds[i] then
+      Result := Result + IntToWideString(RangeStarts[i])
+    else
+      Result := Result + IntToWideString(RangeStarts[i]) + 'h' + IntToWideString(RangeEnds[i]);
+    if i < RangeCount - 1 then
+      Result := Result + ';'
+    else
+      Result := Result + ']';
   end;
 end;
-{ @end $4DDC94 }
 
-{ @routine $4DDDF0 TCPDiapazone_LoadFromValues }
 procedure TCPDiapazone.LoadFromValues(var Source: TValuesList);
 var
   i: Integer;
@@ -167,9 +166,7 @@ begin
     RangeEnds[i] := Source.Values[i + 1];
   end;
 end;
-{ @end $4DDDF0 }
 
-{ @routine $4DDEB0 TCPDiapazone_Assign }
 procedure TCPDiapazone.Assign(var Source: TCPDiapazone);
 var
   i: Integer;
@@ -183,9 +180,7 @@ begin
     RangeEnds[i] := Source.RangeEnds[i];
   end;
 end;
-{ @end $4DDEB0 }
 
-{ @routine $4DDF74 TCPDiapazone_Append }
 procedure TCPDiapazone.Append(var Source: TCPDiapazone);
 var
   i: Integer;
@@ -202,9 +197,7 @@ begin
     RangeCount := RangeCount + Source.RangeCount;
   end;
 end;
-{ @end $4DDF74 }
 
-{ @routine $4DE068 TCPDiapazone_AddRange }
 procedure TCPDiapazone.AddRange(MinValue, MaxValue: Int64);
 var
   Temporary: Int64;
@@ -221,9 +214,7 @@ begin
   RangeStarts[RangeCount - 1] := MinValue;
   RangeEnds[RangeCount - 1] := MaxValue;
 end;
-{ @end $4DE068 }
 
-{ @routine $4DE12C TCPDiapazone_AddValue }
 procedure TCPDiapazone.AddValue(Value: Extended);
 var
   IntegerValue: Int64;
@@ -234,7 +225,8 @@ begin
   try
     IntegerValue := Trunc(Value);
   except
-    on EMathError do Failed := True;
+    on EMathError do
+      Failed := True;
   end;
   if not Failed then
   begin
@@ -245,9 +237,7 @@ begin
     RangeEnds[RangeCount - 1] := IntegerValue;
   end;
 end;
-{ @end $4DE12C }
 
-{ @routine $4DE214 TCPDiapazone_LoadFromText }
 procedure TCPDiapazone.LoadFromText(Text: WideString);
 var
   i, Count: Integer;
@@ -279,13 +269,17 @@ begin
         try
           Value := ExtractSignedDigitsToIntW(NumberText);
         except
-          on EMathError do Failed := True;
-          on EConvertError do Failed := True;
+          on EMathError do
+            Failed := True;
+          on EConvertError do
+            Failed := True;
         end;
         if not Failed then
         begin
-          if Minimum > Value then Minimum := Value;
-          if Maximum < Value then Maximum := Value;
+          if Minimum > Value then
+            Minimum := Value;
+          if Maximum < Value then
+            Maximum := Value;
         end;
         Failed := False;
         NumberText := '';
@@ -298,10 +292,10 @@ begin
         end;
         Inc(i);
       end
-      else Inc(i);
+      else
+        Inc(i);
     end;
   end;
 end;
-{ @end $4DE214 }
 
 end.

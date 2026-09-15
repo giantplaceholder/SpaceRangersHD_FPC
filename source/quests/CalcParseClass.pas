@@ -1,84 +1,108 @@
 unit CalcParseClass;
-// Unit bracket (inferred): .text 0x004DFCA8..0x004E4B9C; inclusive evidence, not full bounds. See docs/declarations.md#unit-coverage-and-address-brackets.
+
+{$O-}
+{$R-}
+{$Q-}
+{$B-}
+{$A8}
 
 interface
 
-uses CPVarClass, Classes, EC_Struct;
+uses
+  CPVarClass,
+  Classes,
+  EC_Struct;
 
 type
-  TCalcParse = class(TObjectEx) // @size 0x1C
-  public
-    SourceText: WideString; // @offset 0x04
-    Expression: WideString; // @offset 0x08  Internal tokens; parameters not yet substituted.
-    ResultValue: Integer; // @offset 0x0C
-    ResetValue10: Integer; // @offset 0x10  Reset to zero; purpose remains unresolved.
-    UsesDefaultParameter: Boolean; // @offset 0x14  Processed text was empty or exactly the fallback [pN].
-    SourceWasChanged: Boolean; // @offset 0x15  Compared against the readable form, not internal tokens.
-    UnbalancedParentheses: Boolean; // @offset 0x16
-    InvalidNumericLiteral: Boolean; // @offset 0x17  EConvertError during preparation.
-    InvalidParameterReference: Boolean; // @offset 0x18
-    InvalidRangeLiteral: Boolean; // @offset 0x19
-    EvaluationError: Boolean; // @offset 0x1A
-    HasError: Boolean; // @offset 0x1B  Also set for empty parentheses.
 
-    constructor Create; // @addr 0x4E4634 @ida "TCalcParse *__usercall $name@<eax>(void *SelfOrClass@<eax>, unsigned __int8 Allocate@<dl>);"
-    procedure Reset; // @addr 0x4E4674
+  TCalcParse = class;
 
-    // External spellings -> internal tokens: pct %, div f, mod g, in #,
-    // to $, or |, and &, <> e, >= c, <= b, .. h, and decimal dot -> comma.
-    function NormalizeTokens(var Text: WideString): WideString; // @addr 0x4E1194 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 **Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Text is read-only despite var. Uses ANSI lowercase and boundary-free substitutions; always wraps the result in parentheses."
-    function FormatTokens(var Text: WideString): WideString; // @addr 0x4E1768 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 **Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Text is read-only despite var. Removes at most one enclosing parenthesis pair; leaves outer whitespace."
-    // Lower ranks bind tighter; -1 means not an operator.
-    // 1: ^ / f g; 2: * %; 3: -; 4: +; 5: $; 6: #;
-    // 7: < > = b c e; 8: &; 9: |.
-    function GetOperatorRank(Token: WideChar): Integer; // @addr 0x4E1B7C
-    function CollapseOperatorRun(const Text: WideString): WideString; // @addr 0x4E1D0C @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Requires a nonempty operator run. Minus parity controls the sign; ties choose the leftmost weakest operator."
-    function NormalizeParameterReference(Text: WideString): WideString; // @addr 0x4E310C @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Uses only the first three digits; zero/missing digits produce [err]. Does not check parameter-list bounds."
-    function FindTopLevelOperator(const Text: WideString; TextLength: Integer): Integer; // @addr 0x4E3C40 @note "One-based; zero when absent. Rightmost ties give left associativity. Delimiter balance is unchecked."
-    function HasBalancedParenthesesInSlice(const Text: WideString; FirstIndex, LastIndex: Integer): Boolean; // @addr 0x4E46DC @note "One-based inclusive bounds, unchecked. Empty slices pass; square brackets are ignored."
-    function HasBalancedParentheses(const Text: WideString): Boolean; // @addr 0x4E48EC @note "Empty text passes."
-
-    procedure Prepare(Text: WideString; DefaultParameterIndex: Integer); // @addr 0x4E43E0 @note "Resets state; stores Expression even on error. Empty input becomes (), not the default parameter."
-    function NormalizeFragments(const Text: WideString): WideString; // @addr 0x4E1E98 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Square brackets do not nest. An unmatched opening bracket silently discards the remaining suffix."
-    function NormalizeScalarFragment(Text: WideString): WideString; // @addr 0x4E2068 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Silently discards unsupported characters, including decimal dots; call NormalizeTokens first."
-    function NormalizeBracketFragment(Text: WideString): WideString; // @addr 0x4E3070 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Any lowercase p selects parameter parsing, even outside the [pN] form."
-    function NormalizeRangeLiteral(Text: WideString): WideString; // @addr 0x4E327C @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Requires internal h notation, not '..'. Empty or rejected input yields [err]; existing errors remain set."
-    function InsertImplicitMultiplication(Text: WideString): WideString; // @addr 0x4E35A4 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);"
-    function ClampNumericLiterals(Text: WideString): WideString; // @addr 0x4E4924 @ida "void __usercall $name(TCalcParse *Self@<eax>, unsigned __int16 *Text@<edx>, unsigned __int16 **Result@<ecx>);" @note "Nonzero limits: 0.0001..999999999. The lower clamp emits a dot-decimal literal that evaluation rejects. Drops trailing numbers; conversion errors set flags and leave the caller's result storage unchanged."
-
-    // Parameters: borrowed, non-nil TList of TParameter; [pN] is one-based.
-    function SubstituteParameters(Parameters: TList): WideString; // @addr 0x4E4754 @ida "void __usercall $name(TCalcParse *Self@<eax>, TList *Parameters@<edx>, unsigned __int16 **Result@<ecx>);" @note "Unmatched references remain unchanged; negative values are parenthesized."
-    function EvaluateExpression(Text: WideString): TCPVariant; // @addr 0x4E3D0C @note "Caller owns the result. Evaluates right before left without short-circuiting. EvaluationError blocks evaluation; HasError alone does not. Native recursive intermediates leak."
-    procedure Evaluate(Parameters: TList); // @addr 0x4E42C4 @note "Existing HasError preserves ResultValue; flags are not reset. Native scratch and returned variants leak."
-
-    // Operators borrow operands; OutValue must be an existing, distinct object.
-    // Power/add/subtract/multiply promote floats; integer results saturate at +/-2000000000.
-    procedure ApplyPower(var Left, Right, OutValue: TCPVariant); // @addr 0x4DFD1C @note "Negative bases stay negative even for even exponents; integer results round."
-    procedure ApplyAdd(var Left, Right, OutValue: TCPVariant); // @addr 0x4DFF3C
-    procedure ApplySubtract(var Left, Right, OutValue: TCPVariant); // @addr 0x4E00A8
-    procedure ApplyMultiply(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0214
-    procedure ApplyPercentChange(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0380 @note "Returns float Left * (1 + Right * 0.01)."
-    procedure ApplyDivide(var Left, Right, OutValue: TCPVariant); // @addr 0x4E03EC @note "Exact integer quotients stay integer. Zero divisor: +/-2000000000 for integers; float operands incorrectly leave integer zero."
-    procedure ApplyIntDivide(var Left, Right, OutValue: TCPVariant); // @addr 0x4E05B0 @note "Truncates toward zero; zero-divisor behavior matches ApplyDivide."
-    procedure ApplyModulo(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0704 @note "Float operands produce a float remainder after truncation. Zero-divisor behavior matches ApplyDivide."
-    procedure ApplyRange(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0934 @note "Uses operand extrema, rounds floats and swaps reversed bounds. Range operands must be nonempty."
-    procedure ApplyMembership(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0A48 @note "Two ranges sample Left once; scalar/range membership rounds the scalar."
-    // Comparisons return integer 0 or 1 and sample each range operand once.
-    procedure ApplyLessThan(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0BCC
-    procedure ApplyGreaterThan(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0C30
-    procedure ApplyLessOrEqual(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0C94
-    procedure ApplyGreaterOrEqual(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0CF8
-    procedure ApplyEqual(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0D5C
-    procedure ApplyNotEqual(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0DC0
-    procedure ApplyAnd(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0E24 @note "Range operands concatenate rather than intersect; duplicates remain."
-    procedure ApplyOr(var Left, Right, OutValue: TCPVariant); // @addr 0x4E0FE0 @note "Range operands concatenate; duplicates remain."
+  TCalcParse = class(TObjectEx)
+    SourceText: WideString;
+    Expression: WideString;
+    ResultValue: Integer;
+    ResetValue10: Integer;
+    UsesDefaultParameter: Boolean;
+    SourceWasChanged: Boolean;
+    UnbalancedParentheses: Boolean;
+    InvalidNumericLiteral: Boolean;
+    InvalidParameterReference: Boolean;
+    InvalidRangeLiteral: Boolean;
+    EvaluationError: Boolean;
+    HasError: Boolean;
+    procedure ApplyPower(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyAdd(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplySubtract(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyMultiply(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyPercentChange(
+        var Left: TCPVariant;
+        var Right: TCPVariant;
+        var OutValue: TCPVariant
+    );
+    procedure ApplyDivide(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyIntDivide(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyModulo(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyRange(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyMembership(
+        var Left: TCPVariant;
+        var Right: TCPVariant;
+        var OutValue: TCPVariant
+    );
+    procedure ApplyLessThan(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyGreaterThan(
+        var Left: TCPVariant;
+        var Right: TCPVariant;
+        var OutValue: TCPVariant
+    );
+    procedure ApplyLessOrEqual(
+        var Left: TCPVariant;
+        var Right: TCPVariant;
+        var OutValue: TCPVariant
+    );
+    procedure ApplyGreaterOrEqual(
+        var Left: TCPVariant;
+        var Right: TCPVariant;
+        var OutValue: TCPVariant
+    );
+    procedure ApplyEqual(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyNotEqual(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyAnd(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    procedure ApplyOr(var Left: TCPVariant; var Right: TCPVariant; var OutValue: TCPVariant);
+    function NormalizeTokens(var Text: WideString): WideString;
+    function FormatTokens(var Text: WideString): WideString;
+    function GetOperatorRank(Token: WideChar): Integer;
+    function CollapseOperatorRun(const Text: WideString): WideString;
+    function NormalizeFragments(const Text: WideString): WideString;
+    function NormalizeScalarFragment(Text: WideString): WideString;
+    function NormalizeBracketFragment(Text: WideString): WideString;
+    function NormalizeParameterReference(Text: WideString): WideString;
+    function NormalizeRangeLiteral(Text: WideString): WideString;
+    function InsertImplicitMultiplication(Text: WideString): WideString;
+    function FindTopLevelOperator(const Text: WideString; TextLength: Integer): Integer;
+    function EvaluateExpression(Text: WideString): TCPVariant;
+    procedure Evaluate(Parameters: TList);
+    procedure Prepare(Text: WideString; DefaultParameterIndex: Integer);
+    constructor Create;
+    procedure Reset;
+    function HasBalancedParenthesesInSlice(
+        const Text: WideString;
+        FirstIndex: Integer;
+        LastIndex: Integer
+    ): Boolean;
+    function SubstituteParameters(Parameters: TList): WideString;
+    function HasBalancedParentheses(const Text: WideString): Boolean;
+    function ClampNumericLiterals(Text: WideString): WideString;
   end;
 
 implementation
 
-uses CPDiapClass, EC_Str, Math, ParameterClass, SysUtils;
+uses
+  CPDiapClass,
+  EC_Str,
+  Math,
+  ParameterClass,
+  SysUtils;
 
-{ @routine $4DFD1C TCalcParse_ApplyPower }
 procedure TCalcParse.ApplyPower(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -87,11 +111,11 @@ begin
   OutValue.Reset;
   OutValue.ValueKind := cpvkFloat;
   if (Left.ValueKind = cpvkFloat) and (Right.ValueKind = cpvkFloat) then
-    OutValue.FloatValue := Math.Sign(Left.AsExtended) *
-      Math.Power(Abs(Left.AsExtended), Right.AsExtended)
+    OutValue.FloatValue :=
+        Math.Sign(Left.AsExtended) * Math.Power(Abs(Left.AsExtended), Right.AsExtended)
   else if Left.ValueKind = cpvkFloat then
-    OutValue.FloatValue := Math.Sign(Left.AsExtended) *
-      Math.IntPower(Abs(Left.AsExtended), Right.AsInteger)
+    OutValue.FloatValue :=
+        Math.Sign(Left.AsExtended) * Math.IntPower(Abs(Left.AsExtended), Right.AsInteger)
   else if Right.ValueKind = cpvkFloat then
   begin
     A := Left.AsInteger;
@@ -104,13 +128,13 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if Math.Power(Abs(X), Y) > 2000000000 then OutValue.IntValue := Math.Sign(A) * 2000000000
-    else OutValue.IntValue := Integer(System.Round(Math.IntPower(Abs(A), B))) * Math.Sign(A);
+    if Math.Power(Abs(X), Y) > 2000000000 then
+      OutValue.IntValue := Math.Sign(A) * 2000000000
+    else
+      OutValue.IntValue := Integer(System.Round(Math.IntPower(Abs(A), B))) * Math.Sign(A);
   end;
 end;
-{ @end $4DFD1C }
 
-{ @routine $4DFF3C TCalcParse_ApplyAdd }
 procedure TCalcParse.ApplyAdd(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -131,14 +155,15 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X + Y > 2000000000 then OutValue.IntValue := 2000000000
-    else if X + Y < -2000000000 then OutValue.IntValue := -2000000000
-    else OutValue.IntValue := A + B;
+    if X + Y > 2000000000 then
+      OutValue.IntValue := 2000000000
+    else if X + Y < -2000000000 then
+      OutValue.IntValue := -2000000000
+    else
+      OutValue.IntValue := A + B;
   end;
 end;
-{ @end $4DFF3C }
 
-{ @routine $4E00A8 TCalcParse_ApplySubtract }
 procedure TCalcParse.ApplySubtract(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -159,14 +184,15 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X - Y > 2000000000 then OutValue.IntValue := 2000000000
-    else if X - Y < -2000000000 then OutValue.IntValue := -2000000000
-    else OutValue.IntValue := A - B;
+    if X - Y > 2000000000 then
+      OutValue.IntValue := 2000000000
+    else if X - Y < -2000000000 then
+      OutValue.IntValue := -2000000000
+    else
+      OutValue.IntValue := A - B;
   end;
 end;
-{ @end $4E00A8 }
 
-{ @routine $4E0214 TCalcParse_ApplyMultiply }
 procedure TCalcParse.ApplyMultiply(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -187,23 +213,22 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X * Y > 2000000000 then OutValue.IntValue := 2000000000
-    else if X * Y < -2000000000 then OutValue.IntValue := -2000000000
-    else OutValue.IntValue := A * B;
+    if X * Y > 2000000000 then
+      OutValue.IntValue := 2000000000
+    else if X * Y < -2000000000 then
+      OutValue.IntValue := -2000000000
+    else
+      OutValue.IntValue := A * B;
   end;
 end;
-{ @end $4E0214 }
 
-{ @routine $4E0380 TCalcParse_ApplyPercentChange }
 procedure TCalcParse.ApplyPercentChange(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
   OutValue.ValueKind := cpvkFloat;
   OutValue.FloatValue := Left.AsExtended * (1 + Right.AsExtended * 0.01);
 end;
-{ @end $4E0380 }
 
-{ @routine $4E03EC TCalcParse_ApplyDivide }
 procedure TCalcParse.ApplyDivide(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -217,8 +242,10 @@ begin
     if B = 0 then
     begin
       OutValue.ValueKind := cpvkInteger;
-      if A < 0 then OutValue.IntValue := -2000000000
-      else OutValue.IntValue := 2000000000;
+      if A < 0 then
+        OutValue.IntValue := -2000000000
+      else
+        OutValue.IntValue := 2000000000;
     end
     else if A mod B = 0 then
     begin
@@ -230,7 +257,9 @@ begin
         OutValue.ValueKind := cpvkFloat;
         OutValue.FloatValue := A / B;
       except
-        on EDivByZero do begin end;
+        on EDivByZero do
+        begin
+        end;
       end;
   end
   else
@@ -239,21 +268,23 @@ begin
     Y := Right.AsExtended;
     if Y = 0 then
     begin
-      if X < 0 then OutValue.FloatValue := -2000000000
-      else OutValue.FloatValue := 2000000000;
+      if X < 0 then
+        OutValue.FloatValue := -2000000000
+      else
+        OutValue.FloatValue := 2000000000;
     end
     else
       try
-      OutValue.ValueKind := cpvkFloat;
-      OutValue.FloatValue := X / Y;
+        OutValue.ValueKind := cpvkFloat;
+        OutValue.FloatValue := X / Y;
       except
-        on EDivByZero do begin end;
+        on EDivByZero do
+        begin
+        end;
       end;
   end;
 end;
-{ @end $4E03EC }
 
-{ @routine $4E05B0 TCalcParse_ApplyIntDivide }
 procedure TCalcParse.ApplyIntDivide(var Left, Right, OutValue: TCPVariant);
 var
   A, B: Integer;
@@ -267,10 +298,13 @@ begin
     B := Right.AsInteger;
     if B = 0 then
     begin
-      if A < 0 then OutValue.IntValue := -2000000000
-      else OutValue.IntValue := 2000000000;
+      if A < 0 then
+        OutValue.IntValue := -2000000000
+      else
+        OutValue.IntValue := 2000000000;
     end
-    else OutValue.IntValue := A div B;
+    else
+      OutValue.IntValue := A div B;
   end
   else
   begin
@@ -278,20 +312,22 @@ begin
     Y := Right.AsExtended;
     if Y = 0 then
     begin
-      if X < 0 then OutValue.FloatValue := -2000000000
-      else OutValue.FloatValue := 2000000000;
+      if X < 0 then
+        OutValue.FloatValue := -2000000000
+      else
+        OutValue.FloatValue := 2000000000;
     end
     else
       try
-      OutValue.IntValue := Trunc(X / Y);
+        OutValue.IntValue := Trunc(X / Y);
       except
-        on EDivByZero do begin end;
+        on EDivByZero do
+        begin
+        end;
       end;
   end;
 end;
-{ @end $4E05B0 }
 
-{ @routine $4E0704 TCalcParse_ApplyModulo }
 procedure TCalcParse.ApplyModulo(var Left, Right, OutValue: TCPVariant);
 var
   X, Y: Extended;
@@ -308,13 +344,16 @@ begin
     Negative := A < 0;
     if B = 0 then
     begin
-      if Negative then OutValue.IntValue := -2000000000
-      else OutValue.IntValue := 2000000000;
+      if Negative then
+        OutValue.IntValue := -2000000000
+      else
+        OutValue.IntValue := 2000000000;
     end
     else
     begin
       OutValue.IntValue := Abs(A) mod Abs(B);
-      if Negative then OutValue.IntValue := OutValue.IntValue * -1;
+      if Negative then
+        OutValue.IntValue := OutValue.IntValue * -1;
     end;
   end
   else
@@ -323,12 +362,15 @@ begin
     Y := Trunc(Right.AsExtended);
     if Y = 0 then
     begin
-      if X < 0 then OutValue.FloatValue := -2000000000
-      else OutValue.FloatValue := 2000000000;
+      if X < 0 then
+        OutValue.FloatValue := -2000000000
+      else
+        OutValue.FloatValue := 2000000000;
     end
     else
       try
-        if Y < 0 then Y := Y * -1;
+        if Y < 0 then
+          Y := Y * -1;
         if X < 0 then
         begin
           X := X * -1;
@@ -336,15 +378,16 @@ begin
         end;
         OutValue.ValueKind := cpvkFloat;
         OutValue.FloatValue := Trunc(X - Trunc(X / Y) * Y);
-        if Negative then OutValue.FloatValue := OutValue.FloatValue * -1;
+        if Negative then
+          OutValue.FloatValue := OutValue.FloatValue * -1;
       except
-        on EDivByZero do begin end;
+        on EDivByZero do
+        begin
+        end;
       end;
   end;
 end;
-{ @end $4E0704 }
 
-{ @routine $4E0934 TCalcParse_ApplyRange }
 procedure TCalcParse.ApplyRange(var Left, Right, OutValue: TCPVariant);
 var
   Minimum, Maximum: Int64;
@@ -352,46 +395,56 @@ begin
   OutValue.Reset;
   Maximum := 0;
   Minimum := 0;
-  if Left.ValueKind = cpvkFloat then Minimum := System.Round(Left.FloatValue)
-  else if Left.ValueKind = cpvkInteger then Minimum := Left.IntValue
-  else if Left.ValueKind = cpvkRange then Minimum := TCPDiapazone(Left.Range).GetMinimum;
-  if Right.ValueKind = cpvkFloat then Maximum := System.Round(Right.FloatValue)
-  else if Right.ValueKind = cpvkInteger then Maximum := Right.IntValue
-  else if Right.ValueKind = cpvkRange then Maximum := TCPDiapazone(Right.Range).GetMaximum;
+  if Left.ValueKind = cpvkFloat then
+    Minimum := System.Round(Left.FloatValue)
+  else if Left.ValueKind = cpvkInteger then
+    Minimum := Left.IntValue
+  else if Left.ValueKind = cpvkRange then
+    Minimum := TCPDiapazone(Left.Range).GetMinimum;
+  if Right.ValueKind = cpvkFloat then
+    Maximum := System.Round(Right.FloatValue)
+  else if Right.ValueKind = cpvkInteger then
+    Maximum := Right.IntValue
+  else if Right.ValueKind = cpvkRange then
+    Maximum := TCPDiapazone(Right.Range).GetMaximum;
   OutValue.ValueKind := cpvkRange;
   TCPDiapazone(OutValue.Range).AddRange(Minimum, Maximum);
 end;
-{ @end $4E0934 }
 
-{ @routine $4E0A48 TCalcParse_ApplyMembership }
 procedure TCalcParse.ApplyMembership(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
   OutValue.ValueKind := cpvkInteger;
   if (Left.ValueKind <> cpvkRange) and (Right.ValueKind <> cpvkRange) then
   begin
-    if Left.AsExtended = Right.AsExtended then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if Left.AsExtended = Right.AsExtended then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind <> cpvkRange) then
   begin
-    if TCPDiapazone(Left.Range).Contains(Right.AsExtended) then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if TCPDiapazone(Left.Range).Contains(Right.AsExtended) then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end
   else if (Left.ValueKind <> cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
-    if TCPDiapazone(Right.Range).Contains(Left.AsExtended) then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if TCPDiapazone(Right.Range).Contains(Left.AsExtended) then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
-    if TCPDiapazone(Right.Range).Contains(Left.AsInteger) then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if TCPDiapazone(Right.Range).Contains(Left.AsInteger) then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end;
 end;
-{ @end $4E0A48 }
 
-{ @routine $4E0BCC TCalcParse_ApplyLessThan }
 procedure TCalcParse.ApplyLessThan(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -401,9 +454,7 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0BCC }
 
-{ @routine $4E0C30 TCalcParse_ApplyGreaterThan }
 procedure TCalcParse.ApplyGreaterThan(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -413,9 +464,7 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0C30 }
 
-{ @routine $4E0C94 TCalcParse_ApplyLessOrEqual }
 procedure TCalcParse.ApplyLessOrEqual(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -425,9 +474,7 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0C94 }
 
-{ @routine $4E0CF8 TCalcParse_ApplyGreaterOrEqual }
 procedure TCalcParse.ApplyGreaterOrEqual(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -437,9 +484,7 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0CF8 }
 
-{ @routine $4E0D5C TCalcParse_ApplyEqual }
 procedure TCalcParse.ApplyEqual(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -449,9 +494,7 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0D5C }
 
-{ @routine $4E0DC0 TCalcParse_ApplyNotEqual }
 procedure TCalcParse.ApplyNotEqual(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
@@ -461,17 +504,17 @@ begin
   else
     OutValue.IntValue := 0;
 end;
-{ @end $4E0DC0 }
 
-{ @routine $4E0E24 TCalcParse_ApplyAnd }
 procedure TCalcParse.ApplyAnd(var Left, Right, OutValue: TCPVariant);
 begin
   OutValue.Reset;
   if (Left.ValueKind <> cpvkRange) and (Right.ValueKind > cpvkRange) then
   begin
     OutValue.ValueKind := cpvkInteger;
-    if (Left.AsExtended <> 0) and (Right.AsExtended <> 0) then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if (Left.AsExtended <> 0) and (Right.AsExtended <> 0) then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
@@ -481,26 +524,30 @@ begin
   else if (Left.ValueKind <> cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
     OutValue.Assign(Right, False);
-    if Left.ValueKind = cpvkInteger then TCPDiapazone(OutValue.Range).AddRange(Left.IntValue, Left.IntValue)
-    else TCPDiapazone(OutValue.Range).AddValue(Left.FloatValue);
+    if Left.ValueKind = cpvkInteger then
+      TCPDiapazone(OutValue.Range).AddRange(Left.IntValue, Left.IntValue)
+    else
+      TCPDiapazone(OutValue.Range).AddValue(Left.FloatValue);
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind <> cpvkRange) then
   begin
     OutValue.Assign(Left, False);
-    if Right.ValueKind = cpvkInteger then TCPDiapazone(OutValue.Range).AddRange(Right.IntValue, Right.IntValue)
-    else TCPDiapazone(OutValue.Range).AddValue(Right.FloatValue);
+    if Right.ValueKind = cpvkInteger then
+      TCPDiapazone(OutValue.Range).AddRange(Right.IntValue, Right.IntValue)
+    else
+      TCPDiapazone(OutValue.Range).AddValue(Right.FloatValue);
   end;
 end;
-{ @end $4E0E24 }
 
-{ @routine $4E0FE0 TCalcParse_ApplyOr }
 procedure TCalcParse.ApplyOr(var Left, Right, OutValue: TCPVariant);
 begin
   if (Left.ValueKind <> cpvkRange) and (Right.ValueKind > cpvkRange) then
   begin
     OutValue.ValueKind := cpvkInteger;
-    if (Left.AsExtended <> 0) or (Right.AsExtended <> 0) then OutValue.IntValue := 1
-    else OutValue.IntValue := 0;
+    if (Left.AsExtended <> 0) or (Right.AsExtended <> 0) then
+      OutValue.IntValue := 1
+    else
+      OutValue.IntValue := 0;
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
@@ -510,19 +557,21 @@ begin
   else if (Left.ValueKind <> cpvkRange) and (Right.ValueKind = cpvkRange) then
   begin
     OutValue.Assign(Right, False);
-    if Left.ValueKind = cpvkInteger then TCPDiapazone(OutValue.Range).AddRange(Left.IntValue, Left.IntValue)
-    else TCPDiapazone(OutValue.Range).AddValue(Left.FloatValue);
+    if Left.ValueKind = cpvkInteger then
+      TCPDiapazone(OutValue.Range).AddRange(Left.IntValue, Left.IntValue)
+    else
+      TCPDiapazone(OutValue.Range).AddValue(Left.FloatValue);
   end
   else if (Left.ValueKind = cpvkRange) and (Right.ValueKind <> cpvkRange) then
   begin
     OutValue.Assign(Left, False);
-    if Right.ValueKind = cpvkInteger then TCPDiapazone(OutValue.Range).AddRange(Right.IntValue, Right.IntValue)
-    else TCPDiapazone(OutValue.Range).AddValue(Right.FloatValue);
+    if Right.ValueKind = cpvkInteger then
+      TCPDiapazone(OutValue.Range).AddRange(Right.IntValue, Right.IntValue)
+    else
+      TCPDiapazone(OutValue.Range).AddValue(Right.FloatValue);
   end;
 end;
-{ @end $4E0FE0 }
 
-{ @routine $4E1194 TCalcParse_NormalizeTokens }
 function TCalcParse.NormalizeTokens(var Text: WideString): WideString;
 var
   Previous, Current: WideString;
@@ -557,22 +606,21 @@ begin
     Index := FindTextOffsetW(Current, ' ');
     while Index > 0 do
     begin
-      if (FindTextOffsetW('%fg#$|&ecbh*+/-()><=[]{}', WideString(Current[Index])) < 0) and
-        (FindTextOffsetW('%fg#$|&ecbh*+/-()><=[]{}', WideString(Current[Index + 2])) < 0) then
+      if (FindTextOffsetW('%fg#$|&ecbh*+/-()><=[]{}', WideString(Current[Index])) < 0)
+          and (FindTextOffsetW('%fg#$|&ecbh*+/-()><=[]{}', WideString(Current[Index + 2])) < 0) then
         Index := FindTextOffsetW(Current, ' ', Index + 1)
       else
       begin
-        Current := CopyWideStringUnchecked(Current, 1, Index) +
-          CopyWideStringUnchecked(Current, Index + 2, Length(Current) - Index - 1);
+        Current :=
+            CopyWideStringUnchecked(Current, 1, Index)
+                + CopyWideStringUnchecked(Current, Index + 2, Length(Current) - Index - 1);
         Index := FindTextOffsetW(Current, ' ', Index);
       end;
     end;
   until Current = Previous;
   Result := '(' + Previous + ')';
 end;
-{ @end $4E1194 }
 
-{ @routine $4E1768 TCalcParse_FormatTokens }
 function TCalcParse.FormatTokens(var Text: WideString): WideString;
 var
   Previous, Current, Inner: WideString;
@@ -599,14 +647,14 @@ begin
   Inner := '';
   if (Count >= 2) and (Current[1] = '(') and (Current[Count] = ')') then
   begin
-    for i := 2 to Count - 1 do Inner := Inner + Current[i];
-    if HasBalancedParenthesesInSlice(Current, 2, Count - 1) then Previous := Inner;
+    for i := 2 to Count - 1 do
+      Inner := Inner + Current[i];
+    if HasBalancedParenthesesInSlice(Current, 2, Count - 1) then
+      Previous := Inner;
   end;
   Result := Previous;
 end;
-{ @end $4E1768 }
 
-{ @routine $4E1B7C TCalcParse_GetOperatorRank }
 function TCalcParse.GetOperatorRank(Token: WideChar): Integer;
 var
   Rank: Integer;
@@ -634,9 +682,7 @@ begin
   end;
   Result := Rank;
 end;
-{ @end $4E1B7C }
 
-{ @routine $4E1D0C TCalcParse_CollapseOperatorRun }
 function TCalcParse.CollapseOperatorRun(const Text: WideString): WideString;
 var
   i, MinusCount, PlusCount, Count: Integer;
@@ -647,13 +693,17 @@ begin
   PlusCount := 0;
   for i := 1 to Count do
   begin
-    if Text[i] = '-' then Inc(MinusCount);
-    if Text[i] = '+' then Inc(PlusCount);
+    if Text[i] = '-' then
+      Inc(MinusCount);
+    if Text[i] = '+' then
+      Inc(PlusCount);
   end;
   Operators := ReplaceAllWideString(Text, '-', '');
   Operators := ReplaceAllWideString(Operators, '+', '');
-  if MinusCount mod 2 = 1 then Operators := Operators + '-'
-  else if (PlusCount > 0) or (MinusCount > 0) then Operators := Operators + '+';
+  if MinusCount mod 2 = 1 then
+    Operators := Operators + '-'
+  else if (PlusCount > 0) or (MinusCount > 0) then
+    Operators := Operators + '+';
   Count := Length(Operators);
   MinusCount := 0;
   PlusCount := 0;
@@ -665,9 +715,7 @@ begin
     end;
   Result := Operators[PlusCount];
 end;
-{ @end $4E1D0C }
 
-{ @routine $4E1E98 TCalcParse_NormalizeFragments }
 function TCalcParse.NormalizeFragments(const Text: WideString): WideString;
 var
   Index, Count: Integer;
@@ -695,7 +743,8 @@ begin
       begin
         Fragment := Fragment + Text[Index];
         Inc(Index);
-        if Index > Count then Output := Output + NormalizeScalarFragment(Fragment);
+        if Index > Count then
+          Output := Output + NormalizeScalarFragment(Fragment);
         Continue;
       end;
     end;
@@ -707,15 +756,14 @@ begin
         Fragment := '';
         Outside := True;
       end
-      else Fragment := Fragment + Text[Index];
+      else
+        Fragment := Fragment + Text[Index];
       Inc(Index);
     end;
   end;
   Result := Output;
 end;
-{ @end $4E1E98 }
 
-{ @routine $4E2068 TCalcParse_NormalizeScalarFragment }
 function TCalcParse.NormalizeScalarFragment(Text: WideString): WideString;
 var
   Previous, Working, Output: WideString;
@@ -726,30 +774,31 @@ begin
   for i := 1 to Count do
   begin
     case Text[i] of
-      '^': ;
-      '+': ;
-      '-': ;
-      '*': ;
-      '/': ;
-      '#': ;
-      '%': ;
-      '$': ;
-      'c': ;
-      'b': ;
-      'e': ;
-      'f': ;
-      'g': ;
-      '=': ;
-      '>': ;
-      '<': ;
-      '&': ;
-      '|': ;
-      '0'..'9': ;
-      ',': ;
-      '(': ;
-      ')': ;
-      ' ': ;
-    else Continue;
+      '^':;
+      '+':;
+      '-':;
+      '*':;
+      '/':;
+      '#':;
+      '%':;
+      '$':;
+      'c':;
+      'b':;
+      'e':;
+      'f':;
+      'g':;
+      '=':;
+      '>':;
+      '<':;
+      '&':;
+      '|':;
+      '0'..'9':;
+      ',':;
+      '(':;
+      ')':;
+      ' ':;
+    else
+      Continue;
     end;
     Previous := Previous + Text[i];
   end;
@@ -855,18 +904,15 @@ begin
   until Previous = Text;
   Result := Text;
 end;
-{ @end $4E2068 }
 
-{ @routine $4E3070 TCalcParse_NormalizeBracketFragment }
 function TCalcParse.NormalizeBracketFragment(Text: WideString): WideString;
 begin
   if ReplaceAllWideString(Text, 'p', '') <> Text then
     Result := NormalizeParameterReference(Text)
-  else Result := NormalizeRangeLiteral(Text);
+  else
+    Result := NormalizeRangeLiteral(Text);
 end;
-{ @end $4E3070 }
 
-{ @routine $4E310C TCalcParse_NormalizeParameterReference }
 function TCalcParse.NormalizeParameterReference(Text: WideString): WideString;
 var
   Count, i: Integer;
@@ -876,11 +922,14 @@ begin
   Digits := '';
   for i := 1 to Count do
   begin
-    if Length(Digits) > 2 then Break;
-    if (Text[i] >= '0') and (Text[i] <= '9') then Digits := Digits + Text[i];
+    if Length(Digits) > 2 then
+      Break;
+    if (Text[i] >= '0') and (Text[i] <= '9') then
+      Digits := Digits + Text[i];
   end;
   i := ExtractDigitsToIntW('0' + Digits);
-  if i > 0 then Result := '[p' + IntToWideString(i) + ']'
+  if i > 0 then
+    Result := '[p' + IntToWideString(i) + ']'
   else
   begin
     Result := '[err]';
@@ -888,9 +937,7 @@ begin
     HasError := True;
   end;
 end;
-{ @end $4E310C }
 
-{ @routine $4E327C TCalcParse_NormalizeRangeLiteral }
 function TCalcParse.NormalizeRangeLiteral(Text: WideString): WideString;
 var
   i, Count: Integer;
@@ -903,7 +950,7 @@ begin
   begin
     case Text[i] of
       '[', ']': Continue;
-      '0'..'9', '-', 'h', ';': ;
+      '0'..'9', '-', 'h', ';':;
     else
       Result := '[err]';
       InvalidRangeLiteral := True;
@@ -941,9 +988,7 @@ begin
     HasError := True;
   end;
 end;
-{ @end $4E327C }
 
-{ @routine $4E35A4 TCalcParse_InsertImplicitMultiplication }
 function TCalcParse.InsertImplicitMultiplication(Text: WideString): WideString;
 var
   Current: WideString;
@@ -981,9 +1026,7 @@ begin
   until Text = Current;
   Result := Text;
 end;
-{ @end $4E35A4 }
 
-{ @routine $4E3C40 TCalcParse_FindTopLevelOperator }
 function TCalcParse.FindTopLevelOperator(const Text: WideString; TextLength: Integer): Integer;
 var
   Rank, BestRank, BestIndex, i, BracketDepth, ParenthesisDepth: Integer;
@@ -994,10 +1037,14 @@ begin
   ParenthesisDepth := 0;
   for i := 1 to TextLength do
   begin
-    if Text[i] = '(' then Inc(ParenthesisDepth);
-    if Text[i] = '[' then Inc(BracketDepth);
-    if Text[i] = ')' then Dec(ParenthesisDepth);
-    if Text[i] = ']' then Dec(BracketDepth);
+    if Text[i] = '(' then
+      Inc(ParenthesisDepth);
+    if Text[i] = '[' then
+      Inc(BracketDepth);
+    if Text[i] = ')' then
+      Dec(ParenthesisDepth);
+    if Text[i] = ']' then
+      Dec(BracketDepth);
     if (ParenthesisDepth = 0) and (BracketDepth = 0) then
     begin
       Rank := GetOperatorRank(Text[i]);
@@ -1010,9 +1057,7 @@ begin
   end;
   Result := BestIndex;
 end;
-{ @end $4E3C40 }
 
-{ @routine $4E3D0C TCalcParse_EvaluateExpression }
 function TCalcParse.EvaluateExpression(Text: WideString): TCPVariant;
 var
   Count: Integer;
@@ -1028,68 +1073,94 @@ begin
     Count := Length(Text);
     if not Value.TryLoadFromText(Text) then
     begin
-      if (Text[1] = '(') and (Text[Count] = ')') and HasBalancedParenthesesInSlice(Text, 2, Count - 1) then
+      if (Text[1] = '(')
+          and (Text[Count] = ')')
+          and HasBalancedParenthesesInSlice(Text, 2, Count - 1) then
       begin
         Inner := '';
-        for i := 2 to Count - 1 do Inner := Inner + Text[i];
-        if Length(Inner) = 0 then HasError := True
-        else Value.Assign(EvaluateExpression(Inner), False);
+        for i := 2 to Count - 1 do
+          Inner := Inner + Text[i];
+        if Length(Inner) = 0 then
+          HasError := True
+        else
+          Value.Assign(EvaluateExpression(Inner), False);
       end
       else
       begin
         Index := FindTopLevelOperator(Text, Count);
-        if Index < 1 then EvaluationError := True
+        if Index < 1 then
+          EvaluationError := True
         else
         begin
           LeftText := '';
-          for i := 1 to Index - 1 do LeftText := LeftText + Text[i];
+          for i := 1 to Index - 1 do
+            LeftText := LeftText + Text[i];
           RightText := '';
-          for i := Index + 1 to Count do RightText := RightText + Text[i];
+          for i := Index + 1 to Count do
+            RightText := RightText + Text[i];
           Right.Assign(EvaluateExpression(RightText), False);
           if not EvaluationError then
           begin
             Left.Assign(EvaluateExpression(LeftText), False);
             if not EvaluationError then
               try
-                  if Text[Index] = '^' then ApplyPower(Left, Right, Value)
-                  else if Text[Index] = '+' then ApplyAdd(Left, Right, Value)
-                  else if Text[Index] = '-' then ApplySubtract(Left, Right, Value)
-                  else if Text[Index] = '*' then ApplyMultiply(Left, Right, Value)
-                  else if Text[Index] = '/' then ApplyDivide(Left, Right, Value)
-                  else if Text[Index] = 'f' then ApplyIntDivide(Left, Right, Value)
-                  else if Text[Index] = 'g' then ApplyModulo(Left, Right, Value)
-                  else if Text[Index] = '%' then ApplyPercentChange(Left, Right, Value)
-                  else if Text[Index] = '$' then ApplyRange(Left, Right, Value)
-                  else if Text[Index] = '#' then ApplyMembership(Left, Right, Value)
-                  else if Text[Index] = '>' then ApplyGreaterThan(Left, Right, Value)
-                  else if Text[Index] = '<' then ApplyLessThan(Left, Right, Value)
-                  else if Text[Index] = 'c' then ApplyGreaterOrEqual(Left, Right, Value)
-                  else if Text[Index] = 'b' then ApplyLessOrEqual(Left, Right, Value)
-                  else if Text[Index] = 'e' then ApplyNotEqual(Left, Right, Value)
-                  else if Text[Index] = '=' then ApplyEqual(Left, Right, Value)
-                  else if Text[Index] = '&' then ApplyAnd(Left, Right, Value)
-                  else if Text[Index] = '|' then ApplyOr(Left, Right, Value);
+                if Text[Index] = '^' then
+                  ApplyPower(Left, Right, Value)
+                else if Text[Index] = '+' then
+                  ApplyAdd(Left, Right, Value)
+                else if Text[Index] = '-' then
+                  ApplySubtract(Left, Right, Value)
+                else if Text[Index] = '*' then
+                  ApplyMultiply(Left, Right, Value)
+                else if Text[Index] = '/' then
+                  ApplyDivide(Left, Right, Value)
+                else if Text[Index] = 'f' then
+                  ApplyIntDivide(Left, Right, Value)
+                else if Text[Index] = 'g' then
+                  ApplyModulo(Left, Right, Value)
+                else if Text[Index] = '%' then
+                  ApplyPercentChange(Left, Right, Value)
+                else if Text[Index] = '$' then
+                  ApplyRange(Left, Right, Value)
+                else if Text[Index] = '#' then
+                  ApplyMembership(Left, Right, Value)
+                else if Text[Index] = '>' then
+                  ApplyGreaterThan(Left, Right, Value)
+                else if Text[Index] = '<' then
+                  ApplyLessThan(Left, Right, Value)
+                else if Text[Index] = 'c' then
+                  ApplyGreaterOrEqual(Left, Right, Value)
+                else if Text[Index] = 'b' then
+                  ApplyLessOrEqual(Left, Right, Value)
+                else if Text[Index] = 'e' then
+                  ApplyNotEqual(Left, Right, Value)
+                else if Text[Index] = '=' then
+                  ApplyEqual(Left, Right, Value)
+                else if Text[Index] = '&' then
+                  ApplyAnd(Left, Right, Value)
+                else if Text[Index] = '|' then
+                  ApplyOr(Left, Right, Value);
               except
-                  on EMathError do
-                  begin
-                    EvaluationError := True;
-                    HasError := True;
-                  end;
-                  on EInvalidOp do
-                  begin
-                    EvaluationError := True;
-                    HasError := True;
-                  end;
-                  on EOverflow do
-                  begin
-                    EvaluationError := True;
-                    HasError := True;
-                  end;
-                  on EZeroDivide do
-                  begin
-                    EvaluationError := True;
-                    HasError := True;
-                  end;
+                on EMathError do
+                begin
+                  EvaluationError := True;
+                  HasError := True;
+                end;
+                on EInvalidOp do
+                begin
+                  EvaluationError := True;
+                  HasError := True;
+                end;
+                on EOverflow do
+                begin
+                  EvaluationError := True;
+                  HasError := True;
+                end;
+                on EZeroDivide do
+                begin
+                  EvaluationError := True;
+                  HasError := True;
+                end;
               end;
           end;
         end;
@@ -1102,9 +1173,7 @@ begin
   Right.Destroy;
   Left.Destroy;
 end;
-{ @end $4E3D0C }
 
-{ @routine $4E42C4 TCalcParse_Evaluate }
 procedure TCalcParse.Evaluate(Parameters: TList);
 var
   Value: TCPVariant;
@@ -1123,12 +1192,11 @@ begin
         ResultValue := 0;
       end;
     end;
-    if EvaluationError then HasError := True;
+    if EvaluationError then
+      HasError := True;
   end;
 end;
-{ @end $4E42C4 }
 
-{ @routine $4E43E0 TCalcParse_Prepare }
 procedure TCalcParse.Prepare(Text: WideString; DefaultParameterIndex: Integer);
 var
   Count, i: Integer;
@@ -1141,19 +1209,24 @@ begin
   Text := InsertImplicitMultiplication(Text);
   Text := ClampNumericLiterals(Text);
   UnbalancedParentheses := not HasBalancedParentheses(Text);
-  if UnbalancedParentheses then HasError := True;
+  if UnbalancedParentheses then
+    HasError := True;
   Readable := Text;
   if not HasError then
   begin
     Count := Length(Text);
-    if (Count >= 2) and (Text[1] = '(') and (Text[Count] = ')') and
-      HasBalancedParenthesesInSlice(Text, 2, Count - 1) then
+    if (Count >= 2)
+        and (Text[1] = '(')
+        and (Text[Count] = ')')
+        and HasBalancedParenthesesInSlice(Text, 2, Count - 1) then
     begin
       Readable := '';
-      for i := 2 to Count - 1 do Readable := Readable + Text[i];
+      for i := 2 to Count - 1 do
+        Readable := Readable + Text[i];
     end;
   end;
-  if SourceText <> FormatTokens(Readable) then SourceWasChanged := True;
+  if SourceText <> FormatTokens(Readable) then
+    SourceWasChanged := True;
   if (Text = '') or (Text = '[p' + IntToWideString(DefaultParameterIndex) + ']') then
   begin
     UsesDefaultParameter := True;
@@ -1161,16 +1234,12 @@ begin
   end;
   Expression := Text;
 end;
-{ @end $4E43E0 }
 
-{ @routine $4E4634 TCalcParse_Create }
 constructor TCalcParse.Create;
 begin
   Reset;
 end;
-{ @end $4E4634 }
 
-{ @routine $4E4674 TCalcParse_Reset }
 procedure TCalcParse.Reset;
 begin
   SourceText := '';
@@ -1186,10 +1255,11 @@ begin
   UsesDefaultParameter := False;
   HasError := False;
 end;
-{ @end $4E4674 }
 
-{ @routine $4E46DC TCalcParse_HasBalancedParenthesesInSlice }
-function TCalcParse.HasBalancedParenthesesInSlice(const Text: WideString; FirstIndex, LastIndex: Integer): Boolean;
+function TCalcParse.HasBalancedParenthesesInSlice(
+    const Text: WideString;
+    FirstIndex, LastIndex: Integer
+): Boolean;
 var
   Depth, i: Integer;
   Balanced: Boolean;
@@ -1198,20 +1268,21 @@ begin
   Balanced := True;
   for i := FirstIndex to LastIndex do
   begin
-    if Text[i] = '(' then Inc(Depth);
-    if Text[i] = ')' then Dec(Depth);
+    if Text[i] = '(' then
+      Inc(Depth);
+    if Text[i] = ')' then
+      Dec(Depth);
     if Depth < 0 then
     begin
       Balanced := False;
       Break;
     end;
   end;
-  if Depth <> 0 then Balanced := False;
+  if Depth <> 0 then
+    Balanced := False;
   Result := Balanced;
 end;
-{ @end $4E46DC }
 
-{ @routine $4E4754 TCalcParse_SubstituteParameters }
 function TCalcParse.SubstituteParameters(Parameters: TList): WideString;
 var
   i: Integer;
@@ -1223,14 +1294,23 @@ begin
   begin
     Parameter := TParameter(Parameters[i - 1]);
     if Parameter.Value < 0 then
-      Text := ReplaceAllWideString(Text, '[p' + IntToWideString(i) + ']', '(0' + IntToWideString(Parameter.Value) + ')')
-    else Text := ReplaceAllWideString(Text, '[p' + IntToWideString(i) + ']', IntToWideString(Parameter.Value));
+      Text :=
+          ReplaceAllWideString(
+              Text,
+              '[p' + IntToWideString(i) + ']',
+              '(0' + IntToWideString(Parameter.Value) + ')'
+          )
+    else
+      Text :=
+          ReplaceAllWideString(
+              Text,
+              '[p' + IntToWideString(i) + ']',
+              IntToWideString(Parameter.Value)
+          );
   end;
   Result := Text;
 end;
-{ @end $4E4754 }
 
-{ @routine $4E48EC TCalcParse_HasBalancedParentheses }
 function TCalcParse.HasBalancedParentheses(const Text: WideString): Boolean;
 var
   Balanced: Boolean;
@@ -1238,9 +1318,7 @@ begin
   Balanced := HasBalancedParenthesesInSlice(Text, 1, Length(Text));
   Result := Balanced;
 end;
-{ @end $4E48EC }
 
-{ @routine $4E4924 TCalcParse_ClampNumericLiterals }
 function TCalcParse.ClampNumericLiterals(Text: WideString): WideString;
 var
   Index, Count: Integer;
@@ -1274,17 +1352,20 @@ begin
           Exit;
         end;
       end;
-        if Value > 999999999 then Replacement := '999999999'
-        else if (Value < 0.0001) and (Value <> 0) then Replacement := '0.0001'
-        else Replacement := Digits;
-        Output := Output + WideString(Replacement) + Text[Index];
-        Digits := '';
+      if Value > 999999999 then
+        Replacement := '999999999'
+      else if (Value < 0.0001) and (Value <> 0) then
+        Replacement := '0.0001'
+      else
+        Replacement := Digits;
+      Output := Output + WideString(Replacement) + Text[Index];
+      Digits := '';
     end
-    else Output := Output + Text[Index];
+    else
+      Output := Output + Text[Index];
     Inc(Index);
   end;
   Result := Output;
 end;
-{ @end $4E4924 }
 
 end.
