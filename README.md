@@ -45,5 +45,9 @@ executable against the original SHA-256. Game data comes from your installed gam
 [Development and progress reports](docs/development.md) ·
 [Pascal annotations](docs/declarations.md)
 
+See also [okgf](https://github.com/pakompom/okgf), a portable C
+reimplementation of the game's `okgf.dll`. It implements the functions used by
+the latest game build and is useful for ports to other platforms.
+
 Unofficial; not affiliated with the game's developers or publisher.
 See [rights and attribution](NOTICE.md) and the [tooling license](LICENSE).
