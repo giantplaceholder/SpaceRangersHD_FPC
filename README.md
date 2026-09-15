@@ -52,6 +52,9 @@ See also:
 - [MatrixGame](https://github.com/twoweeks/MatrixGame) - the published source
   code for the 3D planetary battle engine used by Space Rangers 2, Reboot and
   Revolution.
+- [SpaceRangersHD_FPC](https://github.com/pakompom/SpaceRangersHD_FPC) - a
+  personal Free Pascal port provided as an example of adapting the recovered
+  code to other platforms; it is experimental and not community-maintained.
 
 Unofficial; not affiliated with the game's developers or publisher.
 See [rights and attribution](NOTICE.md) and the [tooling license](LICENSE).
