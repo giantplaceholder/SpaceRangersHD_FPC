@@ -886,27 +886,18 @@ var
 
   procedure SwapGiSourceRedBlue;
   var
-    Pixels: Pointer;
-    Count: Integer;
+    Pixels: PColorRGBA;
+    Count, Index: Integer;
+    Red: Byte;
   begin
     Pixels := GraphBuf.GetPixels;
     Count := GraphBuf.Width * GraphBuf.Height;
-    asm
-      PUSH EDI
-      PUSH EAX
-      PUSH ECX
-      MOV EDI, Pixels
-      MOV ECX, Count
-    @@Pixel:
-      MOV AL, [EDI]
-      XCHG AL, [EDI + 2]
-      MOV [EDI], AL
-      ADD EDI, 4
-      DEC ECX
-      JNZ @@Pixel
-      POP ECX
-      POP EAX
-      POP EDI
+    for Index := 1 to Count do
+    begin
+      Red := Pixels.R;
+      Pixels.R := Pixels.B;
+      Pixels.B := Red;
+      Inc(Pixels);
     end;
   end;
 

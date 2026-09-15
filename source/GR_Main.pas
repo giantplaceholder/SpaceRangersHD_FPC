@@ -5,6 +5,7 @@ unit GR_Main;
 {$Q-}
 {$B-}
 {$A8}
+{$POINTERMATH ON}
 
 interface
 
@@ -205,20 +206,6 @@ var
   MainWindowHandle: Cardinal;
 
   WideCaseTable: array of TWideCasePair;
-
-function OKGF_ZLib_Compress(
-    Dest: Pointer;
-    Source: Pointer;
-    SourceSize: Integer;
-    Mode: Integer
-): Integer; stdcall; external 'ZLib.dll' name 'OKGF_ZLib_Compress';
-
-function OKGF_ZLib_UnCompress(
-    Dest: Pointer;
-    DestCapacity: Integer;
-    Source: Pointer;
-    SourceSize: Integer
-): Integer; stdcall; external 'ZLib.dll' name 'OKGF_ZLib_UnCompress';
 
 function GlobalMemoryStatusEx(
     var Status: TMemoryStatusEx
@@ -5530,7 +5517,6 @@ end;
 
 procedure GR_DXInit;
 var
-  ControlWord: Word;
   Code: Integer;
   Surface: IDirect3DSurface9;
   Index, MiniMapSize: Integer;
@@ -5601,14 +5587,14 @@ begin
   ScreenRenderBuffer := TGraphBufGR.Create(True);
   RenderScratchBuffer := TGraphBufGR.Create(True);
   AuxRenderBuffer := TGraphBufGR.Create(True);
-  ControlWord := $133F;
-  // The native code directly clears x87 exceptions and loads the local control
-  // word; this small handwritten sequence has no Pascal intrinsic equivalent.
-  asm
-    fclex
-    and ControlWord, $FCFF
-    fldcw ControlWord
-  end;
+  // $133F and $FCFF selects nearest rounding, single x87 precision and masked exceptions.
+  // Fixed-precision CPUs retain their native precision through FPC.
+  ClearExceptions(False);
+  SetExceptionMask(
+      [exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]
+  );
+  SetRoundMode(rmNearest);
+  SetPrecisionMode(pmSingle);
   try
     if Direct3D = nil then
     begin
@@ -6863,11 +6849,24 @@ procedure BlendPaletteBuffer16Clipped(
     Clip: TRect
 );
 var
-  SourcePixels: Pointer;
+  SourcePixels: PByte;
+  DestPixel: PByte;
   Width: Integer;
   Palette, MulTable: Pointer;
-  ColumnCount, SourceSkip, DestSkip, Height: Integer;
+  Column, Row, SourceSkip, DestSkip, Height: Integer;
   SourceX, SourceY: Integer;
+  RedShift, GreenShift, GreenMask: Integer;
+  Color, Pixel, Blended: Cardinal;
+  Foreground, Background: PByte;
+
+  function ScaleRgb(Red, Green, Blue: Byte; TableRow: PByte): Cardinal;
+  begin
+    Result :=
+        ((Cardinal(TableRow[Red]) and $F8) shl RedShift)
+            or ((Cardinal(TableRow[Green]) and GreenMask) shl GreenShift)
+            or (Cardinal(TableRow[Blue]) shr 3);
+  end;
+
 begin
   if (X >= Clip.Right)
       or (Y >= Clip.Bottom)
@@ -6894,205 +6893,54 @@ begin
     Dec(Height, SourceY);
     Y := Clip.Top;
   end;
-  SourcePixels := Pointer(SourceY * Source.PitchBytes + PAnsiChar(Source.Pixels) + SourceX);
-  Dest := Pointer(Y * DestPitch + PAnsiChar(Dest) + X * 2);
+  SourcePixels := PByte(PAnsiChar(Source.Pixels) + SourceY * Source.PitchBytes + SourceX);
+  Dest := Pointer(PAnsiChar(Dest) + Y * DestPitch + X * 2);
   SourceSkip := Source.PitchBytes - Width;
   DestSkip := DestPitch - Width * 2;
   MulTable := Ex_OKGF_MulTable256x256;
   Palette := Source.Palette;
-  ColumnCount := Width;
-  { Native handwritten loops blend palette alpha into RGB565 or RGB555. }
   if CurrentPixelFormat.TotalChannelBits = 16 then
   begin
-    asm
-      push    esi
-      push    edi
-      push    edx
-      push    ebx
-      push    ecx
-      mov     esi, SourcePixels
-      mov     edi, Dest
-      mov     ecx, Width
-    @@L4C6630:
-      xor     edx, edx
-      mov     dl, [esi]
-      shl     edx, 2
-      add     edx, Palette
-      mov     edx, [edx]
-      mov     ebx, edx
-      shr     ebx, 18h
-      jz      @@L4C66F0
-      shl     ebx, 8
-      add     ebx, MulTable
-      mov     eax, edx
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 8
-      and     eax, 0F800h
-      mov     ecx, eax
-      mov     eax, edx
-      shr     eax, 8
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 3
-      and     eax, 7E0h
-      or      ecx, eax
-      mov     eax, edx
-      shr     eax, 10h
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shr     eax, 3
-      and     eax, 1Fh
-      or      ecx, eax
-      mov     eax, edx
-      shr     eax, 18h
-      mov     ebx, 0FFh
-      sub     ebx, eax
-      shl     ebx, 8
-      add     ebx, MulTable
-      xor     edx, edx
-      mov     dx, [edi]
-      mov     eax, edx
-      shr     eax, 8
-      and     eax, 0F8h
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 8
-      and     eax, 0F800h
-      add     ecx, eax
-      mov     eax, edx
-      shr     eax, 3
-      and     eax, 0FCh
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 3
-      and     eax, 7E0h
-      add     ecx, eax
-      mov     eax, edx
-      shl     eax, 3
-      and     eax, 0F8h
-      add     eax, ebx
-      mov     al, [eax]
-      shr     eax, 3
-      and     eax, 1Fh
-      add     ecx, eax
-      mov     [edi], cx
-    @@L4C66F0:
-      add     esi, 1
-      add     edi, 2
-      dec     ColumnCount
-      jnz     @@L4C6630
-      mov     eax, Width
-      mov     ColumnCount, eax
-      add     esi, SourceSkip
-      add     edi, DestSkip
-      dec     Height
-      jnz     @@L4C6630
-      pop     ecx
-      pop     ebx
-      pop     edx
-      pop     edi
-      pop     esi
-    end;
+    RedShift := 8;
+    GreenShift := 3;
+    GreenMask := $FC;
   end
   else
   begin
-    asm
-      push    esi
-      push    edi
-      push    edx
-      push    ebx
-      push    ecx
-      mov     esi, SourcePixels
-      mov     edi, Dest
-      mov     ecx, Width
-    @@L4C672C:
-      xor     edx, edx
-      mov     dl, [esi]
-      shl     edx, 2
-      add     edx, Palette
-      mov     edx, [edx]
-      mov     ebx, edx
-      shr     ebx, 18h
-      jz      @@L4C67EC
-      shl     ebx, 8
-      add     ebx, MulTable
-      mov     eax, edx
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 7
-      and     eax, 7C00h
-      mov     ecx, eax
-      mov     eax, edx
-      shr     eax, 8
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 2
-      and     eax, 3E0h
-      or      ecx, eax
-      mov     eax, edx
-      shr     eax, 10h
-      and     eax, 0FFh
-      add     eax, ebx
-      mov     al, [eax]
-      shr     eax, 3
-      and     eax, 1Fh
-      or      ecx, eax
-      mov     eax, edx
-      shr     eax, 18h
-      mov     ebx, 0FFh
-      sub     ebx, eax
-      shl     ebx, 8
-      add     ebx, MulTable
-      xor     edx, edx
-      mov     dx, [edi]
-      mov     eax, edx
-      shr     eax, 7
-      and     eax, 0F8h
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 7
-      and     eax, 7C00h
-      add     ecx, eax
-      mov     eax, edx
-      shr     eax, 2
-      and     eax, 0F8h
-      add     eax, ebx
-      mov     al, [eax]
-      shl     eax, 2
-      and     eax, 3E0h
-      add     ecx, eax
-      mov     eax, edx
-      shl     eax, 3
-      and     eax, 0F8h
-      add     eax, ebx
-      mov     al, [eax]
-      shr     eax, 3
-      and     eax, 1Fh
-      add     ecx, eax
-      mov     [edi], cx
-    @@L4C67EC:
-      add     esi, 1
-      add     edi, 2
-      dec     ColumnCount
-      jnz     @@L4C672C
-      mov     eax, Width
-      mov     ColumnCount, eax
-      add     esi, SourceSkip
-      add     edi, DestSkip
-      dec     Height
-      jnz     @@L4C672C
-      pop     ecx
-      pop     ebx
-      pop     edx
-      pop     edi
-      pop     esi
+    RedShift := 7;
+    GreenShift := 2;
+    GreenMask := $F8;
+  end;
+  DestPixel := Dest;
+  for Row := 1 to Height do
+  begin
+    for Column := 1 to Width do
+    begin
+      Color := ReadDWordEC(PAnsiChar(Palette) + Integer(SourcePixels^) * SizeOf(Cardinal));
+      if Color shr 24 <> 0 then
+      begin
+        Foreground := PByte(PAnsiChar(MulTable) + Integer(Color shr 24) * 256);
+        Background := PByte(PAnsiChar(MulTable) + (255 - Integer(Color shr 24)) * 256);
+        Pixel := ReadWordEC(DestPixel);
+        // Quantize each contribution before adding, as in the RGB565/RGB555 loops.
+        // Combining full-precision channels first changes the low color bits.
+        Blended := ScaleRgb(Byte(Color), Byte(Color shr 8), Byte(Color shr 16), Foreground);
+        Inc(
+            Blended,
+            ScaleRgb(
+                (Pixel shr RedShift) and $F8,
+                (Pixel shr GreenShift) and GreenMask,
+                (Pixel shl 3) and $F8,
+                Background
+            )
+        );
+        WriteWordEC(DestPixel, Word(Blended));
+      end;
+      Inc(SourcePixels);
+      Inc(DestPixel, SizeOf(Word));
     end;
+    Inc(SourcePixels, SourceSkip);
+    Inc(DestPixel, DestSkip);
   end;
 end;
 

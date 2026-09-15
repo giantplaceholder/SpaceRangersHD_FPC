@@ -5,6 +5,7 @@ unit GR_GraphBuf;
 {$Q-}
 {$B-}
 {$A8}
+{$POINTERMATH ON}
 
 interface
 
@@ -763,8 +764,6 @@ begin
 end;
 
 procedure TGraphBufGR.DrawHorizontalLine16(X, Y, Count: Integer; Color: Cardinal);
-var
-  Data: Pointer;
 begin
   if Count = 0 then
     Exit;
@@ -774,27 +773,14 @@ begin
     Count := -Count;
   end;
   LockTexture(False);
-  X := Y * PitchBytes + X * SizeOf(Word);
-  Data := Pixels;
-  // Native bug: EDI is clobbered without saving/restoring it, violating
-  // Delphi's callee-save convention. The original function has no outer save.
-  // DCC32 18.5 O+ callers can retain a destination pointer in EDI; subsequent
-  // writes then use the end of this line instead. Recompiling this routine
-  // with O+ still leaves EDI unpreserved.
-  asm
-    MOV EDI, X
-    MOV ECX, Count
-    ADD EDI, Data
-    MOV EAX, Color
-    CLD
-    REP STOSW
-  end;
+  // The original REP STOSW clobbered EDI. Pascal preserves callee-saved registers.
+  FillWord(PByte(PAnsiChar(Pixels) + Y * PitchBytes + X * SizeOf(Word))^, Count, Word(Color));
 end;
 
 procedure TGraphBufGR.DrawVerticalLine16(X, Y, Count: Integer; Color: Cardinal);
 var
-  Data: Pointer;
-  Step: Integer;
+  Data: PByte;
+  Index: Integer;
 begin
   if Count = 0 then
     Exit;
@@ -804,25 +790,12 @@ begin
     Count := -Count;
   end;
   LockTexture(False);
-  X := Y * PitchBytes + X * SizeOf(Word);
-  Data := Pixels;
-  Step := PitchBytes;
-  // Native bug: EDI and EBX are clobbered without saving/restoring them,
-  // violating Delphi's callee-save convention; there are no outer saves.
-  // DCC32 18.5 O+ callers can retain Self in EBX and a destination in EDI:
-  // after this call they may dereference PitchBytes as Self or write through
-  // the advanced pixel pointer. O+ recompilation adds an outer EBX save for
-  // Pascal's Self register in the probe, but still leaves EDI unpreserved.
-  asm
-    MOV EDI, X
-    MOV ECX, Count
-    ADD EDI, Data
-    MOV EAX, Color
-    MOV EBX, Step
-  @@Next:
-    MOV [EDI], AX
-    ADD EDI, EBX
-    LOOP @@Next
+  Data := PByte(PAnsiChar(Pixels) + Y * PitchBytes + X * SizeOf(Word));
+  // The original loop clobbered EDI and EBX. Pascal preserves callee-saved registers.
+  for Index := 1 to Count do
+  begin
+    WriteWordEC(Data, Word(Color));
+    Inc(Data, PitchBytes);
   end;
 end;
 
@@ -1151,92 +1124,41 @@ end;
 
 procedure TGraphBufGR.FillRect32(Rect: TRect; Color: Cardinal);
 var
-  Data: Pointer;
-  Rows, Columns, RowSkip: Integer;
+  Data: PByte;
+  Rows, Columns, Row: Integer;
 begin
   LockTexture(False);
   Columns := Rect.Right - Rect.Left;
   Rows := Rect.Bottom - Rect.Top;
-  RowSkip := PitchBytes - Columns * SizeOf(TColorRGBA);
-  Data := Pointer(Rect.Top * PitchBytes + Rect.Left * SizeOf(TColorRGBA) + PAnsiChar(Pixels));
-  // Native precondition: Columns and Rows must be positive. Neither is checked
-  // before writing; zero wraps on DEC and the loop writes beyond the rectangle.
-  asm
-    PUSH ESI
-    PUSH EDI
-    PUSH EAX
-    PUSH ECX
-    PUSH EBX
-    PUSH EDX
-    MOV EAX, Color
-    MOV EDI, Data
-    MOV EDX, Rows
-    MOV ECX, Columns
-    MOV EBX, ECX
-    MOV ESI, RowSkip
-  @@Pixel:
-    MOV [EDI], EAX
-    ADD EDI, 4
-    DEC ECX
-    JNZ @@Pixel
-    MOV ECX, EBX
-    ADD EDI, ESI
-    DEC EDX
-    JNZ @@Pixel
-    POP EDX
-    POP EBX
-    POP ECX
-    POP EAX
-    POP EDI
-    POP ESI
+  if Columns <= 0 then
+    Exit;
+  Data := PByte(PAnsiChar(Pixels) + Rect.Top * PitchBytes + Rect.Left * SizeOf(TColorRGBA));
+  for Row := 1 to Rows do
+  begin
+    FillDWord(Data^, Columns, Color);
+    Inc(Data, PitchBytes);
   end;
 end;
 
 procedure TGraphBufGR.ScaleAlpha(Rect: TRect; Alpha: Byte);
 var
-  Data: Pointer;
-  Rows, Columns: Integer;
-  Table: Pointer;
-  RowSkip: Integer;
+  Data, Table: PByte;
+  Rows, Columns, Row, Column, RowSkip: Integer;
 begin
   LockTexture(False);
   Columns := Rect.Right - Rect.Left;
   Rows := Rect.Bottom - Rect.Top;
   RowSkip := PitchBytes - Columns * SizeOf(TColorRGBA);
-  Data := Pointer(Rect.Top * PitchBytes + Rect.Left * SizeOf(TColorRGBA) + 3 + PAnsiChar(Pixels));
-  Table := Pointer(PAnsiChar(Ex_OKGF_MulTable256x256) + Integer(Alpha) shl 8);
-  // Native precondition: Columns and Rows must be positive. Neither is checked
-  // before writing; zero wraps on DEC and the loop writes beyond the rectangle.
-  asm
-    PUSH ESI
-    PUSH EDI
-    PUSH EAX
-    PUSH ECX
-    PUSH EBX
-    PUSH EDX
-    MOV EDI, Data
-    MOV EDX, Rows
-    MOV ECX, Columns
-    MOV EBX, ECX
-    MOV ESI, Table
-  @@Pixel:
-    XOR EAX, EAX
-    MOV AL, [EDI]
-    MOV AL, [ESI + EAX]
-    MOV [EDI], AL
-    ADD EDI, 4
-    DEC ECX
-    JNZ @@Pixel
-    MOV ECX, EBX
-    ADD EDI, RowSkip
-    DEC EDX
-    JNZ @@Pixel
-    POP EDX
-    POP EBX
-    POP ECX
-    POP EAX
-    POP EDI
-    POP ESI
+  Data := PByte(PAnsiChar(Pixels) + Rect.Top * PitchBytes + Rect.Left * SizeOf(TColorRGBA) + 3);
+  Table := PByte(PAnsiChar(Ex_OKGF_MulTable256x256) + (Integer(Alpha) shl 8));
+  for Row := 1 to Rows do
+  begin
+    for Column := 1 to Columns do
+    begin
+      Data^ := Table[Data^];
+      Inc(Data, SizeOf(TColorRGBA));
+    end;
+    Inc(Data, RowSkip);
   end;
 end;
 
@@ -1764,204 +1686,95 @@ end;
 
 procedure TGraphBufGR.CopyRect32(Dest: TPoint; Source: TGraphBufGR; Rect: TRect);
 var
-  Src, Dst: Pointer;
-  Columns: Integer;
-  Rows, SrcSkip, DstSkip: Integer;
+  Src, Dst: PByte;
+  Columns, Rows, Column, Row, SrcSkip, DstSkip: Integer;
 begin
   Src :=
-      Pointer(
+      PByte(
           PAnsiChar(Source.GetPixels)
-              + (Rect.Top * Source.PitchBytes + Rect.Left * SizeOf(TColorRGBA))
+              + Rect.Top * Source.PitchBytes
+              + Rect.Left * SizeOf(TColorRGBA)
       );
   Columns := Rect.Right - Rect.Left;
   Rows := Rect.Bottom - Rect.Top;
   if (Columns = 0) or (Rows = 0) then
     Exit;
   SrcSkip := Source.PitchBytes - Columns * SizeOf(TColorRGBA);
-  Dst := Pointer(PAnsiChar(GetPixels) + (Dest.Y * PitchBytes + Dest.X * SizeOf(TColorRGBA)));
+  Dst := PByte(PAnsiChar(GetPixels) + Dest.Y * PitchBytes + Dest.X * SizeOf(TColorRGBA));
   DstSkip := PitchBytes - Columns * SizeOf(TColorRGBA);
-  asm
-    PUSH EAX
-    PUSH ECX
-    PUSH EBX
-    PUSH EDX
-    PUSH ESI
-    PUSH EDI
-    MOV ESI, Src
-    MOV EDI, Dst
-    MOV ECX, Columns
-    MOV EDX, Rows
-    MOV EBX, ECX
-  @@Pixel:
-    MOV EAX, [ESI]
-    MOV [EDI], EAX
-    ADD ESI, 4
-    ADD EDI, 4
-    DEC ECX
-    JNZ @@Pixel
-    MOV ECX, EBX
-    ADD ESI, SrcSkip
-    ADD EDI, DstSkip
-    DEC EDX
-    JNZ @@Pixel
-    POP EDI
-    POP ESI
-    POP EDX
-    POP EBX
-    POP ECX
-    POP EAX
+  // Copy forward one pixel at a time, including when source and destination overlap.
+  // A whole-row Move would change the original loop's overlapping-copy behavior.
+  for Row := 1 to Rows do
+  begin
+    for Column := 1 to Columns do
+    begin
+      Move(Src^, Dst^, SizeOf(TColorRGBA));
+      Inc(Src, SizeOf(TColorRGBA));
+      Inc(Dst, SizeOf(TColorRGBA));
+    end;
+    Inc(Src, SrcSkip);
+    Inc(Dst, DstSkip);
   end;
 end;
 
 procedure TGraphBufGR.BlendRect32(Dest: TPoint; Source: TGraphBufGR; Rect: TRect);
 var
-  Src, Dst: Pointer;
-  Columns: Integer;
-  Table: Pointer;
-  SrcSkip, DstSkip, Rows: Integer;
+  Src, Dst: PByte;
+  Columns, Rows, Column, Row, Channel: Integer;
+  Table: PByte;
+  SrcSkip, DstSkip, Alpha: Integer;
 begin
   Src :=
-      Pointer(
+      PByte(
           PAnsiChar(Source.GetPixels)
-              + (Rect.Top * Source.PitchBytes + Rect.Left * SizeOf(TColorRGBA))
+              + Rect.Top * Source.PitchBytes
+              + Rect.Left * SizeOf(TColorRGBA)
       );
   Columns := Rect.Right - Rect.Left;
   Rows := Rect.Bottom - Rect.Top;
   SrcSkip := Source.PitchBytes - Columns * SizeOf(TColorRGBA);
-  Dst := Pointer(PAnsiChar(GetPixels) + (Dest.Y * PitchBytes + Dest.X * SizeOf(TColorRGBA)));
+  Dst := PByte(PAnsiChar(GetPixels) + Dest.Y * PitchBytes + Dest.X * SizeOf(TColorRGBA));
   DstSkip := PitchBytes - Columns * SizeOf(TColorRGBA);
   Table := Ex_OKGF_MulTable256x256;
-  // Native precondition: Columns and Rows must be positive. Neither is checked
-  // before access; zero wraps on DEC and the loop overruns the rectangle buffers.
-  asm
-    PUSH EAX
-    PUSH ECX
-    PUSH EBX
-    PUSH EDX
-    PUSH ESI
-    PUSH EDI
-    MOV ESI, Src
-    MOV EDI, Dst
-    MOV EDX, Columns
-  @@Pixel:
-    MOV EAX, [ESI]
-    MOV EBX, EAX
-    SHR EBX, 24
-    AND EAX, $FF
-    SHL EAX, 8
-    ADD EAX, EBX
-    ADD EAX, Table
-    MOV AL, [EAX]
-    MOV ECX, [EDI]
-    AND ECX, $FF
-    SHL ECX, 8
-    ADD ECX, $FF
-    SUB ECX, EBX
-    ADD ECX, Table
-    MOV CL, [ECX]
-    ADD EAX, ECX
-    MOV [EDI], AL
-    MOV EAX, [ESI]
-    MOV EBX, EAX
-    SHR EBX, 24
-    SHR EAX, 8
-    AND EAX, $FF
-    SHL EAX, 8
-    ADD EAX, EBX
-    ADD EAX, Table
-    MOV AL, [EAX]
-    MOV ECX, [EDI]
-    SHR ECX, 8
-    AND ECX, $FF
-    SHL ECX, 8
-    ADD ECX, $FF
-    SUB ECX, EBX
-    ADD ECX, Table
-    MOV CL, [ECX]
-    ADD EAX, ECX
-    MOV [EDI + 1], AL
-    MOV EAX, [ESI]
-    MOV EBX, EAX
-    SHR EBX, 24
-    SHR EAX, 16
-    AND EAX, $FF
-    SHL EAX, 8
-    ADD EAX, EBX
-    ADD EAX, Table
-    MOV AL, [EAX]
-    MOV ECX, [EDI]
-    SHR ECX, 16
-    AND ECX, $FF
-    SHL ECX, 8
-    ADD ECX, $FF
-    SUB ECX, EBX
-    ADD ECX, Table
-    MOV CL, [ECX]
-    ADD EAX, ECX
-    MOV [EDI + 2], AL
-    MOV AL, [ESI + 3]
-    ADD AL, [EDI + 3]
-    JNC @@Alpha
-    MOV AL, $FF
-  @@Alpha:
-    MOV [EDI + 3], AL
-    ADD ESI, 4
-    ADD EDI, 4
-    DEC EDX
-    JNZ @@Pixel
-    MOV EDX, Columns
-    ADD ESI, SrcSkip
-    ADD EDI, DstSkip
-    DEC Rows
-    JNZ @@Pixel
-    POP EDI
-    POP ESI
-    POP EDX
-    POP EBX
-    POP ECX
-    POP EAX
+  for Row := 1 to Rows do
+  begin
+    for Column := 1 to Columns do
+    begin
+      for Channel := 0 to 2 do
+      begin
+        Alpha := PColorRGBA(Src).A;
+        Dst[Channel] :=
+            Byte(
+                Table[(Integer(Src[Channel]) shl 8) + Alpha]
+                    + Table[(Integer(Dst[Channel]) shl 8) + 255 - Alpha]
+            );
+      end;
+      // Preserve the original saturated sum of both alpha bytes.
+      Alpha := Integer(PColorRGBA(Src).A) + PColorRGBA(Dst).A;
+      PColorRGBA(Dst).A := Min(Alpha, 255);
+      Inc(Src, SizeOf(TColorRGBA));
+      Inc(Dst, SizeOf(TColorRGBA));
+    end;
+    Inc(Src, SrcSkip);
+    Inc(Dst, DstSkip);
   end;
 end;
 
 procedure TGraphBufGR.MakeShadow;
 var
-  Data: Pointer;
-  Columns, RowSkip, Rows: Integer;
+  Data: PByte;
+  Column, Row: Integer;
 begin
   Data := GetPixels;
-  Columns := Width;
-  Rows := Height;
-  RowSkip := PitchBytes - Columns * SizeOf(TColorRGBA);
-  // Native precondition: Width and Height must be positive. Neither is checked
-  // before access; zero wraps on DEC and the loop overruns the pixel buffer.
-  asm
-    PUSH EAX
-    PUSH ECX
-    PUSH EBX
-    PUSH EDX
-    PUSH ESI
-    PUSH EDI
-    MOV ESI, Data
-    MOV EDX, Columns
-  @@Pixel:
-    MOV EAX, [ESI]
-    SHR EAX, 2
-    AND EAX, $FF000000
-    MOV [ESI], EAX
-    ADD ESI, 4
-    ADD EDI, 4
-    DEC EDX
-    JNZ @@Pixel
-    MOV EDX, Columns
-    ADD ESI, RowSkip
-    DEC Rows
-    JNZ @@Pixel
-    POP EDI
-    POP ESI
-    POP EDX
-    POP EBX
-    POP ECX
-    POP EAX
+  for Row := 1 to Height do
+  begin
+    for Column := 1 to Width do
+    begin
+      // Keep only one quarter of the original alpha; RGB becomes black.
+      WriteIntegerEC(Data, Integer((ReadDWordEC(Data) shr 2) and $FF000000));
+      Inc(Data, SizeOf(TColorRGBA));
+    end;
+    Inc(Data, PitchBytes - Width * SizeOf(TColorRGBA));
   end;
 end;
 

@@ -5,6 +5,7 @@ unit GI_Planet;
 {$Q-}
 {$B-}
 {$A8}
+{$POINTERMATH ON}
 
 interface
 
@@ -589,9 +590,9 @@ end;
 
 procedure TPlanetGI.RebuildAtmosphereImage;
 var
-  ImagePixels, MaskPixels, DestPixels: Pointer;
-  Width: Integer;
-  MulTable: Pointer;
+  ImagePixels, MaskPixels, DestPixels: PByte;
+  Width, Row, Column: Integer;
+  MulTable: PByte;
   ImageSkip, MaskSkip, DestSkip, Height: Integer;
   Image, Mask: TCBitmapEC;
   RotatedMask: TGraphBufGR;
@@ -646,43 +647,18 @@ begin
     MaskSkip := RotatedMask.PitchBytes - Width;
     DestSkip := AtmosphereBuffer.PitchBytes - Width;
     MulTable := Ex_OKGF_MulTable256x256;
-    { This register-based pixel loop is handwritten assembly in the native routine. }
-    asm
-      push esi
-      push edi
-      push edx
-      push ebx
-      push ecx
-      mov esi, ImagePixels
-      mov edi, MaskPixels
-      mov ebx, DestPixels
-      mov ecx, Width
-    @@Pixel:
-      xor edx, edx
-      mov dl, [edi]
-      shl edx, 8
-      add edx, MulTable
-      xor eax, eax
-      mov al, [esi]
-      add eax, edx
-      mov al, [eax]
-      mov [ebx], al
-      add esi, 1
-      add edi, 1
-      add ebx, 1
-      dec ecx
-      jnz @@Pixel
-      mov ecx, Width
-      add esi, ImageSkip
-      add edi, MaskSkip
-      add ebx, DestSkip
-      dec Height
-      jnz @@Pixel
-      pop ecx
-      pop ebx
-      pop edx
-      pop edi
-      pop esi
+    for Row := 1 to Height do
+    begin
+      for Column := 1 to Width do
+      begin
+        DestPixels^ := MulTable[(Integer(MaskPixels^) shl 8) + ImagePixels^];
+        Inc(ImagePixels);
+        Inc(MaskPixels);
+        Inc(DestPixels);
+      end;
+      Inc(ImagePixels, ImageSkip);
+      Inc(MaskPixels, MaskSkip);
+      Inc(DestPixels, DestSkip);
     end;
   finally
     if Image <> nil then

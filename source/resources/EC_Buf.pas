@@ -92,6 +92,7 @@ implementation
 uses
   CrcUnit,
   EC_Mem,
+  EC_OKGF,
   GR_Main,
   Math,
   SysUtils,

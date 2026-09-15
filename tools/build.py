@@ -163,7 +163,8 @@ def build_macos(release: bool, rebuild: bool = False) -> Path:
     compile_pascal(paszlib, [
         compiler, *compiler_flags, "-Mobjfpc", "-Ur", "-O2", "-Aclang-llvm-darwin",
         f"-FU{paszlib}", f"-FE{paszlib}",
-        ROOT / "vendor/fpc/packages/paszlib/src/zinflate.pas",
+        f"-Fu{ROOT / 'vendor/fpc/packages/hash/src'}",
+        ROOT / "vendor/fpc/packages/paszlib/src/paszlib.pas",
     ], rebuild)  # fmt: skip
     compile_pascal(work, [
         compiler, *compiler_flags, *pascal_flags(release, paszlib), "-Aclang-llvm-darwin",

@@ -138,17 +138,17 @@ end;
 
 procedure TThreadCalc.Execute;
 var
-  ControlWord: Word;
   StartTick, EndTick: Cardinal;
   FrameMs: Integer;
 begin
-  // Native handwritten x87 setup: each calculation thread establishes its own control word.
-  asm
-    mov ControlWord, $133F
-    fclex
-    and ControlWord, $FCFF
-    fldcw ControlWord
-  end;
+  // $133F and $FCFF selects nearest rounding, single x87 precision and masked exceptions.
+  // Fixed-precision CPUs retain their native precision through FPC.
+  ClearExceptions(False);
+  SetExceptionMask(
+      [exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]
+  );
+  SetRoundMode(rmNearest);
+  SetPrecisionMode(pmSingle);
   if Job = tcjGalaxy then
   begin
     TurnCalculationPhase := tcpGalaxyRunning;

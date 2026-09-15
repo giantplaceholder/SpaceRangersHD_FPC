@@ -87,7 +87,6 @@ procedure TThreadCreateNewGame.Execute;
 const
   InitialDominatorShipMask = [0];
 var
-  ControlWord: Word;
   I, J, K, N: Integer;
   Star, OtherStar: TStar;
   Planet: TPlanet;
@@ -111,13 +110,14 @@ var
 begin
   Stage := 0;
   try
-    // Each generation thread establishes the native x87 precision and exception mask.
-    asm
-      mov ControlWord, $133F
-      fclex
-      and ControlWord, $FCFF
-      fldcw ControlWord
-    end;
+    // $133F and $FCFF selects nearest rounding, single x87 precision and masked exceptions.
+    // Fixed-precision CPUs retain their native precision through FPC.
+    ClearExceptions(False);
+    SetExceptionMask(
+        [exInvalidOp, exDenormalized, exZeroDivide, exOverflow, exUnderflow, exPrecision]
+    );
+    SetRoundMode(rmNearest);
+    SetPrecisionMode(pmSingle);
     NewGameGenerationStage := 0;
     PlayerStarDayPrepared := True;
     Galaxy := TGalaxy.Create;

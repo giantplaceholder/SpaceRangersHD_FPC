@@ -446,26 +446,16 @@ begin
 end;
 
 function TCFontEC.GetGlyphAdvance(CharCode: WideChar): Integer; cdecl;
-asm
-  PUSH EBX
-  MOV EBX, Self
-  XOR EAX, EAX
-  MOV AX, CharCode
-  SHL EAX, 1
-  ADD EAX, [EBX].TCFontEC.GlyphLookup
-  MOV AX, [EAX]
-  AND EAX, $FFFF
-  TEST EAX, EAX
-  JZ @@Done
-  DEC EAX
-  SHL EAX, 6
-  ADD EAX, [EBX].TCFontEC.Glyphs
-  MOV EBX, EAX
-  MOV EAX, [EBX].TAftGlyphEC.AdvanceA
-  ADD EAX, [EBX].TAftGlyphEC.AdvanceB
-  ADD EAX, [EBX].TAftGlyphEC.AdvanceC
-@@Done:
-  POP EBX
+var
+  GlyphIndex: Word;
+  Glyph: PAftGlyphEC;
+begin
+  GlyphIndex := GlyphLookup^[Ord(CharCode)];
+  Result := 0;
+  if GlyphIndex = 0 then
+    Exit;
+  Glyph := AddPointerOffset(Glyphs, (GlyphIndex - 1) * SizeOf(TAftGlyphEC));
+  Result := Glyph.AdvanceA + Glyph.AdvanceB + Glyph.AdvanceC;
 end;
 
 function TCFontEC.HasGlyph(CharCode: WideChar): Boolean;
@@ -1128,24 +1118,10 @@ begin
     end
     else
     begin
-      asm
-        XOR EAX, EAX
-        MOV AX, Character
-        SHL EAX, 1
-        ADD EAX, Lookup
-        MOV AX, [EAX]
-        AND EAX, $FFFF
-        MOV GlyphIndex, EAX
-      end;
+      GlyphIndex := Lookup^[Ord(Character)];
       if GlyphIndex <> 0 then
       begin
-        asm
-          MOV EAX, GlyphIndex
-          DEC EAX
-          SHL EAX, 6
-          ADD EAX, GlyphBase
-          MOV Glyph, EAX
-        end;
+        Glyph := AddPointerOffset(GlyphBase, (GlyphIndex - 1) * SizeOf(TAftGlyphEC));
         if Glyph.OpaqueMaskPlane.DataOffset <> 0 then
         begin
           if Y + Glyph.OpaqueMaskPlane.Top < Top then
@@ -1379,24 +1355,10 @@ begin
     end
     else
     begin
-      asm
-        XOR EAX, EAX
-        MOV AX, Character
-        SHL EAX, 1
-        ADD EAX, Lookup
-        MOV AX, [EAX]
-        AND EAX, $FFFF
-        MOV GlyphIndex, EAX
-      end;
+      GlyphIndex := Lookup^[Ord(Character)];
       if GlyphIndex <> 0 then
       begin
-        asm
-          MOV EAX, GlyphIndex
-          DEC EAX
-          SHL EAX, 6
-          ADD EAX, GlyphBase
-          MOV Glyph, EAX
-        end;
+        Glyph := AddPointerOffset(GlyphBase, (GlyphIndex - 1) * SizeOf(TAftGlyphEC));
         if Glyph.OpaqueMaskPlane.DataOffset <> 0 then
         begin
           if Y + Glyph.OpaqueMaskPlane.Top < Top then
