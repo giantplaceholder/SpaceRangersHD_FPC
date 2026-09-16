@@ -4,6 +4,13 @@ This changelog records game-source changes for Free Pascal compatibility.
 
 - Share game compiler directives in `GameOptions.inc` and leave optimization
   levels to the build settings instead of disabling optimization in each unit.
+- Replace out-of-bounds planet-shop quota reads with explicit next-race and
+  station quota accesses. Preserve the original weapon-subtype counting, offer
+  selection and RNG consumption without depending on adjacent table placement.
+- Preserve the original custom-weapon average-size quirk by explicitly reading
+  the cached food trade-name pointer as a signed 32-bit value, taking its low
+  32 bits on wider targets. Retain 32-bit multiplication overflow in treasure
+  hints; this historical behavior remains dependent on allocation addresses.
 - Replace x86 assembly in memory access, CRC, rectangle intersection, UTF-16
   comparisons, buffer reads, script arrays, geometry and saved-pixel restoration
   with Pascal. Preserve fixed-width buffer values and native comparison results.
