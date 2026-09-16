@@ -16,6 +16,21 @@ git submodule update --init --recursive
 The build script bootstraps the pinned FPC LLVM compiler into `.local/fpc/`.
 Normal builds use `-O2`. Use `--release` with both build and run scripts for
 release builds (`-O4`).
+
+All builds use an RTL compiled with `CLASSESINLINE`; the pinned FPC also marks
+the list error routine `noreturn`, allowing safe list accesses to optimize better.
+macOS link-time optimization is a separate opt-in. Pass `--lto` to both scripts:
+
+```sh
+./tools/build.py --release --lto
+./tools/run.py --release --lto
+```
+
+Normal builds keep their existing output paths. LTO builds use `.local/release-lto/`
+or `.local/debug-lto/`, with separate RTL and game-unit caches. Switching between
+them does not rebuild the compiler or overwrite the other configuration.
+LTO takes longer to link. Android currently builds without LTO.
+
 `./tools/build.py --rebuild` forces a game rebuild.
 
 Game resources default to the ignored `game/` directory. `--game-dir` selects

@@ -2,6 +2,11 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
+- Build the RTL with `CLASSESINLINE` by default and mark `TFPList.Error`
+  `noreturn`, allowing checked list accesses to optimize better.
+- Offer macOS LTO separately through `--lto`, with isolated runtime, game-unit
+  and app caches. Retain the LTO linker object for matching crash symbols.
+
 - Share game compiler directives in `GameOptions.inc` and leave optimization
   levels to the build settings instead of disabling optimization in each unit.
 - Replace out-of-bounds planet-shop quota reads with explicit next-race and
