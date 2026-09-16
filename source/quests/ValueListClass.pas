@@ -1,10 +1,6 @@
 unit ValueListClass;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

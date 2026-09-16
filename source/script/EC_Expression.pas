@@ -1,10 +1,6 @@
 unit EC_Expression;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 {$POINTERMATH ON}
 
 interface

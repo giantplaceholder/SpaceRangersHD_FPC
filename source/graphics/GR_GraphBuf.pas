@@ -1,10 +1,6 @@
 unit GR_GraphBuf;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 {$POINTERMATH ON}
 
 interface

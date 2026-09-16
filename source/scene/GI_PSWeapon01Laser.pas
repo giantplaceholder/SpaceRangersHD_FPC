@@ -1,10 +1,6 @@
 unit GI_PSWeapon01Laser;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

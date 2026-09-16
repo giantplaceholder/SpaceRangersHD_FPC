@@ -135,6 +135,7 @@ def pascal_flags(release: bool, *platform_paths: Path) -> list[str]:
         "-OoNOORDERFIELDS",
         "-OoNOFASTMATH",
         "-gl",
+        f"-Fi{ROOT / 'source'}",
         *(f"-Fu{path}" for path in search_paths),
     ]
 

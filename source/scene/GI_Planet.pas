@@ -1,10 +1,6 @@
 unit GI_Planet;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 {$POINTERMATH ON}
 
 interface

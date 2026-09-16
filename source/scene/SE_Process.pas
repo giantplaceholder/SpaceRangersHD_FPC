@@ -1,10 +1,6 @@
 unit SE_Process;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

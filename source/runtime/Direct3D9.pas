@@ -1,10 +1,6 @@
 unit Direct3D9;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

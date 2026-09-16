@@ -2,6 +2,8 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
+- Share game compiler directives in `GameOptions.inc` and leave optimization
+  levels to the build settings instead of disabling optimization in each unit.
 - Replace x86 assembly in memory access, CRC, rectangle intersection, UTF-16
   comparisons, buffer reads, script arrays, geometry and saved-pixel restoration
   with Pascal. Preserve fixed-width buffer values and native comparison results.

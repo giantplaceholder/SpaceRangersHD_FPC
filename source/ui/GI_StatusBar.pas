@@ -1,10 +1,6 @@
 unit GI_StatusBar;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

@@ -1,10 +1,6 @@
 unit EC_CacheFont;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

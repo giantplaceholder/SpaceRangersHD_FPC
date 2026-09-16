@@ -1,10 +1,6 @@
 unit GI_RotateImage2;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 

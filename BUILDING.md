@@ -14,7 +14,8 @@ git submodule update --init --recursive
 ```
 
 The build script bootstraps the pinned FPC LLVM compiler into `.local/fpc/`.
-Use `--release` with both build and run scripts for release settings.
+Normal builds use `-O2`. Use `--release` with both build and run scripts for
+release builds (`-O4`).
 `./tools/build.py --rebuild` forces a game rebuild.
 
 Game resources default to the ignored `game/` directory. `--game-dir` selects

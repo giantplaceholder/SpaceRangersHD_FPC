@@ -1,10 +1,6 @@
 unit GI_Cursor;
 
-{$O-}
-{$R-}
-{$Q-}
-{$B-}
-{$A8}
+{$I GameOptions.inc}
 
 interface
 
