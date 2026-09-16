@@ -56,6 +56,8 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Share SDL's logical window resolution between presentation and mouse events.
   Query the desktop cursor for window-leave handling where supported, and refresh
   the game cursor on re-entry instead of retaining a stale position at the edge.
+  Refresh native cursor visibility on focus return, applying AppKit's current
+  cursor immediately on macOS when the pointer stays inside the game window.
 - Preserve native object addresses through script integer cells, references,
   decimal strings, cross-script arguments and array lookup. Keep signed `int`
   arithmetic and serialized script scalar fields at 32 bits.

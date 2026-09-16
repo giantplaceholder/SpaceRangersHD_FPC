@@ -46,6 +46,9 @@ var
 implementation
 
 uses
+{$IFDEF DARWIN}
+  GameCocoaCursor,
+{$ENDIF}
   SysUtils,
   Math,
   GameInput,
@@ -70,6 +73,22 @@ procedure CheckSDL(Value: Integer);
 begin
   if Value < 0 then
     raise Exception.Create(string(SDL_GetError));
+end;
+
+procedure RefreshGameCursor;
+begin
+  // Reapply visibility without changing the game's ShowCursor counter. SDL's
+  // show/hide call is a no-op when it already records the requested state.
+  SDL_ShowCursor(Ord(CursorCount >= 0));
+  SDL_SetCursor(nil);
+{$IFDEF DARWIN}
+  // SDL's Cocoa backend only queues cursor-rectangle invalidation. After an
+  // application switch, AppKit's current cursor can still be the game's cursor
+  // while macOS displays the other application's arrow. Set it immediately so
+  // restoration does not depend on the mouse leaving and re-entering the view.
+  if GameWindowFocused and (SDL_GetMouseFocus = GameSDLWindow) then
+    ReapplyCocoaCursor;
+{$ENDIF}
 end;
 
 procedure InitializeGameVideo;
@@ -325,12 +344,15 @@ begin
           end;
           12, 13:
           begin
+            if Event.Window.Event = 12 then
+              RefreshGameCursor;
             Message.Message := WM_ACTIVATEAPP;
             Message.WParam := Ord(Event.Window.Event = 12);
             Exit;
           end;
           10: // SDL_WINDOWEVENT_ENTER: restore the cursor even before another motion event.
           begin
+            RefreshGameCursor;
             GetGameMouse(Point);
             Message.Message := WM_MOUSEMOVE;
             Message.WParam := MouseKeys(SDL_GetMouseState(nil, nil));
