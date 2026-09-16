@@ -33,7 +33,7 @@ type
     procedure AddCreditLine(Text: WideString; Red: Byte; Green: Byte; Blue: Byte);
     procedure AddCreditSeparator;
     procedure AddCreditSpacing(Height: Integer);
-    procedure ScrollCredits(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollCredits(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure CloseMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure CloseKeyDown(Sender: TObjectGI; Key: Cardinal);
   end;
@@ -217,7 +217,7 @@ begin
   CreditsHeight := CreditsHeight + Height;
 end;
 
-procedure TfAbout.ScrollCredits(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfAbout.ScrollCredits(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   CreditsPanel.SetPosition(Classes.Point(0, CreditsPanel.LocalPosition.Y - 1));
   if -CreditsPanel.LocalPosition.Y >= CreditsPanel.ClientSize.Y then

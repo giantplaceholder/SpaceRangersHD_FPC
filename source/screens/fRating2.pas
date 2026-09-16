@@ -1079,7 +1079,7 @@ var
       Buffer.MouseLeaveCallback := HintMouseLeave;
       Buffer.LeftButtonDownCallback := AwardsMouseDown;
       Buffer.UserValue := Ranger.Id;
-      TGraphBufGR(Integer(Buffer.GraphBuf) + 0)
+      TGraphBufGR(PtrInt(Buffer.GraphBuf) + 0)
           .AllocateRgbaTight(Max(Buffer.ClientSize.X + 0, Step * Count + Size - Step), Size);
       for I := 0 to Size - 1 do
         Buffer.GraphBuf.FillRect32(
@@ -1104,7 +1104,7 @@ var
         else
           Icon.RescaleRgba(Round(Size / Cardinal(Icon.Height) * Cardinal(Icon.Width)), Size, 5);
         if (Icon.Height <= Size) and (Icon.Width + J * Step <= Buffer.GraphBuf.Width) then
-          TGraphBufGR(Integer(Buffer.GraphBuf) + 0)
+          TGraphBufGR(PtrInt(Buffer.GraphBuf) + 0)
               .BlendRect32(
                   Classes.Point(J * Step, 0),
                   Icon,

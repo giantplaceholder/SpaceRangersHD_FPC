@@ -51,11 +51,11 @@ type
     procedure InitializeLayout; override;
     constructor Create;
     destructor Destroy; override;
-    procedure UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure IntroMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure IntroKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure StartIntroItem(Index: Integer);
-    procedure UpdateIntro(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateIntro(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 var
@@ -420,7 +420,7 @@ begin
   PostLoadScreenId := screenNone;
 end;
 
-procedure TfLoad.UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfLoad.UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if not LoadingFinished then
   begin
@@ -562,7 +562,7 @@ begin
   IntroTimer := ScheduleCallbackTimer(5, 5, UpdateIntro);
 end;
 
-procedure TfLoad.UpdateIntro(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfLoad.UpdateIntro(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Fraction: Double;
 begin

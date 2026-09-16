@@ -197,8 +197,8 @@ type
     procedure EnterMapView;
     procedure EnterCurrentSpace;
     procedure AdvanceMapColors;
-    procedure TimerTakt(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure ScrollMapTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure TimerTakt(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure ScrollMapTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure FinishCampaignTransition;
     procedure InvalidateFrame;
     procedure DrawShipHealthBars;
@@ -1485,7 +1485,7 @@ begin
       WeaponButtons[SlotIndex].SetActive(True);
       WeaponButtons[SlotIndex].HelpCallback := UpdateHelp;
       if WeaponButtons[SlotIndex].UserState = 0 then
-        WeaponButtons[SlotIndex].UserState := Integer(TImageGI.Create(WeaponButtons[SlotIndex]));
+        WeaponButtons[SlotIndex].UserState := PtrInt(TImageGI.Create(WeaponButtons[SlotIndex]));
       if (GetPlayer <> nil)
           and (GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), SlotIndex) <> nil) then
       begin
@@ -2922,7 +2922,7 @@ begin
   end;
 end;
 
-procedure TfAB.TimerTakt(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfAB.TimerTakt(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Obj, NextObject: TabObject;
   BearingDegrees, Distance, Step: Double;
@@ -3573,7 +3573,7 @@ begin
   end;
 end;
 
-procedure TfAB.ScrollMapTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfAB.ScrollMapTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Position, PreviousPosition: TPoint;
   CursorX, CursorY: SmallInt;

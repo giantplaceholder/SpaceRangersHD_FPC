@@ -136,7 +136,7 @@ begin
           begin
             Auxiliary := Next;
             Next := Next.Next;
-            if Auxiliary.UserValue = Integer(Line) then
+            if Auxiliary.UserValue = PtrInt(Line) then
               ab_StopLine_Delete(Auxiliary);
           end;
         end;
@@ -250,7 +250,7 @@ begin
         and (FindStopPoint(Line.Last) <> nil) then
     begin
       ImageLine := ab_StopLine_Add;
-      ImageLine.UserValue := Integer(Line);
+      ImageLine.UserValue := PtrInt(Line);
       ImageLine.First := Line.First;
       ImageLine.Last := Line.Last;
       ImageLine.FirstColor := @BarrierColor;
@@ -272,7 +272,7 @@ begin
         Last.Kind := 1;
         ab_StopPoint_UpdatePosition(Last);
         ImageLine := ab_StopLine_Add;
-        ImageLine.UserValue := Integer(Line);
+        ImageLine.UserValue := PtrInt(Line);
         ImageLine.First := First;
         ImageLine.Last := Last;
         ImageLine.FirstColor := @BarrierHaloColors[Index];

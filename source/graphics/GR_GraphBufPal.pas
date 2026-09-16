@@ -103,7 +103,7 @@ begin
   PaletteCount := APaletteCount;
   Pixels := AllocEC(PitchBytes * Height);
   Palette := AllocEC(APaletteCount * SizeOf(Palette^));
-  if (PitchBytes and 3 <> 0) or (Cardinal(Pixels) and 3 <> 0) then
+  if (PitchBytes and 3 <> 0) or (PtrUInt(Pixels) and 3 <> 0) then
     raise Exception.Create('TGraphBufPalGR.CreateN');
 end;
 

@@ -80,7 +80,7 @@ type
     function GetSequenceFrame(Index: Integer): Integer;
     function GetFrameDelay(Index: Integer): Integer;
     procedure LoadImageProperties(Block: TBlockParEC);
-    procedure AdvanceFrame(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -101,7 +101,7 @@ begin
   begin
     Count := 0;
     for Index := 0 to Owner.Header.FrameCount - 1 do
-      if ReadDWordEC(AddPointerOffset(Owner.FrameBuffers, Index * SizeOf(Pointer))) > 0 then
+      if PPointer(AddPointerOffset(Owner.FrameBuffers, Index * SizeOf(Pointer)))^ <> nil then
         Inc(Count);
     if Count >= Owner.PreloadCount then
       Break;
@@ -111,9 +111,12 @@ begin
     Count := 0;
     while Count < Owner.GetFrameCount do
     begin
-      if ReadDWordEC(
-              AddPointerOffset(Owner.FrameBuffers, Owner.GetSequenceFrame(Index) * SizeOf(Pointer)))
-          = 0 then
+      if PPointer(
+              AddPointerOffset(
+                  Owner.FrameBuffers,
+                  Owner.GetSequenceFrame(Index) * SizeOf(Pointer)
+              ))^
+          = nil then
         Break;
       Inc(Index);
       if Index >= Owner.GetFrameCount then
@@ -148,10 +151,7 @@ begin
       Exit;
     end;
     Owner.FrameLock.Enter;
-    WriteIntegerEC(
-        AddPointerOffset(Owner.FrameBuffers, SourceFrame * SizeOf(Pointer)),
-        Integer(Data)
-    );
+    PPointer(AddPointerOffset(Owner.FrameBuffers, SourceFrame * SizeOf(Pointer)))^ := Data;
     Owner.FrameLock.Leave;
   end;
 end;
@@ -231,6 +231,7 @@ begin
   ImageFile.ReadBuffer(@Header, SizeOf(Header));
   FrameDirectory := ReAllocREC(FrameDirectory, Header.FrameCount * SizeOf(TGaiFrameEntry));
   ImageFile.ReadBuffer(FrameDirectory, Header.FrameCount * SizeOf(TGaiFrameEntry));
+  // The file directory uses DWORD offsets; this separate cache holds live pointers.
   FrameBuffers := AllocClearEC(Header.FrameCount * SizeOf(Pointer));
   LoaderThread.Start;
 end;
@@ -256,7 +257,7 @@ begin
   begin
     for I := 0 to Header.FrameCount - 1 do
     begin
-      Data := Pointer(ReadDWordEC(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer))));
+      Data := PPointer(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer)))^;
       if Data <> nil then
         FreeEC(Data);
     end;
@@ -270,7 +271,7 @@ var
   Data: Pointer;
 begin
   FrameLock.Enter;
-  Data := Pointer(ReadDWordEC(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer))));
+  Data := PPointer(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer)))^;
   FrameLock.Leave;
   if Data <> nil then
   begin
@@ -282,7 +283,7 @@ begin
     LoaderThread.RequestStop;
     LoaderThread.WaitForIdle($FFFFFFFF);
   end;
-  Data := Pointer(ReadDWordEC(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer))));
+  Data := PPointer(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer)))^;
   if Data <> nil then
   begin
     Result := Data;
@@ -302,7 +303,7 @@ begin
         ReadDWordEC(AddPointerOffset(FrameDirectory, FrameIndex * SizeOf(TGaiFrameEntry) + 4))
     );
     PrepareRawGiColorCache(Data);
-    WriteIntegerEC(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer)), Integer(Data));
+    PPointer(AddPointerOffset(FrameBuffers, FrameIndex * SizeOf(Pointer)))^ := Data;
     LoaderThread.Start;
   end;
   Result := Data;
@@ -322,7 +323,7 @@ begin
   begin
     for I := 0 to Header.FrameCount - 1 do
     begin
-      Data := Pointer(ReadDWordEC(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer))));
+      Data := PPointer(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer)))^;
       if Data <> nil then
       begin
         Index := CurrentFrame;
@@ -339,7 +340,7 @@ begin
         if J >= PreloadCount then
         begin
           FreeEC(Data);
-          WriteIntegerEC(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer)), 0);
+          PPointer(AddPointerOffset(FrameBuffers, I * SizeOf(Pointer)))^ := nil;
         end;
       end;
     end;
@@ -525,7 +526,7 @@ begin
     SetSize(GetContentSize);
 end;
 
-procedure TGAIFileGI.AdvanceFrame(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TGAIFileGI.AdvanceFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   FrameLock.Enter;
   Inc(CurrentFrame);

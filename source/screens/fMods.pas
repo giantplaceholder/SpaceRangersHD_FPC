@@ -179,7 +179,7 @@ var
     else
       Inc(TabHeights[Tab], 10);
     Switch := TImageGI.Create(TabPanels[Tab]);
-    Switch.UserValue := Integer(Info);
+    Switch.UserValue := PtrInt(Info);
     Switch.SetImagePath('GI,Bm.FormOptions2.2SwitchN');
     Switch.UserIndex := Ord(Info.Selected);
     Switch.SetSize(Switch.GetContentSize);
@@ -199,8 +199,8 @@ var
     InfoButton
         .SetPosition(Point(TabPanels[Tab].ClientSize.X - ButtonWidth - 0, TabHeights[Tab] + 9));
     InfoButton.UpCallback := ShowInfoClick;
-    InfoButton.UserValue := Integer(Info);
-    Switch.UserData := Integer(TGraphButtonGI.Create(TabPanels[Tab]));
+    InfoButton.UserValue := PtrInt(Info);
+    Switch.UserData := PtrInt(TGraphButtonGI.Create(TabPanels[Tab]));
     with TGraphButtonGI(Switch.UserData) do
     begin
       SetImageNormalPath('GI,Bm.MsgPlayer.2ShipMinusN');
@@ -210,9 +210,9 @@ var
       Inc(ButtonWidth, ClientSize.X);
       SetPosition(Point(TabPanels[Tab].ClientSize.X - ButtonWidth + 2, TabHeights[Tab] + 9));
       UpCallback := ShowProblemsClick;
-      UserValue := Integer(Info);
+      UserValue := PtrInt(Info);
     end;
-    Switch.UserState := Integer(TLabelGI.Create(TabPanels[Tab]));
+    Switch.UserState := PtrInt(TLabelGI.Create(TabPanels[Tab]));
     with TLabelGI(Switch.UserState) do
     begin
       SetFontName(NormalFontName);

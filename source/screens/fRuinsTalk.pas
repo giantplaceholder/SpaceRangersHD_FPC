@@ -85,43 +85,43 @@ type
     procedure ShipClicked(Sender: TObjectGI);
     procedure RememberChoiceScroll;
     procedure ClearChoices;
-    procedure AddChoice(Text: WideString; Value: Integer; Callback: TDialogChoiceEventGI);
+    procedure AddChoice(Text: WideString; Value: PtrInt; Callback: TDialogChoiceEventGI);
     procedure ChoiceMouseEnter(Sender: TObjectGI);
     procedure ChoiceMouseLeave(Sender: TObjectGI);
     procedure ChoiceMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ChoiceMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure RestartTextPresentation;
-    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ResetPortraitCycle;
     procedure PortraitCycleComplete(Sender: TObjectGI);
     procedure SelectPortraitAnimation(Alternate: Boolean);
     function CreateChoiceBullet(LabelControl: TLabelGI; Item: PFontObjectEC): TObjectGI;
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure AddMessageClicked(Sender: TObjectGI);
-    procedure AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: PtrInt);
     function StopScriptVideo(Unused: Boolean): Boolean;
     procedure I_Start;
     function ShowDominatorVictoryDialog: Boolean;
-    procedure ContinueDominatorVictoryDialog(Action: Integer);
+    procedure ContinueDominatorVictoryDialog(Action: PtrInt);
     procedure M_Main(KeepText: Boolean);
-    procedure CloseHullMode(Action: Integer);
-    procedure ToggleImpulseShields(Action: Integer);
-    procedure ShowBridgeBlackHoleDialog(Action: Integer);
-    procedure SelectBridgeBlackHoleDestination(Action: Integer);
-    procedure ShowInterceptorDialog(Action: Integer);
-    procedure ShowActiveInterceptors(Action: Integer);
-    procedure RecallInterceptorsFromTarget(Action: Integer);
-    procedure RecallAllInterceptors(Action: Integer);
-    procedure ShowInterceptorPassDialog(Action: Integer);
-    procedure IncreaseInterceptorPassCount(Action: Integer);
-    procedure DecreaseInterceptorPassCount(Action: Integer);
-    procedure ShowInterceptorTargetDialog(Action: Integer);
-    procedure SelectInterceptorTarget(Action: Integer);
-    procedure ClearInterceptorTarget(Action: Integer);
-    procedure ShowInterceptorStrategyDialog(Action: Integer);
-    procedure SelectInterceptorStrategy(Action: Integer);
-    procedure ShowBridgeHelp(Action: Integer);
-    procedure ShowBridgeHelpAnswer(Action: Integer);
+    procedure CloseHullMode(Action: PtrInt);
+    procedure ToggleImpulseShields(Action: PtrInt);
+    procedure ShowBridgeBlackHoleDialog(Action: PtrInt);
+    procedure SelectBridgeBlackHoleDestination(Action: PtrInt);
+    procedure ShowInterceptorDialog(Action: PtrInt);
+    procedure ShowActiveInterceptors(Action: PtrInt);
+    procedure RecallInterceptorsFromTarget(Action: PtrInt);
+    procedure RecallAllInterceptors(Action: PtrInt);
+    procedure ShowInterceptorPassDialog(Action: PtrInt);
+    procedure IncreaseInterceptorPassCount(Action: PtrInt);
+    procedure DecreaseInterceptorPassCount(Action: PtrInt);
+    procedure ShowInterceptorTargetDialog(Action: PtrInt);
+    procedure SelectInterceptorTarget(Action: PtrInt);
+    procedure ClearInterceptorTarget(Action: PtrInt);
+    procedure ShowInterceptorStrategyDialog(Action: PtrInt);
+    procedure SelectInterceptorStrategy(Action: PtrInt);
+    procedure ShowBridgeHelp(Action: PtrInt);
+    procedure ShowBridgeHelpAnswer(Action: PtrInt);
     procedure BuildBuiltinServiceOptions;
     procedure ContinueScriptDialog;
     procedure AddScriptTakeoffChoice(Caption: WideString);
@@ -129,155 +129,155 @@ type
     procedure AddScriptHangarChoice(Caption: WideString);
     procedure AddScriptGoodsChoice(Caption: WideString);
     procedure AddScriptGameEndChoice(Caption: WideString);
-    procedure SelectScriptDialog(ScriptValue: Integer);
-    procedure RunScriptAnswer(Answer: Integer);
-    procedure RunScriptAnswerKeepingScroll(Answer: Integer);
-    procedure RunScriptTakeoff(Answer: Integer);
-    procedure RunScriptNewsExit(Answer: Integer);
-    procedure RunScriptHangar(Answer: Integer);
-    procedure OpenHangar(Action: Integer);
-    procedure RunScriptGoods(Answer: Integer);
-    procedure RunScriptGameEnd(Answer: Integer);
-    procedure ReturnToMain(Action: Integer);
-    procedure OpenStationModernization(QuotedCost: Integer);
-    procedure DeclineStationModernization(Action: Integer);
-    procedure DepositNodesAtRangerCenter(Action: Integer);
-    procedure ShowRangerCenterTakeNodeDialog(Action: Integer);
-    procedure BuyRangerCenterMicroModule(Action: Integer);
-    procedure DeclineRangerCenterNodeDeposit(Action: Integer);
-    procedure ShowRangerCenterGiveNodeDialog(Action: Integer);
-    procedure ExchangeMicroModuleForNodes(Action: Integer);
-    procedure DeclineRangerCenterNodeReward(Action: Integer);
-    procedure ShowRangerCenterNodeInfo(Action: Integer);
-    procedure ShowRangerCenterNodeInfoContinuation(Action: Integer);
-    procedure ShowRangerCenterRatingAnswer(Action: Integer);
-    procedure ShowRangerCenterPirateClanAnswer(Action: Integer);
-    procedure ShowRangerCenterBestRangerAnswer(Action: Integer);
-    procedure ShowPirateBaseNationalityDialog(Action: Integer);
-    procedure AcceptPirateBaseNationality(Action: Integer);
-    procedure DeclinePirateBaseNationality(Action: Integer);
-    procedure ShowPirateBaseSideChangeDialog(Action: Integer);
-    procedure AcceptPirateBaseSideChange(Action: Integer);
-    procedure DeclinePirateBaseSideChange(Action: Integer);
-    procedure ShowPirateBaseNodeDialog(Action: Integer);
-    procedure BuyPirateBaseNodes(Action: Integer);
-    procedure DeclinePirateBaseNodes(Action: Integer);
-    procedure ShowPirateBaseProgramDialog(Action: Integer);
-    procedure BuyPirateBaseProgram(Action: Integer);
-    procedure DeclinePirateBaseProgram(Action: Integer);
-    procedure ShowPirateBaseRepairDialog(Action: Integer);
-    procedure AcceptPirateBaseRepair(Action: Integer);
-    procedure DeclinePirateBaseRepair(Action: Integer);
-    procedure ShowPirateBaseSubCrackDialog(Action: Integer);
-    procedure ConfirmPirateBaseSubCrack(Action: Integer);
-    procedure BuyPirateBaseSubCrack(Action: Integer);
-    procedure BuyPirateBaseSubCrackHalfPrice(Action: Integer);
-    procedure DeclinePirateBaseSubCrack(Action: Integer);
-    procedure ShowPirateBaseChameleonDialog(Action: Integer);
-    procedure BuyPirateBaseChameleon(Action: Integer);
-    procedure DeclinePirateBaseChameleon(Action: Integer);
-    procedure I_WarWithKlingAndPirates(Action: Integer);
-    procedure ShowMilitaryBaseNextRankDialog(Action: Integer);
-    procedure ShowMilitaryBaseRepairDialog(Action: Integer);
-    procedure ShowMilitaryBaseRepairQuote(Action: Integer);
-    procedure AcceptMilitaryBaseRepair(Action: Integer);
-    procedure DeclineMilitaryBaseRepair(Action: Integer);
-    procedure ShowMilitaryBaseProgramsDialog(Action: Integer);
-    procedure AcceptMilitaryBasePrograms(Action: Integer);
-    procedure ShowMilitaryBaseWarOperationDialog(Action: Integer);
-    procedure AcceptMilitaryBaseWarOperation(Action: Integer);
-    procedure DeclineMilitaryBaseWarOperation(Action: Integer);
-    procedure ShowMilitaryBaseTravelDialog(Action: Integer);
-    procedure ConfirmMilitaryBaseTravel(Action: Integer);
-    procedure DepartWithStation(Action: Integer);
-    procedure ShowMilitaryBaseArrivalDialog(Action: Integer);
-    procedure DeclineMilitaryBaseTravel(Action: Integer);
-    procedure ShowMilitaryBaseArrivalInfo(Action: Integer);
-    procedure ShowMilitaryBaseArrivalQuestions(Action: Integer);
-    procedure ShowScienceBaseImprovementDialog(Action: Integer);
-    procedure ShowScienceBaseImprovementItems(Action: Integer);
-    procedure DeclineScienceBaseImprovement(Action: Integer);
-    procedure ShowScienceBaseImprovementQuote(Action: Integer);
-    procedure SelectScienceBaseImprovementKind(Action: Integer);
-    procedure AcceptScienceBaseImprovement(Action: Integer);
-    procedure DeclineScienceBaseRepeatImprovement(Action: Integer);
-    procedure ShowScienceBaseRepairDialog(Action: Integer);
-    procedure ShowScienceBaseRepairQuote(Action: Integer);
-    procedure AcceptScienceBaseRepair(Action: Integer);
-    procedure DeclineScienceBaseRepair(Action: Integer);
-    procedure ShowScienceBaseSatelliteOfferDialog(Refresh: Integer);
-    procedure ShowSatelliteInstructions(Action: Integer);
-    procedure BuyScienceBaseSatellite(Action: Integer);
-    procedure DeclineScienceBaseSatellite(Action: Integer);
-    procedure ShowScienceBaseResearchDialog(Action: Integer);
-    procedure SelectScienceBaseResearchSection(Action: Integer);
-    procedure SellResearchRemains(Action: Integer);
-    procedure SellResearchEquipment(Action: Integer);
-    procedure SellResearchItem(Action: Integer);
-    procedure DeclineScienceBaseResearch(Action: Integer);
-    procedure BuyScienceBaseResearchProgram(Action: Integer);
-    procedure AcceptScienceBaseResearchProgram(Action: Integer);
-    procedure DeclineScienceBaseResearchProgram(Action: Integer);
-    procedure ShowScienceBaseHistoryDialog(Action: Integer);
-    procedure ShowBusinessCenterDebtDialog(Action: Integer);
-    procedure AcceptBusinessCenterDebtQuote(Quote: Integer);
-    procedure DeclineBusinessCenterDebtDialog(Action: Integer);
-    procedure RepayBusinessCenterDebt(Action: Integer);
-    procedure ShowBusinessCenterDepositDialog(Action: Integer);
-    procedure AcceptBusinessCenterDepositQuote(Quote: Integer);
-    procedure DeclineBusinessCenterDepositDialog(Action: Integer);
-    procedure WithdrawBusinessCenterDeposit(Action: Integer);
-    procedure ShowBusinessCenterMedicalPolicyDialog(Refresh: Integer);
-    procedure BuyBusinessCenterMedicalPolicy(Action: Integer);
-    procedure ShowBusinessCenterPolicyDetails(Action: Integer);
-    procedure DeclineBusinessCenterPolicy(Action: Integer);
-    procedure ShowBusinessCenterInvestmentDialog(Action: Integer);
-    procedure AcceptBusinessCenterInvestment(Action: Integer);
-    procedure DeclineBusinessCenterInvestment(Action: Integer);
-    procedure ShowBusinessCenterTradeDialog(Action: Integer);
-    procedure BuyBusinessCenterTradeAdvice(Action: Integer);
-    procedure DeclineBusinessCenterTradeAdvice(Action: Integer);
-    procedure ShowMedicalCenterIllnessTreatmentDialog(Refresh: Integer);
-    procedure TreatSelectedDiseaseAtMedicalCenter(DiseaseIndex: Integer);
-    procedure TreatAllDiseasesAtMedicalCenter(QuotedCost: Integer);
-    procedure DeclineMedicalCenterTreatment(Action: Integer);
-    procedure LeaveMedicalCenterTreatment(Action: Integer);
-    procedure ShowMedicalCenterStimulantDialog(Action: Integer);
-    procedure BuySelectedStimulantAtMedicalCenter(StimulantIndex: Integer);
-    procedure DeclineMedicalCenterStimulants(Action: Integer);
-    procedure ShowStationSpecialShipDialog(Action: Integer);
-    procedure DeclineStationSpecialShip(Action: Integer);
-    procedure BuyStationSpecialShip(Action: Integer);
-    procedure RunInjectedDialog(Action: Integer);
-    procedure RunInjectedDialogKeepingScroll(Action: Integer);
-    procedure RunScriptRestart(Answer: Integer);
+    procedure SelectScriptDialog(ScriptValue: PtrInt);
+    procedure RunScriptAnswer(Answer: PtrInt);
+    procedure RunScriptAnswerKeepingScroll(Answer: PtrInt);
+    procedure RunScriptTakeoff(Answer: PtrInt);
+    procedure RunScriptNewsExit(Answer: PtrInt);
+    procedure RunScriptHangar(Answer: PtrInt);
+    procedure OpenHangar(Action: PtrInt);
+    procedure RunScriptGoods(Answer: PtrInt);
+    procedure RunScriptGameEnd(Answer: PtrInt);
+    procedure ReturnToMain(Action: PtrInt);
+    procedure OpenStationModernization(QuotedCost: PtrInt);
+    procedure DeclineStationModernization(Action: PtrInt);
+    procedure DepositNodesAtRangerCenter(Action: PtrInt);
+    procedure ShowRangerCenterTakeNodeDialog(Action: PtrInt);
+    procedure BuyRangerCenterMicroModule(Action: PtrInt);
+    procedure DeclineRangerCenterNodeDeposit(Action: PtrInt);
+    procedure ShowRangerCenterGiveNodeDialog(Action: PtrInt);
+    procedure ExchangeMicroModuleForNodes(Action: PtrInt);
+    procedure DeclineRangerCenterNodeReward(Action: PtrInt);
+    procedure ShowRangerCenterNodeInfo(Action: PtrInt);
+    procedure ShowRangerCenterNodeInfoContinuation(Action: PtrInt);
+    procedure ShowRangerCenterRatingAnswer(Action: PtrInt);
+    procedure ShowRangerCenterPirateClanAnswer(Action: PtrInt);
+    procedure ShowRangerCenterBestRangerAnswer(Action: PtrInt);
+    procedure ShowPirateBaseNationalityDialog(Action: PtrInt);
+    procedure AcceptPirateBaseNationality(Action: PtrInt);
+    procedure DeclinePirateBaseNationality(Action: PtrInt);
+    procedure ShowPirateBaseSideChangeDialog(Action: PtrInt);
+    procedure AcceptPirateBaseSideChange(Action: PtrInt);
+    procedure DeclinePirateBaseSideChange(Action: PtrInt);
+    procedure ShowPirateBaseNodeDialog(Action: PtrInt);
+    procedure BuyPirateBaseNodes(Action: PtrInt);
+    procedure DeclinePirateBaseNodes(Action: PtrInt);
+    procedure ShowPirateBaseProgramDialog(Action: PtrInt);
+    procedure BuyPirateBaseProgram(Action: PtrInt);
+    procedure DeclinePirateBaseProgram(Action: PtrInt);
+    procedure ShowPirateBaseRepairDialog(Action: PtrInt);
+    procedure AcceptPirateBaseRepair(Action: PtrInt);
+    procedure DeclinePirateBaseRepair(Action: PtrInt);
+    procedure ShowPirateBaseSubCrackDialog(Action: PtrInt);
+    procedure ConfirmPirateBaseSubCrack(Action: PtrInt);
+    procedure BuyPirateBaseSubCrack(Action: PtrInt);
+    procedure BuyPirateBaseSubCrackHalfPrice(Action: PtrInt);
+    procedure DeclinePirateBaseSubCrack(Action: PtrInt);
+    procedure ShowPirateBaseChameleonDialog(Action: PtrInt);
+    procedure BuyPirateBaseChameleon(Action: PtrInt);
+    procedure DeclinePirateBaseChameleon(Action: PtrInt);
+    procedure I_WarWithKlingAndPirates(Action: PtrInt);
+    procedure ShowMilitaryBaseNextRankDialog(Action: PtrInt);
+    procedure ShowMilitaryBaseRepairDialog(Action: PtrInt);
+    procedure ShowMilitaryBaseRepairQuote(Action: PtrInt);
+    procedure AcceptMilitaryBaseRepair(Action: PtrInt);
+    procedure DeclineMilitaryBaseRepair(Action: PtrInt);
+    procedure ShowMilitaryBaseProgramsDialog(Action: PtrInt);
+    procedure AcceptMilitaryBasePrograms(Action: PtrInt);
+    procedure ShowMilitaryBaseWarOperationDialog(Action: PtrInt);
+    procedure AcceptMilitaryBaseWarOperation(Action: PtrInt);
+    procedure DeclineMilitaryBaseWarOperation(Action: PtrInt);
+    procedure ShowMilitaryBaseTravelDialog(Action: PtrInt);
+    procedure ConfirmMilitaryBaseTravel(Action: PtrInt);
+    procedure DepartWithStation(Action: PtrInt);
+    procedure ShowMilitaryBaseArrivalDialog(Action: PtrInt);
+    procedure DeclineMilitaryBaseTravel(Action: PtrInt);
+    procedure ShowMilitaryBaseArrivalInfo(Action: PtrInt);
+    procedure ShowMilitaryBaseArrivalQuestions(Action: PtrInt);
+    procedure ShowScienceBaseImprovementDialog(Action: PtrInt);
+    procedure ShowScienceBaseImprovementItems(Action: PtrInt);
+    procedure DeclineScienceBaseImprovement(Action: PtrInt);
+    procedure ShowScienceBaseImprovementQuote(Action: PtrInt);
+    procedure SelectScienceBaseImprovementKind(Action: PtrInt);
+    procedure AcceptScienceBaseImprovement(Action: PtrInt);
+    procedure DeclineScienceBaseRepeatImprovement(Action: PtrInt);
+    procedure ShowScienceBaseRepairDialog(Action: PtrInt);
+    procedure ShowScienceBaseRepairQuote(Action: PtrInt);
+    procedure AcceptScienceBaseRepair(Action: PtrInt);
+    procedure DeclineScienceBaseRepair(Action: PtrInt);
+    procedure ShowScienceBaseSatelliteOfferDialog(Refresh: PtrInt);
+    procedure ShowSatelliteInstructions(Action: PtrInt);
+    procedure BuyScienceBaseSatellite(Action: PtrInt);
+    procedure DeclineScienceBaseSatellite(Action: PtrInt);
+    procedure ShowScienceBaseResearchDialog(Action: PtrInt);
+    procedure SelectScienceBaseResearchSection(Action: PtrInt);
+    procedure SellResearchRemains(Action: PtrInt);
+    procedure SellResearchEquipment(Action: PtrInt);
+    procedure SellResearchItem(Action: PtrInt);
+    procedure DeclineScienceBaseResearch(Action: PtrInt);
+    procedure BuyScienceBaseResearchProgram(Action: PtrInt);
+    procedure AcceptScienceBaseResearchProgram(Action: PtrInt);
+    procedure DeclineScienceBaseResearchProgram(Action: PtrInt);
+    procedure ShowScienceBaseHistoryDialog(Action: PtrInt);
+    procedure ShowBusinessCenterDebtDialog(Action: PtrInt);
+    procedure AcceptBusinessCenterDebtQuote(Quote: PtrInt);
+    procedure DeclineBusinessCenterDebtDialog(Action: PtrInt);
+    procedure RepayBusinessCenterDebt(Action: PtrInt);
+    procedure ShowBusinessCenterDepositDialog(Action: PtrInt);
+    procedure AcceptBusinessCenterDepositQuote(Quote: PtrInt);
+    procedure DeclineBusinessCenterDepositDialog(Action: PtrInt);
+    procedure WithdrawBusinessCenterDeposit(Action: PtrInt);
+    procedure ShowBusinessCenterMedicalPolicyDialog(Refresh: PtrInt);
+    procedure BuyBusinessCenterMedicalPolicy(Action: PtrInt);
+    procedure ShowBusinessCenterPolicyDetails(Action: PtrInt);
+    procedure DeclineBusinessCenterPolicy(Action: PtrInt);
+    procedure ShowBusinessCenterInvestmentDialog(Action: PtrInt);
+    procedure AcceptBusinessCenterInvestment(Action: PtrInt);
+    procedure DeclineBusinessCenterInvestment(Action: PtrInt);
+    procedure ShowBusinessCenterTradeDialog(Action: PtrInt);
+    procedure BuyBusinessCenterTradeAdvice(Action: PtrInt);
+    procedure DeclineBusinessCenterTradeAdvice(Action: PtrInt);
+    procedure ShowMedicalCenterIllnessTreatmentDialog(Refresh: PtrInt);
+    procedure TreatSelectedDiseaseAtMedicalCenter(DiseaseIndex: PtrInt);
+    procedure TreatAllDiseasesAtMedicalCenter(QuotedCost: PtrInt);
+    procedure DeclineMedicalCenterTreatment(Action: PtrInt);
+    procedure LeaveMedicalCenterTreatment(Action: PtrInt);
+    procedure ShowMedicalCenterStimulantDialog(Action: PtrInt);
+    procedure BuySelectedStimulantAtMedicalCenter(StimulantIndex: PtrInt);
+    procedure DeclineMedicalCenterStimulants(Action: PtrInt);
+    procedure ShowStationSpecialShipDialog(Action: PtrInt);
+    procedure DeclineStationSpecialShip(Action: PtrInt);
+    procedure BuyStationSpecialShip(Action: PtrInt);
+    procedure RunInjectedDialog(Action: PtrInt);
+    procedure RunInjectedDialogKeepingScroll(Action: PtrInt);
+    procedure RunScriptRestart(Answer: PtrInt);
     procedure AddScriptRestartChoice(Caption: WideString);
     procedure CloseRuinsMode(Sender: TObjectGI);
     function BuildConstructionItemChoices(Kind: Byte): Integer;
-    procedure ShowDominionShipConstructionDialog(Action: Integer);
-    procedure ConfirmDominionConstructionLimit(Action: Integer);
-    procedure DeclineDominionShipConstruction(Action: Integer);
-    procedure SelectConstructionHeldItem(Action: Integer);
-    procedure SelectConstructionStoredItem(Action: Integer);
-    procedure SelectConstructionShopItem(Action: Integer);
-    procedure SkipConstructionItem(Action: Integer);
+    procedure ShowDominionShipConstructionDialog(Action: PtrInt);
+    procedure ConfirmDominionConstructionLimit(Action: PtrInt);
+    procedure DeclineDominionShipConstruction(Action: PtrInt);
+    procedure SelectConstructionHeldItem(Action: PtrInt);
+    procedure SelectConstructionStoredItem(Action: PtrInt);
+    procedure SelectConstructionShopItem(Action: PtrInt);
+    procedure SkipConstructionItem(Action: PtrInt);
     procedure AppendConstructionItemList;
     procedure ContinueDominionConstruction(PreviousItem: WideString);
-    procedure PickConstructionWeapon(Action: Integer);
-    procedure PickConstructionRadar(Action: Integer);
-    procedure PickConstructionScanner(Action: Integer);
-    procedure PickConstructionRepairRobot(Action: Integer);
-    procedure PickConstructionDefGenerator(Action: Integer);
-    procedure CompleteDominionConstruction(Action: Integer);
-    procedure ShowDominionImprovementDialog(Action: Integer);
-    procedure ShowDominionImprovementItems(Action: Integer);
-    procedure DeclineDominionImprovement(Action: Integer);
-    procedure ShowDominionImprovementQuote(Action: Integer);
-    procedure AcceptDominionImprovement(Action: Integer);
-    procedure DeclineDominionRepeatImprovement(Action: Integer);
-    procedure ShowDominionPirateLicenseDialog(Action: Integer);
-    procedure BuyDominionPirateLicense(Action: Integer);
-    procedure DeclineDominionPirateLicense(Action: Integer);
+    procedure PickConstructionWeapon(Action: PtrInt);
+    procedure PickConstructionRadar(Action: PtrInt);
+    procedure PickConstructionScanner(Action: PtrInt);
+    procedure PickConstructionRepairRobot(Action: PtrInt);
+    procedure PickConstructionDefGenerator(Action: PtrInt);
+    procedure CompleteDominionConstruction(Action: PtrInt);
+    procedure ShowDominionImprovementDialog(Action: PtrInt);
+    procedure ShowDominionImprovementItems(Action: PtrInt);
+    procedure DeclineDominionImprovement(Action: PtrInt);
+    procedure ShowDominionImprovementQuote(Action: PtrInt);
+    procedure AcceptDominionImprovement(Action: PtrInt);
+    procedure DeclineDominionRepeatImprovement(Action: PtrInt);
+    procedure ShowDominionPirateLicenseDialog(Action: PtrInt);
+    procedure BuyDominionPirateLicense(Action: PtrInt);
+    procedure DeclineDominionPirateLicense(Action: PtrInt);
     function CheckDominionServiceStanding(
         RequiredRank: Byte;
         Prefix: WideString;
@@ -285,30 +285,30 @@ type
     ): Boolean;
     procedure SpendDominionServiceCredit(CreditCost: Single);
     function CheckDominionAvailable: Boolean;
-    procedure ShowDominionTravelDialog(Action: Integer);
-    procedure ConfirmDominionTravel(Action: Integer);
-    procedure DeclineDominionTravel(Action: Integer);
-    procedure AcceptDominionTravel(Action: Integer);
-    procedure DeclineDominionTravelConfirmation(Action: Integer);
-    procedure ShowDominionCancelTravelDialog(Action: Integer);
-    procedure CancelDominionTravel(Action: Integer);
-    procedure DeclineDominionCancelTravel(Action: Integer);
-    procedure ShowDominionRelocationDialog(Action: Integer);
-    procedure AcceptDominionRelocation(Action: Integer);
-    procedure DeclineDominionRelocation(Action: Integer);
+    procedure ShowDominionTravelDialog(Action: PtrInt);
+    procedure ConfirmDominionTravel(Action: PtrInt);
+    procedure DeclineDominionTravel(Action: PtrInt);
+    procedure AcceptDominionTravel(Action: PtrInt);
+    procedure DeclineDominionTravelConfirmation(Action: PtrInt);
+    procedure ShowDominionCancelTravelDialog(Action: PtrInt);
+    procedure CancelDominionTravel(Action: PtrInt);
+    procedure DeclineDominionCancelTravel(Action: PtrInt);
+    procedure ShowDominionRelocationDialog(Action: PtrInt);
+    procedure AcceptDominionRelocation(Action: PtrInt);
+    procedure DeclineDominionRelocation(Action: PtrInt);
     procedure BuildDominionWarOptions;
-    procedure I_CBWarWithKlingAndCoalition(Action: Integer);
-    procedure ShowDominionCaptureAnswer(Action: Integer);
-    procedure ShowDominionRanksAnswer(Action: Integer);
-    procedure ShowDominionWarOperationDialog(Action: Integer);
-    procedure AcceptDominionWarOperation(Action: Integer);
-    procedure DeclineDominionWarOperation(Action: Integer);
-    procedure ShowDominionAmbushDialog(Action: Integer);
-    procedure AcceptDominionAmbush(Action: Integer);
-    procedure DeclineDominionAmbush(Action: Integer);
-    procedure ShowDominionAssaultDialog(Action: Integer);
-    procedure AcceptDominionAssault(Action: Integer);
-    procedure DeclineDominionAssault(Action: Integer);
+    procedure I_CBWarWithKlingAndCoalition(Action: PtrInt);
+    procedure ShowDominionCaptureAnswer(Action: PtrInt);
+    procedure ShowDominionRanksAnswer(Action: PtrInt);
+    procedure ShowDominionWarOperationDialog(Action: PtrInt);
+    procedure AcceptDominionWarOperation(Action: PtrInt);
+    procedure DeclineDominionWarOperation(Action: PtrInt);
+    procedure ShowDominionAmbushDialog(Action: PtrInt);
+    procedure AcceptDominionAmbush(Action: PtrInt);
+    procedure DeclineDominionAmbush(Action: PtrInt);
+    procedure ShowDominionAssaultDialog(Action: PtrInt);
+    procedure AcceptDominionAssault(Action: PtrInt);
+    procedure DeclineDominionAssault(Action: PtrInt);
   end;
 
 var
@@ -1379,7 +1379,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AddChoice(Text: WideString; Value: Integer; Callback: TDialogChoiceEventGI);
+procedure TfRuinsTalk.AddChoice(Text: WideString; Value: PtrInt; Callback: TDialogChoiceEventGI);
 var
   Panel: TPanelScrollBarGI;
   Choice: TfTalkA;
@@ -1411,7 +1411,7 @@ begin
   if BlockMode > 0 then
     Choice.Callback := nil;
   Row := TPanelGI.Create(Panel);
-  Row.UserValue := Integer(Choice);
+  Row.UserValue := PtrInt(Choice);
   Row.SetPosition(Point(0, ChoiceHeight));
   Row.SetSize(Point(Panel.ClientSize.X, 20));
   Row.SetPositionModeW(True);
@@ -1520,7 +1520,7 @@ begin
   TextPresentationTimer := ScheduleCallbackTimer(10, 10, AdvanceTextPresentation);
 end;
 
-procedure TfRuinsTalk.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfRuinsTalk.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Choices, TextPanel: TPanelScrollBarGI;
 begin
@@ -1723,7 +1723,7 @@ begin
   BreakUiMessage;
 end;
 
-procedure TfRuinsTalk.AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfRuinsTalk.AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Progress: Double;
   Film: TxvidGI;
@@ -2022,7 +2022,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.ContinueDominatorVictoryDialog(Action: Integer);
+procedure TfRuinsTalk.ContinueDominatorVictoryDialog(Action: PtrInt);
 begin
   if not ShowDominatorVictoryDialog then
     I_Start;
@@ -2572,7 +2572,7 @@ begin
         else
         begin
           Stage := 22;
-          SelectScriptDialog(Integer(Script));
+          SelectScriptDialog(PtrInt(Script));
         end;
       end
       else
@@ -2622,11 +2622,11 @@ begin
             if Prefix = 'block' then
               AddChoice(Text, 0, ScriptDialogBlockCallback)
             else if Prefix = 'snap' then
-              AddChoice(Text, Integer(ScriptDialogInjections[I]), RunInjectedDialogKeepingScroll)
+              AddChoice(Text, PtrInt(ScriptDialogInjections[I]), RunInjectedDialogKeepingScroll)
             else
               AddChoice(
                   PScriptDialogInjection(ScriptDialogInjections[I]).Answer,
-                  Integer(ScriptDialogInjections[I]),
+                  PtrInt(ScriptDialogInjections[I]),
                   RunInjectedDialog
               );
           end;
@@ -2641,13 +2641,13 @@ begin
       if not Script.SkipGreeting then
         AddChoice(
             '- ' + LocalizedColorText('FormRuins.I_Continue'),
-            Integer(Script),
+            PtrInt(Script),
             SelectScriptDialog
         )
       else
       begin
         Script.SkipGreeting := False;
-        SelectScriptDialog(Integer(Script));
+        SelectScriptDialog(PtrInt(Script));
       end;
     end;
     ReserveGreetingFrame;
@@ -2666,12 +2666,12 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.CloseHullMode(Action: Integer);
+procedure TfRuinsTalk.CloseHullMode(Action: PtrInt);
 begin
   GetPlayer.CloseRuinsModeScreen;
 end;
 
-procedure TfRuinsTalk.ToggleImpulseShields(Action: Integer);
+procedure TfRuinsTalk.ToggleImpulseShields(Action: PtrInt);
 begin
   GetPlayer.GetHull.ImpulseShieldsEnabled := not GetPlayer.GetHull.ImpulseShieldsEnabled;
   GetPlayer.GetHull.Energy := Max(0, GetPlayer.GetHull.Energy - 10);
@@ -2679,7 +2679,7 @@ begin
   M_Main(False);
 end;
 
-procedure TfRuinsTalk.ShowBridgeBlackHoleDialog(Action: Integer);
+procedure TfRuinsTalk.ShowBridgeBlackHoleDialog(Action: PtrInt);
 begin
   if not GetPlayer.NoJump then
   begin
@@ -2701,7 +2701,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.SelectBridgeBlackHoleDestination(Action: Integer);
+procedure TfRuinsTalk.SelectBridgeBlackHoleDestination(Action: PtrInt);
 begin
   MainPanel.NavigationLocked := True;
   GetByName('PM_WinMsg').SetActive(False);
@@ -2715,7 +2715,7 @@ begin
   RequestClose(1);
 end;
 
-procedure TfRuinsTalk.ShowInterceptorDialog(Action: Integer);
+procedure TfRuinsTalk.ShowInterceptorDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.Bridge.BridgeInterceptorsChooseAction');
   ReplaceTextToken(
@@ -2879,7 +2879,7 @@ begin
   AddChoice('- ' + LocalizedColorText('FormRuins.Bridge.BridgeInterceptorsDone'), 0, ReturnToMain);
 end;
 
-procedure TfRuinsTalk.ShowActiveInterceptors(Action: Integer);
+procedure TfRuinsTalk.ShowActiveInterceptors(Action: PtrInt);
 var
   ShipList, Text: WideString;
   I, J: Integer;
@@ -2911,7 +2911,7 @@ begin
         ShipList := ShipList + Ship.GetFullName(' ') + #13#10;
         Text := LocalizedColorText('FormRuins.Bridge.BridgeInterceptorsCallOffShip');
         ReplaceTextToken(Text, '<Ship>', Ship.GetFullName(' '), '<color=255,240,100>');
-        AddChoice('- ' + Text, Integer(Ship), RecallInterceptorsFromTarget);
+        AddChoice('- ' + Text, PtrInt(Ship), RecallInterceptorsFromTarget);
       end;
     end;
   end;
@@ -2923,7 +2923,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.RecallInterceptorsFromTarget(Action: Integer);
+procedure TfRuinsTalk.RecallInterceptorsFromTarget(Action: PtrInt);
 begin
   TShip(Action).ClearIncomingInterceptors;
   if GetPlayer.CountActiveInterceptorTargets > 0 then
@@ -2932,7 +2932,7 @@ begin
     ShowInterceptorDialog(0);
 end;
 
-procedure TfRuinsTalk.RecallAllInterceptors(Action: Integer);
+procedure TfRuinsTalk.RecallAllInterceptors(Action: PtrInt);
 var
   I, J: Integer;
   Star: TStar;
@@ -2951,7 +2951,7 @@ begin
   ShowInterceptorDialog(0);
 end;
 
-procedure TfRuinsTalk.ShowInterceptorPassDialog(Action: Integer);
+procedure TfRuinsTalk.ShowInterceptorPassDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.Bridge.BridgeInterceptorsDurationChoose');
   ReplaceTextToken(
@@ -3000,19 +3000,19 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.IncreaseInterceptorPassCount(Action: Integer);
+procedure TfRuinsTalk.IncreaseInterceptorPassCount(Action: PtrInt);
 begin
   GetPlayer.GetHull.InterceptorPassCountOverride := GetPlayer.GetInterceptorPassCount + 1;
   ShowInterceptorPassDialog(0);
 end;
 
-procedure TfRuinsTalk.DecreaseInterceptorPassCount(Action: Integer);
+procedure TfRuinsTalk.DecreaseInterceptorPassCount(Action: PtrInt);
 begin
   GetPlayer.GetHull.InterceptorPassCountOverride := GetPlayer.GetInterceptorPassCount - 1;
   ShowInterceptorPassDialog(0);
 end;
 
-procedure TfRuinsTalk.ShowInterceptorTargetDialog(Action: Integer);
+procedure TfRuinsTalk.ShowInterceptorTargetDialog(Action: PtrInt);
 var
   I: Integer;
   Text: WideString;
@@ -3044,7 +3044,7 @@ begin
     begin
       Text := LocalizedColorText('FormRuins.Bridge.BridgeInterceptorsTargetShip');
       ReplaceTextToken(Text, '<Ship>', Ship.GetFullName(' '), '<color=255,240,100>');
-      AddChoice('- ' + Text, Integer(Ship), SelectInterceptorTarget);
+      AddChoice('- ' + Text, PtrInt(Ship), SelectInterceptorTarget);
     end;
   end;
   AddChoice(
@@ -3054,19 +3054,19 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.SelectInterceptorTarget(Action: Integer);
+procedure TfRuinsTalk.SelectInterceptorTarget(Action: PtrInt);
 begin
   GetPlayer.GetHull.InterceptorTarget := Pointer(Action);
   ShowInterceptorDialog(0);
 end;
 
-procedure TfRuinsTalk.ClearInterceptorTarget(Action: Integer);
+procedure TfRuinsTalk.ClearInterceptorTarget(Action: PtrInt);
 begin
   GetPlayer.GetHull.InterceptorTarget := nil;
   ShowInterceptorDialog(0);
 end;
 
-procedure TfRuinsTalk.ShowInterceptorStrategyDialog(Action: Integer);
+procedure TfRuinsTalk.ShowInterceptorStrategyDialog(Action: PtrInt);
 var
   Text: WideString;
 begin
@@ -3135,13 +3135,13 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.SelectInterceptorStrategy(Action: Integer);
+procedure TfRuinsTalk.SelectInterceptorStrategy(Action: PtrInt);
 begin
   GetPlayer.GetHull.InterceptorTargetingStrategy := TInterceptorTargetingStrategy(Action);
   ShowInterceptorDialog(0);
 end;
 
-procedure TfRuinsTalk.ShowBridgeHelp(Action: Integer);
+procedure TfRuinsTalk.ShowBridgeHelp(Action: PtrInt);
 var
   I: Integer;
 begin
@@ -3156,7 +3156,7 @@ begin
   AddChoice('- ' + LocalizedColorText('FormRuins.Bridge.BridgeHelpCancel'), 0, ReturnToMain);
 end;
 
-procedure TfRuinsTalk.ShowBridgeHelpAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowBridgeHelpAnswer(Action: PtrInt);
 begin
   DialogText :=
       LocalizedColorText('FormRuins.Bridge.BridgeHelpAnswer' + IntToStr(Cardinal(Action)));
@@ -3658,14 +3658,14 @@ begin
   AddChoice('- ' + Caption, CurrentScript.CurrentAnswer, RunScriptGameEnd);
 end;
 
-procedure TfRuinsTalk.SelectScriptDialog(ScriptValue: Integer);
+procedure TfRuinsTalk.SelectScriptDialog(ScriptValue: PtrInt);
 begin
   ClearChoices;
   CurrentScript := TScript(ScriptValue);
   CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfRuinsTalk.RunScriptAnswer(Answer: Integer);
+procedure TfRuinsTalk.RunScriptAnswer(Answer: PtrInt);
 begin
   ClearChoices;
   ScriptDialogIndex := -1;
@@ -3675,13 +3675,13 @@ begin
   CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfRuinsTalk.RunScriptAnswerKeepingScroll(Answer: Integer);
+procedure TfRuinsTalk.RunScriptAnswerKeepingScroll(Answer: PtrInt);
 begin
   RememberChoiceScroll;
   RunScriptAnswer(Answer);
 end;
 
-procedure TfRuinsTalk.RunScriptTakeoff(Answer: Integer);
+procedure TfRuinsTalk.RunScriptTakeoff(Answer: PtrInt);
 begin
   CaptureSavePreview;
   CaptureGalaxyPreview(Self);
@@ -3693,30 +3693,30 @@ begin
   RequestClose(1);
 end;
 
-procedure TfRuinsTalk.RunScriptNewsExit(Answer: Integer);
+procedure TfRuinsTalk.RunScriptNewsExit(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   StationPanel.InformationClicked(nil);
 end;
 
-procedure TfRuinsTalk.RunScriptHangar(Answer: Integer);
+procedure TfRuinsTalk.RunScriptHangar(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   StationPanel.HangarClicked(nil);
 end;
 
-procedure TfRuinsTalk.OpenHangar(Action: Integer);
+procedure TfRuinsTalk.OpenHangar(Action: PtrInt);
 begin
   StationPanel.HangarClicked(nil);
 end;
 
-procedure TfRuinsTalk.RunScriptGoods(Answer: Integer);
+procedure TfRuinsTalk.RunScriptGoods(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   StationPanel.GoodsShopClicked(nil);
 end;
 
-procedure TfRuinsTalk.RunScriptGameEnd(Answer: Integer);
+procedure TfRuinsTalk.RunScriptGameEnd(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   GameEndReason := 0;
@@ -3724,12 +3724,12 @@ begin
   RequestClose(1);
 end;
 
-procedure TfRuinsTalk.ReturnToMain(Action: Integer);
+procedure TfRuinsTalk.ReturnToMain(Action: PtrInt);
 begin
   M_Main(False);
 end;
 
-procedure TfRuinsTalk.OpenStationModernization(QuotedCost: Integer);
+procedure TfRuinsTalk.OpenStationModernization(QuotedCost: PtrInt);
 var
   Cost: Integer;
   Station: TRuins;
@@ -3778,7 +3778,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.DeclineStationModernization(Action: Integer);
+procedure TfRuinsTalk.DeclineStationModernization(Action: PtrInt);
 begin
   case GetPlayer.DockedTo.TypeId of
     Ord(rstPirateBase): DialogText := LocalizedColorText('FormRuins.PB.Modern.AfterNo');
@@ -3790,7 +3790,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DepositNodesAtRangerCenter(Action: Integer);
+procedure TfRuinsTalk.DepositNodesAtRangerCenter(Action: PtrInt);
 var
   Count: Integer;
 begin
@@ -3805,7 +3805,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterTakeNodeDialog(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterTakeNodeDialog(Action: PtrInt);
 var
   I: Integer;
   Text: WideString;
@@ -3990,7 +3990,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyRangerCenterMicroModule(Action: Integer);
+procedure TfRuinsTalk.BuyRangerCenterMicroModule(Action: PtrInt);
 var
   Cost, ModuleIndex: Integer;
   Item: TMicroModule;
@@ -4047,13 +4047,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineRangerCenterNodeDeposit(Action: Integer);
+procedure TfRuinsTalk.DeclineRangerCenterNodeDeposit(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.TakeNod.RCAfterPlayerNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterGiveNodeDialog(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterGiveNodeDialog(Action: PtrInt);
 var
   I, Count: Integer;
   Item: TItem;
@@ -4240,7 +4240,7 @@ begin
     end;
 end;
 
-procedure TfRuinsTalk.ExchangeMicroModuleForNodes(Action: Integer);
+procedure TfRuinsTalk.ExchangeMicroModuleForNodes(Action: PtrInt);
 var
   I, Value: Integer;
   Item: TItem;
@@ -4283,13 +4283,13 @@ begin
   ShowRangerCenterGiveNodeDialog(Action);
 end;
 
-procedure TfRuinsTalk.DeclineRangerCenterNodeReward(Action: Integer);
+procedure TfRuinsTalk.DeclineRangerCenterNodeReward(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.GiveNod.AfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterNodeInfo(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterNodeInfo(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.AboutNod.RCAnswer');
   ReplaceTextToken(DialogText, '<Percent>', IntToStr(30), '<color=255,240,100>');
@@ -4301,32 +4301,32 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterNodeInfoContinuation(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterNodeInfoContinuation(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.AboutNod.RCAnswerAdd');
   ReplaceTextToken(DialogText, '<Percent>', IntToStr(30), '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterRatingAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterRatingAnswer(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.Rating.RCAnswer');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterPirateClanAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterPirateClanAnswer(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.PirateClan.RCAnswer');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowRangerCenterBestRangerAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowRangerCenterBestRangerAnswer(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.RC.BestRanger.RCAnswer');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseNationalityDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseNationalityDialog(Action: PtrInt);
 var
   Text: WideString;
   I: Integer;
@@ -4415,7 +4415,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptPirateBaseNationality(Action: Integer);
+procedure TfRuinsTalk.AcceptPirateBaseNationality(Action: PtrInt);
 const
   RelationShipTypes = [htRanger, htPirate..htDiplomat];
 var
@@ -4509,7 +4509,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseNationality(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseNationality(Action: PtrInt);
 begin
   if Galaxy.CoalitionDefeatedTurn = 0 then
     DialogText := LocalizedColorText('FormRuins.PB.ChangeNationality.PBAfterNo')
@@ -4519,7 +4519,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseSideChangeDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseSideChangeDialog(Action: PtrInt);
 var
   I: Integer;
 begin
@@ -4556,7 +4556,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptPirateBaseSideChange(Action: Integer);
+procedure TfRuinsTalk.AcceptPirateBaseSideChange(Action: PtrInt);
 const
   RelationShipTypes = [htRanger, htPirate..htDiplomat];
 var
@@ -4633,7 +4633,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseSideChange(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseSideChange(Action: PtrInt);
 begin
   if GetPlayer.OwnerId = Byte(oiPirate) then
     DialogText := LocalizedColorText('FormRuins.PB.ChangeSide.AnswerPlayerNoNormal')
@@ -4643,7 +4643,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseNodeDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseNodeDialog(Action: PtrInt);
 var
   Count, Cost, DiscountedCost: Integer;
   Text: WideString;
@@ -4688,7 +4688,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.BuyPirateBaseNodes(Action: Integer);
+procedure TfRuinsTalk.BuyPirateBaseNodes(Action: PtrInt);
 var
   Count, Cost, DiscountedCost: Integer;
   Stack: TProtoplasm;
@@ -4728,14 +4728,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseNodes(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseNodes(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.Nod.PBAfterNo');
   ClearChoices;
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseProgramDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseProgramDialog(Action: PtrInt);
 var
   I: Byte;
   Text: WideString;
@@ -4823,7 +4823,7 @@ begin
   AddChoice(LocalizedColorText('FormRuins.PB.Program.PlayerNo'), 0, DeclinePirateBaseProgram);
 end;
 
-procedure TfRuinsTalk.BuyPirateBaseProgram(Action: Integer);
+procedure TfRuinsTalk.BuyPirateBaseProgram(Action: PtrInt);
 var
   ProgramIndex: Byte;
   Cost, CarriedNodes, BaseNodes: Integer;
@@ -4855,7 +4855,7 @@ begin
     DeclinePirateBaseProgram(0);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseProgram(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseProgram(Action: PtrInt);
 begin
   if Galaxy.CoalitionDefeatedTurn = 0 then
     DialogText := LocalizedColorText('FormRuins.PB.Program.PBAfterNo')
@@ -4865,7 +4865,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseRepairDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseRepairDialog(Action: PtrInt);
 var
   Cost, DiscountedCost: Integer;
   Text: WideString;
@@ -4929,7 +4929,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptPirateBaseRepair(Action: Integer);
+procedure TfRuinsTalk.AcceptPirateBaseRepair(Action: PtrInt);
 var
   Cost, DiscountedCost: Integer;
   Discount: Byte;
@@ -4972,14 +4972,14 @@ begin
     DeclinePirateBaseRepair(0);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseRepair(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseRepair(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.Repair.PBAfterNo');
   ClearChoices;
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseSubCrackDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseSubCrackDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.SabCrack.PBInfo');
   ReplaceTextToken(DialogText, '<PB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -4997,7 +4997,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ConfirmPirateBaseSubCrack(Action: Integer);
+procedure TfRuinsTalk.ConfirmPirateBaseSubCrack(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.SabCrack.PBContinue');
   ReplaceTextToken(DialogText, '<PB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -5030,7 +5030,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyPirateBaseSubCrack(Action: Integer);
+procedure TfRuinsTalk.BuyPirateBaseSubCrack(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.SabCrack.PBAfterOk');
   GetPlayer.SetMoney(GetPlayer.Money - GetPlayer.GetSubCrackCost);
@@ -5046,7 +5046,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.BuyPirateBaseSubCrackHalfPrice(Action: Integer);
+procedure TfRuinsTalk.BuyPirateBaseSubCrackHalfPrice(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -5060,7 +5060,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseSubCrack(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseSubCrack(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.PB.SabCrack.PBAfterNo');
   ReplaceTextToken(DialogText, '<PB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -5068,7 +5068,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowPirateBaseChameleonDialog(Action: Integer);
+procedure TfRuinsTalk.ShowPirateBaseChameleonDialog(Action: PtrInt);
 var
   I: Byte;
   Text, SeriesName: WideString;
@@ -5132,7 +5132,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyPirateBaseChameleon(Action: Integer);
+procedure TfRuinsTalk.BuyPirateBaseChameleon(Action: PtrInt);
 var
   Series: Byte;
   Cost: Integer;
@@ -5147,7 +5147,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclinePirateBaseChameleon(Action: Integer);
+procedure TfRuinsTalk.DeclinePirateBaseChameleon(Action: PtrInt);
 begin
   if Galaxy.CoalitionDefeatedTurn = 0 then
     DialogText := LocalizedColorText('FormRuins.PB.Chameleon.PBAfterNo')
@@ -5157,7 +5157,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.I_WarWithKlingAndPirates(Action: Integer);
+procedure TfRuinsTalk.I_WarWithKlingAndPirates(Action: PtrInt);
 var
   CoalitionPercent, DominatorPercent, PiratePercent: Byte;
   Key: WideString;
@@ -5231,7 +5231,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseNextRankDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseNextRankDialog(Action: PtrInt);
 var
   I: Byte;
   Token: WideString;
@@ -5279,7 +5279,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseRepairDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseRepairDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.WB.Repair.WBAnswer');
   ReplaceTextToken(DialogText, '<WB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -5291,7 +5291,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseRepairQuote(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseRepairQuote(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -5329,7 +5329,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptMilitaryBaseRepair(Action: Integer);
+procedure TfRuinsTalk.AcceptMilitaryBaseRepair(Action: PtrInt);
 begin
   (GetPlayer.DockedTo as TRuins).RepairShipEquipment(GetPlayer);
   GetPlayer.RefreshDerivedStats(True);
@@ -5338,13 +5338,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineMilitaryBaseRepair(Action: Integer);
+procedure TfRuinsTalk.DeclineMilitaryBaseRepair(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.WB.Repair.WBAfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseProgramsDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseProgramsDialog(Action: PtrInt);
 var
   Text, Info: WideString;
   I: Byte;
@@ -5388,7 +5388,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptMilitaryBasePrograms(Action: Integer);
+procedure TfRuinsTalk.AcceptMilitaryBasePrograms(Action: PtrInt);
 var
   I: Byte;
 begin
@@ -5404,7 +5404,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseWarOperationDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseWarOperationDialog(Action: PtrInt);
 begin
   BusinessQuoteSmallAmount := RoundAndTruncateToTens(Galaxy.ComputeScaledSmallMoney(2));
   StationServiceQuoteCost := RoundAndTruncateToHundreds(Galaxy.ComputeScaledHugeMoney(2));
@@ -5456,7 +5456,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptMilitaryBaseWarOperation(Action: Integer);
+procedure TfRuinsTalk.AcceptMilitaryBaseWarOperation(Action: PtrInt);
 var
   Names: WideString;
   I: Integer;
@@ -5528,13 +5528,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineMilitaryBaseWarOperation(Action: Integer);
+procedure TfRuinsTalk.DeclineMilitaryBaseWarOperation(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.WB.WarOperation.WBAfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseTravelDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseTravelDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.WB.FlyToEnemy.WBToChamber');
   ClearChoices;
@@ -5545,7 +5545,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ConfirmMilitaryBaseTravel(Action: Integer);
+procedure TfRuinsTalk.ConfirmMilitaryBaseTravel(Action: PtrInt);
 begin
   if PortraitFlag100
       and PortraitFlag101
@@ -5565,7 +5565,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.DepartWithStation(Action: Integer);
+procedure TfRuinsTalk.DepartWithStation(Action: PtrInt);
 begin
   if Action = 1 then
     Galaxy.CheckIntegrityChecksum(200);
@@ -5584,7 +5584,7 @@ begin
     BreakUiMessage;
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseArrivalDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseArrivalDialog(Action: PtrInt);
 begin
   if PortraitFlag100
       and PortraitFlag101
@@ -5603,7 +5603,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.DeclineMilitaryBaseTravel(Action: Integer);
+procedure TfRuinsTalk.DeclineMilitaryBaseTravel(Action: PtrInt);
 begin
   if PortraitFlag100
       and PortraitFlag101
@@ -5617,7 +5617,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseArrivalInfo(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseArrivalInfo(Action: PtrInt);
 var
   I: Integer;
   Ship: TShip;
@@ -5654,14 +5654,14 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowMilitaryBaseArrivalQuestions(Action: Integer);
+procedure TfRuinsTalk.ShowMilitaryBaseArrivalQuestions(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.WB.FlyToEnemy.WBAfterQuestions');
   ClearChoices;
   AddChoice('- ' + LocalizedColorText('FormRuins.WB.FlyToEnemy.PlayerHangar'), 0, OpenHangar);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseImprovementDialog(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseImprovementDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Improvement.SBAnswer');
   ClearChoices;
@@ -5672,7 +5672,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseImprovementItems(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseImprovementItems(Action: PtrInt);
 var
   I, Count: Integer;
   Item: TEquipment;
@@ -5700,7 +5700,7 @@ begin
                 + LocalizedColorText('FormRuins.SB.Improvement.ItemReadyForImprovement');
         AddChoice(
             '- ' + NormalizeTextHighlightColors(RemoveTextTagsW(Item.GetDisplayName)),
-            Integer(Item),
+            PtrInt(Item),
             ShowScienceBaseImprovementQuote
         );
       end;
@@ -5730,7 +5730,7 @@ begin
                 + LocalizedColorText('FormRuins.SB.Improvement.ItemReadyForImprovement');
         AddChoice(
             '- ' + NormalizeTextHighlightColors(RemoveTextTagsW(Artefact.GetDisplayName)),
-            Integer(Item),
+            PtrInt(Item),
             ShowScienceBaseImprovementQuote
         );
       end;
@@ -5763,14 +5763,14 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseImprovement(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseImprovement(Action: PtrInt);
 begin
   ResetStationImprovement;
   DialogText := LocalizedColorText('FormRuins.SB.Improvement.SBAnswerNothing');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseImprovementQuote(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseImprovementQuote(Action: PtrInt);
 var
   Item: TEquipment;
   Nodes: Integer;
@@ -5880,7 +5880,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.SelectScienceBaseImprovementKind(Action: Integer);
+procedure TfRuinsTalk.SelectScienceBaseImprovementKind(Action: PtrInt);
 var
   Item: TEquipment;
   Text: WideString;
@@ -5934,7 +5934,7 @@ begin
     AcceptScienceBaseImprovement(0);
 end;
 
-procedure TfRuinsTalk.AcceptScienceBaseImprovement(Action: Integer);
+procedure TfRuinsTalk.AcceptScienceBaseImprovement(Action: PtrInt);
 var
   Item: TEquipment;
   Kind: TImprovementKind;
@@ -5982,14 +5982,14 @@ begin
     DeclineScienceBaseRepeatImprovement(0);
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseRepeatImprovement(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseRepeatImprovement(Action: PtrInt);
 begin
   ResetStationImprovement;
   DialogText := LocalizedColorText('FormRuins.SB.Improvement.SBAfterRepeatNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseRepairDialog(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseRepairDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Repair.SBAnswer');
   ReplaceTextToken(DialogText, '<SB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -6001,7 +6001,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseRepairQuote(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseRepairQuote(Action: PtrInt);
 var
   Cost, EquipmentCost, I, NodeCost: Integer;
   Item: TEquipment;
@@ -6066,7 +6066,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptScienceBaseRepair(Action: Integer);
+procedure TfRuinsTalk.AcceptScienceBaseRepair(Action: PtrInt);
 var
   I, NodeCost: Integer;
   Item: TEquipment;
@@ -6101,13 +6101,13 @@ begin
     DeclineScienceBaseRepair(0);
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseRepair(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseRepair(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Repair.SBAfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseSatelliteOfferDialog(Refresh: Integer);
+procedure TfRuinsTalk.ShowScienceBaseSatelliteOfferDialog(Refresh: PtrInt);
 var
   Satellite: TSatellite;
   Text: WideString;
@@ -6161,13 +6161,13 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowSatelliteInstructions(Action: Integer);
+procedure TfRuinsTalk.ShowSatelliteInstructions(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Satellite.SBInstruction');
   ShowScienceBaseSatelliteOfferDialog(1);
 end;
 
-procedure TfRuinsTalk.BuyScienceBaseSatellite(Action: Integer);
+procedure TfRuinsTalk.BuyScienceBaseSatellite(Action: PtrInt);
 var
   Satellite: TSatellite;
 begin
@@ -6182,13 +6182,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseSatellite(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseSatellite(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Satellite.SBAfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseResearchDialog(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseResearchDialog(Action: PtrInt);
 var
   Text, Info: WideString;
   Series: TDominatorSeries;
@@ -6265,7 +6265,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.SelectScienceBaseResearchSection(Action: Integer);
+procedure TfRuinsTalk.SelectScienceBaseResearchSection(Action: PtrInt);
 var
   Text: WideString;
   Series: Byte;
@@ -6309,7 +6309,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.SellResearchRemains(Action: Integer);
+procedure TfRuinsTalk.SellResearchRemains(Action: PtrInt);
 var
   Text: WideString;
   Money, I: Integer;
@@ -6379,7 +6379,7 @@ begin
     );
 end;
 
-procedure TfRuinsTalk.SellResearchEquipment(Action: Integer);
+procedure TfRuinsTalk.SellResearchEquipment(Action: PtrInt);
 var
   Text: WideString;
   Money, I: Integer;
@@ -6451,7 +6451,7 @@ begin
     );
 end;
 
-procedure TfRuinsTalk.SellResearchItem(Action: Integer);
+procedure TfRuinsTalk.SellResearchItem(Action: PtrInt);
 var
   Text: WideString;
   Money: Integer;
@@ -6514,7 +6514,7 @@ begin
     );
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseResearch(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseResearch(Action: PtrInt);
 begin
   ClearChoices;
   if Action = 1 then
@@ -6527,7 +6527,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.BuyScienceBaseResearchProgram(Action: Integer);
+procedure TfRuinsTalk.BuyScienceBaseResearchProgram(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -6573,7 +6573,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptScienceBaseResearchProgram(Action: Integer);
+procedure TfRuinsTalk.AcceptScienceBaseResearchProgram(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -6594,14 +6594,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineScienceBaseResearchProgram(Action: Integer);
+procedure TfRuinsTalk.DeclineScienceBaseResearchProgram(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.SB.Scn.SBAfterPlayerBuyTechNo');
   ReplaceTextToken(DialogText, '<SB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowScienceBaseHistoryDialog(Action: Integer);
+procedure TfRuinsTalk.ShowScienceBaseHistoryDialog(Action: PtrInt);
 begin
   ClearChoices;
   case Action of
@@ -6634,7 +6634,7 @@ begin
   ReplaceTextToken(DialogText, '<SB>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterDebtDialog(Action: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterDebtDialog(Action: PtrInt);
 var
   Days, I: Integer;
   Event: TGalaxyEvent;
@@ -6807,7 +6807,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptBusinessCenterDebtQuote(Quote: Integer);
+procedure TfRuinsTalk.AcceptBusinessCenterDebtQuote(Quote: PtrInt);
 var
   Amount: Integer;
 begin
@@ -6858,14 +6858,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineBusinessCenterDebtDialog(Action: Integer);
+procedure TfRuinsTalk.DeclineBusinessCenterDebtDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.TakeDebt.BKAfterNo');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.RepayBusinessCenterDebt(Action: Integer);
+procedure TfRuinsTalk.RepayBusinessCenterDebt(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.RetDebt.BK');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -6876,7 +6876,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterDepositDialog(Action: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterDepositDialog(Action: PtrInt);
 var
   Text: WideString;
 begin
@@ -6950,7 +6950,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptBusinessCenterDepositQuote(Quote: Integer);
+procedure TfRuinsTalk.AcceptBusinessCenterDepositQuote(Quote: PtrInt);
 begin
   case Quote of
     1: GetPlayer.DepositAmount := Round(BusinessQuoteLargeAmount);
@@ -6979,14 +6979,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineBusinessCenterDepositDialog(Action: Integer);
+procedure TfRuinsTalk.DeclineBusinessCenterDepositDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.Deposit.BKAfterNo');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.WithdrawBusinessCenterDeposit(Action: Integer);
+procedure TfRuinsTalk.WithdrawBusinessCenterDeposit(Action: PtrInt);
 var
   Profit: Integer;
 begin
@@ -7008,7 +7008,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterMedicalPolicyDialog(Refresh: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterMedicalPolicyDialog(Refresh: PtrInt);
 begin
   if Refresh = 0 then
   begin
@@ -7048,7 +7048,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyBusinessCenterMedicalPolicy(Action: Integer);
+procedure TfRuinsTalk.BuyBusinessCenterMedicalPolicy(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.Policy.BKAfterOk');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -7065,7 +7065,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterPolicyDetails(Action: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterPolicyDetails(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.Policy.BKAfterAsk');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
@@ -7073,7 +7073,7 @@ begin
   ShowBusinessCenterMedicalPolicyDialog(1);
 end;
 
-procedure TfRuinsTalk.DeclineBusinessCenterPolicy(Action: Integer);
+procedure TfRuinsTalk.DeclineBusinessCenterPolicy(Action: PtrInt);
 var
   Date: TDateTime;
   YearText: AnsiString;
@@ -7086,7 +7086,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterInvestmentDialog(Action: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterInvestmentDialog(Action: PtrInt);
 const
   StationTypes = [Ord(rstRangerCenter)..Ord(rstDominion)];
 var
@@ -8007,7 +8007,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptBusinessCenterInvestment(Action: Integer);
+procedure TfRuinsTalk.AcceptBusinessCenterInvestment(Action: PtrInt);
 const
   RangerTypes = [htRanger];
   FriendlyTypes = [htRanger, htTransport..htDiplomat];
@@ -8548,14 +8548,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineBusinessCenterInvestment(Action: Integer);
+procedure TfRuinsTalk.DeclineBusinessCenterInvestment(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.Investment.BKAfterPlayerNo');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowBusinessCenterTradeDialog(Action: Integer);
+procedure TfRuinsTalk.ShowBusinessCenterTradeDialog(Action: PtrInt);
 var
   Discount: Byte;
 begin
@@ -8650,7 +8650,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyBusinessCenterTradeAdvice(Action: Integer);
+procedure TfRuinsTalk.BuyBusinessCenterTradeAdvice(Action: PtrInt);
 var
   Text: WideString;
   Count: Integer;
@@ -8788,14 +8788,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineBusinessCenterTradeAdvice(Action: Integer);
+procedure TfRuinsTalk.DeclineBusinessCenterTradeAdvice(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.BK.Trade.BKAfterNo');
   ReplaceTextToken(DialogText, '<BK>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMedicalCenterIllnessTreatmentDialog(Refresh: Integer);
+procedure TfRuinsTalk.ShowMedicalCenterIllnessTreatmentDialog(Refresh: PtrInt);
 var
   I, Cost, TotalCost, AllCost: Integer;
   Text, IllnessText, Key: WideString;
@@ -9002,7 +9002,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.TreatSelectedDiseaseAtMedicalCenter(DiseaseIndex: Integer);
+procedure TfRuinsTalk.TreatSelectedDiseaseAtMedicalCenter(DiseaseIndex: PtrInt);
 var
   I, Cost: Integer;
   Name: WideString;
@@ -9047,7 +9047,7 @@ begin
   ShowMedicalCenterIllnessTreatmentDialog(1);
 end;
 
-procedure TfRuinsTalk.TreatAllDiseasesAtMedicalCenter(QuotedCost: Integer);
+procedure TfRuinsTalk.TreatAllDiseasesAtMedicalCenter(QuotedCost: PtrInt);
 var
   I: Integer;
   Date: TDateTime;
@@ -9075,14 +9075,14 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineMedicalCenterTreatment(Action: Integer);
+procedure TfRuinsTalk.DeclineMedicalCenterTreatment(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.MC.Illnes.MCSeeAfterNo');
   ReplaceTextToken(DialogText, '<MC>', GetPlayer.DockedTo.Name, '<color=255,240,100>');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.LeaveMedicalCenterTreatment(Action: Integer);
+procedure TfRuinsTalk.LeaveMedicalCenterTreatment(Action: PtrInt);
 begin
   if (GetPlayer.OwnerId = Byte(oiPirate))
       and (GetPlayer.DockedTo.CurrentStar.ControlFaction = sfPirates) then
@@ -9093,7 +9093,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowMedicalCenterStimulantDialog(Action: Integer);
+procedure TfRuinsTalk.ShowMedicalCenterStimulantDialog(Action: PtrInt);
 var
   I, OfferCount, Cost, Duration, MaxStimulants, LawStimulants: Integer;
   Seed: Cardinal;
@@ -9267,7 +9267,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.BuySelectedStimulantAtMedicalCenter(StimulantIndex: Integer);
+procedure TfRuinsTalk.BuySelectedStimulantAtMedicalCenter(StimulantIndex: PtrInt);
 var
   I, Cost, Duration: Integer;
   Name: WideString;
@@ -9321,7 +9321,7 @@ begin
     end;
 end;
 
-procedure TfRuinsTalk.DeclineMedicalCenterStimulants(Action: Integer);
+procedure TfRuinsTalk.DeclineMedicalCenterStimulants(Action: PtrInt);
 begin
   if GetPlayer.DockedTo.CurrentStar.ControlFaction = sfPirates then
     DialogText := LocalizedColorText('FormRuins.MC.Stimulants.MCAfterPlayerNoPirate')
@@ -9331,7 +9331,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowStationSpecialShipDialog(Action: Integer);
+procedure TfRuinsTalk.ShowStationSpecialShipDialog(Action: PtrInt);
 var
   CanBuy: Boolean;
   Price: Integer;
@@ -9531,14 +9531,14 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.DeclineStationSpecialShip(Action: Integer);
+procedure TfRuinsTalk.DeclineStationSpecialShip(Action: PtrInt);
 begin
   DialogText :=
       LocalizedColorText('FormRuins.' + GetPlayer.DockedTo.GetTypeNameKey + '.SpecialShip.AfterNo');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.BuyStationSpecialShip(Action: Integer);
+procedure TfRuinsTalk.BuyStationSpecialShip(Action: PtrInt);
 const
   RelationShipTypes = [htRanger, htPirate..htDiplomat];
   PirateOwners = [1];
@@ -9592,7 +9592,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.RunInjectedDialog(Action: Integer);
+procedure TfRuinsTalk.RunInjectedDialog(Action: PtrInt);
 var
   Injection: PScriptDialogInjection;
   Text: WideString;
@@ -9623,13 +9623,13 @@ begin
     CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfRuinsTalk.RunInjectedDialogKeepingScroll(Action: Integer);
+procedure TfRuinsTalk.RunInjectedDialogKeepingScroll(Action: PtrInt);
 begin
   RememberChoiceScroll;
   RunInjectedDialog(Action);
 end;
 
-procedure TfRuinsTalk.RunScriptRestart(Answer: Integer);
+procedure TfRuinsTalk.RunScriptRestart(Answer: PtrInt);
 begin
   DialogText := '';
   CurrentScript.ExecuteDialogAnswer(Answer);
@@ -9775,7 +9775,7 @@ begin
         if (Kind <> 42) and (GetConstructionFreeSpace - Item.Weight < 0) then
           AddChoice('- ' + Text, 0, ScriptDialogBlockCallback)
         else
-          AddChoice('- ' + Text, Integer(Item), SelectConstructionHeldItem);
+          AddChoice('- ' + Text, PtrInt(Item), SelectConstructionHeldItem);
         Inc(Count);
       end;
     end;
@@ -9793,7 +9793,7 @@ begin
           if (Kind <> 42) and (GetConstructionFreeSpace - Item.Weight < 0) then
             AddChoice('- ' + Text, 0, ScriptDialogBlockCallback)
           else
-            AddChoice('- ' + Text, Integer(Item), SelectConstructionStoredItem);
+            AddChoice('- ' + Text, PtrInt(Item), SelectConstructionStoredItem);
           Inc(Count);
         end;
       end;
@@ -9814,7 +9814,7 @@ begin
           else if (Kind <> 42) and (GetConstructionFreeSpace - Item.Weight < 0) then
             AddChoice('- ' + Text, 0, ScriptDialogBlockCallback)
           else
-            AddChoice('- ' + Text, Integer(Item), SelectConstructionShopItem);
+            AddChoice('- ' + Text, PtrInt(Item), SelectConstructionShopItem);
           Inc(Count);
         end;
       end;
@@ -9833,7 +9833,7 @@ begin
   Result := Count;
 end;
 
-procedure TfRuinsTalk.ShowDominionShipConstructionDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionShipConstructionDialog(Action: PtrInt);
 var
   J: Integer;
   Kind: Byte;
@@ -9864,14 +9864,14 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.ConfirmDominionConstructionLimit(Action: Integer);
+procedure TfRuinsTalk.ConfirmDominionConstructionLimit(Action: PtrInt);
 begin
   ClearChoices;
   BuildConstructionItemChoices(42);
   DialogText := LocalizedColorText('FormRuins.CB.ConstructPirate.PickHull');
 end;
 
-procedure TfRuinsTalk.DeclineDominionShipConstruction(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionShipConstruction(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ConstructPirate.Cancelled');
   M_Main(True);
@@ -9899,25 +9899,25 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.SelectConstructionHeldItem(Action: Integer);
+procedure TfRuinsTalk.SelectConstructionHeldItem(Action: PtrInt);
 begin
   SelectConstructionItem(TEquipment(Action), 0);
   ContinueDominionConstruction(RemoveTextTagsW(TEquipment(Action).GetDisplayName));
 end;
 
-procedure TfRuinsTalk.SelectConstructionStoredItem(Action: Integer);
+procedure TfRuinsTalk.SelectConstructionStoredItem(Action: PtrInt);
 begin
   SelectConstructionItem(TEquipment(Action), 1);
   ContinueDominionConstruction(RemoveTextTagsW(TEquipment(Action).GetDisplayName));
 end;
 
-procedure TfRuinsTalk.SelectConstructionShopItem(Action: Integer);
+procedure TfRuinsTalk.SelectConstructionShopItem(Action: PtrInt);
 begin
   SelectConstructionItem(TEquipment(Action), 2);
   ContinueDominionConstruction(RemoveTextTagsW(TEquipment(Action).GetDisplayName));
 end;
 
-procedure TfRuinsTalk.SkipConstructionItem(Action: Integer);
+procedure TfRuinsTalk.SkipConstructionItem(Action: PtrInt);
 begin
   ContinueDominionConstruction('');
 end;
@@ -10094,7 +10094,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.PickConstructionWeapon(Action: Integer);
+procedure TfRuinsTalk.PickConstructionWeapon(Action: PtrInt);
 begin
   DialogText := '';
   AppendConstructionItemList;
@@ -10104,7 +10104,7 @@ begin
       DialogText + #13#10 + #13#10 + LocalizedColorText('FormRuins.CB.ConstructPirate.PickWeapon');
 end;
 
-procedure TfRuinsTalk.PickConstructionRadar(Action: Integer);
+procedure TfRuinsTalk.PickConstructionRadar(Action: PtrInt);
 begin
   DialogText := '';
   AppendConstructionItemList;
@@ -10114,7 +10114,7 @@ begin
       DialogText + #13#10 + #13#10 + LocalizedColorText('FormRuins.CB.ConstructPirate.PickRadar');
 end;
 
-procedure TfRuinsTalk.PickConstructionScanner(Action: Integer);
+procedure TfRuinsTalk.PickConstructionScanner(Action: PtrInt);
 begin
   DialogText := '';
   AppendConstructionItemList;
@@ -10124,7 +10124,7 @@ begin
       DialogText + #13#10 + #13#10 + LocalizedColorText('FormRuins.CB.ConstructPirate.PickScaner');
 end;
 
-procedure TfRuinsTalk.PickConstructionRepairRobot(Action: Integer);
+procedure TfRuinsTalk.PickConstructionRepairRobot(Action: PtrInt);
 begin
   DialogText := '';
   AppendConstructionItemList;
@@ -10137,7 +10137,7 @@ begin
           + LocalizedColorText('FormRuins.CB.ConstructPirate.PickRepairRobot');
 end;
 
-procedure TfRuinsTalk.PickConstructionDefGenerator(Action: Integer);
+procedure TfRuinsTalk.PickConstructionDefGenerator(Action: PtrInt);
 begin
   DialogText := '';
   AppendConstructionItemList;
@@ -10150,7 +10150,7 @@ begin
           + LocalizedColorText('FormRuins.CB.ConstructPirate.PickDefGenerator');
 end;
 
-procedure TfRuinsTalk.CompleteDominionConstruction(Action: Integer);
+procedure TfRuinsTalk.CompleteDominionConstruction(Action: PtrInt);
 var
   Ship: TPirate;
   Planet: TPlanet;
@@ -10255,7 +10255,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowDominionImprovementDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionImprovementDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.Improvement.CBAnswer');
   ClearChoices;
@@ -10266,7 +10266,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ShowDominionImprovementItems(Action: Integer);
+procedure TfRuinsTalk.ShowDominionImprovementItems(Action: PtrInt);
 var
   I, Count: Integer;
   Item: TEquipment;
@@ -10293,7 +10293,7 @@ begin
                 + LocalizedColorText('FormRuins.CB.Improvement.ItemReadyForImprovement');
         AddChoice(
             '- ' + NormalizeTextHighlightColors(RemoveTextTagsW(Item.GetDisplayName)),
-            Integer(Item),
+            PtrInt(Item),
             ShowDominionImprovementQuote
         );
       end;
@@ -10323,7 +10323,7 @@ begin
                 + LocalizedColorText('FormRuins.CB.Improvement.ItemReadyForImprovement');
         AddChoice(
             '- ' + NormalizeTextHighlightColors(RemoveTextTagsW(Artefact.GetDisplayName)),
-            Integer(Item),
+            PtrInt(Item),
             ShowDominionImprovementQuote
         );
       end;
@@ -10356,14 +10356,14 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.DeclineDominionImprovement(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionImprovement(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.Improvement.CBAnswerNothing');
   ClearChoices;
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowDominionImprovementQuote(Action: Integer);
+procedure TfRuinsTalk.ShowDominionImprovementQuote(Action: PtrInt);
 var
   Item: TEquipment;
   NodeCost, MoneyCost: Integer;
@@ -10423,7 +10423,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptDominionImprovement(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionImprovement(Action: PtrInt);
 var
   Item: TEquipment;
   Cost, Nodes: Integer;
@@ -10463,14 +10463,14 @@ begin
     DeclineScienceBaseRepeatImprovement(0); // Native failure branch uses the science-base answer.
 end;
 
-procedure TfRuinsTalk.DeclineDominionRepeatImprovement(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionRepeatImprovement(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.Improvement.CBAfterRepeatNo');
   ClearChoices;
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowDominionPirateLicenseDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionPirateLicenseDialog(Action: PtrInt);
 var
   Cost: Integer;
   Discount: Byte;
@@ -10526,7 +10526,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.BuyDominionPirateLicense(Action: Integer);
+procedure TfRuinsTalk.BuyDominionPirateLicense(Action: PtrInt);
 begin
   if GetPlayer.PirateLicenseTicks = 0 then
     DialogText := LocalizedColorText('FormRuins.CB.PirateLicense.CBAfterOk')
@@ -10538,7 +10538,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineDominionPirateLicense(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionPirateLicense(Action: PtrInt);
 begin
   if GetPlayer.PirateLicenseTicks = 0 then
     DialogText := LocalizedColorText('FormRuins.CB.PirateLicense.CBAfterNo')
@@ -10606,7 +10606,7 @@ begin
     Result := True;
 end;
 
-procedure TfRuinsTalk.ShowDominionTravelDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionTravelDialog(Action: PtrInt);
 var
   Text: WideString;
   Seed: Cardinal;
@@ -10731,7 +10731,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.ConfirmDominionTravel(Action: Integer);
+procedure TfRuinsTalk.ConfirmDominionTravel(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBConfirmation');
   ReplaceTextToken(
@@ -10759,13 +10759,13 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.DeclineDominionTravel(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionTravel(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBAfterRefuse');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.AcceptDominionTravel(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionTravel(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBAfterConfirm');
   GetPlayer.QueuedTravelTarget := DominionTravelQuotes[Action].Star;
@@ -10782,13 +10782,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineDominionTravelConfirmation(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionTravelConfirmation(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBAfterNoConfirm');
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.ShowDominionCancelTravelDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionCancelTravelDialog(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBCancelTeleport');
   ClearChoices;
@@ -10804,14 +10804,14 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.CancelDominionTravel(Action: Integer);
+procedure TfRuinsTalk.CancelDominionTravel(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBAfterCancelTeleport');
   GetPlayer.QueuedTravelTarget := nil;
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineDominionCancelTravel(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionCancelTravel(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.ShuffleTeleport.CBAfterNoCancel');
   ReplaceTextToken(
@@ -10844,7 +10844,7 @@ begin
       );
 end;
 
-procedure TfRuinsTalk.ShowDominionRelocationDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionRelocationDialog(Action: PtrInt);
 const
   StationMask = [6..12];
 var
@@ -10933,7 +10933,7 @@ begin
                         Star.Name,
                         '<Cost>',
                         IntToStr(Cost)),
-                Integer(Star),
+                PtrInt(Star),
                 AcceptDominionRelocation
             );
           // Native disabled choice uses the shared quote and <Money>, unlike the enabled choice.
@@ -10957,7 +10957,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptDominionRelocation(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionRelocation(Action: PtrInt);
 var
   Star: TStar;
 begin
@@ -10983,7 +10983,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.DeclineDominionRelocation(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionRelocation(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.Relocate.CBAfterRefuse');
   BuildDominionWarOptions;
@@ -11035,7 +11035,7 @@ begin
   AddChoice('- ' + LocalizedColorText('FormRuins.CB.WarPlans.PlayerNoQuestions'), 0, ReturnToMain);
 end;
 
-procedure TfRuinsTalk.I_CBWarWithKlingAndCoalition(Action: Integer);
+procedure TfRuinsTalk.I_CBWarWithKlingAndCoalition(Action: PtrInt);
 var
   CoalitionPercent, DominatorPercent, PiratePercent: Byte;
   Path: WideString;
@@ -11112,13 +11112,13 @@ begin
   BuildDominionWarOptions;
 end;
 
-procedure TfRuinsTalk.ShowDominionCaptureAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowDominionCaptureAnswer(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.CBAnswersAboutCapture');
   BuildDominionWarOptions;
 end;
 
-procedure TfRuinsTalk.ShowDominionRanksAnswer(Action: Integer);
+procedure TfRuinsTalk.ShowDominionRanksAnswer(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.CBAnswersAboutRanks');
   ReplaceTextToken(DialogText, '<BaseName>', GetPlayer.DockedTo.Name, '');
@@ -11143,7 +11143,7 @@ begin
   Result := RoundAndTruncateToHundreds(Cost);
 end;
 
-procedure TfRuinsTalk.ShowDominionWarOperationDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionWarOperationDialog(Action: PtrInt);
 begin
   if not CheckDominionServiceStanding(
       1,
@@ -11186,7 +11186,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptDominionWarOperation(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionWarOperation(Action: PtrInt);
 var
   Names: WideString;
   I, J, K, Available, BestAvailable, Total, BestTotal: Integer;
@@ -11321,13 +11321,13 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.DeclineDominionWarOperation(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionWarOperation(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.WarOperation.CBAfterNo');
   BuildDominionWarOptions;
 end;
 
-procedure TfRuinsTalk.ShowDominionAmbushDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionAmbushDialog(Action: PtrInt);
 var
   I, Count, Turn: Integer;
   Star, Target: TStar;
@@ -11453,7 +11453,7 @@ begin
   if GetPlayer.Money >= StationServiceQuoteCost then
     AddChoice(
         '- ' + LocalizedColorText('FormRuins.CB.WarPlans.Ambush.Confirm'),
-        Integer(Target),
+        PtrInt(Target),
         AcceptDominionAmbush
     )
   else
@@ -11469,7 +11469,7 @@ begin
   );
 end;
 
-procedure TfRuinsTalk.AcceptDominionAmbush(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionAmbush(Action: PtrInt);
 var
   Star: TStar;
   Event: TGalaxyEvent;
@@ -11494,13 +11494,13 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineDominionAmbush(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionAmbush(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.Ambush.CBAfterRefuse');
   BuildDominionWarOptions;
 end;
 
-procedure TfRuinsTalk.ShowDominionAssaultDialog(Action: Integer);
+procedure TfRuinsTalk.ShowDominionAssaultDialog(Action: PtrInt);
 var
   I, Count, Index, First, Last, Cost: Integer;
   Star: TStar;
@@ -11596,7 +11596,7 @@ begin
                         Star.Name,
                         '<Cost>',
                         IntToStr(Cost)),
-                Integer(Star),
+                PtrInt(Star),
                 AcceptDominionAssault
             );
           // Native disabled choice uses the shared quote and <Money>, unlike the enabled choice.
@@ -11620,7 +11620,7 @@ begin
   end;
 end;
 
-procedure TfRuinsTalk.AcceptDominionAssault(Action: Integer);
+procedure TfRuinsTalk.AcceptDominionAssault(Action: PtrInt);
 var
   Star: TStar;
 begin
@@ -11639,7 +11639,7 @@ begin
   M_Main(True);
 end;
 
-procedure TfRuinsTalk.DeclineDominionAssault(Action: Integer);
+procedure TfRuinsTalk.DeclineDominionAssault(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormRuins.CB.WarPlans.Assault.CBAfterRefuse');
   BuildDominionWarOptions;

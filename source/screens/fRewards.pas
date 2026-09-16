@@ -318,7 +318,7 @@ begin
     if (Ship.AwardIds <> nil) and (I < Ship.AwardIds.Count) then
     begin
       AwardId := Byte(Ship.AwardIds[I]);
-      Platform.UserValue := Integer(Platform);
+      Platform.UserValue := PtrInt(Platform);
       Platform.UserIndex := AwardId;
       Platform.MouseEnterCallback := PlatformMouseEnter;
       Platform.MouseLeaveCallback := AwardMouseLeave;
@@ -338,7 +338,7 @@ begin
         SetOrigin(Classes.Point(ClientSize.X div 2, ClientSize.Y));
         SetPositionModeW(True);
         SetPosition(Classes.Point(X, Y));
-        UserValue := Integer(Platform);
+        UserValue := PtrInt(Platform);
         UserIndex := AwardId;
         UserData := I;
         MouseEnterCallback := AwardMouseEnter;

@@ -98,7 +98,7 @@ type
     procedure RetireSegment(Segment: PPolyLineSegmentGI);
     procedure StartAnimation;
     procedure StopAnimation;
-    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -376,7 +376,7 @@ begin
   end;
 end;
 
-procedure TPolyLineGI.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPolyLineGI.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Inc(AnimationPhase, 30);
   if AnimationPhase >= 360 then

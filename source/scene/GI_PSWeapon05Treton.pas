@@ -59,7 +59,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure SetColors(FirstColor: Word; SecondColor: Word);
@@ -222,7 +222,7 @@ begin
     MessageLoop.QueueUpdateRect(Intersection);
 end;
 
-procedure TPSWeapon05Treton.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon05Treton.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Y, I: Integer;
   Distance: Single;

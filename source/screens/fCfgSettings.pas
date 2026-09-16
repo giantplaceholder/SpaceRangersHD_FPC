@@ -90,7 +90,7 @@ type
     procedure RefreshModeUi;
     procedure ModeMouseEnter(Sender: TObjectGI);
     procedure ModeMouseLeave(Sender: TObjectGI);
-    procedure ModeLeaveTimerTick(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ModeLeaveTimerTick(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ModeMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ModeMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
@@ -1149,7 +1149,7 @@ begin
   );
   GroupNextY[BuildGroupIndex] :=
       GroupNextY[BuildGroupIndex] + ValueLabel.ClientSize.Y + GiScalePixels(5);
-  ValueLabel.UserValue := Integer(Image);
+  ValueLabel.UserValue := PtrInt(Image);
 end;
 
 procedure TfCfgSettings.OptionChoiceMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
@@ -1250,7 +1250,7 @@ begin
   Slider.SetRange(Minimum, Maximum);
   Slider.SetPositionInternal(Position);
   Slider.SetName(CurrentOptionName);
-  Slider.UserIndex := Integer(ValueLabel);
+  Slider.UserIndex := PtrInt(ValueLabel);
   GroupNextY[BuildGroupIndex] :=
       GroupNextY[BuildGroupIndex] + Slider.ClientSize.Y + GiScalePixels(6);
   Callback(Slider);
@@ -2066,7 +2066,7 @@ begin
   ModeLeaveTimer := ScheduleCallbackTimer(20, 20, ModeLeaveTimerTick, Sender.UserValue);
 end;
 
-procedure TfCfgSettings.ModeLeaveTimerTick(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfCfgSettings.ModeLeaveTimerTick(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if ModeLeaveTimer <> nil then
   begin

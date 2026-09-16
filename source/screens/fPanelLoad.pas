@@ -60,8 +60,8 @@ type
     procedure SetShutterOpenFraction(Fraction: Single);
     procedure StartOpeningShutters;
     procedure StartClosingShutters;
-    procedure UpdateOpeningShutters(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure UpdateClosingShutters(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateOpeningShutters(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure UpdateClosingShutters(Timer: PCallbackTimerGI; UserData: PtrInt);
     function IsAnimatingShutters: Boolean;
     function GetShutterDirection: Integer;
   end;
@@ -367,7 +367,7 @@ begin
   Screen.RequestClose(1);
 end;
 
-procedure TfPanelLoad.UpdateOpeningShutters(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelLoad.UpdateOpeningShutters(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   ShutterOpenFraction := 0.03 + ShutterOpenFraction;
   if ShutterOpenFraction >= 1 then
@@ -386,7 +386,7 @@ begin
     SetShutterOpenFraction(ShutterOpenFraction);
 end;
 
-procedure TfPanelLoad.UpdateClosingShutters(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelLoad.UpdateClosingShutters(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   ShutterOpenFraction := ShutterOpenFraction - 0.03;
   if ShutterOpenFraction <= -0.025 then

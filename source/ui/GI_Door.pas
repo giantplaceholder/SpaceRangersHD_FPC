@@ -39,7 +39,7 @@ type
     procedure SetStepTime(Value: Integer);
     procedure StartStepTimer;
     procedure StopStepTimer;
-    procedure StepFrame(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure StepFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure LoadDoorProperties(Block: TBlockParEC);
   end;
 
@@ -102,7 +102,7 @@ begin
   end;
 end;
 
-procedure TDoorGI.StepFrame(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TDoorGI.StepFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Frame: Integer;
 begin

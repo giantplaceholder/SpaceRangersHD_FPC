@@ -63,7 +63,8 @@ type
   PAftGlyphEC = PointerToTAftGlyphEC;
 
   TFontObjectEC = packed record
-    ObjectId: Integer;
+    // Object tags carry either an icon number or the address used by a focus link.
+    ObjectId: PtrInt;
     Width: Integer;
     Height: Integer;
     VerticalMode: Integer;

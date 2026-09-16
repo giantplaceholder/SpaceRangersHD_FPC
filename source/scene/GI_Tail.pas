@@ -61,9 +61,9 @@ type
     procedure SetImagePath(const ImagePath: WideString);
     function GetImagePath: WideString;
     function AllocateSegment: PTailSegmentGI;
-    procedure AdvanceSegmentFrames(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure MoveSegments(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure EmitSegment(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceSegmentFrames(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure MoveSegments(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure EmitSegment(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure OffsetSegments(Delta: TPointF);
     procedure SetEmitting(Enabled: Boolean);
     procedure LoadTailProperties(Block: TBlockParEC);
@@ -170,7 +170,7 @@ begin
   Result.Active := True;
 end;
 
-procedure TTailGI.AdvanceSegmentFrames(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TTailGI.AdvanceSegmentFrames(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Segment: PTailSegmentGI;
   I: Integer;
@@ -192,7 +192,7 @@ begin
   end;
 end;
 
-procedure TTailGI.MoveSegments(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TTailGI.MoveSegments(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Segment: PTailSegmentGI;
   I: Integer;
@@ -210,7 +210,7 @@ begin
   end;
 end;
 
-procedure TTailGI.EmitSegment(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TTailGI.EmitSegment(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Segment: PTailSegmentGI;
   Position: TPointF;

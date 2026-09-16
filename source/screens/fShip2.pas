@@ -111,7 +111,7 @@ type
     ItemSizeLabelPosition: TPoint;
     ItemPriceLabelPosition: TPoint;
     ItemRaceImagePosition: TPoint;
-    DisplayedItemKey: Integer;
+    DisplayedItemKey: PtrInt;
     Flag3BC: Boolean;
     PreserveSpaceMusic: Boolean;
     Gap3BE: array[0..1] of Byte;
@@ -177,7 +177,7 @@ type
     procedure RewardsMouseLeave(Sender: TObjectGI);
     procedure ShowRewardTooltip(Ship: TNormalShip; Award: Integer);
     procedure HideRewardTooltip;
-    procedure SlideRightPanelTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure SlideRightPanelTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure CloseClicked(Sender: TObjectGI);
     procedure RewardsMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ShipNameMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
@@ -208,7 +208,7 @@ type
     procedure HoldLeftReleased(Sender: TObjectGI);
     procedure HoldRightPressed(Sender: TObjectGI);
     procedure HoldRightReleased(Sender: TObjectGI);
-    procedure ScrollHoldTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollHoldTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ReturnSelectedHoldEntry;
     procedure RefreshEquipmentConfigurationButtons;
     procedure SelectEquipmentConfiguration(Index: Integer);
@@ -222,7 +222,7 @@ type
     procedure DropSelectedInArcade;
     procedure SpecialSlot1Clicked(Sender: TObjectGI);
     procedure SpecialSlot2Clicked(Sender: TObjectGI);
-    procedure AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: PtrInt);
     function StopScriptVideo: Boolean;
     procedure UseMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure SpecialSlot3Clicked(Sender: TObjectGI);
@@ -232,8 +232,8 @@ type
     procedure LoadRockets(Equipped: Boolean);
     procedure ToggleAfterburner(Sender: TObjectGI);
     procedure ShowItemInfo;
-    procedure ShowItemInfoTimer(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ShowItemInfoTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure LayoutItemInfo(
         Window: TWindowGI;
         Title: TLabelGI;
@@ -270,34 +270,34 @@ type
     procedure ShowStoredGoodsInfo(Goods: TGoods);
     procedure RefreshMoneyWarning;
     procedure StartMoneyWarning;
-    procedure AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ShowNoDropMessage(Code: Integer);
     procedure GateMouseEnter(Sender: TObjectGI);
     procedure GateMouseLeave(Sender: TObjectGI);
     procedure OpenGate;
     procedure CloseGate;
-    procedure SlideGateTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure SlideGateTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure GateMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure UseMouseEnter(Sender: TObjectGI);
     procedure UseMouseLeave(Sender: TObjectGI);
     procedure OpenUsePanel;
     procedure CloseUsePanel;
-    procedure SlideUseTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure SlideUseTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure OpenUseSidePanel;
     procedure CloseUseSidePanel;
-    procedure SlideUsePanelTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure SlideUsePanelTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure OpenSpecialSlot1;
     procedure CloseSpecialSlot1;
-    procedure AnimateSpecialSlot1(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateSpecialSlot1(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure OpenSpecialSlot2;
     procedure CloseSpecialSlot2;
-    procedure AnimateSpecialSlot2(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateSpecialSlot2(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure OpenSpecialSlot3;
     procedure CloseSpecialSlot3;
-    procedure AnimateSpecialSlot3(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateSpecialSlot3(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure StorageDownClicked(Sender: TObjectGI);
     procedure StorageUpClicked(Sender: TObjectGI);
-    procedure SlideStorageTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure SlideStorageTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RefreshStorageView;
     procedure ScrollStorageUp(Sender: TObjectGI);
     procedure ScrollStorageDown(Sender: TObjectGI);
@@ -312,7 +312,7 @@ type
     procedure RemoteHoldUpReleased(Sender: TObjectGI);
     procedure RemoteHoldDownPressed(Sender: TObjectGI);
     procedure RemoteHoldDownReleased(Sender: TObjectGI);
-    procedure ScrollRemoteHoldTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollRemoteHoldTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
     function GetRemoteHoldScrollLimit: Integer;
     procedure SortRemoteHoldClicked(Sender: TObjectGI);
     procedure StorageToShipClicked(Sender: TObjectGI);
@@ -1816,7 +1816,7 @@ begin
   HideRewardTooltip;
   if (Ship.AwardIds = nil) or (Ship.AwardIds.Count < 1) then
     // The value expression preserves the native receiver-before-argument order.
-    TGraphBufGI(Integer(RewardsBuffer) + 0).SetActive(False)
+    TGraphBufGI(PtrInt(RewardsBuffer) + 0).SetActive(False)
   else
   begin
     Count := Min(Ship.AwardVisibleCount, Ship.AwardIds.Count);
@@ -2017,7 +2017,7 @@ begin
   RewardsWindow.SetActive(False);
 end;
 
-procedure TfShip2.SlideRightPanelTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.SlideRightPanelTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   X: Integer;
   Panel, DestrPanel: TObjectGI;
@@ -2613,7 +2613,7 @@ begin
         with GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'anim')
             as TgaiGI do
         begin
-          UserData := Integer(SlotImage);
+          UserData := PtrInt(SlotImage);
           SetPosition(SlotImage.LocalPosition);
           SetImagePath(GetShopItemIconName(Item) + 'a');
           SequenceIndex := 0;
@@ -5048,7 +5048,7 @@ begin
   end;
 end;
 
-procedure TfShip2.ScrollHoldTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.ScrollHoldTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if UserData = 0 then
     Dec(HoldFirstIndex)
@@ -7007,7 +7007,7 @@ begin
   CloseClicked(nil);
 end;
 
-procedure TfShip2.AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.AdvanceScriptVideo(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Progress: Double;
   Video: TxvidGI;
@@ -8006,13 +8006,13 @@ begin
   end;
 end;
 
-procedure TfShip2.ShowItemInfoTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.ShowItemInfoTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if RightPanelSlideTimer = nil then
     ShowItemInfo;
 end;
 
-procedure TfShip2.HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   DisplayedItemKey := 0;
   if ItemInfoHideTimer <> nil then
@@ -8302,9 +8302,9 @@ begin
     else
       CloseUseSidePanel;
   end
-  else if DisplayedItemKey <> Integer(Item) then
+  else if DisplayedItemKey <> PtrInt(Item) then
   begin
-    DisplayedItemKey := Integer(Item);
+    DisplayedItemKey := PtrInt(Item);
     UpdateInfoHint(0, 0);
     SoundManager.PlaySound('Sound.ShipItemInfo');
     if (Galaxy <> nil) and not Galaxy.Destroying and (GetPlayer <> nil) then
@@ -8673,9 +8673,9 @@ begin
     CancelCallbackTimer(ItemInfoHideTimer);
     ItemInfoHideTimer := nil;
   end;
-  if DisplayedItemKey <> Integer(Goods) then
+  if DisplayedItemKey <> PtrInt(Goods) then
   begin
-    DisplayedItemKey := Integer(Goods);
+    DisplayedItemKey := PtrInt(Goods);
     if SelectedHoldKind = phkEmpty then
       RefreshActionPanels(phkGoods, Byte(Goods.ItemType), Goods.Quantity, Goods.Cost, nil, 0)
     else
@@ -8772,7 +8772,7 @@ begin
   RefreshMoneyWarning;
 end;
 
-procedure TfShip2.AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Dec(MoneyWarningTicks);
   if MoneyWarningTicks <= 0 then
@@ -8841,7 +8841,7 @@ begin
   GateSlideTimer := ScheduleCallbackTimer(20, 20, SlideGateTimer, 2);
 end;
 
-procedure TfShip2.SlideGateTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.SlideGateTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if UserData = 1 then
   begin
@@ -8914,7 +8914,7 @@ begin
   UseSlideTimer := ScheduleCallbackTimer(20, 20, SlideUseTimer, 2);
 end;
 
-procedure TfShip2.SlideUseTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.SlideUseTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if UserData = 1 then
   begin
@@ -8969,7 +8969,7 @@ begin
   UsePanelSlideTimer := ScheduleCallbackTimer(20, 20, SlideUsePanelTimer, 2);
 end;
 
-procedure TfShip2.SlideUsePanelTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.SlideUsePanelTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Panel: TPanelGI;
 begin
@@ -9026,7 +9026,7 @@ begin
   (GetByName('SC_Slot1_But') as TGraphButtonGI).UpCallback := nil;
 end;
 
-procedure TfShip2.AnimateSpecialSlot1(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.AnimateSpecialSlot1(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Animation: TgaiGI;
 begin
@@ -9082,7 +9082,7 @@ begin
   (GetByName('SC_Slot2_But') as TGraphButtonGI).UpCallback := nil;
 end;
 
-procedure TfShip2.AnimateSpecialSlot2(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.AnimateSpecialSlot2(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Animation: TgaiGI;
 begin
@@ -9138,7 +9138,7 @@ begin
   (GetByName('SC_Slot3_But') as TGraphButtonGI).UpCallback := nil;
 end;
 
-procedure TfShip2.AnimateSpecialSlot3(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.AnimateSpecialSlot3(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Animation: TgaiGI;
 begin
@@ -9195,7 +9195,7 @@ begin
   (GetByName('SC_Down') as TGraphButtonGI).SetActive(True);
 end;
 
-procedure TfShip2.SlideStorageTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.SlideStorageTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Panel: TPanelGI;
 begin
@@ -9569,7 +9569,8 @@ var
   Info: PCustomShipInfo;
   Block: TBlockParEC;
 
-  procedure AddLine(Icon: Integer; Text, Hint: WideString; Data: Integer);
+  // Custom information rows pass a PCustomShipInfo through the hover callback.
+  procedure AddLine(Icon: Integer; Text, Hint: WideString; Data: PtrInt);
   var
     LabelControl: TLabelGI;
   begin
@@ -9855,7 +9856,7 @@ begin
         ReplaceTextToken(Title, '<TextData1>', Info.TextData1, '<color=255,240,100>');
         ReplaceTextToken(Title, '<TextData2>', Info.TextData2, '<color=255,240,100>');
         ReplaceTextToken(Title, '<TextData3>', Info.TextData3, '<color=255,240,100>');
-        AddLine(StrToInt(Block.GetParam('Icon')), Title, Title + '~' + Description, Integer(Info));
+        AddLine(StrToInt(Block.GetParam('Icon')), Title, Title + '~' + Description, PtrInt(Info));
       end;
     end;
   end;
@@ -10035,7 +10036,7 @@ begin
   end;
 end;
 
-procedure TfShip2.ScrollRemoteHoldTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfShip2.ScrollRemoteHoldTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if UserData = 0 then
     Dec(RemoteHoldFirstOrder, 5)
@@ -10159,7 +10160,7 @@ begin
                       TGoods(Item).Quantity
                           * GetPlayer.ShopGoodsSellPrice(
                               Byte(TGoods(Item).ItemType),
-                              TObject(Integer(Location) + 0))
+                              TObject(PtrInt(Location) + 0))
                   )
                 else if Item is TEquipment then
                   Inc(

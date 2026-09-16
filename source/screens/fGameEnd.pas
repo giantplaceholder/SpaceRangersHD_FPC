@@ -26,8 +26,8 @@ type
     procedure OnClose; override;
     procedure SelectMusic; override;
     procedure InitializeLayout; override;
-    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure ScrollEndingText(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure ScrollEndingText(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ContinueClicked(Sender: TObjectGI);
     procedure LoadClicked(Sender: TObjectGI);
     procedure ShowControlHelp(Sender: TObjectGI; Show: Boolean);
@@ -488,7 +488,7 @@ begin
   end;
 end;
 
-procedure TfGameEnd.ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGameEnd.ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Offset: Integer;
 begin
@@ -502,7 +502,7 @@ begin
     SetPosition(Classes.Point(ClientSize.X - Offset, LocalPosition.Y));
 end;
 
-procedure TfGameEnd.ScrollEndingText(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGameEnd.ScrollEndingText(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Limit: Single;
 begin

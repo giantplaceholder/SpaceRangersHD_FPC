@@ -125,13 +125,15 @@ type
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
-    Payload: array[0..15] of Byte;
+    // Runtime command overlays share this pool; the largest holds three pointers.
+    // SaveToBuffer writes each field explicitly, so this does not change film files.
+    Payload: array[0..3 * SizeOf(Pointer) + 3] of Byte;
   end;
 
   PEFilmObjectCommand = PointerToTEFilmObjectCommand;
 
   TEFilmObjectCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
@@ -144,7 +146,7 @@ type
   PEFilmVectorCommand = PointerToTEFilmVectorCommand;
 
   TEFilmVectorCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
@@ -157,7 +159,7 @@ type
   PEFilmSizeCommand = PointerToTEFilmSizeCommand;
 
   TEFilmSizeCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
@@ -169,7 +171,7 @@ type
   PEFilmByteCommand = PointerToTEFilmByteCommand;
 
   TEFilmByteCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
@@ -181,7 +183,7 @@ type
   PEFilmHitCommand = PointerToTEFilmHitCommand;
 
   TEFilmHitCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;
@@ -197,7 +199,7 @@ type
   PEFilmEndpointsCommand = PointerToTEFilmEndpointsCommand;
 
   TEFilmEndpointsCommand = packed record
-    Gap0: array[0..7] of Byte;
+    Links: array[0..1] of Pointer;
     Kind: Byte;
     Gap9: array[0..2] of Byte;
     StepIndex: Integer;

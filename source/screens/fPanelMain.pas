@@ -72,7 +72,7 @@ type
     procedure RefreshDate;
     procedure SetDateRange(FirstTurn: Integer; LastTurn: Integer);
     procedure StartDateAnimation(IntervalMs: Integer);
-    procedure AdvanceDateAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceDateAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure EndTurnClicked(Sender: TObjectGI);
     procedure ShipClicked(Sender: TObjectGI);
     procedure QuestClicked(Sender: TObjectGI);
@@ -82,8 +82,8 @@ type
     procedure TryAutoTurnSave;
     procedure QuickSave;
     procedure QuickLoad(SlotIndex: Integer);
-    procedure RefreshStatusTimer(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure PulseUnreadMessages(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure RefreshStatusTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure PulseUnreadMessages(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RefreshEndTurnButton;
     procedure DisableNavigationButtons;
     procedure EnableNavigationButtons;
@@ -103,13 +103,13 @@ type
     procedure FinishMessageDeletion(Sender: TObjectGI);
     procedure SlideMessagesIn;
     procedure SlideMessagesOut;
-    procedure AdvanceMessageSlide(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceMessageSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure MessageClicked(Sender: TObjectGI);
     procedure PlayUnreadMessageSounds;
     procedure FlashMoneyWarning;
-    procedure AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure FlashCargoWarning;
-    procedure AdvanceCargoWarning(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceCargoWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ShowControlHelp(Sender: TObjectGI; Visible: Boolean);
     procedure ShowHelpText(Text: WideString; Visible: Boolean);
     procedure ProcessKeyDown(Key: Cardinal);
@@ -451,7 +451,7 @@ begin
   end;
 end;
 
-procedure TfPanelMain.AdvanceDateAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.AdvanceDateAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   DateSlideProgress :=
       (TargetTurn - DisplayedTurn) * 0.01 * (TargetTurn - DisplayedTurn) + DateSlideProgress;
@@ -814,12 +814,12 @@ begin
   Screen.Present;
 end;
 
-procedure TfPanelMain.RefreshStatusTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.RefreshStatusTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   RefreshEndTurnButton;
 end;
 
-procedure TfPanelMain.PulseUnreadMessages(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.PulseUnreadMessages(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Control: TObjectGI;
   Finished: Boolean;
@@ -979,7 +979,7 @@ begin
     while MessageEntry <> nil do
     begin
       Button := TGraphButtonGI.Create(Panel);
-      Button.UserValue := Integer(MessageEntry);
+      Button.UserValue := PtrInt(MessageEntry);
       MessageEntry.Button := Button;
       Button.MouseEnterCallback := MessageMouseEnter;
       Button.MouseLeaveCallback := MessageMouseLeave;
@@ -1170,8 +1170,8 @@ begin
       Animation.RestartPlayback;
       Animation.FrameAdvancedCallback := AdvanceMessageDeletion;
       Animation.CycleCompleteCallback := FinishMessageDeletion;
-      Animation.UserValue := Integer(MessageEntry);
-      Animation.UserIndex := Integer(Sender);
+      Animation.UserValue := PtrInt(MessageEntry);
+      Animation.UserIndex := PtrInt(Sender);
       Control := MessagePanel.FirstChild;
       while Control <> nil do
       begin
@@ -1301,7 +1301,7 @@ begin
     MessageSlideTimer := Screen.ScheduleCallbackTimer(10, 10, AdvanceMessageSlide);
 end;
 
-procedure TfPanelMain.AdvanceMessageSlide(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.AdvanceMessageSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if MessageSlideDirection < 0 then
   begin
@@ -1518,7 +1518,7 @@ begin
   RefreshMoneyAndCargo;
 end;
 
-procedure TfPanelMain.AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.AdvanceMoneyWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Dec(MoneyWarningTicks);
   if MoneyWarningTicks <= 0 then
@@ -1546,7 +1546,7 @@ begin
   RefreshMoneyAndCargo;
 end;
 
-procedure TfPanelMain.AdvanceCargoWarning(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPanelMain.AdvanceCargoWarning(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Dec(CargoWarningTicks);
   if CargoWarningTicks <= 0 then

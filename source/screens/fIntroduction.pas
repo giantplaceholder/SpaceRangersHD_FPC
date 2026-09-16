@@ -28,10 +28,10 @@ type
     procedure OnClose; override;
     procedure SelectMusic; override;
     procedure InitializeLayout; override;
-    procedure UpdateGenerationProgress(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure BlinkContinueButton(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure ScrollIntroductionText(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateGenerationProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure BlinkContinueButton(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure ScrollIntroductionText(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ContinueMouseEnter(Sender: TObjectGI);
     procedure ContinueClicked(Sender: TObjectGI);
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
@@ -276,7 +276,7 @@ begin
     GraphBuf.Clear;
 end;
 
-procedure TfIntroduction.UpdateGenerationProgress(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfIntroduction.UpdateGenerationProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Delta: Integer;
   Amount: Single;
@@ -347,7 +347,7 @@ begin
   end;
 end;
 
-procedure TfIntroduction.BlinkContinueButton(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfIntroduction.BlinkContinueButton(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Enter, Leave: WideString;
 begin
@@ -363,7 +363,7 @@ begin
   end;
 end;
 
-procedure TfIntroduction.ScrollIntroductionText(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfIntroduction.ScrollIntroductionText(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Limit: Single;
 begin
@@ -380,7 +380,7 @@ begin
   end;
 end;
 
-procedure TfIntroduction.ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfIntroduction.ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Offset: Integer;
 begin

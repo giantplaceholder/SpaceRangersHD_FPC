@@ -59,7 +59,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure ClearParticles;
@@ -228,7 +228,7 @@ begin
   end;
 end;
 
-procedure TPSWeapon06Phaser.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon06Phaser.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Particle: PPhaserParticle;
   Index, Step: Integer;

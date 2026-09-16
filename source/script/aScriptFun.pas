@@ -1500,14 +1500,18 @@ begin
       Value := Value.GetArray.GetItem(av[Index].GetInt);
   end;
   case Value.RealVType of
-    vkInt: av[0].SetInt(Value.GetInt);
+    // Cross-script reads copy the cell, including addresses kept in legacy int variables.
+    vkInt:
+    begin
+      av[0].ConvertToKind(vkInt);
+      av[0].SetDword(Value.GetDword);
+    end;
     vkDword: av[0].SetDword(Value.GetDword);
     vkFloat: av[0].SetFloat(Value.GetFloat);
     vkString: av[0].SetString(Value.GetString);
     vkArray: av[0].SetInt(Value.GetArray.Count);
   end;
 end;
-
 procedure SF_RunFunctionFromScript(av: array of TVarEC; code: TCodeEC);
 var
   Index, LastArg, I: Integer;
@@ -1603,7 +1607,7 @@ begin
     Entry.Text := av[1].GetString;
     { The value-expression receiver preserves native receiver-before-value loads;
       no addition is emitted. See the DCC32 ABI observations. }
-    TJournalRecord(Integer(Entry) + 0).DateTurn := Turn;
+    TJournalRecord(PtrInt(Entry) + 0).DateTurn := Turn;
     if (GetPlayer.JournalRecords.Count <= 0)
         or (TJournalRecord(GetPlayer.JournalRecords[GetPlayer.JournalRecords.Count - 1]).DateTurn
             <= Turn) then
@@ -2091,7 +2095,7 @@ begin
       Artefact.Free;
       Ship.RefreshDerivedStats(True);
       Drone.NextDay;
-      av[0].SetDword(Cardinal(Drone));
+      av[0].SetDword(PtrUInt(Drone));
     end;
   end;
 end;
@@ -2378,21 +2382,21 @@ procedure SF_IdToPlanet(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) <> 1 then
     raise Exception.Create('Error.Script IdToPlanet');
-  av[0].SetDword(Cardinal(Galaxy.IdToPlanet(av[1].GetDword)));
+  av[0].SetDword(PtrUInt(Galaxy.IdToPlanet(av[1].GetDword)));
 end;
 
 procedure SF_IdToShip(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script IdToShip');
-  av[0].SetDword(Cardinal(Galaxy.IdToShip(av[1].GetDword, (High(av) > 1) and (av[2].GetInt <> 0))));
+  av[0].SetDword(PtrUInt(Galaxy.IdToShip(av[1].GetDword, (High(av) > 1) and (av[2].GetInt <> 0))));
 end;
 
 procedure SF_IdToItem(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) <> 1 then
     raise Exception.Create('Error.Script IdToItem');
-  av[0].SetDword(Cardinal(Galaxy.IdToItem(av[1].GetDword, False)));
+  av[0].SetDword(PtrUInt(Galaxy.IdToItem(av[1].GetDword, False)));
 end;
 
 procedure SF_PlanetSetGoods(av: array of TVarEC; code: TCodeEC);
@@ -2470,14 +2474,14 @@ begin
   if High(av) <> 1 then
     raise Exception.Create('Error.Script ShipStar');
   Ship := TShip(av[1].GetDword);
-  av[0].SetDword(Cardinal(Ship.CurrentStar));
+  av[0].SetDword(PtrUInt(Ship.CurrentStar));
 end;
 
 procedure SF_StarToCon(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) <> 1 then
     raise Exception.Create('Error.Script StarToCon');
-  av[0].SetDword(Cardinal(TStar(av[1].GetDword).Constellation));
+  av[0].SetDword(PtrUInt(TStar(av[1].GetDword).Constellation));
 end;
 
 procedure SF_ConNear(av: array of TVarEC; code: TCodeEC);
@@ -2528,7 +2532,7 @@ begin
   if (Index < 0) or (Index >= Constellation.Stars.Count) then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(Constellation.Stars[Index]));
+    av[0].SetDword(PtrUInt(Constellation.Stars[Index]));
 end;
 
 procedure SF_GalaxyStars(av: array of TVarEC; code: TCodeEC);
@@ -2546,7 +2550,7 @@ begin
   if (Index < 0) or (Index >= Galaxy.Stars.Count) then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(Galaxy.Stars[Index]));
+    av[0].SetDword(PtrUInt(Galaxy.Stars[Index]));
 end;
 
 procedure SF_StarAngleBetween(av: array of TVarEC; code: TCodeEC);
@@ -2634,7 +2638,7 @@ begin
     I := Round((Planets.Count - 1) * MinFraction);
     J := Round((Planets.Count - 1) * MaxFraction);
     I := I + NextRandomIntRange(0, J - I, Star.RandomState);
-    av[0].SetDword(Cardinal(Planets[I]));
+    av[0].SetDword(PtrUInt(Planets[I]));
   end;
   Planets.Free;
 end;
@@ -2783,7 +2787,7 @@ begin
     end;
     10:
     begin
-      av[0].SetDword(Cardinal(Ship.HomePlanet));
+      av[0].SetDword(PtrUInt(Ship.HomePlanet));
       if High(av) > 2 then
       begin
         if Ship is TWarrior then
@@ -2998,7 +3002,7 @@ begin
       Ship := TShip(Star.Ships[I]);
       if Ship.TypeId = Kind then
       begin
-        av[0].SetDword(Cardinal(Ship));
+        av[0].SetDword(PtrUInt(Ship));
         Exit;
       end;
     end;
@@ -3094,12 +3098,12 @@ begin
       Ship := Binding.Ship;
       if Ship <> GetPlayer then
       begin
-        av[0].SetDword(Cardinal(Ship));
+        av[0].SetDword(PtrUInt(Ship));
         Exit;
       end;
     end;
   end;
-  av[0].SetDword(Cardinal(Ship));
+  av[0].SetDword(PtrUInt(Ship));
 end;
 
 procedure SF_OrderJump(av: array of TVarEC; code: TCodeEC);
@@ -3933,7 +3937,8 @@ begin
   for I := 0 to Count - 1 do
   begin
     Obj := TObject(av[2 + I].GetDword);
-    if Cardinal(Obj) < $10000 then
+    // This argument accepts a small group ID or a full object address.
+    if PtrUInt(Obj) < $10000 then
     begin
       ShipCount := CurrentScript.Ships.Count;
       for J := 0 to ShipCount - 1 do
@@ -4369,7 +4374,7 @@ end;
 
 procedure SF_Player(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(GetPlayer));
+  av[0].SetDword(PtrUInt(GetPlayer));
 end;
 
 procedure SF_ItemExist(av: array of TVarEC; code: TCodeEC);
@@ -4409,7 +4414,8 @@ begin
   end;
 
   Obj := TObject(av[2].GetDword);
-  if Cardinal(Obj) < $10000 then
+  // This argument accepts a small group ID or a full object address.
+  if PtrUInt(Obj) < $10000 then
   begin
     for I := 0 to CurrentScript.Ships.Count - 1 do
     begin
@@ -5077,7 +5083,7 @@ begin
   if (I <= 0) or (Ship.WeaponCount < I) then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(Ship.Weapons[I]));
+    av[0].SetDword(PtrUInt(Ship.Weapons[I]));
 end;
 
 procedure SF_ShipEqInSlot(av: array of TVarEC; code: TCodeEC);
@@ -5091,7 +5097,7 @@ begin
   Ship := TShip(av[1].GetDword);
   ItemType := av[2].GetInt;
   if ItemType in [Ord(t_Hull)..Ord(t_DefGenerator)] then
-    av[0].SetDword(Cardinal(PShipEquipmentCacheView(Ship).Slots[ItemType]))
+    av[0].SetDword(PtrUInt(PShipEquipmentCacheView(@Ship.Hull).Slots[ItemType]))
   else
   begin
     if High(av) < 3 then
@@ -5099,7 +5105,7 @@ begin
     else
       SlotIndex := av[3].GetInt - 1;
     Ship.RefreshAssignedItemSlots;
-    av[0].SetDword(Cardinal(Ship.FindEquippedItemInSlot(ItemType, SlotIndex)));
+    av[0].SetDword(PtrUInt(Ship.FindEquippedItemInSlot(ItemType, SlotIndex)));
   end;
 end;
 
@@ -5666,7 +5672,7 @@ begin
     Planet.IsMainPiratePlanet := False;
     Ship := Planet.BuyPirate(MoneyPercent);
     Planet.IsMainPiratePlanet := WasMainPiratePlanet;
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -5696,7 +5702,7 @@ begin
     else
       Kind := 0;
     Ship := Planet.SpawnTransport(Kind, MoneyPercent);
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -6016,7 +6022,7 @@ begin
       if Distance < BestDistance then
       begin
         BestDistance := Distance;
-        av[0].SetDword(Cardinal(Planet));
+        av[0].SetDword(PtrUInt(Planet));
       end;
     end;
   end;
@@ -6265,7 +6271,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Star.Ships.Count) then
-        av[0].SetDword(Cardinal(Star.Ships[Index]))
+        av[0].SetDword(PtrUInt(Star.Ships[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6288,7 +6294,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Star.Planets.Count) then
-        av[0].SetDword(Cardinal(Star.Planets[Index]))
+        av[0].SetDword(PtrUInt(Star.Planets[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6311,7 +6317,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Star.Missiles.Count) then
-        av[0].SetDword(Cardinal(Star.Missiles[Index]))
+        av[0].SetDword(PtrUInt(Star.Missiles[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6334,7 +6340,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Star.Asteroids.Count) then
-        av[0].SetDword(Cardinal(Star.Asteroids[Index]))
+        av[0].SetDword(PtrUInt(Star.Asteroids[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6360,7 +6366,7 @@ begin
     begin
       Inc(FoundCount);
       if FoundCount = WantedCount then
-        av[0].SetDword(Cardinal(Binding.Ship));
+        av[0].SetDword(PtrUInt(Binding.Ship));
     end;
   end;
 end;
@@ -6381,7 +6387,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Ship.Inventory.Count) then
-        av[0].SetDword(Cardinal(Ship.Inventory[Index]))
+        av[0].SetDword(PtrUInt(Ship.Inventory[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6404,7 +6410,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Ship.Artefacts.Count) then
-        av[0].SetDword(Cardinal(Ship.Artefacts[Index]))
+        av[0].SetDword(PtrUInt(Ship.Artefacts[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -6433,7 +6439,7 @@ begin
           Inc(Count);
           if Count = Wanted then
           begin
-            av[0].SetDword(Cardinal(Ship));
+            av[0].SetDword(PtrUInt(Ship));
             Exit;
           end;
         end;
@@ -6457,7 +6463,7 @@ begin
     Item := TScriptItem(Obj).Item;
   if Item <> nil then
     if Item is TArtefactTranclucator then
-      av[0].SetDword(Cardinal((Item as TArtefactTranclucator).Ship));
+      av[0].SetDword(PtrUInt((Item as TArtefactTranclucator).Ship));
 end;
 
 procedure SF_TranclucatorData(av: array of TVarEC; code: TCodeEC);
@@ -6513,7 +6519,7 @@ begin
   case Kind of
     0:
     begin
-      av[0].SetDword(Cardinal(Ship.OwnerShip));
+      av[0].SetDword(PtrUInt(Ship.OwnerShip));
       if WriteValue then
         Ship.OwnerShip := TShip(av[3].GetDword);
     end;
@@ -6748,9 +6754,9 @@ begin
   if Obj <> nil then
   begin
     if Obj is TItem then
-      av[0].SetDword(Cardinal(Obj))
+      av[0].SetDword(PtrUInt(Obj))
     else if Obj is TScriptItem then
-      av[0].SetDword(Cardinal(TScriptItem(Obj).Item));
+      av[0].SetDword(PtrUInt(TScriptItem(Obj).Item));
   end;
 end;
 
@@ -7302,7 +7308,7 @@ begin
     Item := TScriptItem(Obj).Item;
   if (Item <> nil) and (Item is TWeapon) and ((Item as TWeapon).EquippedFlag <> 0) then
   begin
-    av[0].SetDword(Cardinal((Item as TWeapon).Target));
+    av[0].SetDword(PtrUInt((Item as TWeapon).Target));
     if High(av) > 1 then
       (Item as TWeapon).Target := TObject(av[2].GetDword);
   end;
@@ -7494,7 +7500,7 @@ begin
     PirateBuilt := av[6].GetInt <> 0;
   Hull := THull.Create;
   Hull.Init(Capacity, Level, Owner, HullType, Series, PirateBuilt);
-  av[0].SetDword(Cardinal(Hull));
+  av[0].SetDword(PtrUInt(Hull));
 end;
 
 procedure SF_CreateEquipment(av: array of TVarEC; code: TCodeEC);
@@ -7517,7 +7523,7 @@ begin
   end
   else
     Item := CreateGeneratedEquipment(Kind, Weight, Byte(Level), Owner);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateArt(av: array of TVarEC; code: TCodeEC);
@@ -7531,7 +7537,7 @@ begin
   Kind := TItemType(av[1].GetDword);
   Owner := av[2].GetDword;
   Item := CreateConfiguredArtefactByItemType(Kind, Owner);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateCustomWeapon(av: array of TVarEC; code: TCodeEC);
@@ -7548,7 +7554,7 @@ begin
   Level := av[3].GetInt;
   Owner := av[4].GetDword;
   Item := CreateGeneratedWeapon(Info, Weight, Byte(Level), Owner);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateCustomArt(av: array of TVarEC; code: TCodeEC);
@@ -7573,7 +7579,7 @@ begin
   Item.Weight := Weight;
   Item.Cost := Cost;
   Item.OwnerId := Owner;
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CustomArtData(av: array of TVarEC; code: TCodeEC);
@@ -7654,7 +7660,7 @@ begin
   Index := av[1].GetInt;
   Item := TMicroModule.Create;
   Item.Init(Index);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateNodes(av: array of TVarEC; code: TCodeEC);
@@ -7676,7 +7682,7 @@ begin
   Item := TProtoplasm.Create;
   Item.Init(Count, Ord(DropFlag));
   Item.DominatorSeries := Series;
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateCustomCountableItem(av: array of TVarEC; code: TCodeEC);
@@ -7699,7 +7705,7 @@ begin
     DropFlag := False;
   Item := TCountableItem.Create;
   Item.Init(ConfigName, Count, Ord(DropFlag));
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_CreateZond(av: array of TVarEC; code: TCodeEC);
@@ -7719,7 +7725,7 @@ begin
     Item.LandExplorationRate := av[4].GetInt;
     Item.HillExplorationRate := av[5].GetInt;
   end;
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_ExistingZonds(av: array of TVarEC; code: TCodeEC);
@@ -7734,9 +7740,9 @@ begin
     if (Index >= 0) and (Index < GetPlayer.Satellites.Count) then
     begin
       if (High(av) > 1) and (av[2].GetInt = 1) then
-        av[0].SetDword(Cardinal(TSatellite(GetPlayer.Satellites[Index]).TargetPlanet))
+        av[0].SetDword(PtrUInt(TSatellite(GetPlayer.Satellites[Index]).TargetPlanet))
       else
-        av[0].SetDword(Cardinal(GetPlayer.Satellites[Index]));
+        av[0].SetDword(PtrUInt(GetPlayer.Satellites[Index]));
     end
     else
       av[0].SetDword(0);
@@ -7864,7 +7870,7 @@ begin
                 + ')'
         );
     end;
-    av[0].SetDword(Cardinal(Item));
+    av[0].SetDword(PtrUInt(Item));
     if Ship.GetHull = Item then
     begin
       Ship.GetHull.OwnerShip := nil;
@@ -7913,7 +7919,7 @@ begin
       Item := TEquipment(Ship.Artefacts[Index]);
     end;
     Item.Unequip;
-    av[0].SetDword(Cardinal(Item));
+    av[0].SetDword(PtrUInt(Item));
     Ship.Artefacts.Delete(Index);
   end;
 end;
@@ -7965,7 +7971,7 @@ begin
       and (Index < Planet.SurfaceLootEntries.Count) then
   begin
     Entry := Planet.SurfaceLootEntries[Index];
-    av[0].SetDword(Cardinal(Entry.Item));
+    av[0].SetDword(PtrUInt(Entry.Item));
     Planet.SurfaceLootEntries.Delete(Index);
     Entry.Item := nil;
     Dispose(Entry);
@@ -8057,7 +8063,7 @@ begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Items.Count) then
       begin
-        av[0].SetDword(Cardinal(Items[Index]));
+        av[0].SetDword(PtrUInt(Items[Index]));
         Items.Delete(Index);
       end;
     end;
@@ -8140,7 +8146,7 @@ begin
     Entry := GetPlayer.StorageEntries[Index];
     GetPlayer.StorageEntries.Delete(Index);
     GetPlayer.RefreshStorageBubbles;
-    av[0].SetDword(Cardinal(Entry.Item));
+    av[0].SetDword(PtrUInt(Entry.Item));
     Dispose(Entry);
   end;
 end;
@@ -8188,7 +8194,7 @@ begin
     raise Exception.Create('Error.Script GetItemFromVault');
   av[0]
       .SetDword(
-          Cardinal(Galaxy.GetStoredItem(av[1].GetString, (High(av) < 2) or (av[2].GetInt <> 0))));
+          PtrUInt(Galaxy.GetStoredItem(av[1].GetString, (High(av) < 2) or (av[2].GetInt <> 0))));
 end;
 
 procedure SF_DropItemInSystem(av: array of TVarEC; code: TCodeEC);
@@ -8296,7 +8302,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Star.Items.Count) then
-        av[0].SetDword(Cardinal(Star.Items[Index]))
+        av[0].SetDword(PtrUInt(Star.Items[Index]))
       else
         av[0].SetDword(0);
     end;
@@ -8344,7 +8350,7 @@ begin
     end;
     Star.Items.Delete(Index);
     Star.ClearItemReferences(Item);
-    av[0].SetDword(Cardinal(Item));
+    av[0].SetDword(PtrUInt(Item));
   end;
 end;
 
@@ -8368,7 +8374,7 @@ begin
     begin
       Index := av[2].GetInt;
       if (Index >= 0) and (Index < Count) then
-        av[0].SetDword(Cardinal(PPlanetSurfaceLootEntry(Planet.SurfaceLootEntries[Index]).Item))
+        av[0].SetDword(PtrUInt(PPlanetSurfaceLootEntry(Planet.SurfaceLootEntries[Index]).Item))
       else
         av[0].SetDword(0);
     end;
@@ -8387,7 +8393,7 @@ begin
   begin
     Index := av[1].GetInt;
     if (Index >= 0) and (Index < GetPlayer.StorageEntries.Count) then
-      av[0].SetDword(Cardinal(PStorageEntry(GetPlayer.StorageEntries[Index]).Item))
+      av[0].SetDword(PtrUInt(PStorageEntry(GetPlayer.StorageEntries[Index]).Item))
     else
       av[0].SetDword(0);
   end;
@@ -8402,7 +8408,7 @@ begin
   Index := av[1].GetInt;
   av[0].SetDword(0);
   if (Index >= 0) and (Index < GetPlayer.StorageEntries.Count) then
-    av[0].SetDword(Cardinal(PStorageEntry(GetPlayer.StorageEntries[Index]).LocationOwner));
+    av[0].SetDword(PtrUInt(PStorageEntry(GetPlayer.StorageEntries[Index]).LocationOwner));
 end;
 
 procedure SF_ShopItems(av: array of TVarEC; code: TCodeEC);
@@ -8454,13 +8460,13 @@ begin
             Inc(Count);
             if Count = Wanted then
             begin
-              av[0].SetDword(Cardinal(TShopSlot(TemporaryShopSlots[Index]).Item));
+              av[0].SetDword(PtrUInt(TShopSlot(TemporaryShopSlots[Index]).Item));
               Break;
             end;
           end;
     end
     else if (Wanted >= 0) and (Wanted < Items.Count) then
-      av[0].SetDword(Cardinal(Items[Wanted]));
+      av[0].SetDword(PtrUInt(Items[Wanted]));
   end;
 end;
 
@@ -8612,10 +8618,9 @@ begin
     if Mode = 'block' then
       RuinsTalkScreen.AddChoice(Text, 0, ScriptDialogBlockCallback)
     else if Mode = 'snap' then
-      RuinsTalkScreen
-          .AddChoice(Text, Integer(Entry), RuinsTalkScreen.RunInjectedDialogKeepingScroll)
+      RuinsTalkScreen.AddChoice(Text, PtrInt(Entry), RuinsTalkScreen.RunInjectedDialogKeepingScroll)
     else
-      RuinsTalkScreen.AddChoice(Entry.Answer, Integer(Entry), RuinsTalkScreen.RunInjectedDialog);
+      RuinsTalkScreen.AddChoice(Entry.Answer, PtrInt(Entry), RuinsTalkScreen.RunInjectedDialog);
   end
   else if GetPlayer.IsOnPlanet then
   begin
@@ -8623,16 +8628,16 @@ begin
       GovernmentScreen.AddChoice(Text, 0, ScriptDialogBlockCallback)
     else if Mode = 'snap' then
       GovernmentScreen
-          .AddChoice(Text, Integer(Entry), GovernmentScreen.RunInjectedAnswerKeepingScroll)
+          .AddChoice(Text, PtrInt(Entry), GovernmentScreen.RunInjectedAnswerKeepingScroll)
     else
-      GovernmentScreen.AddChoice(Entry.Answer, Integer(Entry), GovernmentScreen.RunInjectedAnswer);
+      GovernmentScreen.AddChoice(Entry.Answer, PtrInt(Entry), GovernmentScreen.RunInjectedAnswer);
   end
   else if Mode = 'block' then
     TalkScreen.AddChoice(Text, 0, ScriptDialogBlockCallback, 0)
   else if Mode = 'snap' then
-    TalkScreen.AddChoice(Text, Integer(Entry), TalkScreen.RunInjectedAnswerKeepingScroll, 0)
+    TalkScreen.AddChoice(Text, PtrInt(Entry), TalkScreen.RunInjectedAnswerKeepingScroll, 0)
   else
-    TalkScreen.AddChoice(Entry.Answer, Integer(Entry), TalkScreen.RunInjectedAnswer, 0);
+    TalkScreen.AddChoice(Entry.Answer, PtrInt(Entry), TalkScreen.RunInjectedAnswer, 0);
 end;
 
 procedure SF_AddDialogBlock(av: array of TVarEC; code: TCodeEC);
@@ -8681,9 +8686,9 @@ begin
     raise Exception.Create('Error.Script GetShipPlanet');
   Ship := TShip(av[1].GetDword);
   if GetPlayer.RuinsProxy = Ship then
-    av[0].SetDword(Cardinal(GetPlayer.RuinsSavedPlanet))
+    av[0].SetDword(PtrUInt(GetPlayer.RuinsSavedPlanet))
   else
-    av[0].SetDword(Cardinal(Ship.CurrentPlanet));
+    av[0].SetDword(PtrUInt(Ship.CurrentPlanet));
 end;
 
 procedure SF_GetShipHomePlanet(av: array of TVarEC; code: TCodeEC);
@@ -8693,7 +8698,7 @@ begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script GetShipHomePlanet');
   Ship := TShip(av[1].GetDword);
-  av[0].SetDword(Cardinal(Ship.HomePlanet));
+  av[0].SetDword(PtrUInt(Ship.HomePlanet));
 end;
 
 procedure SF_GetShipRuins(av: array of TVarEC; code: TCodeEC);
@@ -8704,14 +8709,14 @@ begin
     raise Exception.Create('Error.Script GetShipRuins');
   Ship := TShip(av[1].GetDword);
   if GetPlayer.RuinsProxy = Ship then
-    av[0].SetDword(Cardinal(GetPlayer.RuinsSavedDockedTo))
+    av[0].SetDword(PtrUInt(GetPlayer.RuinsSavedDockedTo))
   else
-    av[0].SetDword(Cardinal(Ship.DockedTo));
+    av[0].SetDword(PtrUInt(Ship.DockedTo));
 end;
 
 procedure SF_GetTalkShip(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(TalkShip));
+  av[0].SetDword(PtrUInt(TalkShip));
 end;
 
 procedure SF_TalkByAI(av: array of TVarEC; code: TCodeEC);
@@ -8862,7 +8867,7 @@ begin
   else
     Ship.RewardObject := nil;
   StagedArcadeShips.Add(Ship);
-  av[0].SetDword(Cardinal(Ship));
+  av[0].SetDword(PtrUInt(Ship));
 end;
 
 procedure SF_ConvertToABShip(av: array of TVarEC; code: TCodeEC);
@@ -8938,7 +8943,7 @@ begin
     else
       Ship.RewardObject := nil;
     StagedArcadeShips.Add(Ship);
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9580,7 +9585,7 @@ begin
   if Planet <> nil then
   begin
     Ship := TShip(Planet.BuyRanger(MoneyPercent));
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9599,7 +9604,7 @@ begin
   if Planet <> nil then
   begin
     Ship := TShip(Planet.BuyWarrior(MoneyPercent));
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9618,7 +9623,7 @@ begin
   if Planet <> nil then
   begin
     Ship := TShip(Planet.BuyFlagship(MoneyPercent));
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9633,7 +9638,7 @@ begin
   if Planet <> nil then
   begin
     Ship := TShip(Planet.SpawnWeightedDominatorShip);
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9659,7 +9664,7 @@ begin
       Ship := TShip(Planet.SpawnDominatorShip(TKlingType(av[2].GetInt)));
       Planet.CurrentStar.DominatorSeries := SavedSeries;
     end;
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -9678,7 +9683,7 @@ begin
     if High(av) > 1 then
       BasicEquipment := av[2].GetInt <> 0;
     Ship := TShip(Planet.SpawnTranclucator(BasicEquipment));
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
   end;
 end;
 
@@ -10141,7 +10146,7 @@ begin
       Inc(Found);
       if Found = Wanted then
       begin
-        av[0].SetDword(Cardinal(Hole));
+        av[0].SetDword(PtrUInt(Hole));
         Exit;
       end;
     end;
@@ -10163,7 +10168,7 @@ begin
   begin
     Index := av[2].GetInt;
     if (Index >= 0) and (Index < Galaxy.Stars.Count) then
-      av[0].SetDword(Cardinal(Star.StarDistances[Index].Star));
+      av[0].SetDword(PtrUInt(Star.StarDistances[Index].Star));
   end;
 end;
 
@@ -10209,7 +10214,7 @@ begin
   Planet := TPlanet.Create;
   Planet.InitGeneratedUninhabited(Star);
   Galaxy.Planets.Add(Planet);
-  av[0].SetDword(Cardinal(Planet));
+  av[0].SetDword(PtrUInt(Planet));
   if High(av) < 2 then
     Star.Planets.Add(Planet)
   else
@@ -10511,7 +10516,7 @@ begin
   begin
     Index := av[2].GetInt;
     if (Index >= 0) and (Index < Planet.Warriors.Count) then
-      av[0].SetDword(Cardinal(Planet.Warriors[Index]))
+      av[0].SetDword(PtrUInt(Planet.Warriors[Index]))
     else
       av[0].SetDword(0);
   end;
@@ -10527,7 +10532,7 @@ begin
   begin
     Index := av[1].GetInt;
     if (Index >= 0) and (Index < Galaxy.Constellations.Count) then
-      av[0].SetDword(Cardinal(Galaxy.Constellations[Index]))
+      av[0].SetDword(PtrUInt(Galaxy.Constellations[Index]))
     else
       av[0].SetDword(0);
   end;
@@ -10751,7 +10756,7 @@ begin
   begin
     Index := av[1].GetInt;
     if (Index >= 0) and (Index < Galaxy.Holes.Count) then
-      av[0].SetDword(Cardinal(Galaxy.Holes[Index]))
+      av[0].SetDword(PtrUInt(Galaxy.Holes[Index]))
     else
       av[0].SetDword(0);
   end;
@@ -10787,7 +10792,7 @@ begin
   Hole.Position2.X := Sin(Angle) * Radius;
   Hole.Position2.Y := Cos(Angle) * -Radius;
   Galaxy.Holes.Add(Hole);
-  av[0].SetDword(Cardinal(Hole));
+  av[0].SetDword(PtrUInt(Hole));
   if Hole.Star1.RecordingTurnFilm or Hole.Star2.RecordingTurnFilm then
   begin
     FilmObject := TEFilm(PrimaryFilm).AddObject(Hole.Id, Hole.Graphic);
@@ -10809,7 +10814,7 @@ begin
   Hole := THole(av[1].GetDword);
   if Hole <> nil then
   begin
-    av[0].SetDword(Cardinal(Hole.Star1));
+    av[0].SetDword(PtrUInt(Hole.Star1));
     if High(av) > 1 then
       Hole.Star1 := TStar(av[2].GetDword);
   end;
@@ -10824,7 +10829,7 @@ begin
   Hole := THole(av[1].GetDword);
   if Hole <> nil then
   begin
-    av[0].SetDword(Cardinal(Hole.Star2));
+    av[0].SetDword(PtrUInt(Hole.Star2));
     if High(av) > 1 then
       Hole.Star2 := TStar(av[2].GetDword);
   end;
@@ -10982,7 +10987,7 @@ begin
               or ((Ship.TypeNameOverrideKey = '')
                   and (ShipTypeNames[Ship.TypeId].Name = av[2].GetString)) then
           begin
-            av[0].SetDword(Cardinal(Ship));
+            av[0].SetDword(PtrUInt(Ship));
             Exit;
           end;
         end;
@@ -10997,7 +11002,7 @@ begin
           Inc(Found);
           if Found = av[2].GetInt then
           begin
-            av[0].SetDword(Cardinal(Ship));
+            av[0].SetDword(PtrUInt(Ship));
             Exit;
           end;
         end;
@@ -11018,7 +11023,7 @@ begin
     Item.OwnerId := Byte(oiUninhabited)
   else if av[2].GetInt >= 0 then
     Item.OwnerId := av[2].GetInt;
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_ShipTurnBeforeEndOrder(av: array of TVarEC; code: TCodeEC);
@@ -11106,9 +11111,9 @@ begin
   if Ship <> nil then
   begin
     if (GetPlayer = Ship) and (PendingPlayerFollowTarget <> nil) then
-      av[0].SetDword(Cardinal(PendingPlayerFollowTarget))
+      av[0].SetDword(PtrUInt(PendingPlayerFollowTarget))
     else
-      av[0].SetDword(Cardinal(Ship.OrderTarget));
+      av[0].SetDword(PtrUInt(Ship.OrderTarget));
     if High(av) > 1 then
     begin
       if (GetPlayer = Ship) and (PendingPlayerFollowTarget <> nil) then
@@ -11130,7 +11135,7 @@ begin
   begin
     if GetPlayer = Obj then
     begin
-      av[0].SetDword(Cardinal(GetPlayer.QueuedTravelTarget));
+      av[0].SetDword(PtrUInt(GetPlayer.QueuedTravelTarget));
       if High(av) > 1 then
         GetPlayer.QueuedTravelTarget := TStar(av[2].GetDword);
     end
@@ -11145,7 +11150,7 @@ begin
       end
       else
       begin
-        av[0].SetDword(Cardinal(TRuins(Obj).FlyToStar));
+        av[0].SetDword(PtrUInt(TRuins(Obj).FlyToStar));
         if High(av) > 1 then
           TRuins(Obj).FlyToStar := TStar(av[2].GetDword);
         if High(av) > 2 then
@@ -11175,7 +11180,7 @@ begin
       Station := TRuins.Create;
       Station.Init(TStationType(Kind), Star, '');
     end;
-    av[0].SetDword(Cardinal(Station));
+    av[0].SetDword(PtrUInt(Station));
   end;
 end;
 
@@ -11190,7 +11195,7 @@ begin
   if Star <> nil then
   begin
     Station := TRuins.Create;
-    av[0].SetDword(Cardinal(Station));
+    av[0].SetDword(PtrUInt(Station));
     Station.Init(rstCustomStation, Star, av[2].GetString);
     if High(av) > 2 then
       Station.CurrentStanding := av[3].GetInt
@@ -11266,7 +11271,7 @@ procedure SF_MissileStar(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script MissileStar');
-  av[0].SetDword(Cardinal(TMissile(av[1].GetDword).CurrentStar));
+  av[0].SetDword(PtrUInt(TMissile(av[1].GetDword).CurrentStar));
 end;
 
 procedure SF_MissileType(av: array of TVarEC; code: TCodeEC);
@@ -11287,7 +11292,7 @@ procedure SF_MissileOwner(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script MissileOwner');
-  av[0].SetDword(Cardinal(TMissile(av[1].GetDword).OwnerShip));
+  av[0].SetDword(PtrUInt(TMissile(av[1].GetDword).OwnerShip));
   if High(av) > 1 then
     TMissile(av[1].GetDword).OwnerShip := TShip(av[2].GetDword);
 end;
@@ -11296,7 +11301,7 @@ procedure SF_MissileWeaponID(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script MissileWeaponID');
-  av[0].SetDword(Cardinal(TMissile(av[1].GetDword).WeaponId));
+  av[0].SetDword(PtrUInt(TMissile(av[1].GetDword).WeaponId));
 end;
 
 procedure SF_MissileTarget(av: array of TVarEC; code: TCodeEC);
@@ -11307,9 +11312,9 @@ begin
     raise Exception.Create('Error.Script MissileTarget');
   Missile := TMissile(av[1].GetDword);
   if Missile.Target <> nil then
-    av[0].SetDword(Cardinal(Missile.Target))
+    av[0].SetDword(PtrUInt(Missile.Target))
   else
-    av[0].SetDword(Cardinal(Missile.PreviousTarget));
+    av[0].SetDword(PtrUInt(Missile.PreviousTarget));
   if High(av) > 1 then
     TMissile(av[1].GetDword).Target := TObject(av[2].GetDword);
 end;
@@ -11597,16 +11602,8 @@ begin
   if Args[1].RealVType <> vkArray then
     raise Exception.Create('Error.Script ArrayFind - not array');
   Args[0].SetInt(-1);
-  if Args[2].RealVType = vkInt then
-  begin
-    for ElementIndex := 0 to Args[1].GetArray.Count - 1 do
-      if Args[1].GetArray.GetItem(ElementIndex).GetInt = Args[2].GetInt then
-      begin
-        Args[0].SetInt(ElementIndex);
-        Exit;
-      end;
-  end
-  else if Args[2].RealVType = vkDword then
+  // Both integer kinds can carry object addresses in legacy scripts.
+  if Args[2].RealVType in [vkInt, vkDword] then
   begin
     for ElementIndex := 0 to Args[1].GetArray.Count - 1 do
       if Args[1].GetArray.GetItem(ElementIndex).GetDword = Args[2].GetDword then
@@ -11634,7 +11631,6 @@ begin
       end;
   end;
 end;
-
 procedure SF_ArrayFindInSorted(Args: array of TVarEC; Code: TCodeEC);
 var
   ElementCount, TargetValue, HighValue, LowValue, HighIndex, LowIndex: Integer;
@@ -11858,7 +11854,7 @@ begin
       if Allowed then
       begin
         Value := TVarEC.Create(vkDword);
-        Value.SetDword(Cardinal(Candidate));
+        Value.SetDword(PtrUInt(Candidate));
         av[1].GetArray.AddItem(Value);
       end;
     end;
@@ -11939,7 +11935,7 @@ begin
   begin
     Index := av[1].GetInt;
     if (Index >= 0) and (Index < Galaxy.Rangers.Count) then
-      av[0].SetDword(Cardinal(Galaxy.Rangers[Index]))
+      av[0].SetDword(PtrUInt(Galaxy.Rangers[Index]))
     else
       av[0].SetDword(0);
   end;
@@ -11986,7 +11982,7 @@ begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script ShipGetBad');
   if av[1].GetDword <> 0 then
-    av[0].SetDword(Cardinal(TShip(av[1].GetDword).EnemyShip));
+    av[0].SetDword(PtrUInt(TShip(av[1].GetDword).EnemyShip));
 end;
 
 procedure SF_ShipAddDropItem(av: array of TVarEC; code: TCodeEC);
@@ -12175,7 +12171,7 @@ begin
   else
     Item := TEquipment(CreateDefaultItemByType(TItemType(Kind)));
   ApplySpecialMicroModule(av[1].GetInt, Item);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
 end;
 
 procedure SF_SpecialToEquipment(av: array of TVarEC; code: TCodeEC);
@@ -12234,7 +12230,7 @@ begin
         MicroModuleCandidateIndices[Count] := Index;
         Inc(Count);
       end;
-      Template := PMicroModuleTemplate(Integer(Template) + SizeOf(TMicroModuleInfo));
+      Template := PMicroModuleTemplate(PtrUInt(Template) + SizeOf(TMicroModuleInfo));
     end;
     if Count <= 0 then
       av[0].SetInt(-1)
@@ -12526,7 +12522,7 @@ var
       end;
     end;
     Value := TVarEC.Create(vkInt);
-    Value.SetDword(Cardinal(Ship));
+    Value.SetDword(PtrUInt(Ship));
     av[1].GetArray.AddItem(Value);
   end;
 
@@ -12667,7 +12663,7 @@ procedure SF_PlanetToStar(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script PlanetToStar');
-  av[0].SetDword(Cardinal(TPlanet(av[1].GetDword).CurrentStar));
+  av[0].SetDword(PtrUInt(TPlanet(av[1].GetDword).CurrentStar));
 end;
 
 procedure SF_Chameleon(av: array of TVarEC; code: TCodeEC);
@@ -12822,7 +12818,7 @@ end;
 
 procedure SF_EquipmentImageName(av: array of TVarEC; code: TCodeEC);
 var
-  Kind: Cardinal;
+  Kind: PtrUInt;
   Obj: TObject;
   Item: TItem;
 begin
@@ -12945,7 +12941,7 @@ begin
       end;
     end;
     if Priority > 0 then
-      av[1].GetArray.GetItem(I).SetDword(Cardinal(BestPlanet))
+      av[1].GetArray.GetItem(I).SetDword(PtrUInt(BestPlanet))
     else
       av[1].GetArray.Delete(I);
   end;
@@ -13465,7 +13461,7 @@ begin
       Inc(Found);
       if Found = Wanted then
       begin
-        av[0].SetDword(Cardinal(Partner));
+        av[0].SetDword(PtrUInt(Partner));
         Exit;
       end;
     end;
@@ -13490,7 +13486,7 @@ begin
     if (Index < 0) or (Index >= Count) then
       av[0].SetDword(0)
     else
-      av[0].SetDword(Cardinal(GetPlayer.PiratePartners[Index]));
+      av[0].SetDword(PtrUInt(GetPlayer.PiratePartners[Index]));
   end;
 end;
 
@@ -13506,7 +13502,7 @@ begin
     if (High(av) > 1) and (av[2].GetInt <> 0) then
       av[0].SetInt(Ship.PartnershipDaysRemaining)
     else
-      av[0].SetDword(Cardinal(Ship.PartnerShip));
+      av[0].SetDword(PtrUInt(Ship.PartnerShip));
   end;
 end;
 
@@ -13714,7 +13710,7 @@ begin
         end;
       end;
   end;
-  av[0].SetDword(Cardinal(BestPlanet));
+  av[0].SetDword(PtrUInt(BestPlanet));
 end;
 
 procedure SF_StarListToTransitPlanetList(av: array of TVarEC; code: TCodeEC);
@@ -13784,7 +13780,7 @@ begin
       av[1].GetArray.Delete(I)
     else
     begin
-      av[1].GetArray.GetItem(I).SetDword(Cardinal(BestPlanet));
+      av[1].GetArray.GetItem(I).SetDword(PtrUInt(BestPlanet));
       New(ScorePtr);
       ScorePtr^ := BestScore;
       Scores.Add(ScorePtr);
@@ -13974,7 +13970,7 @@ begin
     raise Exception.Create('Error.Script CreateGoods');
   Item := TGoods.Create;
   Item.Init(TItemType(av[1].GetInt), av[2].GetInt);
-  av[0].SetDword(Cardinal(Item));
+  av[0].SetDword(PtrUInt(Item));
   if High(av) > 2 then
     Item.NaturalFlag := av[3].GetInt <> 0;
 end;
@@ -14705,7 +14701,7 @@ begin
     Missile.InitializeShot(Ship.CurrentStar, Ship, Weapon, Target, Shot);
   end;
   Ship.ScriptItemsAct(satOnMissileShot, Missile, Weapon, 0);
-  av[0].SetDword(Cardinal(Missile));
+  av[0].SetDword(PtrUInt(Missile));
   if Ship.CurrentStar.RecordingTurnFilm then
   begin
     Step := Ship.CurrentStar.CurrentStepIndex;
@@ -14782,7 +14778,7 @@ begin
         Special
     );
   end;
-  av[0].SetDword(Cardinal(Missile));
+  av[0].SetDword(PtrUInt(Missile));
   if Star.RecordingTurnFilm then
   begin
     Step := Star.CurrentStepIndex;
@@ -14850,22 +14846,22 @@ end;
 
 procedure SF_PlanetPirateClan(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(MainPiratePlanet));
+  av[0].SetDword(PtrUInt(MainPiratePlanet));
 end;
 
 procedure SF_Blazer(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(BlazerShip));
+  av[0].SetDword(PtrUInt(BlazerShip));
 end;
 
 procedure SF_Keller(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(KellerShip));
+  av[0].SetDword(PtrUInt(KellerShip));
 end;
 
 procedure SF_Terron(av: array of TVarEC; code: TCodeEC);
 begin
-  av[0].SetDword(Cardinal(TerronShip));
+  av[0].SetDword(PtrUInt(TerronShip));
 end;
 
 procedure SF_PirateType(av: array of TVarEC; code: TCodeEC);
@@ -15319,7 +15315,7 @@ begin
               .GetBlock(Info.TypeName)
               .CountParams('StatusEffect')
           > 0;
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
 end;
 
 procedure SF_ShipDeleteCustomShipInfo(av: array of TVarEC; code: TCodeEC);
@@ -16477,9 +16473,9 @@ end;
 procedure SF_CurItem(av: array of TVarEC; code: TCodeEC);
 begin
   if ScriptItemContextStack.Count < 1 then
-    av[0].SetDword(Cardinal(ScriptUseItem))
+    av[0].SetDword(PtrUInt(ScriptUseItem))
   else
-    av[0].SetDword(Cardinal(ScriptItemContextStack[ScriptItemContextStack.Count - 1]));
+    av[0].SetDword(PtrUInt(ScriptItemContextStack[ScriptItemContextStack.Count - 1]));
 end;
 
 procedure SF_CurInfo(av: array of TVarEC; code: TCodeEC);
@@ -16487,7 +16483,7 @@ begin
   if ScriptItemInfoContextStack.Count < 1 then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(ScriptItemInfoContextStack[ScriptItemInfoContextStack.Count - 1]));
+    av[0].SetDword(PtrUInt(ScriptItemInfoContextStack[ScriptItemInfoContextStack.Count - 1]));
 end;
 
 procedure SF_ScriptItemActShip(av: array of TVarEC; code: TCodeEC);
@@ -16495,7 +16491,7 @@ begin
   if ScriptActionShipStack.Count < 1 then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(ScriptActionShipStack[ScriptActionShipStack.Count - 1]));
+    av[0].SetDword(PtrUInt(ScriptActionShipStack[ScriptActionShipStack.Count - 1]));
 end;
 
 procedure SF_ScriptItemActObject1(av: array of TVarEC; code: TCodeEC);
@@ -16503,7 +16499,7 @@ begin
   if ScriptActionObject1Stack.Count < 1 then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(ScriptActionObject1Stack[ScriptActionObject1Stack.Count - 1]));
+    av[0].SetDword(PtrUInt(ScriptActionObject1Stack[ScriptActionObject1Stack.Count - 1]));
 end;
 
 procedure SF_ScriptItemActObject2(av: array of TVarEC; code: TCodeEC);
@@ -16511,7 +16507,7 @@ begin
   if ScriptActionObject2Stack.Count < 1 then
     av[0].SetDword(0)
   else
-    av[0].SetDword(Cardinal(ScriptActionObject2Stack[ScriptActionObject2Stack.Count - 1]));
+    av[0].SetDword(PtrUInt(ScriptActionObject2Stack[ScriptActionObject2Stack.Count - 1]));
 end;
 
 procedure SF_ScriptItemActionType(av: array of TVarEC; code: TCodeEC);
@@ -16526,15 +16522,28 @@ begin
   begin
     Matches := Integer(ScriptActionTypeStack[ScriptActionTypeStack.Count - 1]) = av[1].GetInt;
     if Matches and (High(av) > 1) then
-      Matches := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]) = av[2].GetInt;
+      if av[1].GetInt = 43 then
+        Matches :=
+            PtrUInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]) = av[2].GetDword
+      else
+        Matches := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]) = av[2].GetInt;
     av[0].SetDword(Ord(Matches));
   end;
 end;
 
 procedure SF_ScriptItemActParam(av: array of TVarEC; code: TCodeEC);
 begin
+  // Purchase action 43 carries a destination object; other actions use signed
+  // 32-bit numbers. Keep the pointer intact through both reads and writes.
   if ScriptActionParamStack.Count < 1 then
     av[0].SetInt(0)
+  else if (ScriptActionTypeStack.Count > 0)
+      and (PtrUInt(ScriptActionTypeStack[ScriptActionTypeStack.Count - 1]) = 43) then
+  begin
+    av[0].SetDword(PtrUInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]));
+    if High(av) > 0 then
+      ScriptActionParamStack[ScriptActionParamStack.Count - 1] := Pointer(av[1].GetDword);
+  end
   else
   begin
     av[0].SetInt(Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]));
@@ -16568,7 +16577,7 @@ begin
   if GetPlayer <> nil then
   begin
     Ship := TObject(Item.Ship) as TTranclucator;
-    av[0].SetDword(Cardinal(Ship));
+    av[0].SetDword(PtrUInt(Ship));
     if GetPlayer.InNormalSpace then
     begin
       SoundManager.PlaySound('Sound.UseATranc');
@@ -16762,7 +16771,7 @@ begin
         ScriptUseItem := nil;
       GetPlayer.RefreshDerivedStats(True);
       Hole := THole.Create;
-      av[0].SetDword(Cardinal(Hole));
+      av[0].SetDword(PtrUInt(Hole));
       Hole.InitializeGraphic('');
       THoleSE(Hole.Graphic).SetState(1);
       Hole.Star1 := GetPlayer.CurrentStar;
@@ -17085,11 +17094,11 @@ end;
 procedure SF_FormCurShip(av: array of TVarEC; code: TCodeEC);
 begin
   if GetInnermostScreenLoop = HangarScreen then
-    av[0].SetDword(Cardinal(HangarScreen.SelectedShip))
+    av[0].SetDword(PtrUInt(HangarScreen.SelectedShip))
   else if GetInnermostScreenLoop = ScannerScreen then
-    av[0].SetDword(Cardinal(ScannerScreen.ShipToInspect))
+    av[0].SetDword(PtrUInt(ScannerScreen.ShipToInspect))
   else if GetInnermostScreenLoop = ShipScreen then
-    av[0].SetDword(Cardinal(PlayerHoldShip))
+    av[0].SetDword(PtrUInt(PlayerHoldShip))
   else
     av[0].SetDword(0);
 end;
@@ -17693,7 +17702,7 @@ begin
     if not (ShipScreen.SelectedHoldKind in [phkEquipment, phkArtefact]) then
       av[0].SetDword(0)
     else
-      av[0].SetDword(Cardinal(ShipScreen.SelectedHoldItem));
+      av[0].SetDword(PtrUInt(ShipScreen.SelectedHoldItem));
     Exit;
   end;
 
@@ -17741,7 +17750,7 @@ begin
     end;
     6:
     begin
-      av[0].SetDword(Cardinal(ShipScreen.SelectedHoldItem));
+      av[0].SetDword(PtrUInt(ShipScreen.SelectedHoldItem));
       ShipScreen.SelectedHoldItem := nil;
       ShipScreen.SelectedHoldKind := phkEmpty;
       PlayerHoldShip.RefreshDerivedStats(True);
@@ -17757,7 +17766,7 @@ begin
           or not (ShipScreen.SelectedHoldKind in [phkEquipment, phkArtefact]) then
         raise Exception.Create('Error.Script FormShipCurItem no item to replace');
       Item := TObject(av[2].GetDword);
-      av[0].SetDword(Cardinal(ShipScreen.SelectedHoldItem));
+      av[0].SetDword(PtrUInt(ShipScreen.SelectedHoldItem));
       ShipScreen.SelectedHoldItem := TItem(Item);
       if Item is TArtefact then
         ShipScreen.SelectedHoldKind := phkArtefact
@@ -17888,8 +17897,7 @@ begin
       Parent.CaptureCursorState(@State);
       Parent.SetCursorActive(False);
       Parent.DrawQueuedUpdateRects;
-      // The identity expression preserves native RHS-first register allocation.
-      Child.ParentLoop := TMessageLoopGI(Cardinal(Parent) * 1);
+      Child.ParentLoop := Parent;
       Parent.ChildLoop := Child;
       if (Child = GalaxyScreen) and (High(av) >= 2) then
         GalaxyScreen.ViewMode := av[2].GetInt;
@@ -18217,7 +18225,7 @@ begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script InventNewCustomWeapon');
   Info := Galaxy.GetOrCreateCustomWeaponInfo(av[1].GetString);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   if High(av) > 1 then
     Kind := av[2].GetInt
   else
@@ -18258,7 +18266,7 @@ procedure SF_GetCustomWeaponInfo(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
     raise Exception.Create('Error.Script GetCustomWeaponInfo');
-  av[0].SetDword(Cardinal(Galaxy.RequireCustomWeaponInfo(av[1].GetString)));
+  av[0].SetDword(PtrUInt(Galaxy.RequireCustomWeaponInfo(av[1].GetString)));
 end;
 
 procedure SF_GetCustomWeaponData(av: array of TVarEC; code: TCodeEC);
@@ -18347,7 +18355,7 @@ begin
   if High(av) < 2 then
     raise Exception.Create('Error.Script SetCustomWeaponAvailability');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Text := av[2].GetString;
   if Text = 'Free' then
     Info.Availability := waFree
@@ -18382,7 +18390,7 @@ begin
   if High(av) < 4 then
     raise Exception.Create('Error.Script SetCustomWeaponPrimaryData');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Info.TechLevel := av[2].GetInt;
   if not (TItemType(av[3].GetInt) in [t_Weapon1..t_Weapon18]) then
     raise Exception.Create('Error.Script SetCustomWeaponPrimaryData invalid tech');
@@ -18397,7 +18405,7 @@ begin
   if High(av) < 3 then
     raise Exception.Create('Error.Script SetCustomWeaponSizeAndCost');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Info.CostFactor := av[2].GetFloat;
   Info.AverageSize := av[3].GetInt;
 
@@ -18418,7 +18426,7 @@ begin
   if High(av) < 4 then
     raise Exception.Create('Error.Script SetCustomWeaponDamageData');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Info.MinDamage := av[2].GetInt;
   Info.MaxDamage := av[3].GetInt;
   Flags := EmptyFlags;
@@ -18454,7 +18462,7 @@ begin
   if High(av) < 2 then
     raise Exception.Create('Error.Script SetCustomWeaponShotData');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Text := av[2].GetString;
   Info.ShotType := wstNormal;
   Info.ShotCount := 1;
@@ -18497,7 +18505,7 @@ begin
   if High(av) < 5 then
     raise Exception.Create('Error.Script SetCustomMissileWeaponStats');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Info.MissileRange := av[2].GetInt;
   Info.MissileMaxSpeed := av[3].GetInt;
   Info.MissileMinSpeed := av[4].GetInt;
@@ -18512,7 +18520,7 @@ begin
   if High(av) < 5 then
     raise Exception.Create('Error.Script SetCustomWeaponSE');
   Info := PWeaponInfo(av[1].GetDword);
-  av[0].SetDword(Cardinal(Info));
+  av[0].SetDword(PtrUInt(Info));
   Info.PrimarySE := av[2].GetString;
   Info.SecondarySE := av[3].GetString;
   Info.AreaSE := av[4].GetString;
@@ -18618,9 +18626,9 @@ end;
 procedure SF_GalaxyPtr(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) < 1 then
-    av[0].SetDword(Cardinal(Galaxy))
+    av[0].SetDword(PtrUInt(Galaxy))
   else if av[1].GetString = 'StarCnt' then
-    av[0].SetDword(Cardinal(@GalaxyStarCount))
+    av[0].SetDword(PtrUInt(@GalaxyStarCount))
   else
     raise Exception.Create('Error.Script GalaxyPtr, unknown value ' + av[1].GetString);
 end;

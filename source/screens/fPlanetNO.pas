@@ -100,11 +100,11 @@ type
     procedure ReturnHeldSatellite;
     function FindDeployedSatellite(TrajectoryIndex: Integer): TSatellite;
     function CountDeployedSatellites: Integer;
-    procedure AdvanceSatelliteMarkers(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure UpdateProbeSignalSound(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceSatelliteMarkers(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure UpdateProbeSignalSound(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure UpdateItemInfoPopup(Item: TItem);
     procedure ShowGoodsInfoPopup(Item: TGoods);
-    procedure HideItemInfoPopup(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure HideItemInfoPopup(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
   end;
 
@@ -775,7 +775,7 @@ begin
         CursorVisited^ := 1;
         ReadCount := 0;
         Count := 1;
-        WriteNode := PProbeMarkerPixel(Cardinal(ReadNode) + SizeOf(TProbeMarkerPixel));
+        WriteNode := PProbeMarkerPixel(PtrUInt(ReadNode) + SizeOf(TProbeMarkerPixel));
         Pixel^ := $FFFFFFFF;
         while ReadCount < Count do
         begin
@@ -791,32 +791,32 @@ begin
                 Inc(NeighborX);
                 if Buffer.Width <= NeighborX then
                   Continue;
-                NeighborVisited := PByte(Cardinal(NeighborVisited) + 1);
-                NeighborPixel := PCardinal(Cardinal(NeighborPixel) + 4);
+                NeighborVisited := PByte(PtrUInt(NeighborVisited) + 1);
+                NeighborPixel := PCardinal(PtrUInt(NeighborPixel) + 4);
               end;
               1:
               begin
                 Dec(NeighborX);
                 if NeighborX < 0 then
                   Continue;
-                NeighborVisited := PByte(Cardinal(NeighborVisited) - 1);
-                NeighborPixel := PCardinal(Cardinal(NeighborPixel) - 4);
+                NeighborVisited := PByte(PtrUInt(NeighborVisited) - 1);
+                NeighborPixel := PCardinal(PtrUInt(NeighborPixel) - 4);
               end;
               2:
               begin
                 Inc(NeighborY);
                 if Buffer.Height <= NeighborY then
                   Continue;
-                NeighborVisited := PByte(Cardinal(NeighborVisited) + Cardinal(Buffer.Width));
-                NeighborPixel := PCardinal(Cardinal(NeighborPixel) + Cardinal(Buffer.PitchBytes));
+                NeighborVisited := PByte(PtrUInt(NeighborVisited) + Cardinal(Buffer.Width));
+                NeighborPixel := PCardinal(PtrUInt(NeighborPixel) + Cardinal(Buffer.PitchBytes));
               end;
               3:
               begin
                 Dec(NeighborY);
                 if NeighborY < 0 then
                   Continue;
-                NeighborVisited := PByte(Cardinal(NeighborVisited) - Cardinal(Buffer.Width));
-                NeighborPixel := PCardinal(Cardinal(NeighborPixel) - Cardinal(Buffer.PitchBytes));
+                NeighborVisited := PByte(PtrUInt(NeighborVisited) - Cardinal(Buffer.Width));
+                NeighborPixel := PCardinal(PtrUInt(NeighborPixel) - Cardinal(Buffer.PitchBytes));
               end;
             end;
             if (NeighborPixel^ shr 24 > 32) and (NeighborVisited^ = 0) then
@@ -829,13 +829,13 @@ begin
               WriteNode.Y := NeighborY;
               WriteNode.Visited := NeighborVisited;
               WriteNode.Pixel := NeighborPixel;
-              WriteNode := PProbeMarkerPixel(Cardinal(WriteNode) + SizeOf(TProbeMarkerPixel));
+              WriteNode := PProbeMarkerPixel(PtrUInt(WriteNode) + SizeOf(TProbeMarkerPixel));
               NeighborVisited^ := 1;
               Inc(Count);
               NeighborPixel^ := $FF800000;
             end;
           end;
-          ReadNode := PProbeMarkerPixel(Cardinal(ReadNode) + SizeOf(TProbeMarkerPixel));
+          ReadNode := PProbeMarkerPixel(PtrUInt(ReadNode) + SizeOf(TProbeMarkerPixel));
           Inc(ReadCount);
         end;
         Trajectories[TrajectoryIndex][TrajectoryPointCounts[TrajectoryIndex]].Position.X :=
@@ -844,10 +844,10 @@ begin
             SumY / Count + OffsetY;
         Inc(TrajectoryPointCounts[TrajectoryIndex]);
       end;
-      Pixel := PCardinal(Cardinal(Pixel) + 4);
-      CursorVisited := PByte(Cardinal(CursorVisited) + 1);
+      Pixel := PCardinal(PtrUInt(Pixel) + 4);
+      CursorVisited := PByte(PtrUInt(CursorVisited) + 1);
     end;
-    Pixel := PCardinal(Cardinal(Pixel) + Cardinal(Buffer.PitchBytes - 4 * Buffer.Width));
+    Pixel := PCardinal(PtrUInt(Pixel) + Cardinal(Buffer.PitchBytes - 4 * Buffer.Width));
   end;
   for I := 0 to TrajectoryPointCounts[TrajectoryIndex] - 2 do
     for J := I + 1 to TrajectoryPointCounts[TrajectoryIndex] - 1 do
@@ -1198,7 +1198,7 @@ begin
         begin
           with TImageGI.Create(Panel) do
           begin
-            UserValue := Integer(Entry);
+            UserValue := PtrInt(Entry);
             if not Undiscovered then
             begin
               if Entry.Item is TGoods then
@@ -1268,7 +1268,7 @@ begin
         begin
           with TImageGI.Create(Panel) do
           begin
-            UserValue := Integer(Satellite);
+            UserValue := PtrInt(Satellite);
             SetImagePath('GI,' + Satellite.GetBitmapResourceName + 's');
             SetSize(GetContentSize);
             SetOrigin(HalfPoint(ClientSize));
@@ -1287,7 +1287,7 @@ begin
         begin
           with TgaiGI.Create(Panel) do
           begin
-            UserValue := Integer(Satellite);
+            UserValue := PtrInt(Satellite);
             SetImagePath(Satellite.GetBitmapResourceName + 'a');
             SequenceIndex := 0;
             UpdateAutoGeometry;
@@ -1763,7 +1763,7 @@ begin
       Inc(Result);
 end;
 
-procedure TfPlanetNO.AdvanceSatelliteMarkers(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPlanetNO.AdvanceSatelliteMarkers(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Panel: TPanelGI;
   Control: TObjectGI;
@@ -1780,7 +1780,7 @@ begin
   end;
 end;
 
-procedure TfPlanetNO.UpdateProbeSignalSound(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPlanetNO.UpdateProbeSignalSound(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Count: Integer;
 begin
@@ -1844,7 +1844,7 @@ begin
         if (Galaxy <> nil) and not Galaxy.Destroying and (GetPlayer <> nil) then
         begin
           if Item.ScriptItem <> nil then
-            TScriptItem(Integer(Item.ScriptItem) + 0)
+            TScriptItem(PtrInt(Item.ScriptItem) + 0)
                 .RunActionCode(satOnShowingItemInfo, nil, GetPlayer.CurrentPlanet, nil, 0);
           if Item is TEquipmentWithActCode then
             RunItemConfigActionCode(
@@ -2022,7 +2022,7 @@ begin
   );
 end;
 
-procedure TfPlanetNO.HideItemInfoPopup(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPlanetNO.HideItemInfoPopup(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   HoveredItem := nil;
   if ItemInfoHideTimer <> nil then

@@ -93,7 +93,7 @@ type
     function HitTestPixel(Point: TPoint): Boolean;
     procedure LoadAnimationProperties(Block: TBlockParEC);
     procedure SetOneCycleDuration(DurationMs: Integer);
-    procedure AdvanceAutoFrame(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceAutoFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure SetHardwareMirrorHorizontal(Value: Boolean);
     procedure PrimeImageCaches;
   end;
@@ -836,7 +836,7 @@ begin
   end;
 end;
 
-procedure TgaiGI.AdvanceAutoFrame(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TgaiGI.AdvanceAutoFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Wrapped: Boolean;
   Delay: Integer;

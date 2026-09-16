@@ -81,12 +81,12 @@ type
     procedure RewardMouseLeave(Sender: TObjectGI);
     procedure ShowRewardInfo(Ship: TNormalShip; AwardId: Integer);
     procedure HideRewardInfo;
-    procedure AdvancePanelSlide(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvancePanelSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure CloseClicked(Sender: TObjectGI);
     procedure RewardsMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ShowPropertyInfo(Sender: TObjectGI);
     procedure HidePropertyInfo(Sender: TObjectGI);
-    procedure RefreshRewardHint(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure RefreshRewardHint(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure CountCargoEntries;
     function GetCargoEntry(Index: Integer; var ItemType: TItemType; var Item: TItem): Boolean;
     procedure Update;
@@ -95,8 +95,8 @@ type
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure MainPanelMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure UpdateItemHover;
-    procedure AdvanceItemHover(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceItemHover(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ShowItemInfo(Item: TItem);
     procedure ShowGoodsInfo(ItemType: TItemType);
     procedure UpdateSkills;
@@ -683,7 +683,7 @@ begin
   RewardWindow.SetActive(False);
 end;
 
-procedure TfScaner.AdvancePanelSlide(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfScaner.AdvancePanelSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   X: Integer;
   Panel: TObjectGI;
@@ -1018,7 +1018,7 @@ begin
   GetByName('RankWnd').SetActive(False);
 end;
 
-procedure TfScaner.RefreshRewardHint(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfScaner.RefreshRewardHint(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
 end;
 
@@ -1195,7 +1195,7 @@ begin
           with GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(SlotIndex) + 'anim')
               as TgaiGI do
           begin
-            UserData := Integer(Image);
+            UserData := PtrInt(Image);
             SetPosition(Image.LocalPosition);
             SetImagePath(GetShopItemIconName(Item) + 'a');
             SequenceIndex := 0;
@@ -1542,12 +1542,12 @@ begin
   end;
 end;
 
-procedure TfScaner.AdvanceItemHover(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfScaner.AdvanceItemHover(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   UpdateItemHover;
 end;
 
-procedure TfScaner.HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfScaner.HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   HoveredItem := nil;
   if HideItemTimer <> nil then
@@ -1950,7 +1950,8 @@ var
   Block: TBlockParEC;
   Description, Caption: WideString;
 
-  procedure AddRow(IconId: Integer; Caption, Help: WideString; Data: Integer);
+  // Custom information rows pass a PCustomShipInfo through the hover callback.
+  procedure AddRow(IconId: Integer; Caption, Help: WideString; Data: PtrInt);
   begin
     with TLabelGI.Create(Panel) do
     begin
@@ -2050,7 +2051,7 @@ begin
             StrToInt(AnsiString(Block.GetParam('Icon'))),
             Caption,
             Caption + '~' + Description,
-            Integer(Info)
+            PtrInt(Info)
         );
       end;
     end;

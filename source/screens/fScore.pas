@@ -168,19 +168,6 @@ begin
 end;
 
 procedure TfScoreUnit.CapturePlayer(Victory: Boolean);
-type
-  TScoreKillCounters = array[0..6] of Integer;
-  // These views preserve the native aggregate assignment across seven named fields.
-  PScoreCounterView = ^TScoreCounterView;
-  TScoreCounterView = packed record
-    Prefix: array[0..$27] of Byte;
-    Counters: TScoreKillCounters;
-  end;
-  PShipCounterView = ^TShipCounterView;
-  TShipCounterView = packed record
-    Prefix: array[0..$4D3] of Byte;
-    Counters: TScoreKillCounters;
-  end;
 var
   Skill: TPilotSkill;
   I: Integer;
@@ -202,8 +189,15 @@ begin
   FinishedTurn := Galaxy.CurrentTurn;
   Rank := GetPlayer.Rank;
   PirateRank := GetPlayer.PirateRank;
-  // Native copies the seven adjacent kill/liberation counters as one block.
-  PScoreCounterView(Self).Counters := PShipCounterView(GetPlayer).Counters;
+  // Native copies these seven counters as one block. Named fields avoid
+  // embedding Win32 object offsets in the score and player views.
+  OtherShipKillCount := GetPlayer.TotalShipKillCount;
+  PirateKillCount := GetPlayer.PirateKillCount;
+  DominatorKillCount := GetPlayer.DominatorKillCount;
+  LiberatedSystemCount := GetPlayer.LiberatedSystemCount;
+  CivilianKillCount := GetPlayer.CivilianKillCount;
+  MilitaryKillCount := GetPlayer.MilitaryKillCount;
+  RangerKillCount := GetPlayer.RangerKillCount;
   OtherShipKillCount := OtherShipKillCount - PirateKillCount - DominatorKillCount;
   ArcadeKillCount := GetPlayer.HyperspaceKillCount + GetPlayer.BlackHoleKillCount;
   if GetPlayer.AwardIds = nil then
@@ -1162,7 +1156,7 @@ begin
               or (Integer(Buffer.GetByteAt(7)) shl 8)
               or (Integer(Buffer.GetByteAt(4)) shl 16)
               or (Integer(Buffer.GetByteAt(5)) shl 24);
-      Data := PByte(Cardinal(Buffer.Data) + 8);
+      Data := PByte(PtrUInt(Buffer.Data) + 8);
       Size := Buffer.DataSize;
       for I := 8 to Size - 1 do
       begin
@@ -1173,7 +1167,7 @@ begin
         Data := PByte(PAnsiChar(Data) + 1);
       end;
       Checksum := 0;
-      Data := PByte(Cardinal(Buffer.Data) + 12);
+      Data := PByte(PtrUInt(Buffer.Data) + 12);
       for I := 12 to Size - 1 do
       begin
         Inc(Checksum, Byte(Data^ xor $FF));
@@ -1235,14 +1229,14 @@ begin
   end;
   Size := Buffer.DataSize;
   Checksum := 0;
-  Data := PByte(Cardinal(Buffer.Data) + 12);
+  Data := PByte(PtrUInt(Buffer.Data) + 12);
   for I := 12 to Size - 1 do
   begin
     Inc(Checksum, Byte(Data^ xor $FF));
     Data := PByte(PAnsiChar(Data) + 1);
   end;
   Buffer.SetInt32At(8, Checksum);
-  Data := PByte(Cardinal(Buffer.Data) + 8);
+  Data := PByte(PtrUInt(Buffer.Data) + 8);
   for I := 8 to Size - 1 do
   begin
     Data^ := Data^ xor Byte(Seed - 1);

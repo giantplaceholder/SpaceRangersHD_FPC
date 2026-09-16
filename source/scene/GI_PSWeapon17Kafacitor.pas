@@ -61,7 +61,7 @@ type
     procedure InvalidateRect(Rect: TRect); override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure SetColors(Primary: Word; Secondary: Word);
@@ -202,7 +202,7 @@ begin
     MessageLoop.QueueUpdateRect(Intersection);
 end;
 
-procedure TPSWeapon17Kafacitor.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon17Kafacitor.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   I, Pass, Direction, SegmentPosition, SegmentLength, Offset: Integer;
   Distance, Spacing: Single;

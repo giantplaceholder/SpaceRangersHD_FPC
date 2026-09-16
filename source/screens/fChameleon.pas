@@ -282,7 +282,7 @@ begin
     Caption.MouseEnterCallback := ChoiceMouseEnter;
     Caption.MouseLeaveCallback := ChoiceMouseLeave;
   end;
-  Caption.UserValue := Integer(Image);
+  Caption.UserValue := PtrInt(Image);
 end;
 
 procedure TfChameleon.ChoiceMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);

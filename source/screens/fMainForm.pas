@@ -45,7 +45,7 @@ type
     procedure MainPanelMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MenuShipAnimationFinished(Sender: TObjectGI);
     procedure GaalShipAnimationFinished(Sender: TObjectGI);
-    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ClosePopup;
     procedure RobotBattleClicked(Sender: TObjectGI);
     procedure TextQuestClicked(Sender: TObjectGI);
@@ -677,7 +677,7 @@ begin
   end;
 end;
 
-procedure TfMainForm.ScrollBackground(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfMainForm.ScrollBackground(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Offset: Integer;
 begin

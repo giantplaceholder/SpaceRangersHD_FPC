@@ -256,7 +256,8 @@ var
 
   ArcadeKellerReward: TObject;
 
-  EncodedPlayer: Cardinal = $B1CD15D3;
+  // This is an in-memory object address; the XOR key is the original DWORD.
+  EncodedPlayer: PtrUInt = $B1CD15D3;
 
   StorageHeaderColumns: TStorageHeaderColumnTable =
       ((Size: 300; Cost: 380), (Size: 400; Cost: 490));
@@ -328,7 +329,7 @@ procedure SetPlayer(Player: TPlayer; Galaxy: TGalaxy);
 begin
   if Galaxy <> nil then
   begin
-    EncodedPlayer := Cardinal(Player) xor $B1CD15D3;
+    EncodedPlayer := PtrUInt(Player) xor $B1CD15D3;
     if Player = nil then
       Galaxy.PlayerRangerIndex := -1
     else if Galaxy.Rangers = nil then
@@ -1081,9 +1082,9 @@ begin
     Inventory.Delete(I);
     Item.Free;
   end;
-  for Kind := Low(PShipEquipmentCacheView(Self).Slots)
-      to High(PShipEquipmentCacheView(Self).Slots) do
-    PShipEquipmentCacheView(Self).Slots[Kind] := nil;
+  for Kind := Low(PShipEquipmentCacheView(@Hull).Slots)
+      to High(PShipEquipmentCacheView(@Hull).Slots) do
+    PShipEquipmentCacheView(@Hull).Slots[Kind] := nil;
   for I := 1 to 5 do
     Weapons[I] := nil;
   WeaponCount := 0;
@@ -2996,7 +2997,7 @@ begin
   Result := 0;
   for I := 0 to StorageEntries.Count - 1 do
   begin
-    Entry := TList(Integer(StorageEntries) + 0)[I];
+    Entry := TList(PtrInt(StorageEntries) + 0)[I];
     if (Entry.LocationOwner = Location) and CanAccessStoredItem(Entry.Item) then
       Result := Max(Result, Entry.SlotIndex + 1);
   end;

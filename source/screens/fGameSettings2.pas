@@ -76,7 +76,7 @@ type
     procedure GeneratePlayerName;
     procedure PlayerNameMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ToggleLevelPanel(Sender: TObjectGI);
-    procedure AnimateLevelPanel(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateLevelPanel(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RaceClicked(Sender: TObjectGI);
     procedure CharacterPresetClicked(Sender: TObjectGI);
     procedure RefreshPortrait;
@@ -1366,7 +1366,7 @@ begin
       MouseLeaveCallback := IronWillMouseLeave;
       HelpCallback := ShowControlHelp;
     end;
-    UserValue := Integer(IronWillImage);
+    UserValue := PtrInt(IronWillImage);
   end;
 end;
 
@@ -1450,7 +1450,7 @@ begin
   BreakUiMessage;
 end;
 
-procedure TfGameSettings2.AnimateLevelPanel(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGameSettings2.AnimateLevelPanel(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Level, I: Integer;
 begin
@@ -2377,7 +2377,7 @@ begin
   );
   ExtendedGroupNextY[BuildExtendedGroup] :=
       ExtendedGroupNextY[BuildExtendedGroup] + CaptionLabel.ClientSize.Y + GiScalePixels(5);
-  CaptionLabel.UserValue := Integer(ChoiceImage);
+  CaptionLabel.UserValue := PtrInt(ChoiceImage);
 end;
 
 procedure TfGameSettings2.ExtendedChoiceMouseDown(
@@ -2453,7 +2453,7 @@ begin
   Slider.SetRange(Minimum, Maximum);
   Slider.SetPositionInternal(Position);
   Slider.SetName(CurrentExtendedOption);
-  Slider.UserIndex := Integer(ValueLabel);
+  Slider.UserIndex := PtrInt(ValueLabel);
   ExtendedGroupNextY[BuildExtendedGroup] :=
       ExtendedGroupNextY[BuildExtendedGroup] + Slider.ClientSize.Y + GiScalePixels(6);
   Callback(Slider);

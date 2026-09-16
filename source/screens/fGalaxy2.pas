@@ -82,14 +82,14 @@ type
     procedure MapRightButtonDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MapButtonUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MapDoubleClick(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
-    procedure HideStarInfo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure HideStarInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure JumpClicked(Sender: TObjectGI);
     procedure JumpMouseEnter(Sender: TObjectGI);
     procedure JumpMouseLeave(Sender: TObjectGI);
     procedure ShowStarInfo(Star: TStar);
     function CanRevealBossPresence(Ship: TShip): Boolean;
     function BuildStarShipSummary(Star: TStar; var LineCount: Integer): WideString;
-    procedure UpdateJumpAnimations(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateJumpAnimations(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure CreateMarkerClicked(Sender: TObjectGI);
     procedure UndoMarkerClicked(Sender: TObjectGI);
     procedure ClearMarkersClicked(Sender: TObjectGI);
@@ -1311,7 +1311,7 @@ begin
       JumpClicked(nil);
 end;
 
-procedure TfGalaxy2.HideStarInfo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGalaxy2.HideStarInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   ShowStarInfo(nil);
 end;
@@ -2361,7 +2361,7 @@ begin
   Result := Summary;
 end;
 
-procedure TfGalaxy2.UpdateJumpAnimations(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGalaxy2.UpdateJumpAnimations(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   First, Second: TPointF;
   LightIndex: Integer;

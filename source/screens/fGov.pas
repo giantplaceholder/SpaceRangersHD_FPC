@@ -62,13 +62,13 @@ type
     procedure UpdatePortraitAnimation(Talking: Boolean);
     procedure RememberChoiceScroll;
     procedure ClearDialogChoices;
-    procedure AddChoice(Text: WideString; Value: Integer; Callback: TDialogChoiceEventGI);
+    procedure AddChoice(Text: WideString; Value: PtrInt; Callback: TDialogChoiceEventGI);
     procedure ChoiceMouseEnter(Sender: TObjectGI);
     procedure ChoiceMouseLeave(Sender: TObjectGI);
     procedure ChoiceMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ChoiceMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure RestartTextPresentation(RestartAnimation: Boolean);
-    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
     function CreateDialogObject(LabelControl: TLabelGI; Item: PFontObjectEC): TObjectGI;
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure AddMessageClicked(Sender: TObjectGI);
@@ -83,47 +83,47 @@ type
     procedure AddScriptHangarChoice(Caption: WideString);
     procedure AddScriptNewsExitChoice(Caption: WideString);
     procedure BuildQuestOfferChoices;
-    procedure StartScriptMessage(Action: Integer);
-    procedure RunScriptAnswer(Answer: Integer);
-    procedure RunScriptAnswerKeepingScroll(Answer: Integer);
-    procedure RunScriptTakeoffAnswer(Answer: Integer);
-    procedure RunScriptPlanetAnswer(Answer: Integer);
-    procedure RunScriptGoodsAnswer(Answer: Integer);
-    procedure RunScriptShopAnswer(Answer: Integer);
-    procedure RunScriptHangarAnswer(Answer: Integer);
-    procedure RunScriptNewsExitAnswer(Answer: Integer);
-    procedure EnterPrison(Action: Integer);
-    procedure ContinueAfterPrison(Action: Integer);
-    procedure ShowBribeOffer(Action: Integer);
-    procedure PayBribe(Action: Integer);
-    procedure DeclineBribe(Action: Integer);
-    procedure RequestQuest(Action: Integer);
-    procedure MakeQuestEasier(Action: Integer);
-    procedure MakeQuestHarder(Action: Integer);
-    procedure AcceptQuest(Action: Integer);
-    procedure RejectQuest(Action: Integer);
-    procedure PermanentlyDeclineQuest(Action: Integer);
-    procedure DeclinePlanetBattle(Action: Integer);
-    procedure ConfirmDeclineAllPlanetBattles(Action: Integer);
-    procedure DeclineAllPlanetBattles(Action: Integer);
-    procedure CancelDeclineAllPlanetBattles(Action: Integer);
-    procedure ShowPlanetBattleSupport(Action: Integer);
-    procedure StartPlanetBattleWithoutSupport(Action: Integer);
-    procedure StartPlanetBattleWithReinforcements(Action: Integer);
-    procedure StartPlanetBattleWithBombardment(Action: Integer);
-    procedure DeclineBattleAndLeave(Action: Integer);
-    procedure ChoosePrisonInsteadOfBattle(Action: Integer);
-    procedure ShowMapOffer(Action: Integer);
-    procedure BuyMap(Action: Integer);
-    procedure DeclineMapOffer(Action: Integer);
-    procedure ShowPrisonBail(Action: Integer);
-    procedure PayPrisonBail(Action: Integer);
-    procedure CancelPrisonBail(Action: Integer);
-    procedure ReturnToPlanet(Action: Integer);
-    procedure ExitGovernment(Action: Integer);
-    procedure RunInjectedAnswer(Answer: Integer);
-    procedure RunInjectedAnswerKeepingScroll(Answer: Integer);
-    procedure RunScriptRestartAnswer(Answer: Integer);
+    procedure StartScriptMessage(Action: PtrInt);
+    procedure RunScriptAnswer(Answer: PtrInt);
+    procedure RunScriptAnswerKeepingScroll(Answer: PtrInt);
+    procedure RunScriptTakeoffAnswer(Answer: PtrInt);
+    procedure RunScriptPlanetAnswer(Answer: PtrInt);
+    procedure RunScriptGoodsAnswer(Answer: PtrInt);
+    procedure RunScriptShopAnswer(Answer: PtrInt);
+    procedure RunScriptHangarAnswer(Answer: PtrInt);
+    procedure RunScriptNewsExitAnswer(Answer: PtrInt);
+    procedure EnterPrison(Action: PtrInt);
+    procedure ContinueAfterPrison(Action: PtrInt);
+    procedure ShowBribeOffer(Action: PtrInt);
+    procedure PayBribe(Action: PtrInt);
+    procedure DeclineBribe(Action: PtrInt);
+    procedure RequestQuest(Action: PtrInt);
+    procedure MakeQuestEasier(Action: PtrInt);
+    procedure MakeQuestHarder(Action: PtrInt);
+    procedure AcceptQuest(Action: PtrInt);
+    procedure RejectQuest(Action: PtrInt);
+    procedure PermanentlyDeclineQuest(Action: PtrInt);
+    procedure DeclinePlanetBattle(Action: PtrInt);
+    procedure ConfirmDeclineAllPlanetBattles(Action: PtrInt);
+    procedure DeclineAllPlanetBattles(Action: PtrInt);
+    procedure CancelDeclineAllPlanetBattles(Action: PtrInt);
+    procedure ShowPlanetBattleSupport(Action: PtrInt);
+    procedure StartPlanetBattleWithoutSupport(Action: PtrInt);
+    procedure StartPlanetBattleWithReinforcements(Action: PtrInt);
+    procedure StartPlanetBattleWithBombardment(Action: PtrInt);
+    procedure DeclineBattleAndLeave(Action: PtrInt);
+    procedure ChoosePrisonInsteadOfBattle(Action: PtrInt);
+    procedure ShowMapOffer(Action: PtrInt);
+    procedure BuyMap(Action: PtrInt);
+    procedure DeclineMapOffer(Action: PtrInt);
+    procedure ShowPrisonBail(Action: PtrInt);
+    procedure PayPrisonBail(Action: PtrInt);
+    procedure CancelPrisonBail(Action: PtrInt);
+    procedure ReturnToPlanet(Action: PtrInt);
+    procedure ExitGovernment(Action: PtrInt);
+    procedure RunInjectedAnswer(Answer: PtrInt);
+    procedure RunInjectedAnswerKeepingScroll(Answer: PtrInt);
+    procedure RunScriptRestartAnswer(Answer: PtrInt);
     procedure AddScriptRestartChoice(Caption: WideString);
   end;
 
@@ -939,7 +939,7 @@ begin
   Panel.Invalidate;
 end;
 
-procedure TfGov.AddChoice(Text: WideString; Value: Integer; Callback: TDialogChoiceEventGI);
+procedure TfGov.AddChoice(Text: WideString; Value: PtrInt; Callback: TDialogChoiceEventGI);
 var
   Panel: TPanelScrollBarGI;
   Choice: TfTalkA;
@@ -971,7 +971,7 @@ begin
   if BlockMode > 0 then
     Choice.Callback := nil;
   Row := TPanelGI.Create(Panel);
-  Row.UserValue := Integer(Choice);
+  Row.UserValue := PtrInt(Choice);
   Row.SetPosition(Point(0, NextChoiceTop));
   Row.SetSize(Point(Panel.ClientSize.X, 20));
   Row.SetPositionModeW(True);
@@ -1079,7 +1079,7 @@ begin
   DialogRefreshTimer := ScheduleCallbackTimer(10, 10, AdvanceTextPresentation);
 end;
 
-procedure TfGov.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGov.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Choices, TextPanel: TPanelScrollBarGI;
 begin
@@ -1366,7 +1366,7 @@ begin
         AddBuiltinGovernmentChoices
       else
       begin
-        StartScriptMessage(Integer(Script));
+        StartScriptMessage(PtrInt(Script));
       end;
     end
     else
@@ -1414,11 +1414,11 @@ begin
           if Mode = 'block' then
             AddChoice(Text, 0, ScriptDialogBlockCallback)
           else if Mode = 'snap' then
-            AddChoice(Text, Integer(ScriptDialogInjections[I]), RunInjectedAnswerKeepingScroll)
+            AddChoice(Text, PtrInt(ScriptDialogInjections[I]), RunInjectedAnswerKeepingScroll)
           else
             AddChoice(
                 PScriptDialogInjection(ScriptDialogInjections[I]).Answer,
-                Integer(ScriptDialogInjections[I]),
+                PtrInt(ScriptDialogInjections[I]),
                 RunInjectedAnswer
             );
         end;
@@ -1427,11 +1427,11 @@ begin
     end;
   end
   else if not Script.SkipGreeting then
-    AddChoice(LocalizedColorText('FormGov.I_Continue'), Integer(Script), StartScriptMessage)
+    AddChoice(LocalizedColorText('FormGov.I_Continue'), PtrInt(Script), StartScriptMessage)
   else
   begin
     Script.SkipGreeting := False;
-    StartScriptMessage(Integer(Script));
+    StartScriptMessage(PtrInt(Script));
   end;
 end;
 
@@ -1476,7 +1476,7 @@ begin
   if ScriptDialogIndex < 0 then
     BuildGovernmentChoices(True)
   else
-    AddChoice(LocalizedColorText('FormGov.I_Continue'), Integer(Script), StartScriptMessage);
+    AddChoice(LocalizedColorText('FormGov.I_Continue'), PtrInt(Script), StartScriptMessage);
 end;
 
 procedure TfGov.AddScriptTakeoffChoice(Caption: WideString);
@@ -1521,14 +1521,14 @@ begin
   AddChoice(LocalizedColorText('FormGov.I_Exit'), 0, ReturnToPlanet);
 end;
 
-procedure TfGov.StartScriptMessage(Action: Integer);
+procedure TfGov.StartScriptMessage(Action: PtrInt);
 begin
   ClearDialogChoices;
   CurrentScript := TScript(Action);
   CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfGov.RunScriptAnswer(Answer: Integer);
+procedure TfGov.RunScriptAnswer(Answer: PtrInt);
 begin
   ClearDialogChoices;
   ScriptDialogIndex := -1;
@@ -1538,13 +1538,13 @@ begin
   CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfGov.RunScriptAnswerKeepingScroll(Answer: Integer);
+procedure TfGov.RunScriptAnswerKeepingScroll(Answer: PtrInt);
 begin
   RememberChoiceScroll;
   RunScriptAnswer(Answer);
 end;
 
-procedure TfGov.RunScriptTakeoffAnswer(Answer: Integer);
+procedure TfGov.RunScriptTakeoffAnswer(Answer: PtrInt);
 begin
   CaptureSavePreview;
   CaptureGalaxyPreview(Self);
@@ -1556,42 +1556,42 @@ begin
   RequestClose(1);
 end;
 
-procedure TfGov.RunScriptPlanetAnswer(Answer: Integer);
+procedure TfGov.RunScriptPlanetAnswer(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   RequestedScreenId := screenPlanet;
   RequestClose(1);
 end;
 
-procedure TfGov.RunScriptGoodsAnswer(Answer: Integer);
+procedure TfGov.RunScriptGoodsAnswer(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   RequestedScreenId := screenGoodsShop;
   RequestClose(1);
 end;
 
-procedure TfGov.RunScriptShopAnswer(Answer: Integer);
+procedure TfGov.RunScriptShopAnswer(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   RequestedScreenId := screenEquipmentShop;
   RequestClose(1);
 end;
 
-procedure TfGov.RunScriptHangarAnswer(Answer: Integer);
+procedure TfGov.RunScriptHangarAnswer(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   RequestedScreenId := screenHangar;
   RequestClose(1);
 end;
 
-procedure TfGov.RunScriptNewsExitAnswer(Answer: Integer);
+procedure TfGov.RunScriptNewsExitAnswer(Answer: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Answer);
   RequestedScreenId := screenInfo;
   RequestClose(1);
 end;
 
-procedure TfGov.EnterPrison(Action: Integer);
+procedure TfGov.EnterPrison(Action: PtrInt);
 var
   I: Integer;
   Ship: TShip;
@@ -1638,7 +1638,7 @@ begin
   RequestClose(1);
 end;
 
-procedure TfGov.ContinueAfterPrison(Action: Integer);
+procedure TfGov.ContinueAfterPrison(Action: PtrInt);
 begin
   if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
     DialogText := LocalizedColorText('FormGov.Prison.GovAfterPrisonNext')
@@ -1647,7 +1647,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.ShowBribeOffer(Action: Integer);
+procedure TfGov.ShowBribeOffer(Action: PtrInt);
 var
   Cost, RelationDeficit: Integer;
   Text: WideString;
@@ -1705,7 +1705,7 @@ begin
   end;
 end;
 
-procedure TfGov.PayBribe(Action: Integer);
+procedure TfGov.PayBribe(Action: PtrInt);
 var
   Cost, RelationDeficit: Integer;
 begin
@@ -1745,7 +1745,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.DeclineBribe(Action: Integer);
+procedure TfGov.DeclineBribe(Action: PtrInt);
 begin
   DialogText :=
       PickLocalizedTextVariant(
@@ -1755,7 +1755,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.RequestQuest(Action: Integer);
+procedure TfGov.RequestQuest(Action: PtrInt);
 var
   ResponseText: WideString;
   MapIndex, MapId: Integer;
@@ -1834,7 +1834,7 @@ begin
   end;
 end;
 
-procedure TfGov.MakeQuestEasier(Action: Integer);
+procedure TfGov.MakeQuestEasier(Action: PtrInt);
 begin
   Dec(QuestNegotiationLevel);
   case QuestOffer.QuestType of
@@ -1860,7 +1860,7 @@ begin
     BuildQuestOfferChoices;
 end;
 
-procedure TfGov.MakeQuestHarder(Action: Integer);
+procedure TfGov.MakeQuestHarder(Action: PtrInt);
 begin
   Inc(QuestNegotiationLevel);
   case QuestOffer.QuestType of
@@ -1886,7 +1886,7 @@ begin
     BuildQuestOfferChoices;
 end;
 
-procedure TfGov.AcceptQuest(Action: Integer);
+procedure TfGov.AcceptQuest(Action: PtrInt);
 var
   Quest: PQuest;
   Item: TUselessItem;
@@ -1919,14 +1919,14 @@ begin
   AddChoice(LocalizedColorText('FormGov.I_Exit'), 0, ReturnToPlanet);
 end;
 
-procedure TfGov.RejectQuest(Action: Integer);
+procedure TfGov.RejectQuest(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormGov.PlayerDontTakeQuest');
   ClearDialogChoices;
   AddChoice(LocalizedColorText('FormGov.I_Exit'), 0, ReturnToPlanet);
 end;
 
-procedure TfGov.PermanentlyDeclineQuest(Action: Integer);
+procedure TfGov.PermanentlyDeclineQuest(Action: PtrInt);
 var
   Quest: PPlayerOldQuest;
 begin
@@ -1942,7 +1942,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.DeclinePlanetBattle(Action: Integer);
+procedure TfGov.DeclinePlanetBattle(Action: PtrInt);
 begin
   PlanetBattleMapId := Action;
   DialogText := LocalizedColorText('FormGov.GovAfterBattlePlanetQuestClose');
@@ -1964,7 +1964,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.ConfirmDeclineAllPlanetBattles(Action: Integer);
+procedure TfGov.ConfirmDeclineAllPlanetBattles(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormGov.I_PlanetBattleRejectAllConfirm');
   ClearDialogChoices;
@@ -1980,20 +1980,20 @@ begin
   );
 end;
 
-procedure TfGov.DeclineAllPlanetBattles(Action: Integer);
+procedure TfGov.DeclineAllPlanetBattles(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormGov.I_PlanetBattleRejectAllConfirmAfterYes');
   GetPlayer.DeclinePlanetBattleOffers := True;
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.CancelDeclineAllPlanetBattles(Action: Integer);
+procedure TfGov.CancelDeclineAllPlanetBattles(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormGov.I_PlanetBattleRejectAllConfirmAfterNo');
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.ShowPlanetBattleSupport(Action: Integer);
+procedure TfGov.ShowPlanetBattleSupport(Action: PtrInt);
 var
   MapIndex: Integer;
 begin
@@ -2029,7 +2029,7 @@ begin
   );
 end;
 
-procedure TfGov.StartPlanetBattleWithoutSupport(Action: Integer);
+procedure TfGov.StartPlanetBattleWithoutSupport(Action: PtrInt);
 begin
   CaptureSavePreview;
   CaptureGalaxyPreview(Self);
@@ -2044,7 +2044,7 @@ begin
   LoadPanel.StartClosingShutters;
 end;
 
-procedure TfGov.StartPlanetBattleWithReinforcements(Action: Integer);
+procedure TfGov.StartPlanetBattleWithReinforcements(Action: PtrInt);
 begin
   CaptureSavePreview;
   CaptureGalaxyPreview(Self);
@@ -2059,7 +2059,7 @@ begin
   LoadPanel.StartClosingShutters;
 end;
 
-procedure TfGov.StartPlanetBattleWithBombardment(Action: Integer);
+procedure TfGov.StartPlanetBattleWithBombardment(Action: PtrInt);
 begin
   CaptureSavePreview;
   CaptureGalaxyPreview(Self);
@@ -2074,7 +2074,7 @@ begin
   LoadPanel.StartClosingShutters;
 end;
 
-procedure TfGov.DeclineBattleAndLeave(Action: Integer);
+procedure TfGov.DeclineBattleAndLeave(Action: PtrInt);
 begin
   DialogText :=
       PickLocalizedTextVariant(
@@ -2085,7 +2085,7 @@ begin
   AddChoice(LocalizedColorText('FormGov.I_Exit'), 0, ReturnToPlanet);
 end;
 
-procedure TfGov.ChoosePrisonInsteadOfBattle(Action: Integer);
+procedure TfGov.ChoosePrisonInsteadOfBattle(Action: PtrInt);
 begin
   GetPlayer.CurrentPlanet.SetRelationLevelToRanger(GetPlayer, rlHostile);
   if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
@@ -2124,7 +2124,7 @@ begin
   end;
 end;
 
-procedure TfGov.ShowMapOffer(Action: Integer);
+procedure TfGov.ShowMapOffer(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -2154,7 +2154,7 @@ begin
   AddChoice(LocalizedColorText('FormGov.BuyMap.PlayerNO'), 0, DeclineMapOffer);
 end;
 
-procedure TfGov.BuyMap(Action: Integer);
+procedure TfGov.BuyMap(Action: PtrInt);
 var
   Cost: Integer;
 begin
@@ -2178,7 +2178,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.DeclineMapOffer(Action: Integer);
+procedure TfGov.DeclineMapOffer(Action: PtrInt);
 begin
   DialogText :=
       PickLocalizedTextVariant(
@@ -2188,7 +2188,7 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.ShowPrisonBail(Action: Integer);
+procedure TfGov.ShowPrisonBail(Action: PtrInt);
 var
   Text, RowText: WideString;
   Ship: TShip;
@@ -2239,7 +2239,7 @@ begin
               WideString(IntToStr(Cost))
           );
       if GetPlayer.Money >= Cost then
-        AddChoice(Text, Integer(Ship), PayPrisonBail)
+        AddChoice(Text, PtrInt(Ship), PayPrisonBail)
       else
         AddChoice(Text, 0, ScriptDialogBlockCallback);
     end;
@@ -2248,7 +2248,7 @@ begin
   Ships.Free;
 end;
 
-procedure TfGov.PayPrisonBail(Action: Integer);
+procedure TfGov.PayPrisonBail(Action: PtrInt);
 var
   Ship: TShip;
 begin
@@ -2267,25 +2267,25 @@ begin
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.CancelPrisonBail(Action: Integer);
+procedure TfGov.CancelPrisonBail(Action: PtrInt);
 begin
   DialogText := LocalizedColorText('FormGov.GuarantPrison.PlanetAfterNo');
   BuildGovernmentChoices(True);
 end;
 
-procedure TfGov.ReturnToPlanet(Action: Integer);
+procedure TfGov.ReturnToPlanet(Action: PtrInt);
 begin
   RequestedScreenId := screenPlanet;
   RequestClose(1);
 end;
 
-procedure TfGov.ExitGovernment(Action: Integer);
+procedure TfGov.ExitGovernment(Action: PtrInt);
 begin
   RequestedScreenId := screenPlanet;
   RequestClose(1);
 end;
 
-procedure TfGov.RunInjectedAnswer(Answer: Integer);
+procedure TfGov.RunInjectedAnswer(Answer: PtrInt);
 var
   Injection: PScriptDialogInjection;
   Text: WideString;
@@ -2316,13 +2316,13 @@ begin
     CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfGov.RunInjectedAnswerKeepingScroll(Answer: Integer);
+procedure TfGov.RunInjectedAnswerKeepingScroll(Answer: PtrInt);
 begin
   RememberChoiceScroll;
   RunInjectedAnswer(Answer);
 end;
 
-procedure TfGov.RunScriptRestartAnswer(Answer: Integer);
+procedure TfGov.RunScriptRestartAnswer(Answer: PtrInt);
 begin
   DialogText := '';
   CurrentScript.ExecuteDialogAnswer(Answer);

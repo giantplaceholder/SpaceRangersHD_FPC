@@ -83,12 +83,12 @@ type
     procedure ItemMouseLeave(Sender: TObjectGI);
     procedure ScrollLeft(Sender: TObjectGI);
     procedure ScrollRight(Sender: TObjectGI);
-    procedure ScrollTick(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollTick(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure PanelScrollChanged(Sender: TObjectGI);
     procedure ItemMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
-    procedure ChooseAnimatedPreview(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ChooseAnimatedPreview(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure PreviewCycleComplete(Sender: TObjectGI);
-    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RefreshItemInfo(Item: TItem);
     procedure BuildHullSlotOverlays(
         Parent: TObjectGI;
@@ -753,7 +753,7 @@ begin
         SetPosition(Classes.Point(Round(X * CellWidth), Round(Y * CellHeight)));
         SetSize(Classes.Point(Trunc(CellWidth), Trunc(CellHeight)));
         SetDepth(3);
-        UserValue := Integer(Slot);
+        UserValue := PtrInt(Slot);
         if Slot.Item = nil then
           SetActive(False)
         else
@@ -1210,7 +1210,7 @@ begin
   UpdateScrollButtons;
 end;
 
-procedure TfEquipmentShop.ScrollTick(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfEquipmentShop.ScrollTick(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Panel: TPanelGI;
 begin
@@ -1242,7 +1242,7 @@ var
   Y, X, Cost: Integer;
   Event: TGalaxyEvent;
   PurchasedItem: TItem;
-  Destination: Integer;
+  Destination: PtrInt;
 begin
   Slot := TShopSlot(Sender.UserValue);
   if (Slot <> nil) and (Slot.Item <> nil) then
@@ -1410,7 +1410,7 @@ begin
             ReleaseSpaceObject(GetPlayer.Graphic);
             GetPlayer.RefreshGraphic;
           end;
-          Destination := Integer(GetPlayer);
+          Destination := PtrInt(GetPlayer);
         end
         else
         begin
@@ -1426,9 +1426,9 @@ begin
               mbgOK
           );
           if GetPlayer.CurrentPlanet <> nil then
-            Destination := Integer(GetPlayer.CurrentPlanet)
+            Destination := PtrInt(GetPlayer.CurrentPlanet)
           else
-            Destination := Integer(GetPlayer.DockedTo);
+            Destination := PtrInt(GetPlayer.DockedTo);
         end;
       end
       else
@@ -1440,7 +1440,7 @@ begin
         else
           GetPlayer.Inventory.Add(Slot.Item);
         Slot.Item := nil;
-        Destination := Integer(GetPlayer);
+        Destination := PtrInt(GetPlayer);
       end;
       GetPlayer.ScriptItemsAct(satOnPlayerBuyEq, PurchasedItem, nil, Destination);
       GetPlayer.RefreshDerivedStats(True);
@@ -1515,7 +1515,7 @@ begin
   end;
 end;
 
-procedure TfEquipmentShop.ChooseAnimatedPreview(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfEquipmentShop.ChooseAnimatedPreview(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   I: Integer;
   Slot: TShopSlot;
@@ -1552,7 +1552,7 @@ begin
   (Sender as TgaiGI).StopAutoPlayback;
 end;
 
-procedure TfEquipmentShop.HideItemInfo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfEquipmentShop.HideItemInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if ItemInfoTimer <> nil then
   begin

@@ -33,9 +33,9 @@ type
     procedure InitializeLayout; override;
     constructor Create;
     destructor Destroy; override;
-    procedure AdvanceTravel(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure AdvanceLoading(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceTravel(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure AdvanceLoading(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure AdvanceMovie(Timer: PCallbackTimerGI; UserData: PtrInt);
     function StopMovie: Boolean;
   end;
 
@@ -207,7 +207,7 @@ begin
   end;
 end;
 
-procedure TfJump.AdvanceTravel(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfJump.AdvanceTravel(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   PreviousStar: TStar;
 begin
@@ -284,7 +284,7 @@ begin
   end;
 end;
 
-procedure TfJump.AdvanceLoading(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfJump.AdvanceLoading(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Loads: TList;
 begin
@@ -350,7 +350,7 @@ begin
   end;
 end;
 
-procedure TfJump.AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfJump.AdvanceMovie(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if (GetByName('Film') as TxvidGI).SetPlaybackTime(GameTickCount - MovieStartTick) then
     StopMovie;

@@ -47,7 +47,7 @@ type
     procedure SetPositionInternal(Value: Integer);
     procedure SetPosition(Value: Integer);
     procedure UpdateLayout;
-    procedure AutoRepeat(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AutoRepeat(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure DecreasePressed(Sender: TObjectGI);
     procedure IncreasePressed(Sender: TObjectGI);
     procedure LoadCountBarProperties(Block: TBlockParEC);
@@ -224,7 +224,7 @@ begin
   end;
 end;
 
-procedure TCountBarGI.AutoRepeat(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TCountBarGI.AutoRepeat(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if DecreaseButton.Down then
     SetPosition(Position - Step)

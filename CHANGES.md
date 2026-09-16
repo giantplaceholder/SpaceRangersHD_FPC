@@ -56,3 +56,13 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Share SDL's logical window resolution between presentation and mouse events.
   Query the desktop cursor for window-leave handling where supported, and refresh
   the game cursor on re-entry instead of retaining a stale position at the edge.
+- Preserve native object addresses through script integer cells, references,
+  decimal strings, cross-script arguments and array lookup. Keep signed `int`
+  arithmetic and serialized script scalar fields at 32 bits.
+- Widen dialog, timer and UI payloads, film object handles and GAI frame-cache
+  entries to the host pointer size. Size in-memory film command overlays for
+  their pointer fields while retaining the original serialized film layout.
+- Address ship equipment and score counters through their fields instead of
+  fixed Win32 object offsets; allocate storage records by their actual size.
+  Preserve the full encoded player pointer and pointer fields excluded from
+  in-memory state protection.

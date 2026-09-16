@@ -31,8 +31,8 @@ type
     Reserved04: Integer;
     Callback: TDialogChoiceEventGI;
     FallbackCallback: TDialogTextChoiceEvent;
-    Value: Integer;
-    ExtraValue: Integer;
+    Value: PtrInt;
+    ExtraValue: PtrInt;
     FallbackText: WideString;
     constructor Create;
     destructor Destroy; override;
@@ -79,9 +79,9 @@ type
     procedure ClearChoices(AllowClose: Boolean);
     procedure AddChoice(
         Text: WideString;
-        Value: Integer;
+        Value: PtrInt;
         Callback: TDialogChoiceEventGI;
-        ExtraValue: Integer
+        ExtraValue: PtrInt
     );
     function CreateDialogObject(LabelControl: TLabelGI; Item: PFontObjectEC): TObjectGI;
     procedure CenterEmbeddedObject(Sender: TObjectGI);
@@ -94,111 +94,111 @@ type
     procedure ChoiceMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure ChoiceMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure RestartTextPresentation;
-    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure AddDialogEffect(Position: TPointF; ImagePath: WideString; DelayMs: Integer);
     procedure ClearDialogEffects;
     procedure DialogEffectComplete(Sender: TObjectGI);
-    procedure ApplyMapSelection(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ApplyMapSelection(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure AddMessageClicked(Sender: TObjectGI);
     procedure MinimapScrolled;
-    procedure FlushMinimapRefresh(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure AdvanceSlide(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure FlushMinimapRefresh(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure AdvanceSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure UpdateSlidePosition;
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure BuildStandardChoices(KeepGreeting: Boolean);
     procedure BuildBuiltinChoices;
     procedure AddScriptExitChoice(Caption: WideString);
     procedure CodeMsgOut(KeepGreeting: Boolean);
-    procedure RunScriptAnswer(Answer: Integer);
-    procedure RunScriptAnswerKeepingScroll(Answer: Integer);
-    procedure FastExit(Answer: Integer);
-    procedure RunScriptExitAnswer(Action: Integer);
-    procedure ShowGreeting(Action: Integer);
-    procedure AcceptScriptedConversation(Action: Integer);
-    procedure ReturnToMap(Action: Integer);
-    procedure ShowTrade(Action: Integer);
-    procedure OpenTrade(Action: Integer);
-    procedure CancelTrade(Action: Integer);
-    procedure ShowMoneyDemand(Action: Integer);
-    procedure DemandMoney(Action: Integer);
-    procedure HalveMoneyDemand(Action: Integer);
-    procedure DoubleMoneyDemand(Action: Integer);
-    procedure DemandCargo(Action: Integer);
-    procedure ShowTruceOffer(Action: Integer);
-    procedure AcceptTruceOffer(Action: Integer);
-    procedure HalveTruceOffer(Action: Integer);
-    procedure DoubleTruceOffer(Action: Integer);
-    procedure ShowAttackTargets(Action: Integer);
-    procedure RequestAttackTarget(Action: Integer);
-    procedure AcceptJointAttack(Action: Integer);
-    procedure RequestProtection(Action: Integer);
-    procedure RequestPreserveItems(Action: Integer);
-    procedure ShowPartnerOffer(Action: Integer);
-    procedure AcceptPartnerOffer(Action: Integer);
-    procedure HalvePartnerOffer(Action: Integer);
-    procedure DoublePartnerOffer(Action: Integer);
-    procedure OrderPartnerFollow(Action: Integer);
-    procedure OrderPartnerLand(Action: Integer);
-    procedure OrderPartnerJump(Action: Integer);
-    procedure OrderPartnerDropCargo(Action: Integer);
-    procedure ShowPartnerFinances(Action: Integer);
-    procedure ShowPartnerGift(Action: Integer);
-    procedure GivePartnerGift(Action: Integer);
-    procedure HalvePartnerGift(Action: Integer);
-    procedure DoublePartnerGift(Action: Integer);
-    procedure ApplyOrderToAllPartners(Action: Integer);
-    procedure ExitPartnerConversation(Action: Integer);
-    procedure OrderTranclucatorFollow(Action: Integer);
-    procedure OrderTranclucatorReturn(Action: Integer);
-    procedure OrderTranclucatorSeekItems(Action: Integer);
-    procedure CancelTranclucatorSeekItems(Action: Integer);
-    procedure ShowTranclucatorOptions(Action: Integer);
-    procedure OrderTranclucatorDropCargo(Action: Integer);
-    procedure OrderTranclucatorLand(Action: Integer);
-    procedure OrderTranclucatorStoreCargo(Action: Integer);
+    procedure RunScriptAnswer(Answer: PtrInt);
+    procedure RunScriptAnswerKeepingScroll(Answer: PtrInt);
+    procedure FastExit(Answer: PtrInt);
+    procedure RunScriptExitAnswer(Action: PtrInt);
+    procedure ShowGreeting(Action: PtrInt);
+    procedure AcceptScriptedConversation(Action: PtrInt);
+    procedure ReturnToMap(Action: PtrInt);
+    procedure ShowTrade(Action: PtrInt);
+    procedure OpenTrade(Action: PtrInt);
+    procedure CancelTrade(Action: PtrInt);
+    procedure ShowMoneyDemand(Action: PtrInt);
+    procedure DemandMoney(Action: PtrInt);
+    procedure HalveMoneyDemand(Action: PtrInt);
+    procedure DoubleMoneyDemand(Action: PtrInt);
+    procedure DemandCargo(Action: PtrInt);
+    procedure ShowTruceOffer(Action: PtrInt);
+    procedure AcceptTruceOffer(Action: PtrInt);
+    procedure HalveTruceOffer(Action: PtrInt);
+    procedure DoubleTruceOffer(Action: PtrInt);
+    procedure ShowAttackTargets(Action: PtrInt);
+    procedure RequestAttackTarget(Action: PtrInt);
+    procedure AcceptJointAttack(Action: PtrInt);
+    procedure RequestProtection(Action: PtrInt);
+    procedure RequestPreserveItems(Action: PtrInt);
+    procedure ShowPartnerOffer(Action: PtrInt);
+    procedure AcceptPartnerOffer(Action: PtrInt);
+    procedure HalvePartnerOffer(Action: PtrInt);
+    procedure DoublePartnerOffer(Action: PtrInt);
+    procedure OrderPartnerFollow(Action: PtrInt);
+    procedure OrderPartnerLand(Action: PtrInt);
+    procedure OrderPartnerJump(Action: PtrInt);
+    procedure OrderPartnerDropCargo(Action: PtrInt);
+    procedure ShowPartnerFinances(Action: PtrInt);
+    procedure ShowPartnerGift(Action: PtrInt);
+    procedure GivePartnerGift(Action: PtrInt);
+    procedure HalvePartnerGift(Action: PtrInt);
+    procedure DoublePartnerGift(Action: PtrInt);
+    procedure ApplyOrderToAllPartners(Action: PtrInt);
+    procedure ExitPartnerConversation(Action: PtrInt);
+    procedure OrderTranclucatorFollow(Action: PtrInt);
+    procedure OrderTranclucatorReturn(Action: PtrInt);
+    procedure OrderTranclucatorSeekItems(Action: PtrInt);
+    procedure CancelTranclucatorSeekItems(Action: PtrInt);
+    procedure ShowTranclucatorOptions(Action: PtrInt);
+    procedure OrderTranclucatorDropCargo(Action: PtrInt);
+    procedure OrderTranclucatorLand(Action: PtrInt);
+    procedure OrderTranclucatorStoreCargo(Action: PtrInt);
     procedure AddTranclucatorGroupChoice;
-    procedure ApplyOrderToAllTranclucators(Action: Integer);
-    procedure ShowPiratePartnerOffer(Action: Integer);
-    procedure AcceptPiratePartnerOffer(Action: Integer);
-    procedure HalvePiratePartnerOffer(Action: Integer);
-    procedure DoublePiratePartnerOffer(Action: Integer);
-    procedure ShowPirateAttackTargets(Action: Integer);
-    procedure OrderPiratePartnerAttack(Action: Integer);
-    procedure OrderPiratePartnerFollow(Action: Integer);
-    procedure OrderPiratePartnerLand(Action: Integer);
-    procedure OrderPiratePartnerJump(Action: Integer);
-    procedure ShowPiratePartnerFinances(Action: Integer);
-    procedure ShowPiratePartnerGift(Action: Integer);
-    procedure GivePiratePartnerGift(Action: Integer);
-    procedure HalvePiratePartnerGift(Action: Integer);
-    procedure DoublePiratePartnerGift(Action: Integer);
-    procedure ShowPartnerDismissal(Action: Integer);
-    procedure ShipDismissAct(Action: Integer);
-    procedure RunDominatorProgram(Action: Integer);
-    procedure ShowDominatorGreeting(Action: Integer);
-    procedure ShowDominatorPeace(Action: Integer);
-    procedure ShowDominatorGoods(Action: Integer);
-    procedure ShowDominatorCommand(Action: Integer);
+    procedure ApplyOrderToAllTranclucators(Action: PtrInt);
+    procedure ShowPiratePartnerOffer(Action: PtrInt);
+    procedure AcceptPiratePartnerOffer(Action: PtrInt);
+    procedure HalvePiratePartnerOffer(Action: PtrInt);
+    procedure DoublePiratePartnerOffer(Action: PtrInt);
+    procedure ShowPirateAttackTargets(Action: PtrInt);
+    procedure OrderPiratePartnerAttack(Action: PtrInt);
+    procedure OrderPiratePartnerFollow(Action: PtrInt);
+    procedure OrderPiratePartnerLand(Action: PtrInt);
+    procedure OrderPiratePartnerJump(Action: PtrInt);
+    procedure ShowPiratePartnerFinances(Action: PtrInt);
+    procedure ShowPiratePartnerGift(Action: PtrInt);
+    procedure GivePiratePartnerGift(Action: PtrInt);
+    procedure HalvePiratePartnerGift(Action: PtrInt);
+    procedure DoublePiratePartnerGift(Action: PtrInt);
+    procedure ShowPartnerDismissal(Action: PtrInt);
+    procedure ShipDismissAct(Action: PtrInt);
+    procedure RunDominatorProgram(Action: PtrInt);
+    procedure ShowDominatorGreeting(Action: PtrInt);
+    procedure ShowDominatorPeace(Action: PtrInt);
+    procedure ShowDominatorGoods(Action: PtrInt);
+    procedure ShowDominatorCommand(Action: PtrInt);
     function AddImmediateAttackChoices: Boolean;
     function GetShipGreeting: WideString;
-    procedure RunInjectedAnswer(Action: Integer);
-    procedure RunInjectedAnswerKeepingScroll(Action: Integer);
+    procedure RunInjectedAnswer(Action: PtrInt);
+    procedure RunInjectedAnswerKeepingScroll(Action: PtrInt);
     procedure StartScriptMessage(Script: TScript);
     procedure BuildMilitarySupportChoices;
-    procedure ShowMilitarySupport(Action: Integer);
-    procedure CancelMilitarySupport(Action: Integer);
-    procedure DeclineMilitarySupport(Action: Integer);
-    procedure ShowMilitaryHullRepair(Action: Integer);
-    procedure AcceptMilitaryHullRepair(Action: Integer);
-    procedure ShowMilitaryEquipmentRepair(Action: Integer);
-    procedure AcceptMilitaryEquipmentRepair(Action: Integer);
-    procedure ShowMilitaryRemains(Action: Integer);
-    procedure SellAllMilitaryRemains(Action: Integer);
-    procedure SellIndividualMilitaryRemains(Action: Integer);
-    procedure ShowMilitaryBuff(Action: Integer);
-    procedure AcceptMilitaryBuff(Action: Integer);
-    procedure DiscussOldHull(Action: Integer);
-    procedure RunScriptRestartAnswer(Action: Integer);
+    procedure ShowMilitarySupport(Action: PtrInt);
+    procedure CancelMilitarySupport(Action: PtrInt);
+    procedure DeclineMilitarySupport(Action: PtrInt);
+    procedure ShowMilitaryHullRepair(Action: PtrInt);
+    procedure AcceptMilitaryHullRepair(Action: PtrInt);
+    procedure ShowMilitaryEquipmentRepair(Action: PtrInt);
+    procedure AcceptMilitaryEquipmentRepair(Action: PtrInt);
+    procedure ShowMilitaryRemains(Action: PtrInt);
+    procedure SellAllMilitaryRemains(Action: PtrInt);
+    procedure SellIndividualMilitaryRemains(Action: PtrInt);
+    procedure ShowMilitaryBuff(Action: PtrInt);
+    procedure AcceptMilitaryBuff(Action: PtrInt);
+    procedure DiscussOldHull(Action: PtrInt);
+    procedure RunScriptRestartAnswer(Action: PtrInt);
     procedure AddScriptRestartChoice(Caption: WideString);
   end;
 
@@ -656,9 +656,9 @@ end;
 
 procedure TfTalk.AddChoice(
     Text: WideString;
-    Value: Integer;
+    Value: PtrInt;
     Callback: TDialogChoiceEventGI;
-    ExtraValue: Integer
+    ExtraValue: PtrInt
 );
 var
   Panel: TPanelScrollBarGI;
@@ -697,7 +697,7 @@ begin
   if BlockMode > 0 then
     Choice.Callback := nil;
   Row := TPanelGI.Create(Panel);
-  Row.UserValue := Integer(Choice);
+  Row.UserValue := PtrInt(Choice);
   Row.SetPosition(Point(0, ChoiceHeight));
   Row.SetSize(Point(Panel.ClientSize.X, 20));
   Row.SetPositionModeW(True);
@@ -932,11 +932,10 @@ begin
   begin
     ChoiceMousePressed := False;
     Choice := TfTalkA(Sender.UserValue);
-    // DCC32 evaluates the callback receiver first with this identity expression.
     if Assigned(Choice.Callback) then
-      TfTalkA(Cardinal(Choice) * 1).Callback(Choice.Value)
+      Choice.Callback(Choice.Value)
     else if Assigned(Choice.FallbackCallback) then
-      TfTalkA(Cardinal(Choice) * 1).FallbackCallback(Choice.FallbackText)
+      Choice.FallbackCallback(Choice.FallbackText)
     else
       Exit;
     RestartTextPresentation;
@@ -956,7 +955,7 @@ begin
   TextPresentationTimer := ScheduleCallbackTimer(10, 10, AdvanceTextPresentation);
 end;
 
-procedure TfTalk.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfTalk.AdvanceTextPresentation(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Choices, TextPanel: TPanelScrollBarGI;
 begin
@@ -1054,7 +1053,7 @@ begin
     RequestClose(2);
 end;
 
-procedure TfTalk.ApplyMapSelection(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfTalk.ApplyMapSelection(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Previous: TObject;
 begin
@@ -1143,7 +1142,7 @@ begin
   end;
 end;
 
-procedure TfTalk.FlushMinimapRefresh(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfTalk.FlushMinimapRefresh(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if (TextPresentationTimer = nil) and (SlideTimer = nil) then
   begin
@@ -1160,7 +1159,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AdvanceSlide(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfTalk.AdvanceSlide(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   SlideProgress := SlideProgress + 0.05;
   if SlideProgress >= 1 then
@@ -1411,11 +1410,11 @@ begin
         if Mode = 'block' then
           AddChoice(Text, 0, ScriptDialogBlockCallback, 0)
         else if Mode = 'snap' then
-          AddChoice(Text, Integer(ScriptDialogInjections[I]), RunInjectedAnswerKeepingScroll, 0)
+          AddChoice(Text, PtrInt(ScriptDialogInjections[I]), RunInjectedAnswerKeepingScroll, 0)
         else
           AddChoice(
               PScriptDialogInjection(ScriptDialogInjections[I]).Answer,
-              Integer(ScriptDialogInjections[I]),
+              PtrInt(ScriptDialogInjections[I]),
               RunInjectedAnswer,
               0
           );
@@ -2172,7 +2171,7 @@ begin
   end;
 end;
 
-procedure TfTalk.RunScriptAnswer(Answer: Integer);
+procedure TfTalk.RunScriptAnswer(Answer: PtrInt);
 begin
   ClearChoices(False);
   ScriptDialogIndex := -1;
@@ -2182,13 +2181,13 @@ begin
   CurrentScript.CallDialogMessage(ScriptDialogIndex);
 end;
 
-procedure TfTalk.RunScriptAnswerKeepingScroll(Answer: Integer);
+procedure TfTalk.RunScriptAnswerKeepingScroll(Answer: PtrInt);
 begin
   RememberChoiceScroll;
   RunScriptAnswer(Answer);
 end;
 
-procedure TfTalk.FastExit(Answer: Integer);
+procedure TfTalk.FastExit(Answer: PtrInt);
 begin
   if (TextPresentationTimer = nil) and (SlideTimer = nil) then
   begin
@@ -2200,7 +2199,7 @@ begin
   end;
 end;
 
-procedure TfTalk.RunScriptExitAnswer(Action: Integer);
+procedure TfTalk.RunScriptExitAnswer(Action: PtrInt);
 begin
   CurrentScript.ExecuteDialogAnswer(Action);
   RequestedScreenId := TalkReturnScreenId;
@@ -2210,13 +2209,13 @@ begin
   RequestClose(1);
 end;
 
-procedure TfTalk.ShowGreeting(Action: Integer);
+procedure TfTalk.ShowGreeting(Action: PtrInt);
 begin
   DialogText := GetShipGreeting;
   BuildStandardChoices(False);
 end;
 
-procedure TfTalk.AcceptScriptedConversation(Action: Integer);
+procedure TfTalk.AcceptScriptedConversation(Action: PtrInt);
 begin
   TalkResponse := 1;
   RequestedScreenId := TalkReturnScreenId;
@@ -2226,7 +2225,7 @@ begin
   RequestClose(1);
 end;
 
-procedure TfTalk.ReturnToMap(Action: Integer);
+procedure TfTalk.ReturnToMap(Action: PtrInt);
 begin
   Flag128 := 1;
   RequestedScreenId := TalkReturnScreenId;
@@ -2236,7 +2235,7 @@ begin
   BreakUiMessage;
 end;
 
-procedure TfTalk.ShowTrade(Action: Integer);
+procedure TfTalk.ShowTrade(Action: PtrInt);
 var
   Capacity, Money: Integer;
 begin
@@ -2288,7 +2287,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.OpenTrade(Action: Integer);
+procedure TfTalk.OpenTrade(Action: PtrInt);
 begin
   Flag128 := 2;
   RequestedScreenId := TalkReturnScreenId;
@@ -2298,13 +2297,13 @@ begin
   BreakUiMessage;
 end;
 
-procedure TfTalk.CancelTrade(Action: Integer);
+procedure TfTalk.CancelTrade(Action: PtrInt);
 begin
   DialogText := TalkShip.LookupTalkText('Talk.Trade.AfterBreak');
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowMoneyDemand(Action: Integer);
+procedure TfTalk.ShowMoneyDemand(Action: PtrInt);
 var
   I: Integer;
   Partner: TShip;
@@ -2373,7 +2372,7 @@ begin
   end;
 end;
 
-procedure TfTalk.DemandMoney(Action: Integer);
+procedure TfTalk.DemandMoney(Action: PtrInt);
 begin
   if TalkShip.BuildMoneyExtortionResponse(GetPlayer, DialogText, ExtortionDemandAmount) then
   begin
@@ -2383,26 +2382,26 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalveMoneyDemand(Action: Integer);
+procedure TfTalk.HalveMoneyDemand(Action: PtrInt);
 begin
   ExtortionDemandAmount := ExtortionDemandAmount div 2;
   ShowMoneyDemand(0);
 end;
 
-procedure TfTalk.DoubleMoneyDemand(Action: Integer);
+procedure TfTalk.DoubleMoneyDemand(Action: PtrInt);
 begin
   ExtortionDemandAmount := ExtortionDemandAmount * 2;
   ShowMoneyDemand(0);
 end;
 
-procedure TfTalk.DemandCargo(Action: Integer);
+procedure TfTalk.DemandCargo(Action: PtrInt);
 begin
   if TalkShip.BuildCargoExtortionResponse(GetPlayer, DialogText) then
     TryAddAchievementProgress('ROBBER', 1);
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowTruceOffer(Action: Integer);
+procedure TfTalk.ShowTruceOffer(Action: PtrInt);
 var
   Response: WideString;
 begin
@@ -2457,7 +2456,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptTruceOffer(Action: Integer);
+procedure TfTalk.AcceptTruceOffer(Action: PtrInt);
 begin
   if TalkShip.BuildTrucePaymentResponse(GetPlayer, DialogText, TruceOfferAmount) then
   begin
@@ -2469,19 +2468,19 @@ begin
     BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalveTruceOffer(Action: Integer);
+procedure TfTalk.HalveTruceOffer(Action: PtrInt);
 begin
   TruceOfferAmount := Max(100, TruceOfferAmount div 2);
   ShowTruceOffer(0);
 end;
 
-procedure TfTalk.DoubleTruceOffer(Action: Integer);
+procedure TfTalk.DoubleTruceOffer(Action: PtrInt);
 begin
   TruceOfferAmount := Min(GetPlayer.Money, TruceOfferAmount * 2);
   ShowTruceOffer(0);
 end;
 
-procedure TfTalk.ShowAttackTargets(Action: Integer);
+procedure TfTalk.ShowAttackTargets(Action: PtrInt);
 var
   RadarRangeSquared: Integer;
   Ship: TShip;
@@ -2507,9 +2506,9 @@ var
           and not (Ship.TargetingRestriction in [1, 2]) then
         AddChoice(
             '- ' + Ship.GetFullName(' ') + GetLocalObjectLink(Ship, False),
-            Integer(Ship),
+            PtrInt(Ship),
             RequestAttackTarget,
-            Integer(Ship)
+            PtrInt(Ship)
         );
     end;
   end;
@@ -2552,7 +2551,7 @@ begin
           );
       AddChoice(
           '- ' + GetPlayer.LookupTalkText('Talk.Attack.PlayerOk'),
-          Integer(Ship),
+          PtrInt(Ship),
           AcceptJointAttack,
           0
       );
@@ -2583,7 +2582,7 @@ begin
   end;
 end;
 
-procedure TfTalk.RequestAttackTarget(Action: Integer);
+procedure TfTalk.RequestAttackTarget(Action: PtrInt);
 var
   Target: TShip;
   Event: TGalaxyEvent;
@@ -2641,7 +2640,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptJointAttack(Action: Integer);
+procedure TfTalk.AcceptJointAttack(Action: PtrInt);
 var
   Target: TShip;
 begin
@@ -2673,7 +2672,7 @@ begin
   FastExit(0);
 end;
 
-procedure TfTalk.RequestProtection(Action: Integer);
+procedure TfTalk.RequestProtection(Action: PtrInt);
 var
   Target: TShip;
   I, Reward: Integer;
@@ -2810,7 +2809,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.RequestPreserveItems(Action: Integer);
+procedure TfTalk.RequestPreserveItems(Action: PtrInt);
 var
   I: Integer;
 begin
@@ -2832,7 +2831,7 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowPartnerOffer(Action: Integer);
+procedure TfTalk.ShowPartnerOffer(Action: PtrInt);
 var
   Response: WideString;
 begin
@@ -2928,20 +2927,20 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptPartnerOffer(Action: Integer);
+procedure TfTalk.AcceptPartnerOffer(Action: PtrInt);
 begin
   if TalkShip.AcceptPartnershipOffer(GetPlayer, DialogText, PartnerOfferAmount) then
     SoundManager.PlaySound('Sound.Sell');
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalvePartnerOffer(Action: Integer);
+procedure TfTalk.HalvePartnerOffer(Action: PtrInt);
 begin
   PartnerOfferAmount := PartnerOfferAmount div 2;
   ShowPartnerOffer(0);
 end;
 
-procedure TfTalk.DoublePartnerOffer(Action: Integer);
+procedure TfTalk.DoublePartnerOffer(Action: PtrInt);
 begin
   if GetPlayer.Money < PartnerOfferAmount * 2 then
     PartnerOfferAmount := GetPlayer.Money
@@ -2950,7 +2949,7 @@ begin
   ShowPartnerOffer(0);
 end;
 
-procedure TfTalk.OrderPartnerFollow(Action: Integer);
+procedure TfTalk.OrderPartnerFollow(Action: PtrInt);
 begin
   TalkShip.OrderFollowShip(GetPlayer, 0, True);
   DialogText := TalkShip.LookupTalkText('Talk.Partner.ComputerAgreeFlyToMe');
@@ -2979,7 +2978,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPartnerLand(Action: Integer);
+procedure TfTalk.OrderPartnerLand(Action: PtrInt);
 var
   Name: WideString;
 begin
@@ -3020,7 +3019,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPartnerJump(Action: Integer);
+procedure TfTalk.OrderPartnerJump(Action: PtrInt);
 begin
   TalkShip.OrderJump(GetPlayer.OrderTarget as TStar, True);
   DialogText :=
@@ -3055,7 +3054,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPartnerDropCargo(Action: Integer);
+procedure TfTalk.OrderPartnerDropCargo(Action: PtrInt);
 begin
   TalkShip.ChangeRelationToRanger(
       GetPlayer,
@@ -3080,7 +3079,7 @@ begin
   end;
 end;
 
-procedure TfTalk.ShowPartnerFinances(Action: Integer);
+procedure TfTalk.ShowPartnerFinances(Action: PtrInt);
 begin
   DialogText := TalkShip.LookupTalkText('Talk.Partner.FinancesReport');
   ReplaceTextToken(
@@ -3100,7 +3099,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Partner.FinancesConfirmed'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.ShowPartnerGift(Action: Integer);
+procedure TfTalk.ShowPartnerGift(Action: PtrInt);
 var
   Text: WideString;
 begin
@@ -3116,7 +3115,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Cancel'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.GivePartnerGift(Action: Integer);
+procedure TfTalk.GivePartnerGift(Action: PtrInt);
 var
   Change: Integer;
 begin
@@ -3141,13 +3140,13 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalvePartnerGift(Action: Integer);
+procedure TfTalk.HalvePartnerGift(Action: PtrInt);
 begin
   PartnerGiftAmount := PartnerGiftAmount div 2;
   ShowPartnerGift(0);
 end;
 
-procedure TfTalk.DoublePartnerGift(Action: Integer);
+procedure TfTalk.DoublePartnerGift(Action: PtrInt);
 begin
   PartnerGiftAmount := PartnerGiftAmount * 2;
   if GetPlayer.Money < PartnerGiftAmount then
@@ -3155,7 +3154,7 @@ begin
   ShowPartnerGift(0);
 end;
 
-procedure TfTalk.ApplyOrderToAllPartners(Action: Integer);
+procedure TfTalk.ApplyOrderToAllPartners(Action: PtrInt);
 var
   I: Integer;
   Ship: TShip;
@@ -3181,12 +3180,12 @@ begin
   FastExit(0);
 end;
 
-procedure TfTalk.ExitPartnerConversation(Action: Integer);
+procedure TfTalk.ExitPartnerConversation(Action: PtrInt);
 begin
   FastExit(0);
 end;
 
-procedure TfTalk.OrderTranclucatorFollow(Action: Integer);
+procedure TfTalk.OrderTranclucatorFollow(Action: PtrInt);
 var
   Ship: TTranclucator;
 begin
@@ -3200,7 +3199,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.OrderTranclucatorReturn(Action: Integer);
+procedure TfTalk.OrderTranclucatorReturn(Action: PtrInt);
 var
   Ship: TTranclucator;
 begin
@@ -3214,7 +3213,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.OrderTranclucatorSeekItems(Action: Integer);
+procedure TfTalk.OrderTranclucatorSeekItems(Action: PtrInt);
 var
   Ship: TTranclucator;
 begin
@@ -3229,7 +3228,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.CancelTranclucatorSeekItems(Action: Integer);
+procedure TfTalk.CancelTranclucatorSeekItems(Action: PtrInt);
 var
   Ship: TTranclucator;
 begin
@@ -3243,7 +3242,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.ShowTranclucatorOptions(Action: Integer);
+procedure TfTalk.ShowTranclucatorOptions(Action: PtrInt);
 var
   Ship: TTranclucator;
   Digit: Cardinal;
@@ -3397,7 +3396,7 @@ var
   procedure PopTranclucatorOptionDigit;
   begin
     Digit := Cardinal(Action) mod 10;
-    Cardinal(Action) := Cardinal(Action) div 10;
+    Action := Cardinal(Action) div 10;
   end;
 begin
   DialogText := '';
@@ -3463,7 +3462,7 @@ begin
   AddChoice('- ' + LocalizedColorText('Talk.Tranclucator.Options.PlayerBack'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.OrderTranclucatorDropCargo(Action: Integer);
+procedure TfTalk.OrderTranclucatorDropCargo(Action: PtrInt);
 var
   Ship: TTranclucator;
 begin
@@ -3477,7 +3476,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.OrderTranclucatorLand(Action: Integer);
+procedure TfTalk.OrderTranclucatorLand(Action: PtrInt);
 var
   Name: WideString;
   Ship: TTranclucator;
@@ -3503,7 +3502,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.OrderTranclucatorStoreCargo(Action: Integer);
+procedure TfTalk.OrderTranclucatorStoreCargo(Action: PtrInt);
 var
   Name: WideString;
   Ship: TTranclucator;
@@ -3553,7 +3552,7 @@ begin
   end;
 end;
 
-procedure TfTalk.ApplyOrderToAllTranclucators(Action: Integer);
+procedure TfTalk.ApplyOrderToAllTranclucators(Action: PtrInt);
 var
   Current, Target: TTranclucator;
   Ship: TShip;
@@ -3591,7 +3590,7 @@ begin
   FastExit(0);
 end;
 
-procedure TfTalk.ShowPiratePartnerOffer(Action: Integer);
+procedure TfTalk.ShowPiratePartnerOffer(Action: PtrInt);
 var
   Response: WideString;
 begin
@@ -3674,7 +3673,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptPiratePartnerOffer(Action: Integer);
+procedure TfTalk.AcceptPiratePartnerOffer(Action: PtrInt);
 begin
   if TalkShip.AcceptPartnershipOffer(GetPlayer, DialogText, PartnerOfferAmount) then
   begin
@@ -3684,13 +3683,13 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalvePiratePartnerOffer(Action: Integer);
+procedure TfTalk.HalvePiratePartnerOffer(Action: PtrInt);
 begin
   PartnerOfferAmount := PartnerOfferAmount div 2;
   ShowPiratePartnerOffer(0);
 end;
 
-procedure TfTalk.DoublePiratePartnerOffer(Action: Integer);
+procedure TfTalk.DoublePiratePartnerOffer(Action: PtrInt);
 begin
   if GetPlayer.Money < PartnerOfferAmount * 2 then
     PartnerOfferAmount := GetPlayer.Money
@@ -3699,7 +3698,7 @@ begin
   ShowPiratePartnerOffer(0);
 end;
 
-procedure TfTalk.ShowPirateAttackTargets(Action: Integer);
+procedure TfTalk.ShowPirateAttackTargets(Action: PtrInt);
 var
   I: Integer;
   Ship: TShip;
@@ -3728,15 +3727,15 @@ begin
               or ((TalkShip.OwnerId = Byte(oiPirate)) and (Galaxy.CoalitionDefeatedTurn <> 0))) then
         AddChoice(
             '- ' + Ship.GetFullName(' ') + GetLocalObjectLink(Ship, False),
-            Integer(Ship),
+            PtrInt(Ship),
             OrderPiratePartnerAttack,
-            Integer(Ship)
+            PtrInt(Ship)
         );
   end;
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Pirate.Back'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.OrderPiratePartnerAttack(Action: Integer);
+procedure TfTalk.OrderPiratePartnerAttack(Action: PtrInt);
 var
   Target: TShip;
 begin
@@ -3773,7 +3772,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPiratePartnerFollow(Action: Integer);
+procedure TfTalk.OrderPiratePartnerFollow(Action: PtrInt);
 begin
   TalkShip.OrderFollowShip(GetPlayer, 0, True);
   DialogText := TalkShip.LookupTalkText('Talk.Pirate.ComputerAgreeFlyToMe');
@@ -3801,7 +3800,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPiratePartnerLand(Action: Integer);
+procedure TfTalk.OrderPiratePartnerLand(Action: PtrInt);
 var
   Name: WideString;
   Relation: Byte;
@@ -3859,7 +3858,7 @@ begin
   end;
 end;
 
-procedure TfTalk.OrderPiratePartnerJump(Action: Integer);
+procedure TfTalk.OrderPiratePartnerJump(Action: PtrInt);
 begin
   if ((GetPlayer.OrderTarget as TStar).CountPlanetsByOwner(Ord(oiDominator)) > 0)
       and ((TalkShip.OwnerId <> Byte(oiPirate)) or (Galaxy.CoalitionDefeatedTurn = 0)) then
@@ -3909,7 +3908,7 @@ begin
   end;
 end;
 
-procedure TfTalk.ShowPiratePartnerFinances(Action: Integer);
+procedure TfTalk.ShowPiratePartnerFinances(Action: PtrInt);
 begin
   DialogText := TalkShip.LookupTalkText('Talk.Pirate.FinancesReport');
   ReplaceTextToken(
@@ -3929,7 +3928,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Pirate.FinancesConfirmed'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.ShowPiratePartnerGift(Action: Integer);
+procedure TfTalk.ShowPiratePartnerGift(Action: PtrInt);
 var
   Text: WideString;
 begin
@@ -3955,7 +3954,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Cancel'), 0, ShowGreeting, 0);
 end;
 
-procedure TfTalk.GivePiratePartnerGift(Action: Integer);
+procedure TfTalk.GivePiratePartnerGift(Action: PtrInt);
 var
   Change: Integer;
 begin
@@ -3983,13 +3982,13 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.HalvePiratePartnerGift(Action: Integer);
+procedure TfTalk.HalvePiratePartnerGift(Action: PtrInt);
 begin
   PartnerGiftAmount := PartnerGiftAmount div 2;
   ShowPiratePartnerGift(0);
 end;
 
-procedure TfTalk.DoublePiratePartnerGift(Action: Integer);
+procedure TfTalk.DoublePiratePartnerGift(Action: PtrInt);
 begin
   PartnerGiftAmount := PartnerGiftAmount * 2;
   if GetPlayer.Money < PartnerGiftAmount then
@@ -3997,7 +3996,7 @@ begin
   ShowPiratePartnerGift(0);
 end;
 
-procedure TfTalk.ShowPartnerDismissal(Action: Integer);
+procedure TfTalk.ShowPartnerDismissal(Action: PtrInt);
 var
   Prefix: WideString;
 begin
@@ -4028,7 +4027,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.ShipDismissAct(Action: Integer);
+procedure TfTalk.ShipDismissAct(Action: PtrInt);
 var
   Prefix: WideString;
 begin
@@ -4062,7 +4061,7 @@ begin
   AddChoice('- ' + GetPlayer.LookupTalkText('Talk.Exit'), 0, FastExit, 0);
 end;
 
-procedure TfTalk.RunDominatorProgram(Action: Integer);
+procedure TfTalk.RunDominatorProgram(Action: PtrInt);
 var
   ProgramIndex: Byte;
   Remaining: Integer;
@@ -4108,7 +4107,7 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowDominatorGreeting(Action: Integer);
+procedure TfTalk.ShowDominatorGreeting(Action: PtrInt);
 begin
   DialogText :=
       TalkShip.LookupTalkText(
@@ -4117,7 +4116,7 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowDominatorPeace(Action: Integer);
+procedure TfTalk.ShowDominatorPeace(Action: PtrInt);
 begin
   DialogText :=
       TalkShip.LookupTalkText(
@@ -4126,7 +4125,7 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowDominatorGoods(Action: Integer);
+procedure TfTalk.ShowDominatorGoods(Action: PtrInt);
 begin
   DialogText :=
       TalkShip.LookupTalkText(
@@ -4135,7 +4134,7 @@ begin
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.ShowDominatorCommand(Action: Integer);
+procedure TfTalk.ShowDominatorCommand(Action: PtrInt);
 begin
   DialogText :=
       TalkShip.LookupTalkText(
@@ -4179,7 +4178,7 @@ begin
                       Ship.GetFullName(' '),
                       '')
                   + GetLocalObjectLink(Ship, False),
-              Integer(Ship),
+              PtrInt(Ship),
               RequestAttackTarget,
               0
           );
@@ -4195,7 +4194,7 @@ begin
                       Ship.GetFullName(' '),
                       '')
                   + GetLocalObjectLink(Ship, False),
-              Integer(Ship),
+              PtrInt(Ship),
               RequestAttackTarget,
               0
           );
@@ -4215,7 +4214,7 @@ begin
                           Ship.GetFullName(' '),
                           '')
                       + GetLocalObjectLink(Ship, False),
-                  Integer(Ship),
+                  PtrInt(Ship),
                   RequestAttackTarget,
                   0
               );
@@ -4234,7 +4233,7 @@ begin
     RaiseWideMessage('Не найдено приветствие корабля');
 end;
 
-procedure TfTalk.RunInjectedAnswer(Action: Integer);
+procedure TfTalk.RunInjectedAnswer(Action: PtrInt);
 var
   Text: WideString;
   Injection: PScriptDialogInjection;
@@ -4272,7 +4271,7 @@ begin
   end;
 end;
 
-procedure TfTalk.RunInjectedAnswerKeepingScroll(Action: Integer);
+procedure TfTalk.RunInjectedAnswerKeepingScroll(Action: PtrInt);
 begin
   RememberChoiceScroll;
   RunInjectedAnswer(Action);
@@ -4373,7 +4372,7 @@ begin
   );
 end;
 
-procedure TfTalk.ShowMilitarySupport(Action: Integer);
+procedure TfTalk.ShowMilitarySupport(Action: PtrInt);
 var
   Refused: Boolean;
 begin
@@ -4399,13 +4398,13 @@ begin
   end;
 end;
 
-procedure TfTalk.CancelMilitarySupport(Action: Integer);
+procedure TfTalk.CancelMilitarySupport(Action: PtrInt);
 begin
   DialogText := TalkShip.LookupTalkText('Talk.MilitarySupport.AfterCancel');
   BuildStandardChoices(True);
 end;
 
-procedure TfTalk.DeclineMilitarySupport(Action: Integer);
+procedure TfTalk.DeclineMilitarySupport(Action: PtrInt);
 begin
   DialogText := TalkShip.LookupTalkText('Talk.MilitarySupport.AfterNo');
   BuildMilitarySupportChoices;
@@ -4421,7 +4420,7 @@ begin
       );
 end;
 
-procedure TfTalk.ShowMilitaryHullRepair(Action: Integer);
+procedure TfTalk.ShowMilitaryHullRepair(Action: PtrInt);
 var
   Cost, Available: Integer;
   Caption: WideString;
@@ -4461,7 +4460,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptMilitaryHullRepair(Action: Integer);
+procedure TfTalk.AcceptMilitaryHullRepair(Action: PtrInt);
 var
   Effect: TWeaponSE;
   RepairAmount: Integer;
@@ -4518,7 +4517,7 @@ begin
   end;
 end;
 
-procedure TfTalk.ShowMilitaryEquipmentRepair(Action: Integer);
+procedure TfTalk.ShowMilitaryEquipmentRepair(Action: PtrInt);
 var
   Cost, Available: Integer;
   Caption: WideString;
@@ -4558,7 +4557,7 @@ begin
   end;
 end;
 
-procedure TfTalk.AcceptMilitaryEquipmentRepair(Action: Integer);
+procedure TfTalk.AcceptMilitaryEquipmentRepair(Action: PtrInt);
 var
   Fraction: Single;
   I: Integer;
@@ -4605,7 +4604,7 @@ begin
     end;
 end;
 
-procedure TfTalk.ShowMilitaryRemains(Action: Integer);
+procedure TfTalk.ShowMilitaryRemains(Action: PtrInt);
 var
   I, Count, Cost: Integer;
   Item: TEquipment;
@@ -4683,7 +4682,7 @@ begin
   end;
 end;
 
-procedure TfTalk.SellAllMilitaryRemains(Action: Integer);
+procedure TfTalk.SellAllMilitaryRemains(Action: PtrInt);
 var
   I, Cost: Integer;
   Item: TEquipment;
@@ -4712,7 +4711,7 @@ begin
   BuildMilitarySupportChoices;
 end;
 
-procedure TfTalk.SellIndividualMilitaryRemains(Action: Integer);
+procedure TfTalk.SellIndividualMilitaryRemains(Action: PtrInt);
 var
   I, Count, Cost: Integer;
   Item: TEquipment;
@@ -4765,7 +4764,7 @@ begin
       if (Galaxy.DominatorResearch[Ord(Item.DominatorSeries)].Progress < 100)
           and Galaxy.IsDominatorSeriesUnresolved(Item.DominatorSeries) then
         Caption := Caption + BonusCaption;
-      AddChoice('- ' + Caption, Integer(Item), SellIndividualMilitaryRemains, 0);
+      AddChoice('- ' + Caption, PtrInt(Item), SellIndividualMilitaryRemains, 0);
       DialogText := DialogText + #13#10 + WideString(IntToStr(Count)) + ') ' + Caption;
     end;
   end;
@@ -4783,7 +4782,7 @@ begin
     );
 end;
 
-procedure TfTalk.ShowMilitaryBuff(Action: Integer);
+procedure TfTalk.ShowMilitaryBuff(Action: PtrInt);
 var
   Cost: Integer;
   Caption: WideString;
@@ -4808,7 +4807,7 @@ begin
   );
 end;
 
-procedure TfTalk.AcceptMilitaryBuff(Action: Integer);
+procedure TfTalk.AcceptMilitaryBuff(Action: PtrInt);
 begin
   GetPlayer.ConsumeAvailableNodes(Action, nil);
   SoundManager.PlaySound('Sound.Buy');
@@ -4821,7 +4820,7 @@ begin
   BuildMilitarySupportChoices;
 end;
 
-procedure TfTalk.DiscussOldHull(Action: Integer);
+procedure TfTalk.DiscussOldHull(Action: PtrInt);
 begin
   case Action of
     0:
@@ -4929,7 +4928,7 @@ begin
   end;
 end;
 
-procedure TfTalk.RunScriptRestartAnswer(Action: Integer);
+procedure TfTalk.RunScriptRestartAnswer(Action: PtrInt);
 begin
   DialogText := '';
   CurrentScript.ExecuteDialogAnswer(Action);

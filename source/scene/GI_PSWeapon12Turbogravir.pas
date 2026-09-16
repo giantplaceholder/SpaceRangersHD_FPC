@@ -72,7 +72,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure BuildWaveTables;
@@ -249,7 +249,7 @@ begin
     MessageLoop.QueueUpdateRect(Intersection);
 end;
 
-procedure TPSWeapon12Turbogravir.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon12Turbogravir.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   I, Distance: Integer;
   Current, Particle: PTurbogravirParticle;

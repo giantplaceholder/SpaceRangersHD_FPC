@@ -38,7 +38,7 @@ type
     procedure SetImageKindX(Value: TImageKindXGI);
     procedure SetImageKindY(Value: TImageKindYGI);
     procedure SetHalfAlpha(Value: Boolean);
-    procedure AdvanceFrame(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
     function HitTest(Point: TPoint): Boolean;
     procedure LoadAnimationProperties(Block: TBlockParEC);
   end;
@@ -134,7 +134,7 @@ begin
     (CurrentFrame as TImageGI).SetSize(Size);
 end;
 
-procedure TAImageGI.AdvanceFrame(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TAImageGI.AdvanceFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Previous: TObjectGI;
   Next: TImageGI;
@@ -145,7 +145,7 @@ begin
     Next := FirstChild as TImageGI;
   MessageLoop.CancelCallbackTimer(FrameTimer);
   FrameTimer :=
-      MessageLoop.ScheduleCallbackTimer(Next.UserValue, $FFFFFF, AdvanceFrame, Integer(Next));
+      MessageLoop.ScheduleCallbackTimer(Next.UserValue, $FFFFFF, AdvanceFrame, PtrInt(Next));
   Previous.SetActive(False);
   Next.SetActive(True);
   Next.SetOrigin(OriginPoint);
@@ -167,7 +167,7 @@ end;
 procedure TAImageGI.OnActivate;
 begin
   inherited OnActivate;
-  AdvanceFrame(nil, Integer(FirstChild));
+  AdvanceFrame(nil, PtrInt(FirstChild));
 end;
 
 procedure TAImageGI.LoadFromConfigPath(const Path: WideString);
@@ -213,7 +213,7 @@ begin
   if First <> nil then
   begin
     FrameTimer :=
-        MessageLoop.ScheduleCallbackTimer(First.UserValue, $FFFFFF, AdvanceFrame, Integer(First));
+        MessageLoop.ScheduleCallbackTimer(First.UserValue, $FFFFFF, AdvanceFrame, PtrInt(First));
     First.SetSize(ClientSize);
     First.SetImageKindX(ImageKindX);
     First.SetImageKindY(ImageKindY);

@@ -35,7 +35,7 @@ type
     procedure SetImagePath(const Path: WideString);
     procedure RebuildSystemCursor;
     function CreateNativeCursor(Buffer: TGraphBufGR; Hotspot: TPoint): Pointer;
-    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -313,7 +313,7 @@ begin
   end;
 end;
 
-procedure TCursorGI.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TCursorGI.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Inc(FrameIndex);
   if High(FrameIndices) < FrameIndex then

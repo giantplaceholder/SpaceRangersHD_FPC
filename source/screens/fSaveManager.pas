@@ -91,7 +91,7 @@ type
     function FindNewestSlot: Integer;
     function ReadSaveVersion(FileName: WideString): Integer;
     procedure LoadSavePreviews(FileName: WideString);
-    procedure FinishPreviewDelay(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure FinishPreviewDelay(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -1333,7 +1333,7 @@ begin
   PreviewSound.SetVolume(1);
 end;
 
-procedure TfSaveManager.FinishPreviewDelay(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfSaveManager.FinishPreviewDelay(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   PreviewSound.SetVolume(0);
   if PreviewTimer <> nil then

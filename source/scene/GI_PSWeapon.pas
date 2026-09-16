@@ -21,7 +21,7 @@ type
     RemainingTicks: Integer;
     LifetimeTicks: Integer;
     procedure SetTargetPoint(Point: TPoint); virtual; abstract;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); virtual; abstract;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); virtual; abstract;
     function GetElapsedTicks: Integer; virtual;
     constructor Create(Owner: TObjectGI);
     function IsFinished: Boolean;

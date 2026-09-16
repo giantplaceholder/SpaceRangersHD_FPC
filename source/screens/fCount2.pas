@@ -43,7 +43,7 @@ type
     procedure DecreaseMouseDown(Sender: TObjectGI);
     procedure IncreaseMouseUp(Sender: TObjectGI);
     procedure DecreaseMouseUp(Sender: TObjectGI);
-    procedure RepeatChange(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure RepeatChange(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure MaximumClicked(Sender: TObjectGI);
     procedure AcceptClicked(Sender: TObjectGI);
     procedure CancelClicked(Sender: TObjectGI);
@@ -295,7 +295,7 @@ begin
   end;
 end;
 
-procedure TfCount2.RepeatChange(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfCount2.RepeatChange(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Value := Value + UserData - 1;
   if Value < Minimum then

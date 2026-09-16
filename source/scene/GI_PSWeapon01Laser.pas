@@ -61,7 +61,7 @@ type
     procedure InvalidateRect(Rect: TRect); override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure UpdateProjectionBounds;
@@ -226,7 +226,7 @@ begin
     MessageLoop.QueueUpdateRect(Intersection);
 end;
 
-procedure TPSWeapon01Laser.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon01Laser.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   I, Power, FadeThreshold: Integer;
   Distance, Angle: Single;

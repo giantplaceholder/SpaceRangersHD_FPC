@@ -878,7 +878,7 @@ begin
         1: Item.Improve(ikMedium);
         2: Item.Improve(ikMinor);
       end;
-      GetMem(Entry, 12);
+      GetMem(Entry, SizeOf(Entry^));
       GetPlayer.StorageEntries.Add(Entry);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo

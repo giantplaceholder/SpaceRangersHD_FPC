@@ -60,8 +60,8 @@ type
     procedure QueueImageLoad(PendingLoads: TList; Owner: TObjectGI); override;
     procedure RebuildOrbitTransform;
     procedure UpdateOrbitDisplay;
-    procedure AdvanceOrbitTimer(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure AdvanceRotationTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceOrbitTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure AdvanceRotationTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -216,13 +216,13 @@ begin
     PlanetControl.SetDepth(PlanetDepth - DepthOrder - 1);
 end;
 
-procedure TSputnikSE.AdvanceOrbitTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TSputnikSE.AdvanceOrbitTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   OrbitAngle := WrapHeadingDegrees(OrbitAngle + OrbitAngleStep);
   UpdateOrbitDisplay;
 end;
 
-procedure TSputnikSE.AdvanceRotationTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TSputnikSE.AdvanceRotationTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   SurfaceMapOffset := SurfaceMapOffset + SurfaceMapStep;
   PlanetControl.SetSurfaceMapOffset(SurfaceMapOffset);

@@ -73,7 +73,7 @@ type
     procedure ClearPreviousLines;
     procedure RebuildSegments;
     procedure ProjectAndClipSegments;
-    procedure RotateSegments(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure RotateSegments(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure LoadSpaceCircleProperties(Block: TBlockParEC);
   end;
 
@@ -218,7 +218,7 @@ begin
   end;
 end;
 
-procedure TSpaceCircleGI.RotateSegments(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TSpaceCircleGI.RotateSegments(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Segment: PSpaceCircleSegmentGI;
   I: Integer;

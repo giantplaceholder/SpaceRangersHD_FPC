@@ -42,7 +42,7 @@ type
     constructor Create;
     destructor Destroy; override;
     function IsLoading: Boolean;
-    procedure UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -224,7 +224,7 @@ begin
     Result := False;
 end;
 
-procedure TfGameLoad.UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGameLoad.UpdateLoadingProgress(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Loads: TList;
   Block: TBlockParEC;

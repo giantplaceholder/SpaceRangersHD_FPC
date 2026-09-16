@@ -63,7 +63,7 @@ type
     procedure InvalidateRect(Rect: TRect); override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure SetColor(Value: Word);
@@ -241,7 +241,7 @@ begin
     MessageLoop.QueueUpdateRect(Intersection);
 end;
 
-procedure TPSRadEffectGI.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSRadEffectGI.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Column, Row, Edge, X, Y, Columns, Rows, RingOffset, FadeAlpha: Integer;
   Particle, Current: PRadiationParticle;

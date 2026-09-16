@@ -187,9 +187,9 @@ type
     Gate: TObjectSE;
     UsedThisTurn: Boolean;
     Gap5: array[0..2] of Byte;
-    GateFilmId: Cardinal;
+    GateFilmId: PtrUInt;
     Effect: TObjectSE;
-    EffectFilmId: Cardinal;
+    EffectFilmId: PtrUInt;
   end;
 
   PJumpGateEntry = PointerToTJumpGateEntry;
@@ -643,7 +643,7 @@ type
     CreatedTurn: Integer;
     HoleType: Integer;
     Graphic: TObjectSE;
-    FilmObjectId: Integer;
+    FilmObjectId: PtrUInt;
     ArcadeMapName: WideString;
     constructor Create;
     destructor Destroy; override;
@@ -4262,7 +4262,7 @@ type
   end;
 var
   ExclusionCount: Integer;
-  Exclusions: array[0..10] of Cardinal;
+  Exclusions: array[0..10] of PtrUInt;
   I, J, K, L: Integer;
   Star: TStar;
   Planet: TPlanet;
@@ -4314,7 +4314,7 @@ var
     while Cardinal(I) < Count do
     begin
       Data^ := Data^ xor Word(NextStateXorMask);
-      Data := Pointer(Cardinal(Data) + SizeOf(Data^));
+      Inc(Data);
       Inc(I);
     end;
   end;
@@ -4327,51 +4327,56 @@ var
     while Cardinal(I) < Count do
     begin
       Data^ := Data^ xor Byte(NextStateXorMask);
-      Data := Pointer(Cardinal(Data) + SizeOf(Data^));
+      Inc(Data);
       Inc(I);
     end;
   end;
 
+  // Object headers and excluded list fields grow with pointers. The XOR stream
+  // still processes bytes/words and is regenerated identically when restoring.
   procedure XorStateObject(Instance: TObject); { Preserves the VMT pointer. }
   begin
-    XorStateBytes(PByte(PAnsiChar(Instance) + 4), Instance.InstanceSize - 4);
+    XorStateBytes(
+        PByte(PAnsiChar(Instance) + SizeOf(Pointer)),
+        Instance.InstanceSize - SizeOf(Pointer)
+    );
   end;
 
   procedure XorStateObjectExceptField(
       Instance: TObject;
       ExcludedField: Pointer
-  ); { Preserves the VMT and one four-byte field. }
+  ); { Preserves the VMT and one pointer field. }
   var
-    Data, Excluded, Limit: Cardinal;
+    Data, Excluded, Limit: PtrUInt;
   begin
-    Data := Cardinal(Instance) + 4;
-    Excluded := Cardinal(ExcludedField);
-    Limit := Data + Cardinal(Instance.InstanceSize - 4);
-    if (Excluded < Data) or (Excluded + 4 >= Limit) then
+    Data := PtrUInt(Instance) + SizeOf(Pointer);
+    Excluded := PtrUInt(ExcludedField);
+    Limit := Data + Cardinal(Instance.InstanceSize - SizeOf(Pointer));
+    if (Excluded < Data) or (Excluded + SizeOf(Pointer) >= Limit) then
       RaiseWideMessage('-');
     XorStateBytes(PByte(Data), Excluded - Data);
-    XorStateBytes(PByte(Excluded + 4), Limit - (Excluded + 4));
+    XorStateBytes(PByte(Excluded + SizeOf(Pointer)), Limit - (Excluded + SizeOf(Pointer)));
   end;
 
   procedure XorStateObjectExceptFields(
       Instance: TObject
-  ); { Preserves the VMT and sorted four-byte exclusions supplied by the parent frame. }
+  ); { Preserves the VMT and sorted pointer-field exclusions supplied by the parent frame. }
   var
     I: Integer;
-    Data, Limit: Cardinal;
+    Data, Limit: PtrUInt;
   begin
-    Data := Cardinal(Instance) + 4;
-    Limit := Data + Cardinal(Instance.InstanceSize - 4);
+    Data := PtrUInt(Instance) + SizeOf(Pointer);
+    Limit := Data + Cardinal(Instance.InstanceSize - SizeOf(Pointer));
     if ExclusionCount < 2 then
       RaiseWideMessage('-');
-    if (Exclusions[0] < Data) or (Exclusions[ExclusionCount - 1] + 4 >= Limit) then
+    if (Exclusions[0] < Data) or (Exclusions[ExclusionCount - 1] + SizeOf(Pointer) >= Limit) then
       RaiseWideMessage('-');
     for I := 0 to ExclusionCount - 1 do
     begin
       if Exclusions[I] < Data then
         RaiseWideMessage('-');
       XorStateBytes(PByte(Data), Exclusions[I] - Data);
-      Data := Exclusions[I] + 4;
+      Data := Exclusions[I] + SizeOf(Pointer);
     end;
     XorStateBytes(PByte(Data), Limit - Data);
   end;
@@ -4390,15 +4395,15 @@ begin
   begin
     Star := TStar(Stars[I]);
     ExclusionCount := 0;
-    Exclusions[ExclusionCount] := Cardinal(@Star.Planets);
+    Exclusions[ExclusionCount] := PtrUInt(@Star.Planets);
     Inc(ExclusionCount);
-    Exclusions[ExclusionCount] := Cardinal(@Star.Asteroids);
+    Exclusions[ExclusionCount] := PtrUInt(@Star.Asteroids);
     Inc(ExclusionCount);
-    Exclusions[ExclusionCount] := Cardinal(@Star.Ships);
+    Exclusions[ExclusionCount] := PtrUInt(@Star.Ships);
     Inc(ExclusionCount);
-    Exclusions[ExclusionCount] := Cardinal(@Star.Items);
+    Exclusions[ExclusionCount] := PtrUInt(@Star.Items);
     Inc(ExclusionCount);
-    Exclusions[ExclusionCount] := Cardinal(@Star.MovingDropItems);
+    Exclusions[ExclusionCount] := PtrUInt(@Star.MovingDropItems);
     Inc(ExclusionCount);
     XorStateObjectExceptFields(Star);
     for J := 0 to Star.Items.Count - 1 do
@@ -4423,28 +4428,28 @@ begin
     begin
       Ship := TShip(Star.Ships[J]);
       ExclusionCount := 0;
-      Exclusions[ExclusionCount] := Cardinal(@Ship.Inventory);
+      Exclusions[ExclusionCount] := PtrUInt(@Ship.Inventory);
       Inc(ExclusionCount);
-      Exclusions[ExclusionCount] := Cardinal(@Ship.Artefacts);
+      Exclusions[ExclusionCount] := PtrUInt(@Ship.Artefacts);
       Inc(ExclusionCount);
       if Ship is TRuins then
       begin
-        Exclusions[ExclusionCount] := Cardinal(@(Ship as TRuins).EquipmentShop);
+        Exclusions[ExclusionCount] := PtrUInt(@(Ship as TRuins).EquipmentShop);
         Inc(ExclusionCount);
       end;
       if Ship is TRanger then
       begin
-        Exclusions[ExclusionCount] := Cardinal(@(Ship as TRanger).Quests);
+        Exclusions[ExclusionCount] := PtrUInt(@(Ship as TRanger).Quests);
         Inc(ExclusionCount);
       end;
       if Ship is TPlayer then
       begin
-        Exclusions[ExclusionCount] := Cardinal(@TPlayer(Ship).StorageEntries);
+        Exclusions[ExclusionCount] := PtrUInt(@TPlayer(Ship).StorageEntries);
         Inc(ExclusionCount);
       end;
       if Ship is TPlayer then
       begin
-        Exclusions[ExclusionCount] := Cardinal(@TPlayer(Ship).Satellites);
+        Exclusions[ExclusionCount] := PtrUInt(@TPlayer(Ship).Satellites);
         Inc(ExclusionCount);
       end;
       XorStateObjectExceptFields(Ship);
@@ -4627,7 +4632,7 @@ begin
     XorStateUInt32(PCardinal(@PlayerArcadeShip.Health)^);
     XorStateUInt32(PCardinal(@PlayerArcadeShip.MaxHealth)^);
   end;
-  XorStateBytes(@IntegrityDataBegin, Cardinal(@IntegrityDataEnd) - Cardinal(@IntegrityDataBegin));
+  XorStateBytes(@IntegrityDataBegin, PtrUInt(@IntegrityDataEnd) - PtrUInt(@IntegrityDataBegin));
 end;
 
 procedure TGalaxy.ObfuscateProtectedState;
@@ -5000,7 +5005,7 @@ begin
   if Mode <> 1 then
     AccumulateIntegrityBytes(
         @IntegrityDataBegin,
-        Integer(@IntegrityDataEnd) - Integer(@IntegrityDataBegin)
+        PtrUInt(@IntegrityDataEnd) - PtrUInt(@IntegrityDataBegin)
     );
   Result := FinishCrc32(State);
 end;
@@ -7364,7 +7369,7 @@ begin
     if GetPlayer.CurrentStar.Items.IndexOf(Obj) >= 0 then
       Local := True;
   if Local then
-    Result := '<Object=' + IntToStr(Cardinal(Obj)) + ',23,17,0>'
+    Result := '<Object=' + UIntToStr(PtrUInt(Obj)) + ',23,17,0>'
   else
     Result := '';
 end;
@@ -9910,7 +9915,7 @@ begin
       Count := 0;
       for I := 0 to Rangers.Count - 1 do
       begin
-        Ranger := TRanger(TList(Integer(Rangers) + 0)[I]);
+        Ranger := TRanger(TList(PtrInt(Rangers) + 0)[I]);
         if not Ranger.ExcludedFromRating then
         begin
           Total := Total + Ranger.CalculateWealth;
@@ -9918,14 +9923,14 @@ begin
           if (MaxRangerWealth + 0 < Ranger.Wealth) or (WealthiestRanger = nil) then
           begin
             MaxRangerWealth := Ranger.Wealth;
-            TGalaxy(Integer(Self) + 0).WealthiestRanger := Ranger;
+            TGalaxy(PtrInt(Self) + 0).WealthiestRanger := Ranger;
           end;
         end;
       end;
       if CoalitionDefeatedTurn <> 0 then
         for I := 0 to Stars.Count - 1 do
         begin
-          Star := TStar(TList(Integer(Stars) + 0)[I]);
+          Star := TStar(TList(PtrInt(Stars) + 0)[I]);
           for J := 0 to Star.Ships.Count - 1 do
           begin
             Ship := Star.Ships[J];
@@ -9942,7 +9947,7 @@ begin
       if Total > MaxInt then
         AverageRangerCapital := MaxInt
       else
-        TGalaxy(Integer(Self) + 0).AverageRangerCapital := Total;
+        TGalaxy(PtrInt(Self) + 0).AverageRangerCapital := Total;
     end;
   end;
 end;
@@ -10002,14 +10007,14 @@ procedure TGalaxy.RefreshRangerRatingPlaces;
 var
   I, J: Integer;
   First, Second: TRanger;
-  Sorted: array of Cardinal;
-  SwapFirst, SwapSecond: Cardinal; // Native RTTI: dynamic Cardinal array storing object addresses.
+  Sorted: array of PtrUInt;
+  SwapFirst, SwapSecond: PtrUInt; // Native RTTI: dynamic Cardinal array storing object addresses.
 begin
   SetLength(Sorted, Rangers.Count);
   for I := 0 to Rangers.Count - 1 do
   begin
     First := Rangers[I];
-    Sorted[I] := Cardinal(First);
+    Sorted[I] := PtrUInt(First);
   end;
   for I := 0 to Rangers.Count - 1 do
     for J := I to Rangers.Count - 1 do
@@ -11271,7 +11276,7 @@ begin
       Hostile := False;
       for J := 0 to Constellation.Stars.Count - 1 do
       begin
-        Star := TList(Integer(Constellation.Stars) + 0)[J];
+        Star := TList(PtrInt(Constellation.Stars) + 0)[J];
         if (Star.ControlFaction = sfDominators) or (Star.Status.CustomFaction <> '') then
           Hostile := True;
       end;
@@ -11295,7 +11300,7 @@ begin
             Assigned := False;
             for J := 0 to Constellation.Stars.Count - 1 do
               if HasMilitaryBaseAssignedToStar(
-                  TStar(TList(Integer(Constellation.Stars) + 0)[J])) then
+                  TStar(TList(PtrInt(Constellation.Stars) + 0)[J])) then
               begin
                 Assigned := True;
                 Break;
@@ -11307,7 +11312,7 @@ begin
           begin
             Assigned := False;
             for J := 0 to Constellation.Stars.Count - 1 do
-              if TStar(TList(Integer(Constellation.Stars) + 0)[J]).Dominion <> nil then
+              if TStar(TList(PtrInt(Constellation.Stars) + 0)[J]).Dominion <> nil then
               begin
                 Assigned := True;
                 Break;
@@ -11969,7 +11974,7 @@ begin
     Planet.CurrentStar.Ships.Add(Warrior);
   end;
   Turn := CurrentTurn + SeededRandomIntRange(30, 40, (CurrentTurn + 0) + Planet.GenerationSeed);
-  Station.FlyToStar := TStar(Integer(Target) + 0);
+  Station.FlyToStar := Target;
   Station.FlyDate := Turn + 0;
   Text :=
       PickLocalizedTextVariant(
@@ -15264,7 +15269,7 @@ begin
         GateEntry := Galaxy.JumpGates[Index];
         GateEntry^.UsedThisTurn := True;
         ObjectFilm := CurrentFilm.AddObject(0, GateEntry^.Gate);
-        GateEntry^.GateFilmId := Cardinal(ObjectFilm);
+        GateEntry^.GateFilmId := PtrUInt(ObjectFilm);
         CurrentFilm.SetObjectPosition(StepIndex, ObjectFilm, GateEntry^.Gate.Position);
         CurrentFilm.SetObjectAngle(StepIndex, ObjectFilm, GateEntry^.Gate.GetAngle);
         CurrentFilm.SetGateSize(StepIndex, ObjectFilm, GateEntry^.Gate.Size.X);
@@ -15275,7 +15280,7 @@ begin
         if (GateEntry^.Effect <> nil) and TObjectSE(GateEntry^.Effect).IsAttachedToSpace then
         begin
           ObjectFilm := CurrentFilm.AddObject(0, GateEntry^.Effect);
-          GateEntry^.EffectFilmId := Cardinal(ObjectFilm);
+          GateEntry^.EffectFilmId := PtrUInt(ObjectFilm);
           CurrentFilm.SetObjectPosition(StepIndex, ObjectFilm, GateEntry^.Effect.Position);
           CurrentFilm.SetObjectAngle(StepIndex, ObjectFilm, GateEntry^.Effect.GetAngle);
           CurrentFilm.SetGateSize(StepIndex, ObjectFilm, GateEntry^.Effect.Size.X);
@@ -15293,7 +15298,7 @@ begin
         if Hole.Star1 = Self then
         begin
           EffectFilm := CurrentFilm.AddObject(Hole.Id, Hole.Graphic);
-          Hole.FilmObjectId := Integer(EffectFilm);
+          Hole.FilmObjectId := PtrUInt(EffectFilm);
           CurrentFilm.SetObjectPosition(StepIndex, EffectFilm, Hole.Position1);
           if Galaxy.CurrentTurn = Hole.CreatedTurn then
             CurrentFilm.SetHoleState(StepIndex, EffectFilm, 1)
@@ -15304,7 +15309,7 @@ begin
         else if Hole.Star2 = Self then
         begin
           EffectFilm := CurrentFilm.AddObject(Hole.Id, Hole.Graphic);
-          Hole.FilmObjectId := Integer(EffectFilm);
+          Hole.FilmObjectId := PtrUInt(EffectFilm);
           CurrentFilm.SetObjectPosition(StepIndex, EffectFilm, Hole.Position2);
           if Galaxy.CurrentTurn = Hole.CreatedTurn then
             CurrentFilm.SetHoleState(StepIndex, EffectFilm, 1)

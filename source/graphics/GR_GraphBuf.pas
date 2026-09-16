@@ -489,7 +489,7 @@ begin
     if Self.PitchBytes and 3 <> 0 then
       Self.PitchBytes := Self.PitchBytes + 4 - (Self.PitchBytes and 3);
     Pixels := AllocEC(Self.PitchBytes * Self.Height);
-    if (Self.PitchBytes and 3 <> 0) or (Cardinal(Pixels) and 3 <> 0) then
+    if (Self.PitchBytes and 3 <> 0) or (PtrUInt(Pixels) and 3 <> 0) then
       raise Exception.Create('TGraphBufGR.CreateN');
   end;
 end;
@@ -620,7 +620,7 @@ begin
   if Self.PitchBytes and 3 <> 0 then
     Self.PitchBytes := Self.PitchBytes + 4 - (Self.PitchBytes and 3);
   Pixels := AllocEC(Self.PitchBytes * Self.Height);
-  if (Self.PitchBytes and 3 <> 0) or (Cardinal(Pixels) and 3 <> 0) then
+  if (Self.PitchBytes and 3 <> 0) or (PtrUInt(Pixels) and 3 <> 0) then
     raise Exception.Create('TGraphBufGR.CreateBYTE');
 end;
 

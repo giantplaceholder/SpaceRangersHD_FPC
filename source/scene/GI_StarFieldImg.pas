@@ -68,7 +68,7 @@ type
     procedure SeedStars;
     procedure AdvanceStars;
     procedure RedirectStars;
-    procedure AnimateStars(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateStars(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure SetViewPosition(Position: TPointF);
     procedure ApplyStarConfig(Block: TBlockParEC);
   end;
@@ -288,7 +288,7 @@ begin
   end;
 end;
 
-procedure TStarFieldImgGI.AnimateStars(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TStarFieldImgGI.AnimateStars(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Delta: Single;
 begin

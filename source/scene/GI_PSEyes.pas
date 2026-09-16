@@ -86,7 +86,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; PaletteIndex: Integer);
     destructor Destroy; override;
     procedure UpdateProjectionBounds;
@@ -294,7 +294,7 @@ begin
     end;
 end;
 
-procedure TPSEyesGI.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSEyesGI.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Particle, Current: PEyesParticle;
 begin

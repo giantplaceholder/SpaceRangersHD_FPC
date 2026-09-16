@@ -62,7 +62,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure UpdateProjectionBounds;
@@ -224,7 +224,7 @@ procedure TPSWeapon03Lezka.Invalidate;
 begin
 end;
 
-procedure TPSWeapon03Lezka.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon03Lezka.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Y: Integer;
   Distance, Phase: Single;

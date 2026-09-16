@@ -81,10 +81,10 @@ type
     procedure CloseClicked(Sender: TObjectGI);
     procedure RefreshMoneyWarning;
     procedure FlashMoneyWarning;
-    procedure MoneyWarningTick(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure MoneyWarningTick(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RefreshCargoWarning;
     procedure FlashCargoWarning;
-    procedure CargoWarningTick(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure CargoWarningTick(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure ShowControlHelp(Sender: TObjectGI; Visible: Boolean);
     procedure ShowHelpText(Value: WideString; Visible: Boolean);
@@ -1816,7 +1816,7 @@ begin
   RefreshMoneyWarning;
 end;
 
-procedure TfGoodsShop2.MoneyWarningTick(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGoodsShop2.MoneyWarningTick(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Dec(MoneyWarningTicks);
   if MoneyWarningTicks <= 0 then
@@ -1863,7 +1863,7 @@ begin
   RefreshCargoWarning;
 end;
 
-procedure TfGoodsShop2.CargoWarningTick(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfGoodsShop2.CargoWarningTick(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Dec(CargoWarningTicks);
   if CargoWarningTicks <= 0 then

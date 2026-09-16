@@ -1783,7 +1783,7 @@ begin
   for I := 0 to Constellation.Stars.Count - 1 do
   begin
     Star := Constellation.Stars[I];
-    if (TStar(Integer(Star) + 0) <> CurrentStar)
+    if (TStar(PtrInt(Star) + 0) <> CurrentStar)
         and not IsStarProtectedByScript(Star)
         and (Star.ShipTypeCounts[stKling] >= 6)
         and ((KellerShip = nil) or not KellerShip.InNormalSpace or (KellerShip.CurrentStar <> Star))

@@ -59,7 +59,7 @@ type
     constructor Create(GraphKey: WideString; UnusedPosition: TPoint);
     procedure SetState(Value: Integer);
     procedure AnimationCycleComplete(Sender: TObjectGI);
-    procedure AdvanceFade(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceFade(Timer: PCallbackTimerGI; UserData: PtrInt);
     function GetWeaponPortPoint(Seed: Cardinal): TPointF;
   end;
 
@@ -257,7 +257,7 @@ begin
   end;
 end;
 
-procedure TRuinsSE.AdvanceFade(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TRuinsSE.AdvanceFade(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if State = 2 then
   begin

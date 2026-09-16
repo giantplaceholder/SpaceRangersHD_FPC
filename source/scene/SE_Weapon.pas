@@ -1091,7 +1091,7 @@ begin
     Item.Lifetime := ExtractDigitsToIntW(Block.GetParam('LifeTime'))
   else
     Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
-  Item.Image.UserValue := Integer(Item);
+  Item.Image.UserValue := PtrInt(Item);
   if Item.AutoAnimation and not Item.LoopAnimation then
     Item.Image.CycleCompleteCallback := AnimationComplete;
 end;
@@ -1141,7 +1141,7 @@ begin
     Item.Lifetime := ExtractDigitsToIntW(Block.GetParam('LifeTime'))
   else
     Item.Lifetime := Item.Image.SequenceFrameCount * AnimationInterval;
-  Item.Image.UserValue := Integer(Item);
+  Item.Image.UserValue := PtrInt(Item);
   if Item.AutoAnimation and not Item.LoopAnimation then
     Item.Image.CycleCompleteCallback := AnimationComplete;
 end;

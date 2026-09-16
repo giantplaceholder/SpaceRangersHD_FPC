@@ -45,7 +45,7 @@ type
     procedure UpdateSegmentImages;
     procedure StartAnimationTimer;
     procedure StopAnimationTimer;
-    procedure AdvanceAnimationTimer(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceAnimationTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -191,7 +191,7 @@ begin
   end;
 end;
 
-procedure TLaserSE.AdvanceAnimationTimer(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TLaserSE.AdvanceAnimationTimer(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   Inc(FrameIndex);
   if FrameIndex < FrameImages.GetCount then

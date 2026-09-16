@@ -39,7 +39,7 @@ type
   PointerToTShipStatBonusEntry = ^TShipStatBonusEntry;
 
   TShipEquipmentCacheView = packed record
-    Prefix: array[0..247] of Byte;
+    // Overlay the contiguous Hull..DefGenerator fields, not a fixed Win32 offset.
     Slots: array[42..49] of TEquipment;
   end;
 
@@ -821,8 +821,8 @@ type
         ActionType: Byte;
         Object1: TObject;
         Object2: TObject;
-        Param: Integer
-    ): Integer;
+        Param: PtrInt
+    ): PtrInt;
     function RelationToShip(Ship: TShip): Byte;
   end;
 
@@ -999,9 +999,9 @@ begin
     CargoGoods[Kind].TotalCost := 0;
   end;
   // The contiguous Hull..DefGenerator fields are indexed by native item type.
-  for Kind := Low(PShipEquipmentCacheView(Self).Slots)
-      to High(PShipEquipmentCacheView(Self).Slots) do
-    PShipEquipmentCacheView(Self).Slots[Kind] := nil;
+  for Kind := Low(PShipEquipmentCacheView(@Hull).Slots)
+      to High(PShipEquipmentCacheView(@Hull).Slots) do
+    PShipEquipmentCacheView(@Hull).Slots[Kind] := nil;
   for I := 1 to 5 do
     Weapons[I] := nil;
   WeaponCount := 0;
@@ -4306,7 +4306,7 @@ begin
     Exit;
   end;
   Point := Planet.GetPosition;
-  Result := Round(PointDistance(PPointF(Integer(@Point) + 0)^, Position) / (Speed + 1)) + 1;
+  Result := Round(PointDistance(PPointF(PtrInt(@Point) + 0)^, Position) / (Speed + 1)) + 1;
 end;
 
 procedure TShip.NotifyCompanionDeath;
@@ -7543,9 +7543,9 @@ procedure TShip.EquipItem(Item: TEquipment);
 begin
   if Byte(Item.ItemType) in [Ord(t_Hull)..Ord(t_DefGenerator)] then
   begin
-    if PShipEquipmentCacheView(Self).Slots[Byte(Item.ItemType)] <> nil then
-      PShipEquipmentCacheView(Self).Slots[Byte(Item.ItemType)].Unequip;
-    PShipEquipmentCacheView(Self).Slots[Byte(Item.ItemType)] := Item;
+    if PShipEquipmentCacheView(@Hull).Slots[Byte(Item.ItemType)] <> nil then
+      PShipEquipmentCacheView(@Hull).Slots[Byte(Item.ItemType)].Unequip;
+    PShipEquipmentCacheView(@Hull).Slots[Byte(Item.ItemType)] := Item;
   end
   else if Byte(Item.ItemType) in [Ord(t_Weapon1)..Ord(t_CustomWeapon)] then
   begin
@@ -7564,8 +7564,8 @@ var
 begin
   if ItemType in [Ord(t_Hull)..Ord(t_DefGenerator)] then
   begin
-    PShipEquipmentCacheView(Self).Slots[ItemType].Unequip;
-    PShipEquipmentCacheView(Self).Slots[ItemType] := nil;
+    PShipEquipmentCacheView(@Hull).Slots[ItemType].Unequip;
+    PShipEquipmentCacheView(@Hull).Slots[ItemType] := nil;
   end
   else if ItemType in [Ord(t_Weapon1)..Ord(t_CustomWeapon)] then
   begin
@@ -7595,7 +7595,7 @@ begin
       end;
   end
   else if (Byte(Item.ItemType) in [Ord(t_Hull)..Ord(t_DefGenerator)])
-      and (PShipEquipmentCacheView(Self).Slots[Byte(Item.ItemType)] = Item) then
+      and (PShipEquipmentCacheView(@Hull).Slots[Byte(Item.ItemType)] = Item) then
     UnequipSlot(Byte(Item.ItemType), 0);
 end;
 
@@ -8211,7 +8211,7 @@ var
 begin
   Hull := THull(Inventory[0]);
   for Kind := 43 to 49 do
-    PShipEquipmentCacheView(Self).Slots[Kind] := nil;
+    PShipEquipmentCacheView(@Hull).Slots[Kind] := nil;
   for I := 1 to 5 do
     Weapons[I] := nil;
   WeaponCount := 0;
@@ -8228,7 +8228,7 @@ begin
     if Item.EquippedFlag <> 0 then
     begin
       if Byte(Item.ItemType) in [Ord(t_Hull)..Ord(t_DefGenerator)] then
-        PShipEquipmentCacheView(Self).Slots[Byte(Item.ItemType)] := Item
+        PShipEquipmentCacheView(@Hull).Slots[Byte(Item.ItemType)] := Item
       else if Byte(Item.ItemType) in [Ord(t_Weapon1)..Ord(t_CustomWeapon)] then
       begin
         Inc(WeaponCount);
@@ -10139,7 +10139,7 @@ begin
     if Item is TWeapon then
       Item.Unequip
     else if (Byte(Item.ItemType) in [Ord(t_FuelTanks)..Ord(t_DefGenerator)])
-        and (PShipEquipmentCacheView(Self).Slots[Ord(Item.ItemType)] <> Item) then
+        and (PShipEquipmentCacheView(@Hull).Slots[Ord(Item.ItemType)] <> Item) then
       Item.Unequip;
   end;
   for I := 1 to 5 do
@@ -10159,11 +10159,11 @@ begin
       EquipItem(SelectBestUnequippedWeapon);
   for Kind := 43 to 49 do
   begin
-    if PShipEquipmentCacheView(Self).Slots[Kind] <> nil then
-      PShipEquipmentCacheView(Self).Slots[Kind].Unequip;
+    if PShipEquipmentCacheView(@Hull).Slots[Kind] <> nil then
+      PShipEquipmentCacheView(@Hull).Slots[Kind].Unequip;
     if GetSlotCountForItemType(Kind) > 0 then
     begin
-      PShipEquipmentCacheView(Self).Slots[Kind] := nil;
+      PShipEquipmentCacheView(@Hull).Slots[Kind] := nil;
       Best := nil;
       BestScore := 0;
       for I := 1 to Inventory.Count - 1 do
@@ -11909,7 +11909,7 @@ begin
     if OfferItem is TWeapon then
       OldItem := ReplacementWeapon
     else
-      OldItem := PShipEquipmentCacheView(Self).Slots[Byte(OfferItem.ItemType)];
+      OldItem := PShipEquipmentCacheView(@Hull).Slots[Byte(OfferItem.ItemType)];
     if (OfferItem.ItemType in [t_FuelTanks..t_Engine])
         and (OldItem = nil)
         and (not UseMoney or (Money >= OfferItem.Cost)) then
@@ -11981,7 +11981,7 @@ begin
     if BestItem is TWeapon then
       OldItem := ReplacementWeapon
     else
-      OldItem := PShipEquipmentCacheView(Self).Slots[Byte(BestItem.ItemType)];
+      OldItem := PShipEquipmentCacheView(@Hull).Slots[Byte(BestItem.ItemType)];
     Offers.Delete(Offers.IndexOf(BestItem));
     Bought := True;
     if OldItem <> nil then
@@ -15320,7 +15320,7 @@ begin
         Entry.Kind := Entries[Next].Kind;
         Entry.GoodsIndex := Entries[Next].GoodsIndex;
         Entry.ItemId := Item.Id;
-        Entry.Item := TItem(Integer(Item) + 0);
+        Entry.Item := TItem(PtrInt(Item) + 0);
         Entry.Retained := Entries[Next].Retained;
         Inc(Next);
       end;
@@ -18185,7 +18185,7 @@ begin
   end;
 end;
 
-function TShip.ScriptItemsAct(ActionType: Byte; Object1, Object2: TObject; Param: Integer): Integer;
+function TShip.ScriptItemsAct(ActionType: Byte; Object1, Object2: TObject; Param: PtrInt): PtrInt;
 var
   I, NewIndex: Integer;
   Item: TItem;

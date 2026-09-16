@@ -66,7 +66,7 @@ type
     procedure UpdateImageOrbitAndFrame(Image: PSpaceImageGI);
     procedure ProjectImages;
     function GetImage(Index: Integer): PSpaceImageGI;
-    procedure AnimateImages(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateImages(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure SetViewPosition(Position: TPointF);
     procedure LoadSpaceImageProperties(Block: TBlockParEC);
   end;
@@ -234,7 +234,7 @@ begin
   Result := AddPointerOffset(Images, Index * SizeOf(TSpaceImageGI));
 end;
 
-procedure TSpaceImgGI.AnimateImages(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TSpaceImgGI.AnimateImages(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Image: PSpaceImageGI;
   I: Integer;

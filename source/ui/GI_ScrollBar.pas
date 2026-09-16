@@ -81,7 +81,7 @@ type
     procedure UpdateSizeForOrientation;
     procedure StartAutoRepeat(DelayMs: Integer; RepeatMs: Integer);
     procedure StopAutoRepeat;
-    procedure AutoRepeat(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AutoRepeat(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure LoadScrollBarProperties(Block: TBlockParEC);
   end;
 
@@ -1088,7 +1088,7 @@ begin
   RepeatTimer := nil;
 end;
 
-procedure TScrollBarGI.AutoRepeat(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TScrollBarGI.AutoRepeat(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if PressedRegion = 1 then
     SetPosition(Position - SmallChange)

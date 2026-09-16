@@ -51,7 +51,7 @@ type
     Prev: PabStopLine;
     Next: PabStopLine;
     NextCollision: PabStopLine;
-    UserValue: Integer;
+    UserValue: PtrInt;
     First: PabStopPoint;
     Last: PabStopPoint;
     FirstColor: PCardinal;

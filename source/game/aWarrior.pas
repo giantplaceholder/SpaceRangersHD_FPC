@@ -2271,7 +2271,7 @@ begin
         end;
       end;
     end;
-    if (BestPlanet <> nil) and (TPlanet(Integer(BestPlanet) + 0) <> HomePlanet) then
+    if (BestPlanet <> nil) and (TPlanet(PtrInt(BestPlanet) + 0) <> HomePlanet) then
     begin
       I := HomePlanet.Warriors.IndexOf(Self);
       if I >= 0 then
@@ -2279,7 +2279,7 @@ begin
       I := BestPlanet.Warriors.IndexOf(Self);
       if I < 0 then
         BestPlanet.Warriors.Add(Self);
-      HomePlanet := TPlanet(Integer(BestPlanet) + 0);
+      HomePlanet := TPlanet(PtrInt(BestPlanet) + 0);
     end;
   end;
 end;

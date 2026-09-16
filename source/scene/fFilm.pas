@@ -66,7 +66,7 @@ type
     function GetViewOffset: TPoint;
     procedure SetViewOffset(Offset: TPoint);
     procedure FollowViewOffset(Offset: TPoint);
-    procedure PanView(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure PanView(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure KeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure KeyUp(Sender: TObjectGI; Key: Cardinal);
     procedure CopyLiveVisualStateToFilm;
@@ -77,7 +77,7 @@ type
     procedure CreateFilmSceneObjects(Film: TEFilm);
     procedure ReleaseFilmSceneObjects(Film: TEFilm; ReleaseTrailingReferences: Boolean);
     procedure ReuseSceneObjectsForPreloadedFilm;
-    procedure AdvancePausedEffects(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvancePausedEffects(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure SetFrameInterval(IntervalMs: Integer; UpdateSlider: Boolean);
     procedure SpeedSliderChanged(Sender: TObjectGI);
     procedure FrameSliderChanged(Sender: TObjectGI);
@@ -85,7 +85,7 @@ type
     procedure TurnSliderChanged(Sender: TObjectGI);
     procedure StartPlayback;
     procedure PausePlayback;
-    procedure AdvancePlayback(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvancePlayback(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure AdvanceOneStep;
     procedure InvalidateAnimatedControls;
   end;
@@ -318,7 +318,7 @@ begin
   end;
 end;
 
-procedure TfFilm.PanView(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfFilm.PanView(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Offset, OldOffset: TPoint;
   X, Y: SmallInt;
@@ -690,7 +690,7 @@ begin
   end;
 end;
 
-procedure TfFilm.AdvancePausedEffects(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfFilm.AdvancePausedEffects(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if TrailingFilmEffects <> nil then
   begin
@@ -815,7 +815,7 @@ begin
   end;
 end;
 
-procedure TfFilm.AdvancePlayback(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfFilm.AdvancePlayback(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   AdvanceOneStep;
   if NextCommand = nil then

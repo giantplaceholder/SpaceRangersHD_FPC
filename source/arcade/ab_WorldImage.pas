@@ -245,7 +245,7 @@ begin
           Entry.Image.SetOrigin(HalfPoint(Entry.Image.ClientSize));
           if (Entry.Image.GaiImageControl <> nil) and not Entry.StopAnimation then
           begin
-            Entry.Image.GaiImageControl.UserValue := Integer(Entry);
+            Entry.Image.GaiImageControl.UserValue := PtrInt(Entry);
             if not Entry.LoopAnimation then
               Entry.Image.GaiImageControl.CycleCompleteCallback :=
                   ArcadeBattleScreen.WorldImageCycleComplete
@@ -279,7 +279,7 @@ begin
           Entry.Image.SetOrigin(HalfPoint(Entry.Image.ClientSize));
           if (Entry.Image.GaiImageControl <> nil) and not Entry.StopAnimation then
           begin
-            Entry.Image.GaiImageControl.UserValue := Integer(Entry);
+            Entry.Image.GaiImageControl.UserValue := PtrInt(Entry);
             if not Entry.LoopAnimation then
               Entry.Image.GaiImageControl.CycleCompleteCallback :=
                   ArcadeBattleScreen.WorldImageCycleComplete

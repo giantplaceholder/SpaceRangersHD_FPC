@@ -59,7 +59,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure UpdateProjectionBounds;
@@ -229,7 +229,7 @@ procedure TPSWeapon07Blaster.Invalidate;
 begin
 end;
 
-procedure TPSWeapon07Blaster.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon07Blaster.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Y: Single;
   I, J: Integer;

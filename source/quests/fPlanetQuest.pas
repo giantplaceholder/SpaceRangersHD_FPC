@@ -79,7 +79,7 @@ type
     procedure DisabledChoiceMouseLeave(Sender: TObjectGI);
     procedure DisabledChoiceMouseUp(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure FinishChoiceLayout;
-    procedure AnimateTextPage(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateTextPage(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ClearParameterPanel;
     procedure AppendParameterText(Text: WideString);
     procedure LayoutParameterPanel;
@@ -371,7 +371,7 @@ begin
   Choice.Callback := Callback;
   Choice.Value := Value;
   Panel := TPanelGI.Create(Owner);
-  Panel.UserValue := Integer(Choice);
+  Panel.UserValue := PtrInt(Choice);
   Panel.SetName(IntToStr(ChoiceCount));
   Panel.SetPosition(Classes.Point(0, NextChoiceTop));
   Panel.SetSize(Classes.Point(Owner.ClientSize.X, 20));
@@ -708,7 +708,7 @@ begin
   end;
 end;
 
-procedure TfPlanetQuest.AnimateTextPage(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfPlanetQuest.AnimateTextPage(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Panel: TPanelScrollBarGI;
   Control: TObjectGI;
@@ -793,7 +793,7 @@ begin
     if TextLabel.ClientSize.Y < 10 then
       TextLabel.SetSize(Classes.Point(TextLabel.ClientSize.X, TextLabel.ClientSize.Y + 10));
     Inc(ParameterPanelHeight, TextLabel.ClientSize.Y);
-    TextLabel.UserData := Integer(FixedWidth);
+    TextLabel.UserData := PtrInt(FixedWidth);
     if FixedWidth then
       Inc(ParameterPanelHeight, 2);
     ParameterPanelWidth := Max(ParameterPanelWidth, TextLabel.ClientSize.X);

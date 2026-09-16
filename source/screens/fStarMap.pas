@@ -189,7 +189,7 @@ type
     );
     procedure SaveSpaceImageState(SpaceImage: TSpaceImgGI);
     procedure SaveSpaceBackground;
-    procedure DeferredEndTurn(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure DeferredEndTurn(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure EndTurnClicked(Sender: TObjectGI);
     procedure MapKeyDown(Sender: TObjectGI; Key: Cardinal);
     procedure MapKeyUp(Sender: TObjectGI; Key: Cardinal);
@@ -200,7 +200,7 @@ type
         DelayEndImage: Boolean;
         InitialImagePath: WideString
     );
-    procedure UpdatePathEndImage(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure UpdatePathEndImage(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ClearPathOverlay(PlayerPath: Boolean);
     procedure ShowAsteroidPath(Asteroid: TAsteroid);
     procedure ClearAsteroidPath;
@@ -217,7 +217,7 @@ type
     procedure QueueInterfaceImages;
     procedure ShowLargeHelp(const Text: WideString);
     procedure HideLargeHelp;
-    procedure AnimateLargeHelp(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateLargeHelp(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RedrawMap;
     procedure RunTalkDialogs;
     procedure GalaxyClicked(Sender: TObjectGI);
@@ -226,8 +226,8 @@ type
     procedure StopOrderMode;
     procedure HideOrderInterface;
     procedure ConfigureMiddleButtonAction;
-    procedure ScrollMap(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure AdvanceSpaceEffects(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure ScrollMap(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure AdvanceSpaceEffects(Timer: PCallbackTimerGI; UserData: PtrInt);
     function IsMapPointBlocked(Sender: TObjectGI; Point: TPoint): Boolean;
     procedure MapLeftButtonDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MapMiddleButtonDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
@@ -261,16 +261,16 @@ type
     procedure ClearTargetMarkers;
     procedure UpdateWeaponPanelPosition;
     procedure AnimateWeaponPanel(Target: Integer);
-    procedure AdvanceWeaponPanel(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceWeaponPanel(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure UpdateSpacePanelPosition;
     procedure AnimateSpacePanel(Target: Integer);
-    procedure AdvanceSpacePanel(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceSpacePanel(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure StartTurnFilm;
     procedure StopTurnFilm(StopTurnProcessing: Boolean);
     procedure RestartTurnFilm;
     procedure ProcessTurnFilm;
-    procedure AdvanceFilmFrame(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure UpdateTurnCalculation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceFilmFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure UpdateTurnCalculation(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure BreakTurnClicked(Sender: TObjectGI);
     procedure UpdateFilmCamera;
     procedure CenterFilmShipClicked(Sender: TObjectGI);
@@ -1264,7 +1264,7 @@ begin
   SaveSpaceImageState(GetByName('SpaceImg') as TSpaceImgGI);
 end;
 
-procedure TfStarMap.DeferredEndTurn(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.DeferredEndTurn(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if DeferredEndTurnTimer <> nil then
   begin
@@ -1815,7 +1815,7 @@ begin
                 GameDoubleClickTime + 50,
                 999,
                 UpdatePathEndImage,
-                Integer(EndImage)
+                PtrInt(EndImage)
             );
       end
       else if Ship.Order = soFollowShip then
@@ -1832,7 +1832,7 @@ begin
                 GameDoubleClickTime + 50,
                 999,
                 UpdatePathEndImage,
-                Integer(EndImage)
+                PtrInt(EndImage)
             );
       end
       else if Ship.Order = soLand then
@@ -1898,7 +1898,7 @@ begin
   end;
 end;
 
-procedure TfStarMap.UpdatePathEndImage(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.UpdatePathEndImage(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if PlayerPathTimer <> nil then
   begin
@@ -2512,7 +2512,7 @@ begin
   LargeHelpBuffer.SetActive(False);
 end;
 
-procedure TfStarMap.AnimateLargeHelp(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.AnimateLargeHelp(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Intensity: Single;
   Color: Cardinal;
@@ -2966,7 +2966,7 @@ begin
   MapControls.LeftButtonDoubleClickCallback := MapLeftButtonDown;
 end;
 
-procedure TfStarMap.ScrollMap(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.ScrollMap(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Point, OldPoint: TPoint;
   X, Y: SmallInt;
@@ -3004,7 +3004,7 @@ begin
   end;
 end;
 
-procedure TfStarMap.AdvanceSpaceEffects(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.AdvanceSpaceEffects(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if TrailingFilmEffects <> nil then
   begin
@@ -6868,7 +6868,7 @@ begin
   UpdateWeaponPanelPosition;
 end;
 
-procedure TfStarMap.AdvanceWeaponPanel(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.AdvanceWeaponPanel(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if WeaponPanelTarget <= 0.0 then
   begin
@@ -6929,7 +6929,7 @@ begin
   UpdateSpacePanelPosition;
 end;
 
-procedure TfStarMap.AdvanceSpacePanel(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.AdvanceSpacePanel(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if SpacePanelTarget <= 0.0 then
   begin
@@ -7474,7 +7474,7 @@ begin
   end;
 end;
 
-procedure TfStarMap.AdvanceFilmFrame(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.AdvanceFilmFrame(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   ProcessTurnFilm;
   if FilmFrameIntervalDelta <> 0.0 then
@@ -7507,7 +7507,7 @@ begin
   end;
 end;
 
-procedure TfStarMap.UpdateTurnCalculation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfStarMap.UpdateTurnCalculation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if BreakRequested and (GetPlayer <> nil) and not GetPlayer.IsOnPlanet then
     ContinueTurnCalculation := False

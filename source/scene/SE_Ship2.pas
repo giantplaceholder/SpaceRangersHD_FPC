@@ -120,8 +120,8 @@ type
     procedure StopAnimationTimer;
     procedure StartStateTimer;
     procedure StopStateTimer;
-    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
-    procedure SelectNextAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
+    procedure SelectNextAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
   end;
 
 implementation
@@ -393,12 +393,12 @@ begin
       AppendLogLineThreadSafe('TShip2SE.Connect');
       AppendLogLineThreadSafe(GraphKey);
       AppendLogLineThreadSafe('lastLabel=' + IntToWideString(RotateImageConstructionStage));
-      AppendLogLineThreadSafe('self=' + IntToWideString(Integer(Self)));
-      AppendLogLineThreadSafe('sp=' + IntToWideString(Integer(ASpace)));
-      AppendLogLineThreadSafe('FSpace=' + IntToWideString(Integer(Space)));
-      AppendLogLineThreadSafe('FImage=' + IntToWideString(Integer(Image)));
+      AppendLogLineThreadSafe('self=' + UIntToStr(PtrUInt(Self)));
+      AppendLogLineThreadSafe('sp=' + UIntToStr(PtrUInt(ASpace)));
+      AppendLogLineThreadSafe('FSpace=' + UIntToStr(PtrUInt(Space)));
+      AppendLogLineThreadSafe('FImage=' + UIntToStr(PtrUInt(Image)));
       if Space <> nil then
-        AppendLogLineThreadSafe('PGI=' + IntToWideString(Integer(Space.MapPanel)));
+        AppendLogLineThreadSafe('PGI=' + UIntToStr(PtrUInt(Space.MapPanel)));
       raise Exception.Create('Error in procedure TShip2SE.Connect, label = ' + IntToStr(Stage));
     end;
   end;
@@ -757,7 +757,7 @@ begin
   end;
 end;
 
-procedure TShip2SE.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TShip2SE.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   with Image.HitTestBounds do
     if (Cardinal(GameScreenWidth) * -0.1 > Right)
@@ -797,7 +797,7 @@ begin
   StartAnimationTimer;
 end;
 
-procedure TShip2SE.SelectNextAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TShip2SE.SelectNextAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Weight: Integer;
   Animation: TShip2AnimSE;

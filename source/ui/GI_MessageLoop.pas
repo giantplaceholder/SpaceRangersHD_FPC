@@ -29,7 +29,7 @@ type
 
   PointerToTCursorStateGI = ^TCursorStateGI;
 
-  TDialogChoiceEventGI = procedure(Value: Integer) of object;
+  TDialogChoiceEventGI = procedure(Value: PtrInt) of object;
 
   TObjectNotifyEventGI = procedure(Sender: TObjectGI) of object;
 
@@ -78,10 +78,11 @@ type
     MouseBlocking: Boolean;
     MouseBlockingTest: Boolean;
     ScrollUpdate: Boolean;
-    UserValue: Integer;
-    UserIndex: Integer;
-    UserData: Integer;
-    UserState: Integer;
+    // Untyped runtime payloads: callers store both numbers and object addresses.
+    UserValue: PtrInt;
+    UserIndex: PtrInt;
+    UserData: PtrInt;
+    UserState: PtrInt;
     Gap9C: array[0..3] of Byte;
     MouseMoveCallback: TObjectMouseEventGI;
     LeftButtonDownCallback: TObjectMouseEventGI;
@@ -201,11 +202,12 @@ type
 
   PCallbackTimerGI = PointerToTCallbackTimerGI;
 
-  TCallbackTimerEventGI = procedure(Timer: PCallbackTimerGI; UserData: Integer) of object;
+  // Callback payloads follow pointer width; delays and ticks remain 32-bit.
+  TCallbackTimerEventGI = procedure(Timer: PCallbackTimerGI; UserData: PtrInt) of object;
 
   TCallbackTimerGI = packed record
     Callback: TCallbackTimerEventGI;
-    UserData: Integer;
+    UserData: PtrInt;
     RepeatMs: Integer;
     DueTick: Cardinal;
     Prev: PCallbackTimerGI;
@@ -324,7 +326,7 @@ type
         DelayMs: Integer;
         RepeatMs: Integer;
         Callback: TCallbackTimerEventGI;
-        UserData: Integer = 0
+        UserData: PtrInt = 0
     ): PCallbackTimerGI;
     procedure CancelCallbackTimer(Timer: PCallbackTimerGI);
     procedure UpdateCallbackTimer(Timer: PCallbackTimerGI; DelayMs: Integer; RepeatMs: Integer);
@@ -2667,7 +2669,7 @@ end;
 function TMessageLoopGI.ScheduleCallbackTimer(
     DelayMs, RepeatMs: Integer;
     Callback: TCallbackTimerEventGI;
-    UserData: Integer
+    UserData: PtrInt
 ): PCallbackTimerGI;
 var
   Timer: PCallbackTimerGI;

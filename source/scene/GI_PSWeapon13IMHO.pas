@@ -53,7 +53,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure ClearParticles;
@@ -147,7 +147,7 @@ begin
   Inc(ParticleCount);
 end;
 
-procedure TPSWeapon13IMHO.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon13IMHO.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Particle: PIMHOParticle;
   J, I, K, L, M: Integer;

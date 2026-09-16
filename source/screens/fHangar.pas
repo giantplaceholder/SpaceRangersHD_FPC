@@ -68,7 +68,7 @@ type
     procedure StopAnimation(Sender: TObjectGI);
     function RefreshTakeOffStatus: Boolean;
     procedure AmbientAnimationComplete(Sender: TObjectGI);
-    procedure StartAmbientAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure StartAmbientAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
     function GetShipPortraitScale(Ship: TShip): Single;
     procedure LoadDockedShipImage(
         Index: Integer;
@@ -77,11 +77,11 @@ type
         Scale: Single
     );
     procedure SetDockedShipOpacity(Index: Integer; Alpha: Byte);
-    procedure AnimateDockedShips(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure AnimateDockedShips(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure RefreshDockedShips;
     procedure MainMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
     procedure MainRightButtonDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
-    procedure HideShipInfo(Timer: PCallbackTimerGI; UserData: Integer);
+    procedure HideShipInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
     procedure ShowShipInfo(Ship: TShip);
   end;
 
@@ -565,9 +565,9 @@ begin
         0,
         0,
         Pointer(
-            Cardinal(ScreenRenderBuffer.GetPixels)
-                + Cardinal(Position.X * 2)
-                + Cardinal(Position.Y * ScreenRenderBuffer.PitchBytes)
+            PtrInt(ScreenRenderBuffer.GetPixels)
+                + PtrInt(Position.X) * 2
+                + PtrInt(Position.Y) * ScreenRenderBuffer.PitchBytes
         ),
         ScreenRenderBuffer.PitchBytes,
         0,
@@ -1174,7 +1174,7 @@ begin
       ScheduleCallbackTimer(RandomIntRange(2000, 4000), 1, StartAmbientAnimation);
 end;
 
-procedure TfHangar.StartAmbientAnimation(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfHangar.StartAmbientAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if AmbientAnimationTimer <> nil then
   begin
@@ -1273,7 +1273,7 @@ begin
   end;
 end;
 
-procedure TfHangar.AnimateDockedShips(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfHangar.AnimateDockedShips(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   I: Integer;
 begin
@@ -1554,7 +1554,7 @@ begin
   end;
 end;
 
-procedure TfHangar.HideShipInfo(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TfHangar.HideShipInfo(Timer: PCallbackTimerGI; UserData: PtrInt);
 begin
   if ShipInfoHideTimer <> nil then
   begin

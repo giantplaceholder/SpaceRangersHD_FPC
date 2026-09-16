@@ -67,7 +67,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure ClearParticles;
@@ -87,7 +87,7 @@ type
     procedure Invalidate; override;
     procedure Draw(ClipRect: TRect); override;
     procedure SetTargetPoint(Point: TPoint); override;
-    procedure Advance(Timer: PCallbackTimerGI; UserData: Integer); override;
+    procedure Advance(Timer: PCallbackTimerGI; UserData: PtrInt); override;
     constructor Create(Owner: TObjectGI; APaletteIndex: Integer);
     destructor Destroy; override;
     procedure ClearParticles;
@@ -176,7 +176,7 @@ begin
   Inc(ParticleCount);
 end;
 
-procedure TPSWeapon09BranchGI.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon09BranchGI.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Particle: PMResonatorParticle;
   J, I, K: Integer;
@@ -419,7 +419,7 @@ begin
   ParticleCapacity := 0;
 end;
 
-procedure TPSWeapon09MResonator.Advance(Timer: PCallbackTimerGI; UserData: Integer);
+procedure TPSWeapon09MResonator.Advance(Timer: PCallbackTimerGI; UserData: PtrInt);
 var
   Particle: PMResonatorParticle;
   Count, I: Integer;

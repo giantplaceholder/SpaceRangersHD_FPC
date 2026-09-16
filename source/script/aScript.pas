@@ -135,7 +135,8 @@ type
     DialogName: WideString;
     Priority: Integer;
     Script: TScript;
-    AnswerData: Cardinal;
+    // Runtime GAnswerData can carry an object address.
+    AnswerData: PtrUInt;
   end;
 
   PScriptPlanetBinding = PointerToTScriptPlanet;
@@ -148,7 +149,8 @@ type
     Text: WideString;
     Answer: WideString;
     Priority: Integer;
-    AnswerData: Cardinal;
+    // Runtime GAnswerData can carry an object address.
+    AnswerData: PtrUInt;
     ReplaceGreeting: Boolean;
     Gap19: array[0..2] of Byte;
     ActionCode: WideString;
@@ -244,8 +246,8 @@ type
         Ship: TShip;
         Object1: TObject;
         Object2: TObject;
-        Param: Integer
-    ): Integer;
+        Param: PtrInt
+    ): PtrInt;
   end;
 
   TScriptPlace = class(TObjectEx)
@@ -258,7 +260,7 @@ type
     DistanceScale: Single;
     Radius: Integer;
     TargetVarName: WideString;
-    TargetValue: Dword;
+    TargetValue: PtrUInt;
     TargetVarName2: WideString;
     TargetValue2: TVarEC;
     constructor Create;
@@ -302,8 +304,8 @@ type
         Ship: TShip;
         Object1: TObject;
         Object2: TObject;
-        Param: Integer
-    ): Integer;
+        Param: PtrInt
+    ): PtrInt;
     function FormatDataText(Text: WideString; ColorTag: WideString): WideString;
   end;
 
@@ -345,7 +347,7 @@ type
     Name: WideString;
     StateKind: Integer;
     TargetVarName: WideString;
-    TargetValue: Dword;
+    TargetValue: PtrUInt;
     EnemyGroupNames: array of WideString;
     EnemyGroupIndices: array of Integer;
     PickupItemVarName: WideString;
@@ -737,8 +739,8 @@ function RunItemConfigActionCode(
     Ship: TShip;
     Object1: TObject;
     Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 
 function RunCustomShipInfoActionCode(
     Info: PCustomShipInfo;
@@ -746,8 +748,8 @@ function RunCustomShipInfoActionCode(
     Ship: TShip;
     Object1: TObject;
     Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 
 function GetScriptContextDescription: WideString;
 
@@ -1305,7 +1307,7 @@ var
   I: Integer;
 begin
   SharedScriptVariables.GetVar('GRunFrom').SetInt(RunFrom);
-  SharedScriptVariables.GetVar('GRunStar').SetDword(Cardinal(Star));
+  SharedScriptVariables.GetVar('GRunStar').SetDword(PtrUInt(Star));
   Candidates := TList.Create;
   CollectInactiveScriptTemplates(Candidates);
   for I := 0 to Candidates.Count - 1 do
@@ -2453,14 +2455,14 @@ begin
   CurrentShip := Binding.Ship;
   CurrentScript := Self;
   InitCode.LocalVar.GetVar('EndState').SetInt(Ord(Binding.EndState));
-  InitCode.LocalVar.GetVar('CurShip').SetDword(Cardinal(CurrentShip));
+  InitCode.LocalVar.GetVar('CurShip').SetDword(PtrUInt(CurrentShip));
 end;
 
 procedure TScript.PublishCurrentShip(Ship: TShip);
 begin
   CurrentShip := Ship;
   CurrentScript := Self;
-  InitCode.LocalVar.GetVar('CurShip').SetDword(Cardinal(CurrentShip));
+  InitCode.LocalVar.GetVar('CurShip').SetDword(PtrUInt(CurrentShip));
 end;
 
 function TScript.GetStar(Name: WideString): TScriptStar;
@@ -3364,12 +3366,12 @@ begin
     for I := 0 to Stars.Count - 1 do
     begin
       Star := TScriptStar(Stars[I]);
-      InitCode.LocalVar.GetVar(Star.Name).SetDword(Cardinal(Star.Star));
+      InitCode.LocalVar.GetVar(Star.Name).SetDword(PtrUInt(Star.Star));
       if Star.Planets <> nil then
         for J := 0 to High(Star.Planets) do
         begin
           PlanetBinding := @Star.Planets[J];
-          InitCode.LocalVar.GetVar(PlanetBinding.Name).SetDword(Cardinal(PlanetBinding.Planet));
+          InitCode.LocalVar.GetVar(PlanetBinding.Name).SetDword(PtrUInt(PlanetBinding.Planet));
         end;
     end;
   end;
@@ -3423,7 +3425,7 @@ begin
     else
       RaiseWideMessage('Script.Place.Type');
     if CreateObjects then
-      InitCode.LocalVar.GetVar(Place.Name).SetDword(Cardinal(Place));
+      InitCode.LocalVar.GetVar(Place.Name).SetDword(PtrUInt(Place));
   end;
   Count := Buffer.GetInt32;
   for I := 0 to Count - 1 do
@@ -3449,7 +3451,7 @@ begin
     ScriptItem.TextData3 := '';
     ScriptItem.OnUseText := '';
     ScriptItem.OnActionText := '';
-    InitCode.LocalVar.GetVar(ScriptItem.Name).SetDword(Cardinal(ScriptItem));
+    InitCode.LocalVar.GetVar(ScriptItem.Name).SetDword(PtrUInt(ScriptItem));
   end;
   Count := Buffer.GetInt32;
   for I := 0 to Count - 1 do
@@ -3867,7 +3869,7 @@ begin
       if Place.PlaceKind = spkCoordinates then
       begin
         if Place.TargetVarName <> '' then
-          Place.TargetValue := Cardinal(InitCode.LocalVar.GetVar(Place.TargetVarName));
+          Place.TargetValue := PtrUInt(InitCode.LocalVar.GetVar(Place.TargetVarName));
         if Place.TargetVarName2 <> '' then
           Place.TargetValue2 := InitCode.LocalVar.GetVar(Place.TargetVarName2);
       end
@@ -4502,14 +4504,14 @@ begin
     Name := Buffer.ReadWideString;
     Star := GetStar(Name);
     Star.Star := TObject(Galaxy.IdToStar(Buffer.GetUInt32)) as TStar;
-    InitCode.LocalVar.GetVar(Star.Name).SetDword(Cardinal(Star.Star));
+    InitCode.LocalVar.GetVar(Star.Name).SetDword(PtrUInt(Star.Star));
     SubCount := Buffer.GetInt32;
     for K := 0 to SubCount - 1 do
     begin
       Name := Buffer.ReadWideString;
       PlanetBinding := GetPlanetBinding(Name);
       PlanetBinding.Planet := TObject(Galaxy.IdToPlanet(Buffer.GetUInt32)) as TPlanet;
-      InitCode.LocalVar.GetVar(PlanetBinding.Name).SetDword(Cardinal(PlanetBinding.Planet));
+      InitCode.LocalVar.GetVar(PlanetBinding.Name).SetDword(PtrUInt(PlanetBinding.Planet));
     end;
     Buffer.GetInt32;
   end;
@@ -4545,7 +4547,7 @@ begin
     else
       ScriptItem.OnActionText := '';
     if Name <> '' then
-      InitCode.LocalVar.GetVar(Name).SetDword(Cardinal(ScriptItem));
+      InitCode.LocalVar.GetVar(Name).SetDword(PtrUInt(ScriptItem));
     try
       ScriptItem.Item := TObject(Galaxy.IdToItem(Buffer.GetUInt32, True)) as TItem;
     except
@@ -4651,13 +4653,13 @@ begin
   for I := 0 to Places.Count - 1 do
   begin
     Place := TScriptPlace(Places[I]);
-    InitCode.LocalVar.GetVar(Place.Name).SetDword(Cardinal(Place));
+    InitCode.LocalVar.GetVar(Place.Name).SetDword(PtrUInt(Place));
     if Place.OriginVarName <> '' then
       Place.OriginStar := TStar(InitCode.LocalVar.GetVar(Place.OriginVarName).GetDword);
     if Place.PlaceKind = spkCoordinates then
     begin
       if Place.TargetVarName <> '' then
-        Place.TargetValue := Cardinal(InitCode.LocalVar.GetVar(Place.TargetVarName));
+        Place.TargetValue := PtrUInt(InitCode.LocalVar.GetVar(Place.TargetVarName));
       if Place.TargetVarName2 <> '' then
         Place.TargetValue2 := InitCode.LocalVar.GetVar(Place.TargetVarName2);
     end
@@ -5036,7 +5038,7 @@ end;
 function TScriptGICache.GetOrCompile(Block: TBlockParEC): TScriptGICacheUnit;
 var
   LowIndex, HighIndex, Middle: Integer;
-  Key: Cardinal;
+  Key: PtrUInt;
   Entry: TScriptGICacheUnit;
 
   function CreateUiCacheEntry:
@@ -5066,7 +5068,7 @@ begin
     end;
     Exit;
   end;
-  Key := Cardinal(Block);
+  Key := PtrUInt(Block);
   LowIndex := 0;
   Entry := TScriptGICacheUnit(Entries[0]);
   if Entry.Block = Block then
@@ -5074,7 +5076,7 @@ begin
     Result := Entry;
     Exit;
   end;
-  if Key < Cardinal(Entry.Block) then
+  if Key < PtrUInt(Entry.Block) then
   begin
     Entry := CreateUiCacheEntry;
     if Entry <> nil then
@@ -5091,7 +5093,7 @@ begin
     Result := Entry;
     Exit;
   end;
-  if Key > Cardinal(Entry.Block) then
+  if Key > PtrUInt(Entry.Block) then
   begin
     Entry := CreateUiCacheEntry;
     if Entry <> nil then
@@ -5120,7 +5122,7 @@ begin
       Result := Entry;
       Exit;
     end;
-    if Key < Cardinal(Entry.Block) then
+    if Key < PtrUInt(Entry.Block) then
       HighIndex := Middle
     else
       LowIndex := Middle;
@@ -5396,7 +5398,7 @@ begin
   if CurrentScript <> nil then
   begin
     CurrentScript.CurrentShip := Snapshot.CurrentShip;
-    CurrentScript.InitCode.LocalVar.GetVar('CurShip').SetDword(Cardinal(Snapshot.CurrentShip));
+    CurrentScript.InitCode.LocalVar.GetVar('CurShip').SetDword(PtrUInt(Snapshot.CurrentShip));
     CurrentScript.InitCode.LocalVar.GetVar('EndState').SetInt(Ord(Snapshot.EndState));
   end;
 end;
@@ -5464,8 +5466,8 @@ function TScriptItem.RunActionCode(
     ActionType: Byte;
     Ship: TShip;
     Object1, Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 var
   Snapshot: TScriptContextSnapshot;
 begin
@@ -5496,7 +5498,7 @@ begin
         ScriptActionShipStack.Add(Ship);
         RunScriptCode(OnActionText, ActionCode, Script.InitCode);
         ScriptUnSnap(Snapshot);
-        Result := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
+        Result := PtrInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
         ScriptActionTypeStack.Delete(ScriptActionTypeStack.Count - 1);
         ScriptActionObject1Stack.Delete(ScriptActionObject1Stack.Count - 1);
         ScriptActionObject2Stack.Delete(ScriptActionObject2Stack.Count - 1);
@@ -5521,8 +5523,8 @@ function TScriptShip.RunActionCode(
     ActionType: Byte;
     Ship: TShip;
     Object1, Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 var
   Snapshot: TScriptContextSnapshot;
 begin
@@ -5542,7 +5544,7 @@ begin
           ScriptActionShipStack.Add(Ship);
           RunScriptCode(State.OnActionText, State.ActionCode, Script.InitCode);
           ScriptUnSnap(Snapshot);
-          Result := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
+          Result := PtrInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
           ScriptActionTypeStack.Delete(ScriptActionTypeStack.Count - 1);
           ScriptActionObject1Stack.Delete(ScriptActionObject1Stack.Count - 1);
           ScriptActionObject2Stack.Delete(ScriptActionObject2Stack.Count - 1);
@@ -5592,7 +5594,7 @@ begin
     Script := Binding.Script;
     CurrentScript := Script;
     Script.CurrentShip := Ship;
-    Script.InitCode.LocalVar.GetVar('CurShip').SetDword(Cardinal(Ship));
+    Script.InitCode.LocalVar.GetVar('CurShip').SetDword(PtrUInt(Ship));
     ParentCode := Script.InitCode;
   end;
   if Text <> '' then
@@ -5603,7 +5605,7 @@ begin
       ExecuteScriptText(Text, ParentCode.LocalVar)
     else
       ExecuteScriptText(Text, nil);
-    Result := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
+    Result := PtrInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
     ScriptActionParamStack.Delete(ScriptActionParamStack.Count - 1);
     ScriptActionShipStack.Delete(ScriptActionShipStack.Count - 1);
   end;
@@ -5616,8 +5618,8 @@ function RunItemConfigActionCode(
     ActionType: Byte;
     Ship: TShip;
     Object1, Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 var
   Entry: TScriptCacheUnit;
   Binding: TScriptItem;
@@ -5652,7 +5654,7 @@ begin
           end;
           RunScriptCode(Entry.SourceText, Entry.Code, ParentCode);
           ScriptUnSnap(Snapshot);
-          Result := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
+          Result := PtrInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
           ScriptActionTypeStack.Delete(ScriptActionTypeStack.Count - 1);
           ScriptActionObject1Stack.Delete(ScriptActionObject1Stack.Count - 1);
           ScriptActionObject2Stack.Delete(ScriptActionObject2Stack.Count - 1);
@@ -5681,8 +5683,8 @@ function RunCustomShipInfoActionCode(
     ActionType: Byte;
     Ship: TShip;
     Object1, Object2: TObject;
-    Param: Integer
-): Integer;
+    Param: PtrInt
+): PtrInt;
 var
   Config: TBlockParEC;
   Entry: TScriptCacheUnit;
@@ -5736,7 +5738,7 @@ begin
             raise;
           end;
         end;
-        Result := Integer(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
+        Result := PtrInt(ScriptActionParamStack[ScriptActionParamStack.Count - 1]);
         ScriptActionTypeStack.Delete(ScriptActionTypeStack.Count - 1);
         ScriptActionObject1Stack.Delete(ScriptActionObject1Stack.Count - 1);
         ScriptActionObject2Stack.Delete(ScriptActionObject2Stack.Count - 1);

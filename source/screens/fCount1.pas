@@ -42,7 +42,7 @@ type
     procedure SubPressed(Sender: TObjectGI);
     procedure AddReleased(Sender: TObjectGI);
     procedure SubReleased(Sender: TObjectGI);
-    procedure RepeatChange(Timer: PCallbackTimerGI; Data: Integer);
+    procedure RepeatChange(Timer: PCallbackTimerGI; Data: PtrInt);
     procedure MaxClicked(Sender: TObjectGI);
     procedure AcceptClicked(Sender: TObjectGI);
     procedure CancelClicked(Sender: TObjectGI);
@@ -259,7 +259,7 @@ begin
   end;
 end;
 
-procedure TfCount1.RepeatChange(Timer: PCallbackTimerGI; Data: Integer);
+procedure TfCount1.RepeatChange(Timer: PCallbackTimerGI; Data: PtrInt);
 var
   Step: Cardinal;
 begin

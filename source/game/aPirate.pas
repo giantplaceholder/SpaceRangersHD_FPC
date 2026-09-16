@@ -722,7 +722,7 @@ function TPirate.SelectServicePlanet: TPlanet;
 begin
   if PlanetQueue.Count > 0 then
   begin
-    Result := TList(Integer(PlanetQueue) + 0)[0];
+    Result := TList(PtrInt(PlanetQueue) + 0)[0];
     if (GetFuelTanks.Fuel < GetFuelTanks.Capacity)
         or HasHullDamageOrBrokenEquippedItems
         or (NextRandomUnitFloat(RandomState) < 0.1) then
