@@ -9,6 +9,7 @@ unit fLoadRobot;
 interface
 
 uses
+  GameSystem,
   GI_MessageLoop,
   Types,
   fPanelLoad,
@@ -95,7 +96,7 @@ uses
   GI_GraphBuf,
   aConst,
   aMyFunction,
-  Windows,
+  GameInput,
   GI_Label;
 
 constructor TfLoadRobot.Create;
@@ -486,7 +487,7 @@ var
   Alternate: Boolean;
   Path: WideString;
   FindHandle: Cardinal;
-  FindData: TWin32FindDataW;
+  FindData: TSearchRec;
 begin
   Panel := GetByName('PanelSlot') as TPanelScrollBarGI;
   Panel.FreeOwnedChildren;
@@ -521,13 +522,14 @@ begin
     Path := '';
     if InstallConfig.CountParams('RobotPath') > 0 then
       Path := InstallConfig.GetParam('RobotPath');
-    FindHandle := Windows.FindFirstFileW(PWideChar(Path + 'Matrix\Map\*.cmap'), FindData);
-    if FindHandle <> INVALID_HANDLE_VALUE then
+    if SysUtils
+            .FindFirst(UTF8Encode(NativeGamePath(Path + 'Matrix\Map\*.cmap')), faAnyFile, FindData)
+        = 0 then
     begin
       repeat
-        if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
+        if (FindData.Attr and faDirectory) = 0 then
         begin
-          Path := TrimWideString(LowerCaseWideString(WideString(FindData.cFileName)));
+          Path := TrimWideString(LowerCaseWideString(WideString(FindData.Name)));
           I := 0;
           while I <= High(RobotMapDefinitions) do
           begin
@@ -538,15 +540,15 @@ begin
           if I > High(RobotMapDefinitions) then
           begin
             EntryIndex := InsertEntry(0);
-            Entries[EntryIndex].Name := ExtractFileNameNoExtW(WideString(FindData.cFileName));
-            Entries[EntryIndex].FileName := WideString(FindData.cFileName);
+            Entries[EntryIndex].Name := ExtractFileNameNoExtW(WideString(FindData.Name));
+            Entries[EntryIndex].FileName := WideString(FindData.Name);
             Entries[EntryIndex].MapIndex := -1;
             Entries[EntryIndex].Side := 0;
             Entries[EntryIndex].Length := -1;
           end;
         end;
-      until not Windows.FindNextFileW(FindHandle, FindData);
-      Windows.FindClose(FindHandle);
+      until SysUtils.FindNext(FindData) <> 0;
+      SysUtils.FindClose(FindData);
     end;
   end;
   UnlockedAccess := GetUnlockedAccess;
@@ -1013,7 +1015,7 @@ var
 begin
   CompletionData := nil;
   FileName := GetGameUserDirectory + 'robotcomplate.dat';
-  if SysUtils.FileExists(AnsiString(FileName)) then
+  if SysUtils.FileExists(NativeGamePath(AnsiString(FileName))) then
   begin
     try
       Buffer := TBufEC.Create;

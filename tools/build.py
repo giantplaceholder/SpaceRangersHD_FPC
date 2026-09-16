@@ -122,6 +122,9 @@ def pascal_flags(release: bool, *platform_paths: Path) -> list[str]:
     search_paths = [
         *platform_paths,
         ROOT / "platform",
+        ROOT / "vendor/fpc/packages/oggvorbis/src",
+        ROOT / "vendor/fpc/packages/fcl-image/src",
+        ROOT / "vendor/fpc/packages/pasjpeg/src",
         ROOT / "source",
         *sorted(path for path in (ROOT / "source").rglob("*") if path.is_dir()),
     ]
@@ -169,6 +172,7 @@ def build_macos(release: bool, rebuild: bool = False) -> Path:
     compile_pascal(work, [
         compiler, *compiler_flags, *pascal_flags(release, paszlib), "-Aclang-llvm-darwin",
         f"-FU{units}", f"-FE{libraries}", f"-Fl{libraries}",
+        f"-Fl{output('brew', '--prefix')}/lib",
         "-k-lokgf", "-k-rpath", "-k@executable_path", f"-XR{sdk}",
         ROOT / "source/Rangers.dpr",
     ], rebuild)  # fmt: skip

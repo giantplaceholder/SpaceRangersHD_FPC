@@ -9,6 +9,7 @@ unit fGameSettings;
 interface
 
 uses
+  Types,
   EC_Thread,
   aGalaxyStruct;
 
@@ -34,7 +35,6 @@ implementation
 
 uses
   Classes,
-  Windows,
   SysUtils,
   Math,
   EC_Str,

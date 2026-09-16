@@ -9,6 +9,8 @@ unit Globals;
 interface
 
 uses
+  Types,
+  GameEvents,
   fMainForm,
   fCfgSettings,
   fGameEnd,
@@ -62,8 +64,7 @@ uses
   EC_Struct,
   fFilmFile,
   SyncObjs,
-  Classes,
-  Types;
+  Classes;
 
 type
 
@@ -350,13 +351,13 @@ var
 
   SaveManagerMode: TSaveManagerMode = smmLoad;
 
-  TalkRequestEvent: Cardinal = 0;
+  TalkRequestEvent: TGameEventHandle = 0;
 
-  TalkCompletedEvent: Cardinal = 0;
+  TalkCompletedEvent: TGameEventHandle = 0;
 
-  ScriptUiRequestEvent: Cardinal = 0;
+  ScriptUiRequestEvent: TGameEventHandle = 0;
 
-  ScriptUiAbortEvent: Cardinal = 0;
+  ScriptUiAbortEvent: TGameEventHandle = 0;
 
   PlanetRenderTemplates: TList = nil;
 
@@ -758,20 +759,18 @@ uses
   EC_Str,
   GlobalsV,
   Math,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 procedure InitializeScriptHostRuntime;
 begin
   PersistentPlayerMessageLock := TCriticalSection.Create;
   SaveLoadLock := TCriticalSection.Create;
-  GetLastError;
   InitializePathNodePool;
   FilmHistory := TFilmFile.Create;
-  TalkRequestEvent := CreateEvent(nil, False, False, nil);
-  TalkCompletedEvent := CreateEvent(nil, False, False, nil);
-  ScriptUiRequestEvent := CreateEvent(nil, True, False, nil);
-  ScriptUiAbortEvent := CreateEvent(nil, True, False, nil);
+  TalkRequestEvent := CreateGameEvent(False, False);
+  TalkCompletedEvent := CreateGameEvent(False, False);
+  ScriptUiRequestEvent := CreateGameEvent(True, False);
+  ScriptUiAbortEvent := CreateGameEvent(True, False);
   TurnCalculationThread := TThreadCalc.Create;
   TurnCalculationThread.SetPriority(2);
   ScriptTemplates := TList.Create;
@@ -788,6 +787,13 @@ var
   Item: TObject;
   Index: Integer;
 begin
+  // Join while script globals and dialog events are still valid. RequestStop
+  // also releases conversations waiting for a UI that is being torn down.
+  if TurnCalculationThread <> nil then
+  begin
+    TurnCalculationThread.Free;
+    TurnCalculationThread := nil;
+  end;
   FinalizeScriptEngine;
   if GlobalScriptVariables <> nil then
   begin
@@ -809,29 +815,24 @@ begin
     ScriptTemplates.Free;
     ScriptTemplates := nil;
   end;
-  if TurnCalculationThread <> nil then
-  begin
-    TurnCalculationThread.Free;
-    TurnCalculationThread := nil;
-  end;
   if TalkRequestEvent <> 0 then
   begin
-    CloseHandle(TalkRequestEvent);
+    CloseGameEvent(TalkRequestEvent);
     TalkRequestEvent := 0;
   end;
   if TalkCompletedEvent <> 0 then
   begin
-    CloseHandle(TalkCompletedEvent);
+    CloseGameEvent(TalkCompletedEvent);
     TalkCompletedEvent := 0;
   end;
   if ScriptUiRequestEvent <> 0 then
   begin
-    CloseHandle(ScriptUiRequestEvent);
+    CloseGameEvent(ScriptUiRequestEvent);
     ScriptUiRequestEvent := 0;
   end;
   if ScriptUiAbortEvent <> 0 then
   begin
-    CloseHandle(ScriptUiAbortEvent);
+    CloseGameEvent(ScriptUiAbortEvent);
     ScriptUiAbortEvent := 0;
   end;
   for Race := 0 to 7 do

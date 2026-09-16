@@ -9,13 +9,13 @@ unit SE_Process;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
   GI_MessageLoop,
   GI_Panel,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 
@@ -62,7 +62,6 @@ function ClassSEtoName(Obj: TObjectSE): WideString;
 implementation
 
 uses
-  Windows,
   SysUtils,
   Math,
   GR_Main,

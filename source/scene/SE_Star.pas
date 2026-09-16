@@ -9,6 +9,7 @@ unit SE_Star;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
@@ -16,8 +17,7 @@ uses
   GI_Image,
   GI_GI,
   GI_MessageLoop,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

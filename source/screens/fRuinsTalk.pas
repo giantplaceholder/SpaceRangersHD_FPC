@@ -421,13 +421,12 @@ uses
   aPlayer,
   aShip,
   Math,
-  Windows,
-  MMSystem,
+  GameInput,
+  GameSystem,
   GI_XviD,
   GI_PanelScrollBar,
   ThreadCalc,
   aCalc,
-  Messages,
   Classes,
   fTalk,
   GI_Main,
@@ -1729,7 +1728,7 @@ var
   Progress: Double;
   Film: TxvidGI;
 begin
-  Progress := (timeGetTime - ScriptVideoStartedAt) / 138000;
+  Progress := (GameTickCount - ScriptVideoStartedAt) / 138000;
   if Progress > 1 then
     Progress := 1;
   Film := GetByName('Film') as TxvidGI;

@@ -9,10 +9,10 @@ unit GI_SpaceCircle;
 interface
 
 uses
+  Types,
   GI_MessageLoop,
   EC_Struct,
-  EC_BlockPar,
-  Types;
+  EC_BlockPar;
 
 type
 

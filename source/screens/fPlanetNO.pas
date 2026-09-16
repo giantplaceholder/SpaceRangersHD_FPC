@@ -9,6 +9,7 @@ unit fPlanetNO;
 interface
 
 uses
+  Types,
   EC_BlockPar,
   EC_Struct,
   GI_Image,
@@ -16,7 +17,6 @@ uses
   GI_MessageLoop,
   GI_Window,
   GR_Sound,
-  Types,
   aItem,
   fPanelLoad,
   fPanelMain;
@@ -116,7 +116,7 @@ implementation
 
 uses
   fGalaxy2,
-  Windows,
+  GameInput,
   aTranclucator,
   aRanger,
   fPlanetQuest,

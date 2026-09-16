@@ -117,7 +117,6 @@ uses
   EC_Str,
   EC_Mem,
   SysUtils,
-  Windows,
   aMyFunction,
   GlobalsV;
 
@@ -1292,9 +1291,9 @@ begin
           if FrameIndex > SequenceFrame then
             FrameIndex := 0;
           if FrameIndex = 0 then
-            CopyMemory(
-                CachedPlaybackGraphBuf.GetPixels,
-                AddPointerOffset(First.Image.Data, First.Image.GetPlane(0).DataOffset),
+            System.Move(
+                Pointer(AddPointerOffset(First.Image.Data, First.Image.GetPlane(0).DataOffset))^,
+                Pointer(CachedPlaybackGraphBuf.GetPixels)^,
                 CachedPlaybackGraphBuf.PitchBytes * CachedPlaybackGraphBuf.Height
             );
           if Image <> nil then

@@ -9,13 +9,13 @@ unit GI_MessageLoop;
 interface
 
 uses
+  Types,
   GameHeap,
   GR_Rect,
   Classes,
   EC_BlockPar,
   EC_Str,
-  EC_Struct,
-  Types;
+  EC_Struct;
 
 type
 
@@ -381,12 +381,12 @@ procedure PopMessageLoop(Loop: TMessageLoopGI);
 implementation
 
 uses
+  GameWindow,
   PopUp,
   BreakMessageGIException,
   EC_Mem,
-  MMSystem,
-  Windows,
-  Messages,
+  GameSystem,
+  GameInput,
   GI_Cursor,
   GI_Label,
   GI_Main,
@@ -1558,14 +1558,14 @@ end;
 
 procedure TFormSoundGroup.ScheduleNextPlayback;
 begin
-  NextPlayTick := Cardinal(RandomIntRange(MinDelayMs, MaxDelayMs)) + timeGetTime;
+  NextPlayTick := Cardinal(RandomIntRange(MinDelayMs, MaxDelayMs)) + GameTickCount;
 end;
 
 procedure TFormSoundGroup.PlayIfDue;
 var
   Weight: Integer;
 begin
-  if timeGetTime > NextPlayTick then
+  if GameTickCount > NextPlayTick then
   begin
     ScheduleNextPlayback;
     Weight := RandomIntRange(0, TotalWeight - 1);
@@ -1756,13 +1756,11 @@ begin
     Stage := 2;
     SetCursorByName('Main');
     Stage := 3;
-    GetCursorPos(Point);
-    if Direct3DPresentParameters.Windowed then
-      ScreenToClient(MainWindowHandle, Point);
+    GetGameMouse(Point);
     CursorControl.SetPosition(Point);
     if CustomCursorEnabled then
       SetCursorActive(True);
-    TimerTick := timeGetTime;
+    TimerTick := GameTickCount;
     Stage := 4;
     OnOpen;
     Stage := 5;
@@ -1798,7 +1796,7 @@ begin
     while (GR_WinMessage(ProcessWindowMessage) <> 0) and (ExitCode = 0) do
     begin
       Stage := 11;
-      Tick := timeGetTime;
+      Tick := GameTickCount;
       if Tick - LastCaretTick > 200 then
       begin
         Stage := 12;
@@ -1843,9 +1841,9 @@ begin
         if RecordingFrames then
         begin
           Stage := 18;
-          RecordingTime := timeGetTime;
+          RecordingTime := GameTickCount;
           CaptureRecordingFrame;
-          RecordingTime := timeGetTime - RecordingTime;
+          RecordingTime := GameTickCount - RecordingTime;
           Inc(TimerTick, RecordingTime);
           NextTimerToProcess := FirstTimer;
           while NextTimerToProcess <> nil do
@@ -1936,14 +1934,12 @@ begin
     FreeSavedLines;
     Stage := 4;
     SetCursorByName('Main');
-    GetCursorPos(Point);
-    if Direct3DPresentParameters.Windowed then
-      ScreenToClient(MainWindowHandle, Point);
+    GetGameMouse(Point);
     Stage := 5;
     CursorControl.SetPosition(Point);
     if CustomCursorEnabled then
       SetCursorActive(True);
-    TimerTick := timeGetTime;
+    TimerTick := GameTickCount;
     Stage := 6;
     OnOpen;
     Stage := 7;
@@ -1958,7 +1954,7 @@ begin
     Stage := 11;
     if ExitCode = 0 then
       DrawFrame;
-    LastFpsTick := timeGetTime;
+    LastFpsTick := GameTickCount;
     FrameCount := 0;
     CarryTicks := 0;
     Stage := 12;
@@ -1972,7 +1968,7 @@ begin
       if not MemorySnapshotActive then
       begin
         Stage := 14;
-        FrameTime := timeGetTime;
+        FrameTime := GameTickCount;
         if PopupController = nil then
         begin
           Stage := 15;
@@ -1989,25 +1985,25 @@ begin
         end;
         Stage := 19;
         SysUtils.Sleep(1);
-        FrameTime := timeGetTime - FrameTime;
+        FrameTime := GameTickCount - FrameTime;
         if FrameTime > 200 then
           FrameTime := 200;
         Stage := 20;
         if RecordingFrames then
         begin
           Stage := 21;
-          RecordingTime := timeGetTime;
+          RecordingTime := GameTickCount;
           CaptureRecordingFrame;
-          RecordingTime := timeGetTime - RecordingTime;
+          RecordingTime := GameTickCount - RecordingTime;
           Inc(LastFpsTick, RecordingTime);
         end;
-        ProcessingTime := timeGetTime;
+        ProcessingTime := GameTickCount;
         Inc(FrameCount);
-        if timeGetTime - LastFpsTick > 500 then
+        if GameTickCount - LastFpsTick > 500 then
         begin
           Stage := 22;
           FramesPerSecond := FrameCount * 2;
-          LastFpsTick := timeGetTime;
+          LastFpsTick := GameTickCount;
           FrameCount := 0;
           if ShowFrameRate then
             (GetByName('FPS') as TLabelGI).SetText('FPS: ' + IntToStr(FramesPerSecond));
@@ -2030,7 +2026,7 @@ begin
           MusicManager.HasSelectedMusic;
           SelectMusic;
         end;
-        ProcessingTime := timeGetTime - ProcessingTime;
+        ProcessingTime := GameTickCount - ProcessingTime;
         CarryTicks := ProcessingTime;
         if CarryTicks > 200 then
           CarryTicks := 0;
@@ -2215,9 +2211,9 @@ begin
         if (ViewportOffset.X <> NewOffset.X) or (ViewportOffset.Y <> NewOffset.Y) then
         begin
           IgnoreWarpMouseMove := True;
-          ClientToScreen(MainWindowHandle, Point);
-          SetCursorPos(Point.X, Point.Y);
-          ScreenToClient(MainWindowHandle, Point);
+
+          WarpGameMouse(Point.X, Point.Y);
+
         end;
         ViewportOffset := NewOffset;
       end;
@@ -2247,18 +2243,18 @@ begin
     else if Message = WM_MOUSELEAVE then
     begin
       Stage := 8;
-      GetCursorPos(Point);
-      ScreenToClient(MainWindowHandle, Point);
+      GetGameMouse(Point);
+
       Stage := 9;
       ProcessWindowMessage(WM_MOUSEMOVE, 0, Word(Point.X) or (Word(Point.Y) shl 16));
       Stage := 10;
-      LastMouseMessageTick := timeGetTime;
+      LastMouseMessageTick := GameTickCount;
     end
     else if Message = WM_MOUSEWHEEL then
     begin
       Stage := 11;
       Point := Classes.Point(SmallInt(LParam), SmallInt(LParam shr 16));
-      ScreenToClient(MainWindowHandle, Point);
+
       ConvertMousePointToViewport;
       ProcessMouseWheel(Word(WParam), Point, SmallInt(WParam shr 16));
     end
@@ -2411,7 +2407,7 @@ begin
       if StatusLabel.Active and (DebugControl <> nil) then
       begin
         Stage := 37;
-        if GetAsyncKeyState(VK_CONTROL) and $8000 = $8000 then
+        if GameKeyState(VK_CONTROL) and $8000 = $8000 then
           MoveStep := 10
         else
           MoveStep := 1;
@@ -2506,7 +2502,7 @@ var
         Digits := '0' + Digits;
       BaseName := 'Shot' + Digits + Extension;
       FileName := GetGameUserDirectory + 'Screenshots' + '\' + BaseName;
-      if not SysUtils.FileExists(FileName) then
+      if not SysUtils.FileExists(NativeGamePath(FileName)) then
         Break;
       Inc(Index);
     end;
@@ -2515,7 +2511,7 @@ var
   end;
 
 begin
-  CreateDir(GetGameUserDirectory + 'Screenshots');
+  CreateDir(NativeGamePath(GetGameUserDirectory + 'Screenshots'));
   DigitCount := Length(IntToStr(999));
   case ScreenshotFormat of
     0: Extension := '.bmp';
@@ -2638,17 +2634,15 @@ var
   NowTick: Cardinal;
   Timer: PCallbackTimerGI;
   WaitMs: Integer;
-  Handle: THandle;
 begin
-  NowTick := timeGetTime;
+  NowTick := GameTickCount;
   if FirstTimer <> nil then
   begin
     WaitMs := Integer(FirstTimer.DueTick - NowTick);
     if WaitMs > 0 then
     begin
-      Handle := 0;
-      MsgWaitForMultipleObjects(0, Handle, False, WaitMs, $1FF);
-      NowTick := timeGetTime;
+      WaitGameMessages(WaitMs);
+      NowTick := GameTickCount;
     end;
   end;
   NextTimerToProcess := FirstTimer;
@@ -2774,7 +2768,7 @@ end;
 
 procedure TMessageLoopGI.RefreshTimerTick;
 begin
-  TimerTick := timeGetTime;
+  TimerTick := GameTickCount;
 end;
 
 procedure TMessageLoopGI.SetCursorImage(const ImagePath: WideString; HotSpot: TPoint);
@@ -2839,9 +2833,7 @@ procedure TMessageLoopGI.UpdateCursorPosition;
 var
   Point: TPoint;
 begin
-  GetCursorPos(Point);
-  if Direct3DPresentParameters.Windowed then
-    ScreenToClient(MainWindowHandle, Point);
+  GetGameMouse(Point);
   CursorControl.SetPosition(Point);
 end;
 
@@ -2852,7 +2844,7 @@ end;
 
 procedure TMessageLoopGI.SetSystemCursorPosition(Point: TPoint);
 begin
-  SetCursorPos(Point.X, Point.Y);
+  WarpGameMouse(Point.X, Point.Y);
 end;
 
 function TMessageLoopGI.ConsumeTimerTickChange: Boolean;

@@ -59,8 +59,7 @@ uses
   GlobalsV,
   GR_Main,
   GR_DX,
-  Classes,
-  Windows;
+  Classes;
 
 constructor TGraphBufGI.Create(Owner: TObjectGI; UseTexture: Boolean);
 begin
@@ -195,7 +194,11 @@ begin
   Bitmap := AcquireOrCreateBitmap(Control);
   try
     GraphBuf.AllocateRgba(Bitmap.Bitmap.Width, Bitmap.Bitmap.Height, Bitmap.Bitmap.PitchBytes);
-    CopyMemory(GraphBuf.GetPixels, Bitmap.Bitmap.GetPixels, GraphBuf.PitchBytes * GraphBuf.Height);
+    System.Move(
+        Pointer(Bitmap.Bitmap.GetPixels)^,
+        Pointer(GraphBuf.GetPixels)^,
+        GraphBuf.PitchBytes * GraphBuf.Height
+    );
   finally
     Control.Release;
   end;
@@ -214,7 +217,11 @@ begin
   Bitmap := AcquireOrCreateBitmap(Control);
   try
     GraphBuf.AllocateRgb(Bitmap.Bitmap.Width, Bitmap.Bitmap.Height, Bitmap.Bitmap.PitchBytes);
-    CopyMemory(GraphBuf.GetPixels, Bitmap.Bitmap.GetPixels, GraphBuf.PitchBytes * GraphBuf.Height);
+    System.Move(
+        Pointer(Bitmap.Bitmap.GetPixels)^,
+        Pointer(GraphBuf.GetPixels)^,
+        GraphBuf.PitchBytes * GraphBuf.Height
+    );
   finally
     Control.Release;
   end;

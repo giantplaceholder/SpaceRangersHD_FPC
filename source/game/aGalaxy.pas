@@ -9,6 +9,7 @@ unit aGalaxy;
 interface
 
 uses
+  Types,
   aGalaxyStruct,
   aPath,
   SE_Space,
@@ -20,7 +21,6 @@ uses
   aMyFunction,
   EC_BlockPar,
   Classes,
-  Types,
   aVector;
 
 type
@@ -869,6 +869,9 @@ function GetLocalObjectLink(Obj: TObject; Suppress: Boolean): WideString;
 implementation
 
 uses
+{$IFDEF MSWINDOWS}
+  Windows,
+{$ENDIF}
   SE_Garbage,
   FGInt,
   FGIntRSA,
@@ -933,8 +936,7 @@ uses
   GlobalsV,
   GR_GraphBuf,
   Math,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 constructor TGalaxy.Create;
 var
@@ -952,8 +954,8 @@ var
     Size: Cardinal;
   begin
     Handle := FileOpen(AnsiString(ModuleName), 0);
-    Size := Windows.GetFileSize(Handle, nil);
-    Windows.CloseHandle(Handle);
+    Size := FileSeek(Handle, 0, fsFromEnd);
+    FileClose(Handle);
     if 12345678 - Size <> EncodedSize then
       ModuleSizeIntegrityStatus := RandomIntRange(996345752, 2014356243)
     else if ModuleSizeIntegrityStatus <= 0 then
@@ -982,6 +984,8 @@ begin
   if Block.CountParams('CheatsDisabled') > 0 then
     if ParseCheatsDisabledFlag(TrimWideString(Block.GetParamByPathOrMarker('CheatsDisabled'))) then
       CheatsDisabled := True;
+  // These sizes identify the original Win32 DLL distribution.
+{$IF Defined(MSWINDOWS) and Defined(CPU386)}
   // Preserve the native string construction and encoded module-size checks.
   DllSuffix := 'll';
   DllSuffix := '.d' + DllSuffix;
@@ -1008,6 +1012,9 @@ begin
   ModuleName :=
       LibraryPrefix + DecodeTextW('veohrablissufainlae') + DllSuffix; // Decoded: 'vorbisfile'
   CheckModuleSize($BB8916);
+{$ELSE}
+  ModuleSizeIntegrityStatus := RandomIntRange(-2021352435, -1235457467);
+{$ENDIF}
   GameEndReason := 0;
   PlayerRangerIndex := -1;
   for I := 0 to 8 do
@@ -5294,7 +5301,7 @@ begin
   FGIntDecodeBase64('DjAVRGx=', Bytes);
   FGIntFromBytes(Bytes, Exponent);
   SetLength(Bytes, Buffer.DataSize);
-  CopyMemory(PAnsiChar(Bytes), Buffer.Data, Buffer.DataSize);
+  System.Move(Pointer(Buffer.Data)^, Pointer(PAnsiChar(Bytes))^, Buffer.DataSize);
   FGIntEncodeBlocks(Bytes, Exponent, Modulus, Bytes);
   GR_Main.CCInterface.Buffer.AddBytes(PAnsiChar(Bytes), Length(Bytes));
   Size := GR_Main.CCInterface.Buffer.Position - StartOffset;
@@ -5746,6 +5753,7 @@ var
 begin
   if ModuleCrcIntegrityStatus = 0 then
   begin
+{$IF Defined(MSWINDOWS) and Defined(CPU386)}
     Extension := 'll';
     Extension := '.d' + Extension;
     FileName := DecodeTextW('sotoenalm^_^aucah') + Extension; // Decoded: 'steam_ach'
@@ -5770,6 +5778,7 @@ begin
     CheckModuleCRC($E1CA75C7);
     FileName := Prefix + DecodeTextW('veohrablissufainlae') + Extension; // Decoded: 'vorbisfile'
     CheckModuleCRC($D1ED59C5);
+{$ENDIF}
     if ModuleCrcIntegrityStatus = 0 then
       ModuleCrcIntegrityStatus := 1;
   end;
@@ -8139,6 +8148,23 @@ var
   Flag: Byte;
   UnusedLocalBytes: array[0..15] of Byte; // Native gap before backend temporaries.
 
+  function FloatFromSlot(Value: Pointer): Single;
+  var
+    Bits: Cardinal;
+  begin
+    // The lists contain IEEE-754 bits, not addresses or numerical pointer values.
+    Bits := Cardinal(PtrUInt(Value));
+    Move(Bits, Result, SizeOf(Result));
+  end;
+
+  function FloatToSlot(Value: Single): Pointer;
+  var
+    Bits: Cardinal;
+  begin
+    Move(Value, Bits, SizeOf(Bits));
+    Result := Pointer(PtrUInt(Bits));
+  end;
+
   function PointInsideTriangle(
       PointX,
       PointY,
@@ -8196,21 +8222,21 @@ begin
           PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint,
           PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint) then
       begin
-        XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X));
-        YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y));
-        XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
-        YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
+        XList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X));
+        YList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y));
+        XList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
+        YList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
       end;
-    MaxX := Single(XList[0]);
-    MinX := Single(XList[0]);
-    MaxY := Single(YList[0]);
-    MinY := Single(YList[0]);
+    MaxX := FloatFromSlot(XList[0]);
+    MinX := FloatFromSlot(XList[0]);
+    MaxY := FloatFromSlot(YList[0]);
+    MinY := FloatFromSlot(YList[0]);
     for SegmentIndex := 1 to XList.Count - 1 do
     begin
-      MaxX := Max(MaxX, Single(XList[SegmentIndex]));
-      MinX := Min(MinX, Single(XList[SegmentIndex]));
-      MaxY := Max(MaxY, Single(YList[SegmentIndex]));
-      MinY := Min(MinY, Single(YList[SegmentIndex]));
+      MaxX := Max(MaxX, FloatFromSlot(XList[SegmentIndex]));
+      MinX := Min(MinX, FloatFromSlot(XList[SegmentIndex]));
+      MaxY := Max(MaxY, FloatFromSlot(YList[SegmentIndex]));
+      MinY := Min(MinY, FloatFromSlot(YList[SegmentIndex]));
     end;
     MidX := (MaxX + MinX) * 0.5;
     MidY := (MaxY + MinY) * 0.5;
@@ -8221,10 +8247,10 @@ begin
         PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint,
         PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint) do
       Inc(SegmentIndex);
-    XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X));
-    YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y));
-    XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
-    YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
+    XList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X));
+    YList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y));
+    XList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
+    YList.Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
     while True do
     begin
       MiddleIndex := XList.Count;
@@ -8234,28 +8260,34 @@ begin
             PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint) then
         begin
           if ((PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X
-                      = Single(XList[XList.Count - 1]))
+                      = FloatFromSlot(XList[XList.Count - 1]))
                   and (PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y
-                      = Single(YList[XList.Count - 1])))
+                      = FloatFromSlot(YList[XList.Count - 1])))
               and not ((PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X
-                      = Single(XList[XList.Count - 2]))
+                      = FloatFromSlot(XList[XList.Count - 2]))
                   and (PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y
-                      = Single(YList[XList.Count - 2]))) then
+                      = FloatFromSlot(YList[XList.Count - 2]))) then
           begin
-            XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
-            YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
+            XList
+                .Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X));
+            YList
+                .Add(FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y));
           end
           else if ((PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.X
-                      = Single(XList[XList.Count - 1]))
+                      = FloatFromSlot(XList[XList.Count - 1]))
                   and (PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).EndPoint.Y
-                      = Single(YList[XList.Count - 1])))
+                      = FloatFromSlot(YList[XList.Count - 1])))
               and not ((PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X
-                      = Single(XList[XList.Count - 2]))
+                      = FloatFromSlot(XList[XList.Count - 2]))
                   and (PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y
-                      = Single(YList[XList.Count - 2]))) then
+                      = FloatFromSlot(YList[XList.Count - 2]))) then
           begin
-            XList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X));
-            YList.Add(Pointer(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y));
+            XList.Add(
+                FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.X)
+            );
+            YList.Add(
+                FloatToSlot(PMapLineSegment(Hidden.OutlineSegments[SegmentIndex]).StartPoint.Y)
+            );
           end;
           if (XList[XList.Count - 1] = XList[0]) and (YList[YList.Count - 1] = YList[0]) then
             Break;
@@ -8272,28 +8304,36 @@ begin
             PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint) then
         begin
           if ((PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.X
-                      = Single(XList[XList.Count - 1]))
+                      = FloatFromSlot(XList[XList.Count - 1]))
                   and (PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.Y
-                      = Single(YList[XList.Count - 1])))
+                      = FloatFromSlot(YList[XList.Count - 1])))
               and not ((PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.X
-                      = Single(XList[XList.Count - 2]))
+                      = FloatFromSlot(XList[XList.Count - 2]))
                   and (PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.Y
-                      = Single(YList[XList.Count - 2]))) then
+                      = FloatFromSlot(YList[XList.Count - 2]))) then
           begin
-            XList.Add(Pointer(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.X));
-            YList.Add(Pointer(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.Y));
+            XList.Add(
+                FloatToSlot(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.X)
+            );
+            YList.Add(
+                FloatToSlot(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.Y)
+            );
           end
           else if ((PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.X
-                      = Single(XList[XList.Count - 1]))
+                      = FloatFromSlot(XList[XList.Count - 1]))
                   and (PMapLineSegment(Current.OutlineSegments[SegmentIndex]).EndPoint.Y
-                      = Single(YList[XList.Count - 1])))
+                      = FloatFromSlot(YList[XList.Count - 1])))
               and not ((PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.X
-                      = Single(XList[XList.Count - 2]))
+                      = FloatFromSlot(XList[XList.Count - 2]))
                   and (PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.Y
-                      = Single(YList[XList.Count - 2]))) then
+                      = FloatFromSlot(YList[XList.Count - 2]))) then
           begin
-            XList.Add(Pointer(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.X));
-            YList.Add(Pointer(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.Y));
+            XList.Add(
+                FloatToSlot(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.X)
+            );
+            YList.Add(
+                FloatToSlot(PMapLineSegment(Current.OutlineSegments[SegmentIndex]).StartPoint.Y)
+            );
           end;
           if (XList[XList.Count - 1] = XList[0]) and (YList[YList.Count - 1] = YList[0]) then
             Break;
@@ -8325,17 +8365,25 @@ begin
           Dec(LastIndex, WorkX.Count);
         if MiddleIndex >= WorkX.Count then
           Dec(MiddleIndex, WorkX.Count);
-        AX := Single(WorkX[EarIndex]);
-        BX := Single(WorkX[LastIndex]);
-        CX := Single(WorkX[MiddleIndex]);
-        AY := Single(WorkY[EarIndex]);
-        BY := Single(WorkY[LastIndex]);
-        CY := Single(WorkY[MiddleIndex]);
+        AX := FloatFromSlot(WorkX[EarIndex]);
+        BX := FloatFromSlot(WorkX[LastIndex]);
+        CX := FloatFromSlot(WorkX[MiddleIndex]);
+        AY := FloatFromSlot(WorkY[EarIndex]);
+        BY := FloatFromSlot(WorkY[LastIndex]);
+        CY := FloatFromSlot(WorkY[MiddleIndex]);
         Flag := 0;
         for J := 0 to WorkX.Count - 1 do
           if (J <> EarIndex) and (J <> LastIndex) and (J <> MiddleIndex) then
           begin
-            if PointInsideTriangle(Single(WorkX[J]), Single(WorkY[J]), AX, AY, BX, BY, CX, CY) then
+            if PointInsideTriangle(
+                FloatFromSlot(WorkX[J]),
+                FloatFromSlot(WorkY[J]),
+                AX,
+                AY,
+                BX,
+                BY,
+                CX,
+                CY) then
               Flag := 1;
             if Flag = 1 then
               Break;
@@ -8371,12 +8419,12 @@ begin
           Dec(LastIndex, WorkX.Count);
         if MiddleIndex >= WorkX.Count then
           Dec(MiddleIndex, WorkX.Count);
-        AX := Single(WorkX[EarIndex]);
-        BX := Single(WorkX[LastIndex]);
-        CX := Single(WorkX[MiddleIndex]);
-        AY := Single(WorkY[EarIndex]);
-        BY := Single(WorkY[LastIndex]);
-        CY := Single(WorkY[MiddleIndex]);
+        AX := FloatFromSlot(WorkX[EarIndex]);
+        BX := FloatFromSlot(WorkX[LastIndex]);
+        CX := FloatFromSlot(WorkX[MiddleIndex]);
+        AY := FloatFromSlot(WorkY[EarIndex]);
+        BY := FloatFromSlot(WorkY[LastIndex]);
+        CY := FloatFromSlot(WorkY[MiddleIndex]);
         CrossEar := (BX - AX) * (BY - CY) - (BY - AY) * (BX - CX);
         CrossMid := (BX - AX) * (BY - MidY) - (BY - AY) * (BX - MidX);
         if (CrossEar * CrossMid >= 0)
@@ -8400,17 +8448,25 @@ begin
           Dec(LastIndex, WorkX.Count);
         if MiddleIndex >= WorkX.Count then
           Dec(MiddleIndex, WorkX.Count);
-        AX := Single(WorkX[EarIndex]);
-        BX := Single(WorkX[LastIndex]);
-        CX := Single(WorkX[MiddleIndex]);
-        AY := Single(WorkY[EarIndex]);
-        BY := Single(WorkY[LastIndex]);
-        CY := Single(WorkY[MiddleIndex]);
+        AX := FloatFromSlot(WorkX[EarIndex]);
+        BX := FloatFromSlot(WorkX[LastIndex]);
+        CX := FloatFromSlot(WorkX[MiddleIndex]);
+        AY := FloatFromSlot(WorkY[EarIndex]);
+        BY := FloatFromSlot(WorkY[LastIndex]);
+        CY := FloatFromSlot(WorkY[MiddleIndex]);
         Flag := 0;
         for J := 0 to WorkX.Count - 1 do
           if (J <> EarIndex) and (J <> LastIndex) and (J <> MiddleIndex) then
           begin
-            if PointInsideTriangle(Single(WorkX[J]), Single(WorkY[J]), AX, AY, BX, BY, CX, CY) then
+            if PointInsideTriangle(
+                FloatFromSlot(WorkX[J]),
+                FloatFromSlot(WorkY[J]),
+                AX,
+                AY,
+                BX,
+                BY,
+                CX,
+                CY) then
               Flag := 1;
             if Flag = 1 then
               Break;
@@ -8446,12 +8502,12 @@ begin
           Dec(LastIndex, WorkX.Count);
         if MiddleIndex >= WorkX.Count then
           Dec(MiddleIndex, WorkX.Count);
-        AX := Single(WorkX[EarIndex]);
-        BX := Single(WorkX[LastIndex]);
-        CX := Single(WorkX[MiddleIndex]);
-        AY := Single(WorkY[EarIndex]);
-        BY := Single(WorkY[LastIndex]);
-        CY := Single(WorkY[MiddleIndex]);
+        AX := FloatFromSlot(WorkX[EarIndex]);
+        BX := FloatFromSlot(WorkX[LastIndex]);
+        CX := FloatFromSlot(WorkX[MiddleIndex]);
+        AY := FloatFromSlot(WorkY[EarIndex]);
+        BY := FloatFromSlot(WorkY[LastIndex]);
+        CY := FloatFromSlot(WorkY[MiddleIndex]);
         CrossEar := (BX - AX) * (BY - CY) - (BY - AY) * (BX - CX);
         CrossMid := (BX - AX) * (BY - MidY) - (BY - AY) * (BX - MidX);
         if (CrossEar * CrossMid >= 0)
@@ -8486,17 +8542,25 @@ begin
           Dec(LastIndex, WorkX.Count);
         if MiddleIndex >= WorkX.Count then
           Dec(MiddleIndex, WorkX.Count);
-        AX := Single(WorkX[EarIndex]);
-        BX := Single(WorkX[LastIndex]);
-        CX := Single(WorkX[MiddleIndex]);
-        AY := Single(WorkY[EarIndex]);
-        BY := Single(WorkY[LastIndex]);
-        CY := Single(WorkY[MiddleIndex]);
+        AX := FloatFromSlot(WorkX[EarIndex]);
+        BX := FloatFromSlot(WorkX[LastIndex]);
+        CX := FloatFromSlot(WorkX[MiddleIndex]);
+        AY := FloatFromSlot(WorkY[EarIndex]);
+        BY := FloatFromSlot(WorkY[LastIndex]);
+        CY := FloatFromSlot(WorkY[MiddleIndex]);
         Flag := 0;
         for J := 0 to WorkX.Count - 1 do
           if (J <> EarIndex) and (J <> LastIndex) and (J <> MiddleIndex) then
           begin
-            if PointInsideTriangle(Single(WorkX[J]), Single(WorkY[J]), AX, AY, BX, BY, CX, CY) then
+            if PointInsideTriangle(
+                FloatFromSlot(WorkX[J]),
+                FloatFromSlot(WorkY[J]),
+                AX,
+                AY,
+                BX,
+                BY,
+                CX,
+                CY) then
               Flag := 1;
             if Flag = 1 then
               Break;
@@ -8544,12 +8608,12 @@ begin
       Dec(LastIndex, BestX.Count);
     if MiddleIndex >= BestX.Count then
       Dec(MiddleIndex, BestX.Count);
-    AX := Single(BestX[EarIndex]);
-    BX := Single(BestX[LastIndex]);
-    CX := Single(BestX[MiddleIndex]);
-    AY := Single(BestY[EarIndex]);
-    BY := Single(BestY[LastIndex]);
-    CY := Single(BestY[MiddleIndex]);
+    AX := FloatFromSlot(BestX[EarIndex]);
+    BX := FloatFromSlot(BestX[LastIndex]);
+    CX := FloatFromSlot(BestX[MiddleIndex]);
+    AY := FloatFromSlot(BestY[EarIndex]);
+    BY := FloatFromSlot(BestY[LastIndex]);
+    CY := FloatFromSlot(BestY[MiddleIndex]);
     CrossEar := (BX - AX) * (BY - CY) - (BY - AY) * (BX - CX);
     if CrossEar <> 0 then
       for I := 0 to Constellations.Count - 1 do
@@ -8678,8 +8742,8 @@ begin
           until Candidate = nil;
           CX := NewX;
           CY := NewY;
-          BestX[MiddleIndex] := Pointer(CX);
-          BestY[MiddleIndex] := Pointer(CY);
+          BestX[MiddleIndex] := FloatToSlot(CX);
+          BestY[MiddleIndex] := FloatToSlot(CY);
         end;
       end;
   end;

@@ -9,8 +9,8 @@ unit SE_Angel;
 interface
 
 uses
-  Classes,
   Types,
+  Classes,
   EC_BlockPar,
   EC_Struct,
   GI_GAI,

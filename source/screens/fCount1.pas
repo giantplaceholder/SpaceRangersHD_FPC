@@ -70,7 +70,7 @@ uses
   GI_Main,
   Math,
   SysUtils,
-  Windows,
+  GameInput,
   GR_Main,
   Globals,
   GlobalsV,

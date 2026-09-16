@@ -9,6 +9,7 @@ unit fGalaxy2;
 interface
 
 uses
+  Types,
   GI_PolyLine,
   Classes,
   EC_BlockPar,
@@ -20,7 +21,6 @@ uses
   GI_Label,
   GI_MessageLoop,
   GI_Panel,
-  Types,
   aGalaxy,
   aShip,
   fPanelMain;
@@ -112,7 +112,7 @@ uses
   Globals,
   GR_Main,
   GR_GraphBuf,
-  Windows,
+  GameInput,
   SysUtils,
   Math,
   aPlayer,

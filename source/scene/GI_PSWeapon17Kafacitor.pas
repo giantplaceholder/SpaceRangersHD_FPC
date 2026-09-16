@@ -9,10 +9,10 @@ unit GI_PSWeapon17Kafacitor;
 interface
 
 uses
+  Types,
   GI_PSWeapon,
   GI_MessageLoop,
-  EC_Struct,
-  Types;
+  EC_Struct;
 
 type
 

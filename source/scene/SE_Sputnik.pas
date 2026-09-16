@@ -9,6 +9,7 @@ unit SE_Sputnik;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Buf,
@@ -70,8 +71,7 @@ uses
   GlobalsV,
   Globals,
   GR_Main,
-  aMyFunction,
-  Types;
+  aMyFunction;
 
 procedure TSputnikSE.AttachToSpace(ASpace: TSpaceSE);
 begin

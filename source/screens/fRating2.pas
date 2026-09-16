@@ -97,7 +97,7 @@ uses
   fShip2,
   aMyFunction,
   Math,
-  Windows,
+  GameInput,
   SysUtils,
   Classes,
   EC_Str,
@@ -906,26 +906,10 @@ begin
       begin
         if SortAscending then
         begin
-          if CompareString(
-                      LOCALE_USER_DEFAULT,
-                      0,
-                      PChar(AnsiString(B.Name)),
-                      -1,
-                      PChar(AnsiString(A.Name)),
-                      -1)
-                  - 2
-              < 0 then
+          if WideCompareStr(B.Name, A.Name) < 0 then
             List.Exchange(I, J);
         end
-        else if CompareString(
-                    LOCALE_USER_DEFAULT,
-                    0,
-                    PChar(AnsiString(B.Name)),
-                    -1,
-                    PChar(AnsiString(A.Name)),
-                    -1)
-                - 2
-            > 0 then
+        else if WideCompareStr(B.Name, A.Name) > 0 then
           List.Exchange(I, J);
       end
       else if SortColumn = rrscExperience then

@@ -156,7 +156,7 @@ function ab_Zone_RandomRoute(Source: PabZone; Steps: Integer): PabZone;
 implementation
 
 uses
-  Windows,
+  Types,
   SysUtils,
   Math,
   EC_Mem,

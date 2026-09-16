@@ -9,6 +9,7 @@ unit SE_Missile;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
@@ -45,7 +46,6 @@ implementation
 uses
   aMyFunction,
   SysUtils,
-  Types,
   EC_Str,
   Globals,
   GR_Main,

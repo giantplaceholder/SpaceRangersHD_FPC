@@ -119,7 +119,6 @@ uses
   EC_Cache,
   GR_Main,
   Math,
-  Windows,
   SysUtils,
   GlobalsV,
   Direct3D9;

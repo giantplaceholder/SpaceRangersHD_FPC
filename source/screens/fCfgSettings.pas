@@ -109,9 +109,11 @@ function EstimateCpuClockMHz: Double;
 implementation
 
 uses
+  GameWindow,
+  GameSystem,
   SimpleSteamApi,
   aGalaxyStruct,
-  Windows,
+  GameInput,
   Classes,
   SysUtils,
   Math,
@@ -139,37 +141,8 @@ uses
   fStarMap;
 
 function EstimateCpuClockMHz: Double;
-var
-  CounterLow, CounterHigh: Cardinal;
-  ProcessPriority: Cardinal;
-  ThreadPriority: Integer;
 begin
-  ProcessPriority := GetPriorityClass(GetCurrentProcess);
-  ThreadPriority := GetThreadPriority(GetCurrentThread);
-  SetPriorityClass(GetCurrentProcess, REALTIME_PRIORITY_CLASS);
-  SetThreadPriority(GetCurrentThread, THREAD_PRIORITY_TIME_CRITICAL);
-  try
-    SysUtils.Sleep(10);
-    // The native source contains these timestamp-counter assembly blocks.
-    asm
-      rdtsc
-      mov CounterLow, eax
-      mov CounterHigh, edx
-    end;
-    SysUtils.Sleep(200);
-    asm
-      rdtsc
-      sub eax, CounterLow
-      sbb edx, CounterHigh
-      mov CounterLow, eax
-      mov CounterHigh, edx
-    end;
-    Result := CounterLow / 200000.0;
-  except
-    Result := 1500;
-  end;
-  SetThreadPriority(GetCurrentThread, ThreadPriority);
-  SetPriorityClass(GetCurrentProcess, ProcessPriority);
+  Result := GameCpuClockMHz;
 end;
 
 procedure TfCfgSettings.InitializeLayout;
@@ -355,7 +328,7 @@ begin
       for I := 0 to LanguageCount - 1 do
       begin
         Language := ExtractDelimitedPartW(AvailableLanguageCodes, I, ',');
-        if FileExists(AnsiString('install_' + Language + '.txt')) then
+        if FileExists(NativeGamePath(AnsiString('install_' + Language + '.txt'))) then
         begin
           Block := TBlockParEC.Create;
           Block.LoadFromTextFileWithEncodingProbe(PWideChar('install_' + Language + '.txt'), False);
@@ -1758,21 +1731,11 @@ end;
 procedure TfCfgSettings.AutoPresetClicked(Sender: TObjectGI);
 var
   SavedGroup, ClockMHz, MemoryMB: Integer;
-  ModernWindows: Boolean;
-  Memory: TMemoryStatus;
-  Version: TOSVersionInfo;
+  Memory: TGameMemoryStatus;
 begin
   ClockMHz := Round(Min(Min(EstimateCpuClockMHz, EstimateCpuClockMHz), EstimateCpuClockMHz));
-  FillChar(Memory, SizeOf(Memory), 0);
-  Memory.dwLength := SizeOf(Memory);
-  GlobalMemoryStatus(Memory);
-  MemoryMB := Memory.dwTotalPhys shr 20;
-  FillChar(Version, SizeOf(Version), 0);
-  Version.dwOSVersionInfoSize := SizeOf(Version);
-  GetVersionEx(Version);
-  ModernWindows :=
-      (Version.dwMajorVersion > 5)
-          or ((Version.dwMajorVersion = 5) and (Version.dwMinorVersion >= 1));
+  QueryGameMemory(Memory);
+  MemoryMB := Memory.TotalPhys shr 20;
   SavedGroup := ActiveGroupIndex;
   ActiveGroupIndex := 0;
   SetOptionValue('CountFilmSave', 30);
@@ -1820,7 +1783,8 @@ begin
   begin
     SetOptionValue('AnimMenuShip', 1);
   end;
-  SetOptionValue('SoftwareCursor', Ord(ModernWindows));
+  // The original only disabled this preset for hosts older than Windows XP.
+  SetOptionValue('SoftwareCursor', 1);
   SetOptionValue(
       'AnimHangar',
       Ord((ClockMHz >= 2000) or ((ClockMHz >= 1400) and (MemoryMB > 500)))
@@ -1907,7 +1871,7 @@ begin
   begin
     SetOptionValue('RobotSky', 0);
   end;
-  SetOptionValue('RobotSoftwareCursor', Ord(not ModernWindows));
+  SetOptionValue('RobotSoftwareCursor', 0);
   ActiveGroupIndex := 5;
   SetOptionValue('RobotSound', Ord(ClockMHz >= 700));
   SetOptionValue('RobotSoundVolume', 100);
@@ -2200,7 +2164,7 @@ begin
         LanguageInstallConfig.Free;
         LanguageInstallConfig := nil;
       end;
-      if not FileExists(AnsiString('install_' + SelectedLanguage + '.txt')) then
+      if not FileExists(NativeGamePath(AnsiString('install_' + SelectedLanguage + '.txt'))) then
         raise Exception.Create(AnsiString('Not installed language: ' + SelectedLanguage))
       else
       begin
@@ -2501,9 +2465,9 @@ begin
     end;
   end;
   if ShowSystemMouse then
-    while ShowCursor(True) < 0 do
+    while ShowGameCursor(True) < 0 do
   else
-    while ShowCursor(False) >= 0 do
+    while ShowGameCursor(False) >= 0 do
       ;
   if ResetNeeded and not RestartNeeded then
     GR_DXReset;

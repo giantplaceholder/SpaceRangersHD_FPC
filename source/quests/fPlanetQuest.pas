@@ -141,7 +141,7 @@ implementation
 
 uses
   aSaveLoad,
-  Windows,
+  GameInput,
   Classes,
   Math,
   GI_GraphBuf,

@@ -98,7 +98,7 @@ implementation
 uses
   Classes,
   SysUtils,
-  Windows,
+  GameInput,
   EC_Mem,
   EC_Str,
   GI_Main,

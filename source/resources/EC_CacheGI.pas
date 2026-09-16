@@ -53,7 +53,6 @@ uses
   EC_Mem,
   EC_Str,
   GR_Main,
-  Windows,
   Math;
 
 procedure TCGiControlEC.QueueLoadIfMissing(PendingLoads: TList);
@@ -775,7 +774,7 @@ begin
     LogWideScreenGiRescaleStart;
     SourceGraph := TGraphBufGR.Create(False);
     RenderGiBufferToGraphBuf(SourceBuffer, SourceGraph);
-    SourceGraph.RescaleRGBA_HW(GameScreenWidth, GameScreenHeight, True, 1, 1);
+    SourceGraph.RescaleRgbaLinear(GameScreenWidth, GameScreenHeight, True, 1, 1);
     StoreGraphBufAsGiBuffer(SourceBuffer, SourceGraph, Classes.Point(0, 0));
     SourceGraph.Clear;
     SourceGraph.Free;
@@ -825,7 +824,7 @@ begin
         if SourceBuffer.DataSize < SizeOf(TgiHeaderGR) then
           Exit;
         HeaderBytes := AllocEC(SizeOf(TgiHeaderGR));
-        CopyMemory(HeaderBytes, SourceBuffer.Data, SizeOf(TgiHeaderGR));
+        System.Move(Pointer(SourceBuffer.Data)^, Pointer(HeaderBytes)^, SizeOf(TgiHeaderGR));
         Header := HeaderBytes;
         ImageWidth := Header.Bounds.Right - Header.Bounds.Left;
         ImageHeight := Header.Bounds.Bottom - Header.Bounds.Top;
@@ -843,7 +842,7 @@ begin
     RenderGiBufferToGraphBuf(SourceBuffer, SourceGraph);
     Delta := SourceGraph.Width;
     Remainder := SourceGraph.Height;
-    SourceGraph.RescaleRGBA_HW(GameScreenWidth, GameScreenHeight, True, 1, VerticalAlign);
+    SourceGraph.RescaleRgbaLinear(GameScreenWidth, GameScreenHeight, True, 1, VerticalAlign);
     if (Delta <> SourceGraph.Width) or (Remainder <> SourceGraph.Height) then
     begin
       if PreserveAlpha then

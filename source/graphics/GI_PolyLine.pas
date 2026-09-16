@@ -13,8 +13,7 @@ uses
   GI_MessageLoop,
   GI_Circle,
   EC_BlockPar,
-  Types,
-  Windows;
+  Types;
 
 type
 
@@ -352,7 +351,7 @@ begin
   if Segment.PreviouslyVisible and (Segment.PreviousPixels <> nil) then
   begin
     Buffer := AllocEC(Segment.PixelCount * 2 + 10);
-    CopyMemory(Buffer, Segment.PreviousPixels, Segment.PixelCount * 2 + 10);
+    System.Move(Pointer(Segment.PreviousPixels)^, Pointer(Buffer)^, Segment.PixelCount * 2 + 10);
     MessageLoop.AddSavedLine(Segment.PreviousFirst, Segment.PreviousLast, Buffer);
   end;
   RemoveSegment(Segment);

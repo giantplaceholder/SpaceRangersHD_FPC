@@ -53,7 +53,7 @@ function ShowListDialog(
 implementation
 
 uses
-  Windows,
+  GameInput,
   GI_Window,
   GI_Frame,
   GI_Label,

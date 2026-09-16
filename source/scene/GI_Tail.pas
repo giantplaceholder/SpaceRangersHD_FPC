@@ -9,12 +9,12 @@ unit GI_Tail;
 interface
 
 uses
+  Types,
   EC_BlockPar,
   EC_CacheGAI,
   EC_Struct,
   GI_MessageLoop,
-  SE_Process,
-  Types;
+  SE_Process;
 
 type
 

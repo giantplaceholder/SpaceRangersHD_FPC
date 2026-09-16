@@ -53,7 +53,7 @@ implementation
 uses
   GI_MessageBox,
   Classes,
-  Windows,
+  GameInput,
   GR_Main,
   GR_Music,
   Globals,

@@ -9,14 +9,14 @@ unit SE_Laser;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Str,
   EC_Struct,
   GI_MessageLoop,
   GI_RotateImage2,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

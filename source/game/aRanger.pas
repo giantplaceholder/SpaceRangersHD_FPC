@@ -274,7 +274,7 @@ uses
   aMissile,
   aKling,
   aRuins,
-  Windows,
+  Types,
   aWarrior,
   aTranclucator,
   aPirate,

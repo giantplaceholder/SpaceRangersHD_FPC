@@ -67,7 +67,7 @@ uses
   SysUtils,
   EC_Mem,
   GR_Main,
-  Windows;
+  Types;
 
 procedure TCHSAIControlEC.QueueLoadIfMissing(PendingLoads: TList);
 var
@@ -196,7 +196,7 @@ begin
   if SourceBuffer.DataSize < SizeOf(THSAIHeaderEC) then
     raise Exception.Create('Error Load HSAI');
   BlobData := AllocEC(SourceBuffer.DataSize);
-  CopyMemory(BlobData, SourceBuffer.Data, SourceBuffer.DataSize);
+  System.Move(Pointer(SourceBuffer.Data)^, Pointer(BlobData)^, SourceBuffer.DataSize);
   ResidentBytes := SourceBuffer.DataSize;
   Header := BlobData;
   Width := Header.Width;

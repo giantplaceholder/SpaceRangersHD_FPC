@@ -72,7 +72,7 @@ uses
   aCalc,
   aScript,
   Classes,
-  Windows,
+  GameInput,
   Math,
   SysUtils,
   EC_Str,

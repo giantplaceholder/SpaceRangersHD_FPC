@@ -9,6 +9,8 @@ unit fStarMap;
 interface
 
 uses
+  Types,
+  GameEvents,
   Classes,
   EC_BlockPar,
   EC_Struct,
@@ -24,7 +26,6 @@ uses
   GI_StarField,
   GI_Window,
   SE_Space,
-  Types,
   aAsteroid,
   aEFilm,
   aGalaxy,
@@ -314,6 +315,7 @@ function GetTurnFilmFrameInterval(Activity: Integer): Integer;
 implementation
 
 uses
+  GameWindow,
   EC_Cache,
   GI_GI,
   GI_Main,
@@ -330,8 +332,7 @@ uses
   aMyFunction,
   fLoad,
   fFilmFile,
-  Windows,
-  Messages,
+  GameInput,
   GI_MultiImage,
   aGalaxyStruct,
   aScript,
@@ -702,8 +703,7 @@ begin
     ExpandLocalizedTextMarkupAndPrefixLines(LossText);
     if TerronShip <> nil then
       TerronName := TerronShip.GetFullName(' ');
-    if IsTurnCalculationRunning
-        and (WaitForSingleObject(ScriptUiRequestEvent, 0) <> WAIT_OBJECT_0) then
+    if IsTurnCalculationRunning and (WaitGameEvent(ScriptUiRequestEvent, 0) <> WAIT_OBJECT_0) then
       WaitForTurnCalculation;
     if not MemorySnapshotActive then
       SaveGameToMemorySnapshot;
@@ -1277,7 +1277,7 @@ end;
 procedure TfStarMap.EndTurnClicked(Sender: TObjectGI);
 var
   WaitResult: Cardinal;
-  Events: array[0..1] of THandle;
+  Events: array[0..1] of TGameEventHandle;
   EventList: Pointer;
 begin
   if not MainPanel.NavigationLocked and not ShipScreen.FlagD4 then
@@ -1310,7 +1310,7 @@ begin
       Events[0] := TurnCalculationThread.IdleEvent;
       Events[1] := TalkRequestEvent;
       EventList := @Events;
-      WaitResult := WaitForMultipleObjects(Length(Events), EventList, False, INFINITE);
+      WaitResult := WaitGameEvents(Length(Events), EventList, False, INFINITE);
       if not ExitScreenLoop then
       begin
         if (TurnCalculationThread.IdleEvent = 0) or (WaitResult = WAIT_OBJECT_0) then
@@ -1321,7 +1321,7 @@ begin
           StartTurnFilm;
         end
         else if WaitResult = WAIT_FAILED then
-          raise Exception.Create('Error GetLastError()=' + IntToStr(Int64(GetLastError)))
+          raise Exception.Create('Failed waiting for script UI event')
         else if WaitResult = WAIT_OBJECT_0 + 1 then
         begin
           ScriptDialogIndex := -1;
@@ -1812,7 +1812,7 @@ begin
         EndImage.HelpText := 'Bm.PI.PathEndAutoBattle';
         PlayerPathTimer :=
             ScheduleCallbackTimer(
-                GetDoubleClickTime + 50,
+                GameDoubleClickTime + 50,
                 999,
                 UpdatePathEndImage,
                 Integer(EndImage)
@@ -1829,7 +1829,7 @@ begin
         EndImage.SetImagePath(InitialImagePath);
         PlayerPathTimer :=
             ScheduleCallbackTimer(
-                GetDoubleClickTime + 50,
+                GameDoubleClickTime + 50,
                 999,
                 UpdatePathEndImage,
                 Integer(EndImage)
@@ -2983,7 +2983,7 @@ begin
     Inc(Point.Y, ScrollStep);
   X := GetCursorPoint.X;
   Y := GetCursorPoint.Y;
-  if GetForegroundWindow = MainWindowHandle then
+  if GameWindowFocused then
   begin
     if (X >= -30) and (X <= Integer(GameScreenWidth) + 30) then
     begin
@@ -3510,7 +3510,7 @@ begin
         ShowLargeHelp(LookupLocalizedTextByKey('Help.ShotOutRange'));
       RebuildTargetMarkers;
     end
-    else if ((GetAsyncKeyState(VK_CONTROL) and $8000) = $8000) and (GetPlayer <> CursorObject) then
+    else if ((GameKeyState(VK_CONTROL) and $8000) = $8000) and (GetPlayer <> CursorObject) then
     begin
       ClearPathOverlay(True);
       Galaxy.CheckIntegrityChecksum(43);
@@ -7190,7 +7190,7 @@ end;
 procedure TfStarMap.ProcessTurnFilm;
 var
   WaitResult: Cardinal;
-  Events: array[0..1] of THandle;
+  Events: array[0..1] of TGameEventHandle;
   EventList: Pointer;
   Index: Integer;
   Request: PScriptABRequest;
@@ -7401,13 +7401,13 @@ begin
             Events[0] := TurnCalculationThread.IdleEvent;
             Events[1] := TalkRequestEvent;
             EventList := @Events;
-            WaitResult := WaitForMultipleObjects(Length(Events), EventList, False, INFINITE);
+            WaitResult := WaitGameEvents(Length(Events), EventList, False, INFINITE);
           end
           else
             WaitResult := WAIT_OBJECT_0;
           Stage := 23;
           if WaitResult = WAIT_FAILED then
-            raise Exception.Create('Error GetLastError()=' + IntToStr(Int64(GetLastError)))
+            raise Exception.Create('Failed waiting for script UI event')
           else if WaitResult = WAIT_OBJECT_0 then
           begin
             Stage := 24;
@@ -7447,14 +7447,14 @@ begin
           Events[0] := TurnCalculationThread.IdleEvent;
           Events[1] := TalkRequestEvent;
           EventList := @Events;
-          WaitResult := WaitForMultipleObjects(Length(Events), EventList, False, INFINITE);
+          WaitResult := WaitGameEvents(Length(Events), EventList, False, INFINITE);
           if (TurnCalculationThread.IdleEvent = 0) or (WaitResult = WAIT_OBJECT_0) then
           begin
             AnimateSpacePanelOnResume := True;
             StartOrderMode;
           end
           else if WaitResult = WAIT_FAILED then
-            raise Exception.Create('Error GetLastError()=' + IntToStr(Int64(GetLastError)))
+            raise Exception.Create('Failed waiting for script UI event')
           else if WaitResult = WAIT_OBJECT_0 + 1 then
           begin
             Stage := 29;
@@ -7542,7 +7542,8 @@ var
   BestPriority, BestIndex: Integer;
   Center: TPoint;
   HalfSize: TPoint;
-  Vector, TopLeft, BottomRight: TPointF;
+  // FPC TRect has a Vector member, visible inside the with block below.
+  CameraVector, TopLeft, BottomRight: TPointF;
   Distance, Speed: Single;
   ViewRect: TRect;
 begin
@@ -7602,18 +7603,18 @@ begin
               or (Top > EndPosition.Y)
               or (Bottom <= EndPosition.Y) then
           begin
-            Vector.X := EndPosition.X - StartPosition.X;
-            Vector.Y := EndPosition.Y - StartPosition.Y;
-            Distance := Sqrt(Sqr(Vector.X) + Sqr(Vector.Y));
+            CameraVector.X := EndPosition.X - StartPosition.X;
+            CameraVector.Y := EndPosition.Y - StartPosition.Y;
+            Distance := Sqrt(Sqr(CameraVector.X) + Sqr(CameraVector.Y));
             if Distance = 0 then
               FilmCameraTarget := StartPosition
             else
             begin
-              Vector.X := Vector.X / Distance;
-              Vector.Y := Vector.Y / Distance;
+              CameraVector.X := CameraVector.X / Distance;
+              CameraVector.Y := CameraVector.Y / Distance;
               Distance := Math.Min(Distance, GiScalePixels(600));
-              FilmCameraTarget.X := StartPosition.X + Vector.X * Distance * 0.5;
-              FilmCameraTarget.Y := StartPosition.Y + Vector.Y * Distance * 0.5;
+              FilmCameraTarget.X := StartPosition.X + CameraVector.X * Distance * 0.5;
+              FilmCameraTarget.Y := StartPosition.Y + CameraVector.Y * Distance * 0.5;
             end;
           end;
         end;
@@ -7630,17 +7631,17 @@ begin
       if (SpaceProcess.RadarCenter.X <> SecondaryFilm.CameraAnchor.X)
           or (SpaceProcess.RadarCenter.Y <> SecondaryFilm.CameraAnchor.Y) then
       begin
-        Vector.X := (GameScreenWidth shr 1) - GiScalePixels(150);
-        Vector.Y := (GameScreenHeight shr 1) - GiScalePixels(150);
-        TopLeft := SubtractPointsF(SpaceProcess.RadarCenter, Vector);
-        BottomRight := AddPointsF(SpaceProcess.RadarCenter, Vector);
+        CameraVector.X := (GameScreenWidth shr 1) - GiScalePixels(150);
+        CameraVector.Y := (GameScreenHeight shr 1) - GiScalePixels(150);
+        TopLeft := SubtractPointsF(SpaceProcess.RadarCenter, CameraVector);
+        BottomRight := AddPointsF(SpaceProcess.RadarCenter, CameraVector);
         if SegmentIntersectsRectEdges(
             SpaceProcess.RadarCenter,
             SecondaryFilm.CameraAnchor,
             TopLeft,
             BottomRight,
-            Vector) then
-          FilmCameraTarget := Vector
+            CameraVector) then
+          FilmCameraTarget := CameraVector
         else
           FilmCameraTarget := SecondaryFilm.CameraAnchor;
       end
@@ -7656,9 +7657,9 @@ begin
         FilmCameraPosition.X := Center.X - FilmCameraShakeOffset.X;
         FilmCameraPosition.Y := Center.Y - FilmCameraShakeOffset.Y;
       end;
-      Vector.X := FilmCameraTarget.X - FilmCameraPosition.X;
-      Vector.Y := FilmCameraTarget.Y - FilmCameraPosition.Y;
-      Distance := Sqrt(Sqr(Vector.X) + Sqr(Vector.Y));
+      CameraVector.X := FilmCameraTarget.X - FilmCameraPosition.X;
+      CameraVector.Y := FilmCameraTarget.Y - FilmCameraPosition.Y;
+      Distance := Sqrt(Sqr(CameraVector.X) + Sqr(CameraVector.Y));
       if Distance <= 2 then
       begin
         FilmCameraMoving := False;
@@ -7666,16 +7667,16 @@ begin
       end
       else
       begin
-        Vector.X := Vector.X / Distance;
-        Vector.Y := Vector.Y / Distance;
+        CameraVector.X := CameraVector.X / Distance;
+        CameraVector.Y := CameraVector.Y / Distance;
         Speed := Math.Max(1, Distance * 0.1);
         if Speed > FilmCameraSpeed then
           Speed := Math.Min(Speed, FilmCameraSpeed * 1.1)
         else if Speed < FilmCameraSpeed then
           Speed := Math.Max(Speed, FilmCameraSpeed * 0.9);
         FilmCameraSpeed := Speed;
-        FilmCameraPosition.X := FilmCameraPosition.X + Vector.X * Speed;
-        FilmCameraPosition.Y := FilmCameraPosition.Y + Vector.Y * Speed;
+        FilmCameraPosition.X := FilmCameraPosition.X + CameraVector.X * Speed;
+        FilmCameraPosition.Y := FilmCameraPosition.Y + CameraVector.Y * Speed;
       end;
       FilmCameraShakeOffset.X := Sin(FilmCameraShakeAngle) * GiScalePixels(30);
       FilmCameraShakeOffset.Y := -Cos(FilmCameraShakeAngle) * GiScalePixels(30);
@@ -9373,7 +9374,7 @@ end;
 procedure TfStarMap.WaitForTurnOrTalk;
 var
   WaitResult: Cardinal;
-  Events: array[0..1] of THandle;
+  Events: array[0..1] of TGameEventHandle;
   EventList: Pointer;
 begin
   MainPanel.Hide;
@@ -9382,11 +9383,11 @@ begin
   if TurnCalculationThread.IdleEvent = 0 then
     if TurnCalculationThread.IdleEvent = 0 then
       ;
-  SetEvent(TalkCompletedEvent);
+  SetGameEvent(TalkCompletedEvent);
   Events[0] := TurnCalculationThread.IdleEvent;
   Events[1] := TalkRequestEvent;
   EventList := @Events;
-  WaitResult := WaitForMultipleObjects(Length(Events), EventList, False, INFINITE);
+  WaitResult := WaitGameEvents(Length(Events), EventList, False, INFINITE);
   if (TurnCalculationThread.IdleEvent = 0) or (WaitResult = WAIT_OBJECT_0) then
   begin
     if PlayerStarDayPrepared then
@@ -9406,7 +9407,7 @@ begin
     end;
   end
   else if WaitResult = WAIT_FAILED then
-    raise Exception.Create('Error GetLastError()=' + IntToStr(Int64(GetLastError)))
+    raise Exception.Create('Failed waiting for script UI event')
   else if WaitResult = WAIT_OBJECT_0 + 1 then
   begin
     RunTalkDialogs;
@@ -9571,7 +9572,7 @@ begin
     Exit;
   if ExitScreenLoop then
     Exit;
-  if WaitForSingleObject(ScriptUiRequestEvent, 0) = WAIT_OBJECT_0 then
+  if WaitGameEvent(ScriptUiRequestEvent, 0) = WAIT_OBJECT_0 then
     Exit;
   if not (TurnCalculationPhase
       in [tcpIdle, tcpGalaxyFinished, tcpPlayerStarFinished, tcpPlayerStarPrepared]) then

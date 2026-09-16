@@ -9,10 +9,10 @@ unit GI_StarFieldM;
 interface
 
 uses
+  Types,
   EC_Struct,
   GI_MessageLoop,
-  GI_Panel,
-  Types;
+  GI_Panel;
 
 type
 

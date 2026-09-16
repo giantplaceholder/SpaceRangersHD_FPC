@@ -9,13 +9,13 @@ unit aItem;
 interface
 
 uses
+  Types,
   aConst,
   Classes,
   EC_BlockPar,
   EC_Buf,
   EC_Struct,
   SE_Space,
-  Windows,
   aEFilm,
   aGalaxy,
   aGalaxyStruct;

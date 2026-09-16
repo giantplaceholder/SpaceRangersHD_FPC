@@ -9,6 +9,8 @@ unit aPlanet;
 interface
 
 uses
+  Types,
+  GameEvents,
   Classes,
   EC_BlockPar,
   EC_Buf,
@@ -16,7 +18,6 @@ uses
   EC_Struct,
   SE_Planet,
   SE_Sputnik,
-  Types,
   aEFilm,
   aGalaxy,
   aGalaxyStruct,
@@ -225,7 +226,6 @@ var
 implementation
 
 uses
-  Windows,
   GI_Tail,
   GR_Main,
   Globals,
@@ -3716,6 +3716,8 @@ begin
 end;
 
 function TPlanet.RequestDialog: Boolean;
+var
+  Handles: array[0..1] of TGameEventHandle;
 begin
   if ExitScreenLoop or not GetPlayer.InNormalSpace then
   begin
@@ -3725,12 +3727,15 @@ begin
   TalkShip := nil;
   TalkPlanet := Self;
   TalkScripted := True;
-  ResetEvent(TalkCompletedEvent);
-  SetEvent(TalkRequestEvent);
-  if WaitForSingleObject(TalkCompletedEvent, INFINITE) <> WAIT_OBJECT_0 then
+  ResetGameEvent(TalkCompletedEvent);
+  SetGameEvent(TalkRequestEvent);
+  // As with ship conversations, stopping calculation must wake a pending dialog.
+  Handles[0] := TalkCompletedEvent;
+  Handles[1] := TurnCalculationThread.StopEvent;
+  if WaitGameEvents(Length(Handles), @Handles[0], False, INFINITE) <> WAIT_OBJECT_0 then
   begin
     Result := False;
-    ResetEvent(TalkRequestEvent);
+    ResetGameEvent(TalkRequestEvent);
   end
   else
   begin

@@ -39,7 +39,8 @@ implementation
 uses
   GlobalsV,
   Classes,
-  Windows,
+  Types,
+  GameInput,
   GR_Main,
   Globals,
   GI_GraphButton,

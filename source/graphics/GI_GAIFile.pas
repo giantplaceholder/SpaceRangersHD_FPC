@@ -9,6 +9,7 @@ unit GI_GAIFile;
 interface
 
 uses
+  SysUtils,
   EC_BlockPar,
   EC_File,
   EC_Thread,
@@ -85,7 +86,6 @@ type
 implementation
 
 uses
-  Windows,
   Classes,
   EC_Mem,
   EC_Str,
@@ -133,7 +133,7 @@ begin
         );
     Owner.ImageFile.SetPointer(
         ReadDWordEC(AddPointerOffset(Owner.FrameDirectory, SourceFrame * SizeOf(TGaiFrameEntry))),
-        FILE_BEGIN
+        fsFromBeginning
     );
     Owner.ImageFile.ReadBuffer(
         Data,
@@ -295,7 +295,7 @@ begin
         );
     ImageFile.SetPointer(
         ReadDWordEC(AddPointerOffset(FrameDirectory, FrameIndex * SizeOf(TGaiFrameEntry))),
-        FILE_BEGIN
+        fsFromBeginning
     );
     ImageFile.ReadBuffer(
         Data,

@@ -9,14 +9,14 @@ unit SE_Hole;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
   GI_GAI,
   GI_Image,
   GI_MessageLoop,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

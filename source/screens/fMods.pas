@@ -76,7 +76,7 @@ implementation
 
 uses
   GlobalsV,
-  Windows,
+  GameInput,
   EC_Str,
   GR_Main,
   GI_PanelScrollBar,

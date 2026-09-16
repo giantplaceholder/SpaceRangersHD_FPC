@@ -9,10 +9,10 @@ unit ab_Space;
 interface
 
 uses
+  Types,
   Classes,
   EC_Struct,
-  GI_GAI,
-  Types;
+  GI_GAI;
 
 type
 

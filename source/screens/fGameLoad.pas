@@ -52,7 +52,7 @@ uses
   aGalaxyStruct,
   SysUtils,
   Classes,
-  Windows,
+  Types,
   Math,
   GR_Main,
   GR_Music,

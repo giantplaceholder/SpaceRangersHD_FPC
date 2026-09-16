@@ -9,13 +9,13 @@ unit SE_BGObj;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
   GI_MessageLoop,
   GI_Image,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

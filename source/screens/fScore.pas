@@ -9,6 +9,7 @@ unit fScore;
 interface
 
 uses
+  GameSystem,
   Classes,
   EC_Buf,
   GI_MessageLoop,
@@ -115,7 +116,7 @@ uses
   GI_Main,
   aKling,
   SysUtils,
-  Windows,
+  GameInput,
   Math,
   EC_File,
   EC_Str,
@@ -1198,7 +1199,7 @@ end;
 procedure TfScore.ReloadTable;
 begin
   ClearEntries;
-  if not FileExists(AnsiString(GetGameUserDirectory + 'score.dat')) then
+  if not FileExists(NativeGamePath(AnsiString(GetGameUserDirectory + 'score.dat'))) then
     CreateDefaultTable
   else
   begin
@@ -1546,7 +1547,7 @@ begin
   else
   begin
     PostMouseMoveMessage;
-    SysUtils.DeleteFile(AnsiString(GetGameUserDirectory + 'score.dat'));
+    SysUtils.DeleteFile(NativeGamePath(AnsiString(GetGameUserDirectory + 'score.dat')));
     ReloadTable;
     SaveTableToDisk;
     RefreshDetails;

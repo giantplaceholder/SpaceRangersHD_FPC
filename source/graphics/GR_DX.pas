@@ -229,12 +229,11 @@ procedure SubtractResidentTextureBytes(ByteCount: Cardinal);
 implementation
 
 uses
-  MMSystem,
+  GameSystem,
   EC_Mem,
   GR_Main,
   EC_Str,
-  Math,
-  Windows;
+  Math;
 
 function CreateTextureCache: TTextureGR;
 var
@@ -291,7 +290,7 @@ begin
     Exit;
   if Direct3DDevice = nil then
     Exit;
-  NowTick := timeGetTime;
+  NowTick := GameTickCount;
   if (NowTick - LastTextureEvictionTick < 10) and not Force then
     Exit;
   LastTextureEvictionTick := NowTick;
@@ -382,9 +381,9 @@ begin
     Staging.LockRect(0, Locked, nil, 0);
     BytesPerPixel := PitchBytes div Width;
     for Y := 0 to Height - 1 do
-      CopyMemory(
-          AddPointerOffset(Locked.Bits, Locked.Pitch * Y),
-          AddPointerOffset(Pixels, PitchBytes * Y),
+      System.Move(
+          Pointer(AddPointerOffset(Pixels, PitchBytes * Y))^,
+          Pointer(AddPointerOffset(Locked.Bits, Locked.Pitch * Y))^,
           Width * BytesPerPixel
       );
     Staging.UnlockRect(0);
@@ -398,9 +397,9 @@ begin
     Texture.LockRect(0, Locked, nil, 0);
     BytesPerPixel := PitchBytes div Width;
     for Y := 0 to Height - 1 do
-      CopyMemory(
-          AddPointerOffset(Locked.Bits, Locked.Pitch * Y),
-          AddPointerOffset(Pixels, PitchBytes * Y),
+      System.Move(
+          Pointer(AddPointerOffset(Pixels, PitchBytes * Y))^,
+          Pointer(AddPointerOffset(Locked.Bits, Locked.Pitch * Y))^,
           Width * BytesPerPixel
       );
     Texture.UnlockRect(0);
@@ -420,7 +419,11 @@ begin
     Texture.LockRect(0, Locked, nil, 0);
     if Locked.Bits <> nil then
       for Y := 0 to Desc.Height - 1 do
-        FillMemory(Pointer(Integer(Y) * Locked.Pitch + PAnsiChar(Locked.Bits)), Locked.Pitch, 0);
+        System.FillChar(
+            Pointer(Pointer(Integer(Y) * Locked.Pitch + PAnsiChar(Locked.Bits)))^,
+            Locked.Pitch,
+            0
+        );
     Texture.UnlockRect(0);
   end;
 end;
@@ -478,7 +481,7 @@ begin
   Result := nil;
   if (Index < 0) or (Index >= SurfaceCount) then
     Exit;
-  LastUseTick := timeGetTime;
+  LastUseTick := GameTickCount;
   Result := Surfaces[Index];
 end;
 

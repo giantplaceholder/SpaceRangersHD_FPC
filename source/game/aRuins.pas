@@ -9,6 +9,7 @@ unit aRuins;
 interface
 
 uses
+  Types,
   aConst,
   EC_BlockPar,
   EC_Buf,
@@ -282,7 +283,6 @@ uses
   aPirate,
   aRanger,
   Math,
-  Windows,
   GR_Main,
   aGalaxyEvent,
   SysUtils,

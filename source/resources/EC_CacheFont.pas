@@ -200,8 +200,7 @@ uses
   GR_DX,
   GR_Main,
   Math,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 type
   TFontTextCharsEC = array[0..MaxInt div SizeOf(WideChar) - 1] of WideChar;
@@ -494,12 +493,17 @@ begin
   while WordStart < CharCount do
   begin
     SeenCharacter := False;
-    for Index := WordStart to CharCount - 1 do
+    // The native scan increments past the final character ($4847B0). FPC's
+    // exhausted for-loop counter stays at the upper bound, yielding a zero-length
+    // word on the next pass. Keep Index at the first unconsumed character explicitly.
+    Index := WordStart;
+    while Index < CharCount do
     begin
       if PFontTextCharsEC(Pointer(Text))^[Index] = ' ' then
         if SeenCharacter then
           Break;
       SeenCharacter := True;
+      Inc(Index);
     end;
     WordLength := Index - WordStart;
     WordWidth := 0;
@@ -2016,7 +2020,7 @@ begin
   if SourceBuffer.DataSize < SizeOf(TAftHeaderEC) then
     raise Exception.Create('TCFontEC.Load. Error format file.');
   FontData := AllocEC(SourceBuffer.DataSize);
-  CopyMemory(FontData, SourceBuffer.Data, SourceBuffer.DataSize);
+  System.Move(Pointer(SourceBuffer.Data)^, Pointer(FontData)^, SourceBuffer.DataSize);
   Glyphs := AddPointerOffset(FontData, SizeOf(TAftHeaderEC));
   if (FontData.Magic[0] <> 'a') or (FontData.Magic[1] <> 'f') or (FontData.Magic[2] <> 't') then
     raise Exception.Create('TCFontEC.Load. Error format file.');
@@ -2096,7 +2100,7 @@ var
       while not Lines.IsAtEnd do
       begin
         Bounds := MeasureTaggedTextBounds(Lines.GetCurrentText, 0, CurrentY, nil);
-        Windows.UnionRect(MergedBounds, MergedBounds, Bounds);
+        Types.UnionRect(MergedBounds, MergedBounds, Bounds);
         Inc(CurrentY, GetLineHeight);
         Lines.Next;
       end;
@@ -2121,7 +2125,7 @@ var
           while not WrappedLines.IsAtEnd do
           begin
             Bounds := MeasureTaggedTextBounds(WrappedLines.GetCurrentText, 0, CurrentY, nil);
-            Windows.UnionRect(MergedBounds, MergedBounds, Bounds);
+            Types.UnionRect(MergedBounds, MergedBounds, Bounds);
             Inc(CurrentY, GetLineHeight);
             WrappedLines.Next;
           end;

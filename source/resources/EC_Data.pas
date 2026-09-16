@@ -2437,7 +2437,7 @@ implementation
 
 uses
   EC_Str,
-  Windows,
+  Types,
   SysUtils,
   GlobalsV,
   CrcUnit,
@@ -2626,9 +2626,9 @@ begin
   end
   else
   begin
-    Windows.MoveMemory(
-        @IndexedEntries[Index + 1],
-        @IndexedEntries[Index],
+    System.Move(
+        Pointer(@IndexedEntries[Index])^,
+        Pointer(@IndexedEntries[Index + 1])^,
         (IndexedEntryCount - Index) * SizeOf(IndexedEntries[0])
     );
     IndexedEntries[Index] := Entry;
@@ -2741,7 +2741,7 @@ begin
   Entry.SharedFileRef.FileRef.AcquireReadWriteHandle;
   try
     if Entry.FileOffset <> 0 then
-      Entry.SharedFileRef.FileRef.SetPointer(Entry.FileOffset, FILE_BEGIN);
+      Entry.SharedFileRef.FileRef.SetPointer(Entry.FileOffset, fsFromBeginning);
     Size := Entry.ByteCount;
     if Size < 0 then
       Size := Entry.SharedFileRef.FileRef.GetSize - Entry.FileOffset;
@@ -2928,7 +2928,7 @@ begin
   end
   else
     GR_Main.CCInterface.SetResourceChecksumFailed(True);
-  FileObj.SetPointer(Position, FILE_BEGIN);
+  FileObj.SetPointer(Position, fsFromBeginning);
   ByteCount := FileObj.GetSize - FileObj.GetPointer;
   FileObj.ReadBuffer(@Crc, SizeOf(Crc));
   FileObj.ReadBuffer(@Seed, SizeOf(Seed));

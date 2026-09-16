@@ -9,6 +9,7 @@ unit GR_Music;
 interface
 
 uses
+  GameEvents,
   EC_Thread,
   EC_FileStream,
   VorbisFile,
@@ -23,19 +24,17 @@ type
 
   TMusicUnit = class(TThreadEC)
     Decoder: TOggWorker;
-    BuiltinVorbis: Boolean;
-    Gap31: array[0..2] of Byte;
+    DeferredPlayback: Boolean;
     RequestedFileName: WideString;
     ImmediateStop: Boolean;
     Gap39: array[0..2] of Byte;
     Buffer: TSoundBuffer;
     DecodeLock: TCriticalSection;
-    DecoderLibrary: Cardinal;
     Stream: TFileStreamEC;
-    StartPlaybackEvent: Cardinal;
-    CompletionEvent: Cardinal;
+    StartPlaybackEvent: TGameEventHandle;
+    CompletionEvent: TGameEventHandle;
     procedure Execute; override;
-    constructor Create(LibraryName: PWideChar);
+    constructor Create;
     destructor Destroy; override;
     procedure Clear;
     procedure LoadFile(const FileName: WideString; Deferred: Boolean);
@@ -44,7 +43,7 @@ type
   end;
 
   TMusicControl = class(TThreadEC)
-    CompletionEvent: Cardinal;
+    CompletionEvent: TGameEventHandle;
     ControlLock: TCriticalSection;
     Current: TMusicUnit;
     Queued: TMusicUnit;
@@ -69,7 +68,7 @@ implementation
 
 uses
   GlobalsV,
-  Windows,
+  Types,
   SysUtils,
   DirectSound,
   EC_Str,
@@ -80,79 +79,51 @@ const
   MusicChunkBytes = 2 * VorbisOutputBytesPerSecond;
   MusicEndFadeThresholdBytes = $C800;
 
-constructor TMusicUnit.Create(LibraryName: PWideChar);
+constructor TMusicUnit.Create;
 begin
   inherited Create;
   Buffer := nil;
   DecodeLock := nil;
-  BuiltinVorbis := False;
+  // The controller can signal this while the worker clears a finished track.
+  // Keep its address stable until destruction, after playback has completed.
+  StartPlaybackEvent := CreateGameEvent(False, False);
   DecodeLock := TCriticalSection.Create;
-  if AnsiString(LibraryName) = 'vorbisfile.dll' then
-  begin
-    Decoder := TOggWorker.Create(@DecodeLock, False);
-    BuiltinVorbis := True;
-    Buffer := SoundManager.AddBuffer;
-  end
-  else
-  begin
-    Decoder := TOggWorker.Create(@DecodeLock, True);
-    if not BuiltinVorbis then
-    begin
-      AppendLogTextThreadSafe('Load ' + AnsiString(LibraryName) + ' .... ');
-      try
-        DecoderLibrary := LoadLibraryW(LibraryName);
-      except
-        AppendLogLineThreadSafe('fail');
-        raise;
-      end;
-      if DecoderLibrary = 0 then
-      begin
-        AppendLogLineThreadSafe(AnsiString('fail GetLastError=' + IntToWideString(GetLastError)));
-        raise Exception.Create(
-            AnsiString(
-                WideString('Error load=' + AnsiString(LibraryName) + '  GetLastError=')
-                    + IntToWideString(GetLastError)
-            ));
-      end;
-      AppendLogLineThreadSafe('ok');
-    end;
-    Buffer := SoundManager.AddBuffer;
-  end;
+  Decoder := TOggWorker.Create(@DecodeLock);
+  Buffer := SoundManager.AddBuffer;
 end;
 
 destructor TMusicUnit.Destroy;
 begin
-  if IsRunning then
-  begin
-    RequestStop;
-    if StartPlaybackEvent <> 0 then
-      SetEvent(StartPlaybackEvent);
-    WaitForIdle(INFINITE);
-  end;
+  RequestStop;
+  SetGameEvent(StartPlaybackEvent);
+  // Destruction waits for completion without re-raising a pending worker error.
+  WaitGameEvent(IdleEvent, INFINITE);
   Clear;
+  CloseGameEvent(StartPlaybackEvent);
+  StartPlaybackEvent := 0;
   if Buffer <> nil then
   begin
     SoundManager.RemoveBuffer(Buffer);
     Buffer := nil;
   end;
+  FreeAndNil(Decoder);
   if DecodeLock <> nil then
   begin
     DecodeLock.Free;
     DecodeLock := nil;
   end;
-  // The native destructor leaves Decoder and DecoderLibrary allocated.
   inherited Destroy;
 end;
 
 procedure TMusicUnit.Clear;
 begin
   ImmediateStop := False;
-  Buffer.Clear;
-  if StartPlaybackEvent <> 0 then
-  begin
-    CloseHandle(StartPlaybackEvent);
-    StartPlaybackEvent := 0;
-  end;
+  if Decoder <> nil then
+    Decoder.CloseStream;
+  if Buffer <> nil then
+    Buffer.Clear;
+  if DecodeLock = nil then
+    Exit;
   DecodeLock.Enter;
   if Stream <> nil then
   begin
@@ -170,19 +141,16 @@ begin
     if IsRunning then
     begin
       RequestStop;
-      if StartPlaybackEvent <> 0 then
-        SetEvent(StartPlaybackEvent);
+      SetGameEvent(StartPlaybackEvent);
       WaitForIdle(INFINITE);
     end;
     Clear;
     Stream := TFileStreamEC.Create($400FF, FileName);
+    // No playback is active here; discard signals belonging to the previous track.
+    ResetGameEvent(StartPlaybackEvent);
+    DeferredPlayback := Deferred;
     if Deferred then
-    begin
-      SetPriority(ThreadPriorityLowest);
-      StartPlaybackEvent := CreateEvent(nil, False, False, nil);
-      if StartPlaybackEvent = 0 then
-        raise Exception.Create('CreateEvent');
-    end
+      SetPriority(ThreadPriorityLowest)
     else
       SetPriority(ThreadPriorityAboveNormal);
     Start;
@@ -218,7 +186,7 @@ begin
   if OpenVorbisStream(Decoder, Format, Stream) = 0 then
   begin
     Clear;
-    SetEvent(CompletionEvent);
+    SetGameEvent(CompletionEvent);
     Exit;
   end;
   try
@@ -226,16 +194,16 @@ begin
     if not Buffer.WriteStream(SoundStreamPrimeAll, Decoder) then
     begin
       Clear;
-      SetEvent(CompletionEvent);
+      SetGameEvent(CompletionEvent);
       Exit;
     end;
-    if StartPlaybackEvent <> 0 then
+    if DeferredPlayback then
     begin
-      WaitForSingleObject(StartPlaybackEvent, INFINITE);
+      WaitGameEvent(StartPlaybackEvent, INFINITE);
       if IsStopRequested then
       begin
         Clear;
-        SetEvent(CompletionEvent);
+        SetGameEvent(CompletionEvent);
         Exit;
       end;
       SetPriority(ThreadPriorityAboveNormal);
@@ -274,7 +242,7 @@ begin
   except
   end;
   Clear;
-  SetEvent(CompletionEvent);
+  SetGameEvent(CompletionEvent);
 end;
 
 constructor TMusicControl.Create;
@@ -287,14 +255,14 @@ begin
   begin
     if MusicEnabled then
     begin
-      Current := TMusicUnit.Create('vorbisfile.dll');
-      Queued := TMusicUnit.Create('vorbisfile.dll');
+      Current := TMusicUnit.Create;
+      Queued := TMusicUnit.Create;
       // Native order: Current receives the still-zero handle before creation.
       Current.CompletionEvent := CompletionEvent;
       Queued.CompletionEvent := 0;
     end;
     SetPriority(ThreadPriorityAboveNormal);
-    CompletionEvent := CreateEvent(nil, False, False, nil);
+    CompletionEvent := CreateGameEvent(False, False);
     if CompletionEvent = 0 then
       raise Exception.Create('CreateEvent');
     if MusicEnabled then
@@ -307,13 +275,12 @@ destructor TMusicControl.Destroy;
 begin
   RequestStop;
   if CompletionEvent <> 0 then
-    SetEvent(CompletionEvent);
-  if IsRunning then
-    WaitForIdle(INFINITE);
+    SetGameEvent(CompletionEvent);
+  WaitGameEvent(IdleEvent, INFINITE);
   Clear;
   if CompletionEvent <> 0 then
   begin
-    CloseHandle(CompletionEvent);
+    CloseGameEvent(CompletionEvent);
     CompletionEvent := 0;
   end;
   if ControlLock <> nil then
@@ -329,19 +296,17 @@ begin
   if Current <> nil then
   begin
     Current.RequestStop;
-    SetEvent(Current.StartPlaybackEvent);
+    SetGameEvent(Current.StartPlaybackEvent);
   end;
   if Queued <> nil then
   begin
     Queued.RequestStop;
-    SetEvent(Queued.StartPlaybackEvent);
+    SetGameEvent(Queued.StartPlaybackEvent);
   end;
   if Current <> nil then
-    if Current.IsRunning then
-      Current.WaitForIdle(INFINITE);
+    WaitGameEvent(Current.IdleEvent, INFINITE);
   if Queued <> nil then
-    if Queued.IsRunning then
-      Queued.WaitForIdle(INFINITE);
+    WaitGameEvent(Queued.IdleEvent, INFINITE);
   if Current <> nil then
   begin
     Current.Free;
@@ -360,7 +325,7 @@ var
 begin
   while not IsStopRequested do
   begin
-    WaitForSingleObject(CompletionEvent, INFINITE);
+    WaitGameEvent(CompletionEvent, INFINITE);
     if IsStopRequested then
       Break;
     SysUtils.Sleep(10);
@@ -373,8 +338,7 @@ begin
       CurrentFileName := Current.GetFileName;
       Current.CompletionEvent := CompletionEvent;
       Queued.CompletionEvent := 0;
-      if Current.StartPlaybackEvent <> 0 then
-        SetEvent(Current.StartPlaybackEvent);
+      SetGameEvent(Current.StartPlaybackEvent);
     end;
     ControlLock.Leave;
   end;
@@ -391,14 +355,14 @@ begin
     if Queued.IsRunning then
     begin
       Queued.RequestStop;
-      SetEvent(Queued.StartPlaybackEvent);
+      SetGameEvent(Queued.StartPlaybackEvent);
       Queued.WaitForIdle(INFINITE);
     end;
     Queued.LoadFile(FileName, True);
     if Current.IsRunning then
       Current.RequestStop
     else
-      SetEvent(CompletionEvent);
+      SetGameEvent(CompletionEvent);
   finally
     ControlLock.Leave;
   end;

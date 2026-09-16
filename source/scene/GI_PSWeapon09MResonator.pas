@@ -9,11 +9,11 @@ unit GI_PSWeapon09MResonator;
 interface
 
 uses
+  Types,
   EC_Struct,
   GI_MessageLoop,
   GI_PSWeapon,
-  GI_GAI,
-  Types;
+  GI_GAI;
 
 type
 

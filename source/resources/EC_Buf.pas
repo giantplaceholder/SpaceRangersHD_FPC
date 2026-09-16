@@ -96,7 +96,7 @@ uses
   GR_Main,
   Math,
   SysUtils,
-  Windows;
+  Types;
 
 const
   BufferGrowthSlack = 256;
@@ -217,7 +217,7 @@ end;
 procedure TBufEC.AddBytes(Source: Pointer; ByteCount: Integer);
 begin
   EnsureWriteCapacity(ByteCount);
-  Windows.CopyMemory(AddPointerOffset(Data, Position), Source, ByteCount);
+  System.Move(Pointer(Source)^, Pointer(AddPointerOffset(Data, Position))^, ByteCount);
   Inc(Position, ByteCount);
 end;
 
@@ -227,7 +227,8 @@ var
 begin
   ByteCount := Length(Value);
   EnsureWriteCapacity(ByteCount + 1);
-  Windows.CopyMemory(AddPointerOffset(Data, Position), PAnsiChar(Value), ByteCount + 1);
+  System
+      .Move(Pointer(PAnsiChar(Value))^, Pointer(AddPointerOffset(Data, Position))^, ByteCount + 1);
   Position := Position + ByteCount + 1;
 end;
 
@@ -237,8 +238,11 @@ var
 begin
   ByteCount := Length(Value) * SizeOf(WideChar);
   EnsureWriteCapacity(ByteCount + SizeOf(WideChar));
-  Windows
-      .CopyMemory(AddPointerOffset(Data, Position), PWideChar(Value), ByteCount + SizeOf(WideChar));
+  System.Move(
+      Pointer(PWideChar(Value))^,
+      Pointer(AddPointerOffset(Data, Position))^,
+      ByteCount + SizeOf(WideChar)
+  );
   Position := Position + ByteCount + SizeOf(WideChar);
 end;
 
@@ -250,7 +254,7 @@ begin
   if ByteCount > 0 then
   begin
     EnsureWriteCapacity(ByteCount);
-    Windows.CopyMemory(AddPointerOffset(Data, Position), PAnsiChar(Value), ByteCount);
+    System.Move(Pointer(PAnsiChar(Value))^, Pointer(AddPointerOffset(Data, Position))^, ByteCount);
     Inc(Position, ByteCount);
   end;
 end;
@@ -263,7 +267,7 @@ begin
   if ByteCount > 0 then
   begin
     EnsureWriteCapacity(ByteCount);
-    Windows.CopyMemory(AddPointerOffset(Data, Position), PWideChar(Value), ByteCount);
+    System.Move(Pointer(PWideChar(Value))^, Pointer(AddPointerOffset(Data, Position))^, ByteCount);
     Inc(Position, ByteCount);
   end;
 end;
@@ -373,7 +377,7 @@ end;
 function TBufEC.ReadBytes(Dest: Pointer; ByteCount: Integer): Pointer;
 begin
   EnsureReadable(ByteCount);
-  Windows.CopyMemory(Dest, AddPointerOffset(Data, Position), ByteCount);
+  System.Move(Pointer(AddPointerOffset(Data, Position))^, Pointer(Dest)^, ByteCount);
   Inc(Position, ByteCount);
   Result := Dest;
 end;
@@ -386,8 +390,11 @@ begin
   if Count > 0 then
   begin
     EnsureReadable(Count * SizeOf(WideChar) + SizeOf(WideChar));
-    Windows
-        .CopyMemory(Dest, PAnsiChar(Data) + Position, Count * SizeOf(WideChar) + SizeOf(WideChar));
+    System.Move(
+        Pointer(PAnsiChar(Data) + Position)^,
+        Pointer(Dest)^,
+        Count * SizeOf(WideChar) + SizeOf(WideChar)
+    );
     Position := Position + Count * SizeOf(WideChar) + SizeOf(WideChar);
   end
   else
@@ -559,7 +566,7 @@ begin
   Count := GetAnsiTextLineLength;
   if Count > 0 then
   begin
-    Windows.CopyMemory(Dest, PAnsiChar(Data) + Position, Count);
+    System.Move(Pointer(PAnsiChar(Data) + Position)^, Pointer(Dest)^, Count);
     Dest[Count] := #0;
     Inc(Position, Count);
   end
@@ -606,7 +613,7 @@ begin
   Count := GetWideTextLineLength;
   if Count > 0 then
   begin
-    Windows.CopyMemory(Dest, PAnsiChar(Data) + Position, Count * SizeOf(WideChar));
+    System.Move(Pointer(PAnsiChar(Data) + Position)^, Pointer(Dest)^, Count * SizeOf(WideChar));
     Dest[Count] := #0;
     Inc(Position, Count * SizeOf(WideChar));
   end

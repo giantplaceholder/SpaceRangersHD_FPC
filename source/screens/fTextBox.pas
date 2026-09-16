@@ -52,7 +52,7 @@ implementation
 
 uses
   Classes,
-  Windows,
+  GameInput,
   EC_Str,
   GI_Window,
   GI_Label,

@@ -9,6 +9,7 @@ unit SE_Planet;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
@@ -18,8 +19,7 @@ uses
   GI_MessageLoop,
   GI_Planet,
   GR_GraphBuf,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 
@@ -162,7 +162,6 @@ uses
   EC_Mem,
   EC_Cache,
   EC_CacheBitmap,
-  Windows,
   SE_Process;
 
 constructor TPlanetSE.Create;
@@ -550,7 +549,7 @@ begin
     FirstBounds.BottomRight := AddPoints(FirstBounds.TopLeft, RingControl1.ClientSize);
     SecondBounds.TopLeft := RingControl2.GetContentOrigin;
     SecondBounds.BottomRight := AddPoints(SecondBounds.TopLeft, RingControl2.ClientSize);
-    Windows.UnionRect(Bounds, FirstBounds, SecondBounds);
+    Types.UnionRect(Bounds, FirstBounds, SecondBounds);
     Center := Classes.Point((Bounds.Right + Bounds.Left) div 2, (Bounds.Bottom + Bounds.Top) div 2);
     Offset := Classes.Point(0, Bounds.Right div 2 - Bounds.Bottom div 2);
     if RingKind = 8 then

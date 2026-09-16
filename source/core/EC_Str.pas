@@ -188,10 +188,13 @@ function CopyWideStringUnchecked(Text: WideString; Index: Integer; Count: Intege
 implementation
 
 uses
+{$IFDEF MSWINDOWS}
+  Windows,
+{$ENDIF}
   EC_Mem,
   GR_Main,
   SysUtils,
-  Windows;
+  Types;
 
 constructor TStringsEC.Create;
 begin
@@ -348,7 +351,7 @@ begin
   if CharCount > 0 then
   begin
     SetLength(Item.Text, CharCount);
-    CopyMemory(PWideChar(Item.Text), Text, CharCount * 2);
+    System.Move(Pointer(Text)^, Pointer(PWideChar(Item.Text))^, CharCount * 2);
   end;
 end;
 
@@ -900,9 +903,9 @@ begin
     Exit
   end;
   SetLength(Result, LastIndex - FirstIndex + 1);
-  CopyMemory(
-      PWideChar(Result),
-      AddPointerOffset(PWideChar(Text), FirstIndex * 2),
+  System.Move(
+      Pointer(AddPointerOffset(PWideChar(Text), FirstIndex * 2))^,
+      Pointer(PWideChar(Result))^,
       (LastIndex - FirstIndex + 1) * 2
   );
 end;
@@ -1192,6 +1195,7 @@ begin
 end;
 
 procedure WriteRegistryStringLegacy(RootKey: Cardinal; KeyPath, ValueName, Value: WideString);
+{$IFDEF MSWINDOWS}
 var
   Key: HKEY;
   Disposition: Cardinal;
@@ -1224,6 +1228,12 @@ begin
   end;
   Windows.RegCloseKey(Key);
 end;
+
+{$ELSE}
+begin
+  // Only used by the original Windows file-association setup.
+end;
+{$ENDIF}
 
 function DecodeTextW(Text: WideString): WideString;
 var
@@ -1332,7 +1342,11 @@ end;
 function CopyWideStringUnchecked(Text: WideString; Index, Count: Integer): WideString;
 begin
   SetLength(Result, Count);
-  CopyMemory(PWideChar(Result), AddPointerOffset(PWideChar(Text), Index * 2 - 2), Count * 2);
+  System.Move(
+      Pointer(AddPointerOffset(PWideChar(Text), Index * 2 - 2))^,
+      Pointer(PWideChar(Result))^,
+      Count * 2
+  );
 end;
 
 end.

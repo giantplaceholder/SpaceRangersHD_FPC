@@ -9,13 +9,13 @@ unit aEFilm;
 interface
 
 uses
+  Types,
   Classes,
   EC_Buf,
   EC_Str,
   EC_Struct,
   SE_Process,
   SE_Space,
-  Types,
   aEObjInfo;
 
 const

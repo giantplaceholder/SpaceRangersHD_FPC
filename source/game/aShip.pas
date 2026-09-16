@@ -9,13 +9,14 @@ unit aShip;
 interface
 
 uses
+  Types,
+  GameEvents,
   aConst,
   Classes,
   EC_BlockPar,
   EC_Buf,
   EC_Struct,
   SE_Space,
-  Windows,
   aAsteroid,
   aEFilm,
   aGalaxy,
@@ -917,6 +918,7 @@ function CalculateRoundedFuelCost(Amount: Integer; OwnerId: Byte): Integer;
 implementation
 
 uses
+  GameWindow,
   SE_Process,
   aCalc,
   aGroup,
@@ -932,7 +934,6 @@ uses
   SE_Ruins,
   Achievements,
   SE_GAIEffect,
-  Dialogs,
   SE_Ship2,
   EC_Str,
   GR_Main,
@@ -1520,7 +1521,7 @@ begin
   Seed := Buffer.GetUInt32;
   RandomState := Buffer.GetUInt32;
   if Integer(Seed) < 0 then
-    ShowMessage('TShip.Create; - FRnd<0');
+    ShowGameDialog('TShip.Create; - FRnd<0');
   CreationTurn := Buffer.GetUInt32;
   PortraitFaceId := Buffer.GetInt32;
   if LoadedSaveVersion >= 125 then
@@ -4437,7 +4438,7 @@ begin
         (1 + (Attacker.GetScannerPower - (Integer(GetDefensePercent) and $7F)) * 0.01)
             * DamageValue;
   ScannerEffects :=
-      (TDamageFlagSet(Dword(DamageFlags) + 0) * ScannerDamageFlags <> NoDamageFlags)
+      (DamageFlags * ScannerDamageFlags <> NoDamageFlags)
           and (HitRange = -1)
           and (Attacker <> nil)
           and Attacker.IsEquipmentUsable(Attacker.GetScanner)
@@ -7203,7 +7204,7 @@ var
 begin
   if (GetLocationGoodsEntry(Good).Count < Count)
       or (ShopGoodsPurchasePrice(Good, nil) * Count > Money) then
-    ShowMessage(
+    ShowGameDialog(
         #$CD#$E5' '#$E2#$E5#$F0#$ED#$FB#$E5' '#$EF#$E0#$F0#$E0#$EC#$E5#$F2#$F0#$FB' '#$EF#$EE#$EA#$F3#$EF#$EA#$E8
     )
   else
@@ -13237,9 +13238,12 @@ begin
           Angle := PointBearingDegrees(CurrentStar.Position, TransitOriginStar.Position)
         else
           Angle := MovementDirection;
+        // Delphi wraps the seed sum to a signed 32-bit value before Abs.
         Angle :=
             HeadingDegreesToRadians(
-                WrapHeadingDegrees(Angle + Abs(CurrentStar.GenerationSeed + Seed) mod 10 - 5)
+                WrapHeadingDegrees(
+                    Angle + Abs(Integer(CurrentStar.GenerationSeed + Seed)) mod 10 - 5
+                )
             );
         if AbductedByPirateClan
             and (CurrentStar.Dominion <> nil)
@@ -14214,7 +14218,7 @@ begin
         Distance := InnerRadius
       else
         Distance :=
-            (Abs(Planet.GenerationSeed + Seed + CurrentStar.GenerationSeed)
+            (Abs(Integer(Planet.GenerationSeed + Seed + CurrentStar.GenerationSeed))
                     mod Planet.GraphicRadius)
                 * 0.7;
       Point.X := Point.X + Sin(Angle) * Distance;
@@ -14259,7 +14263,12 @@ begin
     if Ship.MovementPath.ActiveHead = nil then
     begin
       AppendStarAvoidingPathWithTurnPadding(
-          PointBehindHeading(Ship.Position, Ship.MovementDirection, Radius, Abs(Ship.Seed + Seed)),
+          PointBehindHeading(
+              Ship.Position,
+              Ship.MovementDirection,
+              Radius,
+              Abs(Integer(Ship.Seed + Seed))
+          ),
           MaximumNodes
       );
       if MovementPath.ActiveTail <> nil then
@@ -14274,7 +14283,7 @@ begin
               Ship.MovementPath.ActiveTail.Position,
               Ship.MovementPath.ActiveTail.Heading,
               Radius,
-              Abs(Ship.Seed + Seed)
+              Abs(Integer(Ship.Seed + Seed))
           ),
           MaximumNodes
       );
@@ -14287,7 +14296,7 @@ begin
     begin
       Node := Ship.MovementPath.GetFollowingNode(Ship.MovementPath.ActiveHead, Steps - 1);
       AppendStarAvoidingPathWithTurnPadding(
-          PointBehindHeading(Node.Position, Node.Heading, Radius, Abs(Ship.Seed + Seed)),
+          PointBehindHeading(Node.Position, Node.Heading, Radius, Abs(Integer(Ship.Seed + Seed))),
           MaximumNodes
       );
       if MovementPath.ActiveTail <> nil then
@@ -15906,7 +15915,8 @@ end;
 
 function TShip.OpenPlayerConversation(RespectChameleon: Boolean): Boolean;
 var
-  Handles: array[0..1] of THandle;
+  Handles: array[0..2] of TGameEventHandle;
+  WaitResult: Cardinal;
 begin
   if ExitScreenLoop
       or not GetPlayer.InNormalSpace
@@ -15929,20 +15939,25 @@ begin
   TalkShip := Self;
   TalkPlanet := nil;
   TalkScripted := RespectChameleon;
-  ResetEvent(TalkCompletedEvent);
-  SetEvent(TalkRequestEvent);
-  SetEvent(ScriptUiRequestEvent);
+  ResetGameEvent(TalkCompletedEvent);
+  SetGameEvent(TalkRequestEvent);
+  SetGameEvent(ScriptUiRequestEvent);
   Handles[0] := TalkCompletedEvent;
   Handles[1] := ScriptUiAbortEvent;
-  if WaitForMultipleObjects(Length(Handles), @Handles[0], False, INFINITE) <> WAIT_OBJECT_0 then
+  // Shutdown cannot depend on the UI finishing a dialog after it has stopped.
+  Handles[2] := TurnCalculationThread.StopEvent;
+  WaitResult := WaitGameEvents(Length(Handles), @Handles[0], False, INFINITE);
+  if WaitResult <> WAIT_OBJECT_0 then
   begin
     Result := False;
     TalkScripted := False;
-    ResetEvent(TalkRequestEvent);
+    ResetGameEvent(TalkRequestEvent);
+    if WaitResult = WAIT_OBJECT_0 + 2 then
+      ResetGameEvent(ScriptUiRequestEvent);
   end
   else
   begin
-    ResetEvent(ScriptUiRequestEvent);
+    ResetGameEvent(ScriptUiRequestEvent);
     TalkScripted := False;
     SysUtils.Sleep(10);
     Result := True;

@@ -9,9 +9,9 @@ unit aVector;
 interface
 
 uses
+  Types,
   Classes,
-  EC_Struct,
-  Types;
+  EC_Struct;
 
 type
 

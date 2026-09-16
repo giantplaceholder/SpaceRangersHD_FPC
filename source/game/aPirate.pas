@@ -136,7 +136,7 @@ uses
   EC_Struct,
   Classes,
   Math,
-  Windows,
+  Types,
   SysUtils,
   aRanger,
   aTranclucator,

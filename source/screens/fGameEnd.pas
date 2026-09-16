@@ -41,7 +41,7 @@ uses
   aSaveLoad,
   aGalaxyStruct,
   Classes,
-  Windows,
+  GameInput,
   SysUtils,
   EC_Str,
   EC_Struct,

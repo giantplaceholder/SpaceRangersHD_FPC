@@ -9,10 +9,10 @@ unit aGroup;
 interface
 
 uses
+  Types,
   Classes,
   EC_Buf,
   EC_Struct,
-  Windows,
   aGalaxy,
   aShip;
 

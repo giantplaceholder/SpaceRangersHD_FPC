@@ -74,7 +74,7 @@ implementation
 uses
   GlobalsV,
   SysUtils,
-  Windows,
+  GameInput,
   EC_Cache,
   GR_Main,
   GR_GraphBuf,

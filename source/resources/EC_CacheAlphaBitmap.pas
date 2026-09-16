@@ -50,8 +50,7 @@ implementation
 uses
   SysUtils,
   EC_Mem,
-  GR_Main,
-  Windows;
+  GR_Main;
 
 procedure TCAlphaBitmapControlEC.QueueLoadIfMissing(PendingLoads: TList);
 var

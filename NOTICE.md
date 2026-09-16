@@ -13,6 +13,9 @@ It is not affiliated with the game's developers or publisher.
 - Software renderer: [OKGF](https://github.com/pakompom/okgf), under its
   [MIT license](vendor/okgf/LICENSE); bundled SoftFloat has its own
   [BSD 3-Clause license](vendor/okgf/vendor/softfloat/COPYING.txt).
+- Windowing, input, and audio device: [SDL](https://libsdl.org/), under its zlib license.
+- Ogg/Vorbis audio decoding: [Xiph.Org libraries](https://xiph.org/), under BSD-style licenses.
+- AVI video decoding: [Xvid](https://www.xvid.com/), under the GNU GPL.
 - Compiler and runtime: [Free Pascal](https://www.freepascal.org/), with
   [source and license details](vendor/fpc/PORT.md).
 

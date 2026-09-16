@@ -9,12 +9,12 @@ unit GI_StarField;
 interface
 
 uses
+  Types,
   EC_Struct,
   GI_Panel,
   GI_MessageLoop,
   EC_CacheGAI,
-  EC_BlockPar,
-  Types;
+  EC_BlockPar;
 
 type
 
@@ -105,8 +105,7 @@ uses
   GR_GraphBuf,
   GlobalsV,
   Classes,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 constructor TStarFieldList.Create;
 begin
@@ -578,7 +577,11 @@ begin
   if not HardwareRenderingEnabled then
   begin
     PreviousPixelCount := PixelCount;
-    CopyMemory(PreviousPixels, Pixels, PreviousPixelCount * SizeOf(TStarFieldPixel));
+    System.Move(
+        Pointer(Pixels)^,
+        Pointer(PreviousPixels)^,
+        PreviousPixelCount * SizeOf(TStarFieldPixel)
+    );
     PreviousBackgroundBounds := BackgroundBounds;
   end;
 end;

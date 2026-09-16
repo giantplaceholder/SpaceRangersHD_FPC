@@ -49,7 +49,8 @@ function ab_Item_FindRepairRoute(Origin: PabZone; var Zone: PabZone): TabItem;
 implementation
 
 uses
-  Windows,
+  Types,
+  GameInput,
   Classes,
   SysUtils,
   EC_Struct,

@@ -58,7 +58,7 @@ implementation
 
 uses
   aMyFunction,
-  Windows,
+  GameInput,
   SysUtils,
   EC_Str,
   EC_Struct,

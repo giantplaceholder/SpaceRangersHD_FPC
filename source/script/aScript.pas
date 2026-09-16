@@ -9,6 +9,8 @@ unit aScript;
 interface
 
 uses
+  Types,
+  GameScriptLibrary,
   Classes,
   EC_BlockPar,
   EC_Buf,
@@ -17,7 +19,7 @@ uses
   EC_Str,
   EC_Struct,
   EC_Thread,
-  Windows,
+  GameInput,
   aGalaxy,
   aGalaxyStruct,
   aItem,
@@ -755,7 +757,7 @@ uses
   GI_MessageLoop,
   GI_MessageBox,
   GI_XviD,
-  MMSystem,
+  GameSystem,
   Robot,
   fPanelMain,
   fShip2,
@@ -984,7 +986,7 @@ begin
           while not MusicManager.IsPlaying do
             SysUtils.Sleep(1);
         end;
-        RuinsTalkScreen.ScriptVideoStartedAt := timeGetTime;
+        RuinsTalkScreen.ScriptVideoStartedAt := GameTickCount;
         if RuinsTalkScreen.ScriptVideoTimer <> nil then
         begin
           RuinsTalkScreen.CancelCallbackTimer(RuinsTalkScreen.ScriptVideoTimer);
@@ -4722,7 +4724,7 @@ end;
 destructor TLibraryHandler.Destroy;
 begin
   if ModuleHandle <> 0 then
-    FreeLibrary(ModuleHandle);
+    FreeScriptLibrary(ModuleHandle);
   inherited Destroy;
 end;
 
@@ -4740,7 +4742,8 @@ begin
   if Count < 2 then
     raise Exception.Create(
         AnsiString('Failed to init library function ' + Name + ' from ' + LibraryName));
-  Proc := GetProcAddress(ModuleHandle, PAnsiChar(AnsiString(ExtractDelimitedPartW(Text, 1, ','))));
+  Proc :=
+      ScriptLibraryProc(ModuleHandle, PAnsiChar(AnsiString(ExtractDelimitedPartW(Text, 1, ','))));
   if Proc = nil then
     raise Exception.Create(
         AnsiString('Failed to find library function ' + Name + ' in ' + LibraryName));
@@ -4840,7 +4843,7 @@ var
     Definition := GameDataConfig.FindBlockByPath('ScriptLibs.' + Name);
     if Definition = nil then
       Exit;
-    Module := LoadLibraryW(PWideChar(Definition.GetParam('Path')));
+    Module := LoadScriptLibrary(Definition.GetParam('Path'));
     if Module = 0 then
       raise Exception.Create(AnsiString('Failed to load library ' + Name));
     Result := TLibraryHandler.Create(Name, Module, Definition);

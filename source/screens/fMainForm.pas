@@ -59,7 +59,7 @@ uses
   aGalaxy,
   aSaveLoad,
   Classes,
-  Windows,
+  GameInput,
   SysUtils,
   GR_Main,
   Globals,

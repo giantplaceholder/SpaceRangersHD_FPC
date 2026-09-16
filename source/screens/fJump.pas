@@ -49,8 +49,7 @@ uses
   Classes,
   Types,
   Math,
-  Windows,
-  MMSystem,
+  GameSystem,
   Globals,
   GlobalsV,
   GR_Main,
@@ -175,7 +174,7 @@ begin
           while not MusicManager.IsPlaying do
             SysUtils.Sleep(1);
         end;
-        MovieStartTick := timeGetTime;
+        MovieStartTick := GameTickCount;
         if MovieTimer <> nil then
         begin
           CancelCallbackTimer(MovieTimer);
@@ -353,7 +352,7 @@ end;
 
 procedure TfJump.AdvanceMovie(Timer: PCallbackTimerGI; UserData: Integer);
 begin
-  if (GetByName('Film') as TxvidGI).SetPlaybackTime(timeGetTime - MovieStartTick) then
+  if (GetByName('Film') as TxvidGI).SetPlaybackTime(GameTickCount - MovieStartTick) then
     StopMovie;
 end;
 

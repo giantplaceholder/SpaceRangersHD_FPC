@@ -9,6 +9,7 @@ unit fGov;
 interface
 
 uses
+  GameEvents,
   GI_MessageLoop,
   aRanger,
   fPanelLoad,
@@ -140,7 +141,7 @@ uses
   Classes,
   SysUtils,
   Math,
-  Windows,
+  GameInput,
   Globals,
   GlobalsV,
   GR_Main,
@@ -555,8 +556,7 @@ begin
               + ' '
               + GetPlayer.CurrentStar.Name;
       Stage := 9;
-      if IsTurnCalculationRunning
-          and (WaitForSingleObject(ScriptUiRequestEvent, 0) <> WAIT_OBJECT_0) then
+      if IsTurnCalculationRunning and (WaitGameEvent(ScriptUiRequestEvent, 0) <> WAIT_OBJECT_0) then
         WaitForTurnCalculation;
       if not MemorySnapshotActive then
         SaveGameToMemorySnapshot;

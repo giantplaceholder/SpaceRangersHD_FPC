@@ -9,6 +9,7 @@ unit aWarrior;
 interface
 
 uses
+  Types,
   EC_Struct,
   EC_BlockPar,
   EC_Buf,
@@ -142,7 +143,6 @@ uses
   aPirate,
   Classes,
   Math,
-  Windows,
   SysUtils,
   aRanger,
   aTranclucator,

@@ -126,7 +126,7 @@ uses
   EC_Str,
   GlobalsV,
   SysUtils,
-  Windows;
+  Types;
 
 constructor TBlockParElEC.Create;
 begin
@@ -502,9 +502,9 @@ begin
     Inc(SortedEntryCount);
     Exit;
   end;
-  Windows.MoveMemory(
-      @SortedEntries[Index + 1],
-      @SortedEntries[Index],
+  System.Move(
+      Pointer(@SortedEntries[Index])^,
+      Pointer(@SortedEntries[Index + 1])^,
       (SortedEntryCount - Index) * SizeOf(SortedEntries[0])
   );
   SortedEntries[Index] := Entry;
@@ -529,9 +529,9 @@ begin
         if Head.GroupCount > 0 then
           SortedEntries[Index + 1].GroupCount := Entry.GroupCount;
       if Index < SortedEntryCount - 1 then
-        Windows.MoveMemory(
-            @SortedEntries[Index],
-            @SortedEntries[Index + 1],
+        System.Move(
+            Pointer(@SortedEntries[Index + 1])^,
+            Pointer(@SortedEntries[Index])^,
             (SortedEntryCount - Index - 1) * SizeOf(SortedEntries[0])
         );
       Dec(SortedEntryCount);
@@ -1547,7 +1547,7 @@ begin
   end
   else
     GR_Main.CCInterface.SetResourceChecksumFailed(True);
-  FileObj.SetPointer(Position, FILE_BEGIN);
+  FileObj.SetPointer(Position, fsFromBeginning);
   ByteCount := FileObj.GetSize - FileObj.GetPointer;
   FileObj.ReadBuffer(@Crc, SizeOf(Crc));
   FileObj.ReadBuffer(@Seed, SizeOf(Seed));

@@ -9,6 +9,7 @@ unit aScriptFun;
 interface
 
 uses
+  Types,
   EC_BlockPar,
   EC_Expression,
   aItem,
@@ -1343,8 +1344,7 @@ uses
   fShip2,
   GI_XviD,
   GR_Music,
-  Windows,
-  MMSystem,
+  GameSystem,
   Math,
   aKling,
   SE_Space,
@@ -13096,7 +13096,7 @@ begin
         SysUtils.Sleep(1);
       MusicManager.CategoryOverride := SavedCategory;
     end;
-    ShipScreen.ScriptVideoStartedAt := timeGetTime;
+    ShipScreen.ScriptVideoStartedAt := GameTickCount;
     if ShipScreen.ScriptVideoTimer <> nil then
     begin
       ShipScreen.CancelCallbackTimer(ShipScreen.ScriptVideoTimer);

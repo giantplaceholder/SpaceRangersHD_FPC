@@ -113,8 +113,7 @@ uses
   EC_Struct,
   GR_Main,
   GR_Sound,
-  Math,
-  Windows;
+  Math;
 
 constructor TGraphButtonGI.Create(Owner: TObjectGI);
 begin
@@ -950,7 +949,7 @@ begin
       if Bounds.Right - Bounds.Left < 1 then
         Bounds := ImageBounds
       else
-        Windows.UnionRect(Bounds, Bounds, ImageBounds);
+        Types.UnionRect(Bounds, Bounds, ImageBounds);
     end;
     if ImageDown <> nil then
     begin
@@ -960,7 +959,7 @@ begin
       if Bounds.Right - Bounds.Left < 1 then
         Bounds := ImageBounds
       else
-        Windows.UnionRect(Bounds, Bounds, ImageBounds);
+        Types.UnionRect(Bounds, Bounds, ImageBounds);
     end;
     if ImageDownActive <> nil then
     begin
@@ -970,7 +969,7 @@ begin
       if Bounds.Right - Bounds.Left < 1 then
         Bounds := ImageBounds
       else
-        Windows.UnionRect(Bounds, Bounds, ImageBounds);
+        Types.UnionRect(Bounds, Bounds, ImageBounds);
     end;
     if ImageDisabled <> nil then
     begin
@@ -980,7 +979,7 @@ begin
       if Bounds.Right - Bounds.Left < 1 then
         Bounds := ImageBounds
       else
-        Windows.UnionRect(Bounds, Bounds, ImageBounds);
+        Types.UnionRect(Bounds, Bounds, ImageBounds);
     end;
     if ImageDisabledActive <> nil then
     begin
@@ -990,7 +989,7 @@ begin
       if Bounds.Right - Bounds.Left < 1 then
         Bounds := ImageBounds
       else
-        Windows.UnionRect(Bounds, Bounds, ImageBounds);
+        Types.UnionRect(Bounds, Bounds, ImageBounds);
     end;
     if (ImageAutoUpdateFlags and agfPosition) = agfPosition then
       SetPosition(Parent.ToLocalPoint(Bounds.TopLeft));

@@ -9,6 +9,7 @@ unit aPath;
 interface
 
 uses
+  Types,
   GameHeap,
   EC_Struct,
   SyncObjs;
@@ -86,8 +87,7 @@ uses
   EC_Mem,
   GR_Main,
   Math,
-  SysUtils,
-  Windows;
+  SysUtils;
 
 var
   PathInitialBlock: Pointer;
@@ -105,7 +105,7 @@ begin
   PathInitialBlock := GameHeap.HeapAlloc(PathNodeHeap, 0, PathPoolFreeCount * SizeOf(TSPathNode));
   if PathInitialBlock = nil then
     raise Exception.Create('Error: HeapAlloc');
-  ZeroMemory(PathInitialBlock, PathPoolFreeCount * SizeOf(TSPathNode));
+  System.FillChar(Pointer(PathInitialBlock)^, PathPoolFreeCount * SizeOf(TSPathNode), 0);
   Node := PathInitialBlock;
   PathPoolHead := Node;
   Prev := nil;

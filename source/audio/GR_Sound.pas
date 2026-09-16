@@ -9,6 +9,7 @@ unit GR_Sound;
 interface
 
 uses
+  GameEvents,
   EC_Struct,
   DirectSound,
   SyncObjs,
@@ -53,12 +54,13 @@ type
     GapF: array[0..0] of Byte;
     DirectBuffer: IDirectSoundBuffer;
     Notify: IDirectSoundNotify;
-    StopEvent: Cardinal;
-    ChunkEvents: array[0..2] of Cardinal;
-    VolumeEvent: Cardinal;
+    // WaitForChunk reads these consecutive native-width handles as one wait set.
+    StopEvent: TGameEventHandle;
+    ChunkEvents: array[0..2] of TGameEventHandle;
+    VolumeEvent: TGameEventHandle;
     BufferBytes: Integer;
     WaveFormat: TSoundWaveFormat;
-    VolumeTimer: Cardinal;
+    VolumeTimer: TGameEventTimer;
     Volume: Single;
     VolumeScale: Single;
     VolumeStep: Single;
@@ -132,10 +134,10 @@ implementation
 
 uses
   GlobalsV,
-  Windows,
+  Types,
   SysUtils,
   GR_Main,
-  MMSystem,
+  GameSystem,
   EC_Cache,
   EC_CacheSound,
   EC_Str,
@@ -295,10 +297,10 @@ begin
   Notify := nil;
   for i := Low(ChunkEvents) to High(ChunkEvents) do
     ChunkEvents[i] := 0;
-  StopEvent := Windows.CreateEvent(nil, True, False, nil);
+  StopEvent := CreateGameEvent(True, False);
   for i := Low(ChunkEvents) to High(ChunkEvents) do
-    ChunkEvents[i] := Windows.CreateEvent(nil, False, False, nil);
-  VolumeEvent := Windows.CreateEvent(nil, False, False, nil);
+    ChunkEvents[i] := CreateGameEvent(False, False);
+  VolumeEvent := CreateGameEvent(False, False);
   BufferBytes := 0;
   Volume := 1;
   VolumeScale := 1;
@@ -314,18 +316,18 @@ begin
   Clear;
   if StopEvent <> 0 then
   begin
-    CloseHandle(StopEvent);
+    CloseGameEvent(StopEvent);
     StopEvent := 0;
   end;
   for i := Low(ChunkEvents) to High(ChunkEvents) do
     if ChunkEvents[i] <> 0 then
     begin
-      CloseHandle(ChunkEvents[i]);
+      CloseGameEvent(ChunkEvents[i]);
       ChunkEvents[i] := 0;
     end;
   if VolumeEvent <> 0 then
   begin
-    CloseHandle(VolumeEvent);
+    CloseGameEvent(VolumeEvent);
     VolumeEvent := 0;
   end;
   inherited Destroy;
@@ -341,10 +343,9 @@ begin
       Controller.Volume := 0;
       Controller := nil;
     end;
-    if VolumeTimer <> 0 then
+    if VolumeTimer <> nil then
     begin
-      timeKillEvent(VolumeTimer);
-      VolumeTimer := 0;
+      FreeAndNil(VolumeTimer);
     end;
     if DirectBuffer <> nil then
       DirectBuffer.Stop;
@@ -368,7 +369,7 @@ begin
   try
     Clear;
     BufferBytes := ByteCount;
-    CopyMemory(@WaveFormat, Format, SizeOf(WaveFormat));
+    System.Move(Pointer(Format)^, Pointer(@WaveFormat)^, SizeOf(WaveFormat));
     FillChar(Desc, SizeOf(Desc), 0);
     Desc.Size := SizeOf(Desc);
     Desc.Flags := DSBCAPS_STATIC or DSBCAPS_LOCSOFTWARE or DSBCAPS_CTRLPAN or DSBCAPS_CTRLVOLUME;
@@ -403,7 +404,7 @@ begin
     WriteOffset := 0;
     LastPlayCursor := 0;
     BufferBytes := ChunkBytes;
-    CopyMemory(@WaveFormat, Format, SizeOf(WaveFormat));
+    System.Move(Pointer(Format)^, Pointer(@WaveFormat)^, SizeOf(WaveFormat));
     FillChar(Desc, SizeOf(Desc), 0);
     Desc.Size := SizeOf(Desc);
     Desc.Flags :=
@@ -484,7 +485,7 @@ begin
       raise Exception.Create(SoundErrorText(Status));
     end;
     if WaveFormat.BitsPerSample = 8 then
-      FillMemory(Data, Bytes, UnsignedPcmSilence)
+      System.FillChar(Pointer(Data)^, Bytes, UnsignedPcmSilence)
     else
       FillChar(Data^, Bytes, 0);
     Status := DirectBuffer.Unlock(Data, Bytes, nil, 0);
@@ -520,7 +521,7 @@ begin
       AppendLogLineThreadSafe('Error in TSoundBuffer.Write 1');
       raise Exception.Create(SoundErrorText(Status));
     end;
-    CopyMemory(Dest, Data, ByteCount);
+    System.Move(Pointer(Data)^, Pointer(Dest)^, ByteCount);
     Status := DirectBuffer.Unlock(Dest, Bytes, nil, 0);
     if (Status <> DS_OK) and (Status <> DS_INCOMPLETE) then
     begin
@@ -616,11 +617,15 @@ begin
         AppendLogLineThreadSafe('Error in TSoundBuffer.WriteStream 1');
         raise Exception.Create(SoundErrorText(Status));
       end;
-      CopyMemory(Dest, Temp, ReadBytes);
+      System.Move(Pointer(Temp)^, Pointer(Dest)^, ReadBytes);
       if BufferBytes > ReadBytes then
       begin
         if WaveFormat.BitsPerSample = 8 then
-          FillMemory(PAnsiChar(Dest) + ReadBytes, BufferBytes - ReadBytes, UnsignedPcmSilence)
+          System.FillChar(
+              Pointer(PAnsiChar(Dest) + ReadBytes)^,
+              BufferBytes - ReadBytes,
+              UnsignedPcmSilence
+          )
         else
           FillChar(Pointer(PAnsiChar(Dest) + ReadBytes)^, BufferBytes - ReadBytes, 0);
       end;
@@ -645,8 +650,8 @@ begin
   SoundManager.Lock.Enter;
   try
     for i := Low(ChunkEvents) to High(ChunkEvents) do
-      ResetEvent(ChunkEvents[i]);
-    ResetEvent(VolumeEvent);
+      ResetGameEvent(ChunkEvents[i]);
+    ResetGameEvent(VolumeEvent);
     if DirectBuffer = nil then
       Exit;
     if not Streaming then
@@ -683,13 +688,12 @@ begin
   Result := -1;
   if not Streaming then
   begin
-    WaitForSingleObject(ChunkEvents[0], INFINITE);
+    WaitGameEvent(ChunkEvents[0], INFINITE);
     Result := 0;
   end
-  else if VolumeTimer = 0 then
+  else if VolumeTimer = nil then
   begin
-    WaitResult :=
-        WaitForMultipleObjects(Length(ChunkEvents) + 1, @StopEvent, False, SoundEventPollMs);
+    WaitResult := WaitGameEvents(Length(ChunkEvents) + 1, @StopEvent, False, SoundEventPollMs);
     if WaitResult = WAIT_TIMEOUT then
       Result := 0
     else
@@ -699,8 +703,7 @@ begin
   begin
     while True do
     begin
-      WaitResult :=
-          WaitForMultipleObjects(Length(ChunkEvents) + 2, @StopEvent, False, SoundEventPollMs);
+      WaitResult := WaitGameEvents(Length(ChunkEvents) + 2, @StopEvent, False, SoundEventPollMs);
       if WaitResult = WAIT_TIMEOUT then
       begin
         Result := 0;
@@ -750,7 +753,7 @@ end;
 
 procedure TSoundBuffer.SignalStop;
 begin
-  SetEvent(StopEvent);
+  SetGameEvent(StopEvent);
 end;
 
 procedure TSoundBuffer.SetVolume(Value: Single);
@@ -797,21 +800,13 @@ end;
 
 procedure TSoundBuffer.StartVolumeRamp(Interval: Cardinal; Step: Single);
 begin
-  ResetEvent(VolumeEvent);
+  ResetGameEvent(VolumeEvent);
   VolumeStep := Step;
-  if VolumeTimer <> 0 then
+  if VolumeTimer <> nil then
   begin
-    timeKillEvent(VolumeTimer);
-    VolumeTimer := 0;
+    FreeAndNil(VolumeTimer);
   end;
-  VolumeTimer :=
-      timeSetEvent(
-          Interval,
-          0,
-          TFNTimeCallBack(VolumeEvent),
-          0,
-          TIME_PERIODIC or TIME_CALLBACK_EVENT_SET
-      );
+  VolumeTimer := TGameEventTimer.Create(VolumeEvent, Interval);
 end;
 
 procedure TSoundBuffer.SetPan(Value: Single);
@@ -1063,7 +1058,7 @@ var
   NewVolume: Single;
   Tick: Cardinal;
 begin
-  Tick := timeGetTime;
+  Tick := GameTickCount;
   if Tick - LastFadeTick < 10 then
     Exit;
   LastFadeTick := Tick;

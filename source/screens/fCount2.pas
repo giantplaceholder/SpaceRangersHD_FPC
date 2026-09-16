@@ -88,7 +88,7 @@ uses
   Classes,
   SysUtils,
   Math,
-  Windows,
+  GameInput,
   GlobalsV,
   GR_Main,
   GR_GraphBuf,

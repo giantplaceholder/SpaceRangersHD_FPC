@@ -9,7 +9,7 @@ unit aConst;
 interface
 
 uses
-  Windows,
+  Types,
   aGalaxyStruct;
 
 type

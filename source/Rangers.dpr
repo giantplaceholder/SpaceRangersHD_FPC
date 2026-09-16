@@ -11,13 +11,15 @@ uses
   cthreads,
   cwstring,
 {$ENDIF}
+{$IFDEF MSWINDOWS}
   Windows,
+{$ENDIF}
+  GameEvents,
   Classes,
   SysUtils,
-  Registry,
-  Forms,
-  MMSystem,
-  Dialogs,
+  DateUtils,
+  GameWindow,
+  GameSystem,
   GlobalsV,
   EC_Struct,
   Direct3D9,
@@ -325,12 +327,13 @@ type
 var
   SteamCallbackThread: TSteamCallbacksThread = nil;
   ApplicationEvents: TAD;
-  StartupTime: TSystemTime;
+  StartupTime: SysUtils.TSystemTime;
   ArgumentIndex: Integer;
-  ExecutableFileName: AnsiString;
   HadProtectedStatus: Boolean;
   StartupTextBC: WideString;
-  WineModule: Cardinal;
+{$IFDEF MSWINDOWS}
+  WineModule: HMODULE;
+{$ENDIF}
   WineGetVersion: Pointer;
   WineGetHostVersion: TWineGetHostVersion;
   WineNtToUnixFileName: Pointer;
@@ -347,48 +350,16 @@ procedure TSteamCallbacksThread.Execute;
 var
   CurrentTick, LastCallbackTick: Cardinal;
 begin
-  LastCallbackTick := timeGetTime;
+  LastCallbackTick := GameTickCount;
   while not IsStopRequested do
   begin
-    CurrentTick := timeGetTime;
+    CurrentTick := GameTickCount;
     if CurrentTick - LastCallbackTick > 200 then
     begin
       SteamRunCallbacks;
       LastCallbackTick := CurrentTick;
     end;
     SysUtils.Sleep(100);
-  end;
-end;
-
-procedure ClearReadOnlyAttributesRecursive(
-    DirectoryPath: WideString
-); { Changes the process working directory and does not restore it; paths pass through the ANSI filesystem API. }
-var
-  SearchHandle: THandle;
-  FindData: TWin32FindDataA;
-begin
-  SetCurrentDir(AnsiString(DirectoryPath));
-  SearchHandle := Windows.FindFirstFile('*.*', FindData);
-  if SearchHandle <> INVALID_HANDLE_VALUE then
-  begin
-    repeat
-      if (FindData.dwFileAttributes and FILE_ATTRIBUTE_READONLY) <> 0 then
-        if SetFileAttributesA(FindData.cFileName, FILE_ATTRIBUTE_NORMAL) then
-          ;
-    until not Windows.FindNextFile(SearchHandle, FindData);
-    Windows.FindClose(SearchHandle);
-  end;
-  SearchHandle := Windows.FindFirstFile('*.*', FindData);
-  if SearchHandle <> INVALID_HANDLE_VALUE then
-  begin
-    repeat
-      if (FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
-        if (AnsiString(FindData.cFileName) <> '.') and (AnsiString(FindData.cFileName) <> '..') then
-          ClearReadOnlyAttributesRecursive(
-              DirectoryPath + '\' + WideString(AnsiString(FindData.cFileName))
-          );
-    until not Windows.FindNextFile(SearchHandle, FindData);
-    Windows.FindClose(SearchHandle);
   end;
 end;
 
@@ -426,7 +397,7 @@ end;
 procedure HandleApplicationDeactivated;
 var
   WaitResult: Cardinal;
-  Events: array[0..1] of THandle;
+  Events: array[0..1] of TGameEventHandle;
   EventPointer: Pointer;
 begin
   if WindowedModeRequested then
@@ -448,10 +419,10 @@ begin
     Events[1] := ScriptUiRequestEvent;
     EventPointer := @Events;
     repeat
-      WaitResult := WaitForMultipleObjects(2, EventPointer, False, INFINITE);
+      WaitResult := WaitGameEvents(2, EventPointer, False, INFINITE);
       if WaitResult = WAIT_OBJECT_0 + 1 then
       begin
-        SetEvent(ScriptUiAbortEvent);
+        SetGameEvent(ScriptUiAbortEvent);
         SysUtils.Sleep(1);
       end
       else
@@ -469,10 +440,10 @@ begin
       Events[1] := ScriptUiRequestEvent;
       EventPointer := @Events;
       repeat
-        WaitResult := WaitForMultipleObjects(2, EventPointer, False, INFINITE);
+        WaitResult := WaitGameEvents(2, EventPointer, False, INFINITE);
         if WaitResult = WAIT_OBJECT_0 + 1 then
         begin
-          SetEvent(ScriptUiAbortEvent);
+          SetGameEvent(ScriptUiAbortEvent);
           SysUtils.Sleep(1);
         end
         else
@@ -482,7 +453,7 @@ begin
         ;
     end;
   end;
-  ResetEvent(ScriptUiAbortEvent);
+  ResetGameEvent(ScriptUiAbortEvent);
   if (GameLoadScreen.LoadThread <> nil) and GameLoadScreen.LoadThread.IsRunning then
     GameLoadScreen.LoadThread.WaitForIdle(INFINITE);
   if not MemorySnapshotActive then
@@ -522,17 +493,19 @@ var
   Search: TSearchRec;
 begin
   OldDirectory := GetCurrentDir;
-  SetCurrentDir(AnsiString(GetGameUserDirectory + 'Cache\'));
+  SetCurrentDir(NativeGamePath(AnsiString(GetGameUserDirectory + 'Cache\')));
   if SysUtils.FindFirst('*.*', faAnyFile, Search) = 0 then
   begin
     repeat
       FileName := Search.Name;
       if (FileName <> '.') and (FileName <> '..') then
-        SysUtils.DeleteFile(AnsiString(GetGameUserDirectory + 'Cache\' + WideString(FileName)));
+        SysUtils.DeleteFile(
+            NativeGamePath(AnsiString(GetGameUserDirectory + 'Cache\' + WideString(FileName)))
+        );
     until SysUtils.FindNext(Search) <> 0;
     SysUtils.FindClose(Search);
   end;
-  SetCurrentDir(OldDirectory);
+  SetCurrentDir(NativeGamePath(OldDirectory));
 end;
 
 function CollectInstallLanguageCodes:
@@ -563,44 +536,30 @@ end;
 begin
 
   DecimalSeparator := '.';
-  MainRuntimeThreadId := GetCurrentThreadId;
+  MainRuntimeThreadId := System.GetCurrentThreadID;
   GR_Main.CCInterface := TCCInterface.Create;
   RuntimeExitCheckCallback1 := HandleRuntimeExitCheck1;
   RuntimeExitCheckCallback2 := HandleRuntimeExitCheck2;
   DebugKeyCallback := HandleDebugKey;
-  RuntimeStartupTick := timeGetTime;
+  RuntimeStartupTick := GameTickCount;
   OnMessageIdle := @HandleMessageIdle;
   OnMessageResume := @HandleMessageResume;
-  Application.Initialize;
   ApplicationEvents := TAD.Create;
-  Application.OnActivate := ApplicationEvents.ApplicationActivated;
-  Application.OnDeactivate := ApplicationEvents.ApplicationDeactivated;
-  if OpenEvent(EVENT_MODIFY_STATE, False, 'EG_SpaceRangers_Run') <> 0 then
-    Windows.MessageBox(
-        0,
-        'Please terminate already running instance of the game!',
-        'Space Rangers',
-        MB_ICONERROR
-    )
+  OnGameActivated := ApplicationEvents.ApplicationActivated;
+  OnGameDeactivated := ApplicationEvents.ApplicationDeactivated;
+  if not LockGameInstance then
+    GameMessageBox('Please terminate already running instance of the game!', 'Space Rangers', $10)
   else
   begin
-    CreateEvent(nil, True, True, 'EG_SpaceRangers_Run');
     for ArgumentIndex := 1 to ParamCount do
       if LowerCase(ParamStr(ArgumentIndex)) = 'savemergedcfg' then
         DumpLoadedConfig := True;
-    SetLength(ExecutableFileName, MAX_PATH);
-    if GetModuleFileNameA(0, PAnsiChar(ExecutableFileName), MAX_PATH) <> 0 then
-    begin
-      SetLength(ExecutableFileName, StrLen(PAnsiChar(ExecutableFileName)));
-      ClearReadOnlyAttributesRecursive(ExtractFileDirW(WideString(ExecutableFileName)));
-      SetCurrentDir(AnsiString(ExtractFileDirW(WideString(ExecutableFileName))));
-    end;
-    WriteRegistryStringLegacy(
-        HKEY_LOCAL_MACHINE,
-        'SOFTWARE\CLASSES\avifile\Extensions\VDO',
-        '',
-        '{00020000-0000-0000-C000-000000000046}'
-    );
+    // The executable can live in an app bundle; resources are selected explicitly.
+    for ArgumentIndex := 1 to ParamCount do
+      if Copy(ParamStr(ArgumentIndex), 1, 11) = '--game-dir=' then
+        SetCurrentDir(
+            UTF8Encode(NativeGamePath(UTF8Decode(Copy(ParamStr(ArgumentIndex), 12, MaxInt))))
+        );
     Randomize;
     repeat
       try
@@ -623,12 +582,17 @@ begin
             if StartupText = 'steam' then
             begin
               AppendLogLineThreadSafe('GameDistributor=Steam');
-              LoadSteamApi;
-              SetLength(SelectedLanguage, 255);
-              SetLength(AvailableLanguageCodes, 255);
-              SteamInitialized := SteamInit(SelectedLanguage, AvailableLanguageCodes);
-              if not SteamInitialized then
-                AppendLogLineThreadSafe('Steam not initialized');
+              try
+                LoadSteamApi;
+                SetLength(SelectedLanguage, 255);
+                SetLength(AvailableLanguageCodes, 255);
+                SteamInitialized := SteamInit(SelectedLanguage, AvailableLanguageCodes);
+                if not SteamInitialized then
+                  AppendLogLineThreadSafe('Steam not initialized');
+              except
+                on E: Exception do
+                  AppendLogLineThreadSafe('Steam: ' + E.Message);
+              end;
             end
             else if StartupText = 'gog' then
               AppendLogLineThreadSafe('GameDistributor=GOG')
@@ -655,7 +619,7 @@ begin
             SelectedLanguage := 'english';
             AvailableLanguageCodes := CollectInstallLanguageCodes;
             LanguageFileName := AnsiString(GetGameUserDirectory + 'Lang.txt');
-            if FileExists(LanguageFileName) then
+            if FileExists(NativeGamePath(LanguageFileName)) then
             begin
               AssignFile(LanguageFile, LanguageFileName);
               Reset(LanguageFile);
@@ -680,6 +644,7 @@ begin
           InitializeScriptHostRuntime;
           LoadLocalAchievements;
           RunningUnderWine := False;
+{$IFDEF MSWINDOWS}
           WineModule := Windows.LoadLibrary('ntdll.dll');
           if WineModule > 32 then
           begin
@@ -728,8 +693,9 @@ begin
             end;
             FreeLibrary(WineModule);
           end;
+{$ENDIF}
           HadProtectedStatus := False;
-          GetSystemTime(StartupTime);
+          DateTimeToSystemTime(LocalTimeToUniversal(Now), StartupTime);
           AppendOptionalDebugLogLine(
               Format(
                   '=== Start %d-%.2d-%.2d %.2d.%.2d.%.2d.%.3d',
@@ -762,7 +728,7 @@ begin
               SteamCallbackThread := TSteamCallbacksThread.Create;
             if not SteamCallbackThread.IsRunning and SteamInitialized then
               SteamCallbackThread.Start;
-            timeBeginPeriod(1);
+
             if Galaxy <> nil then
             begin
               Galaxy.RefreshAllShipDerivedState;
@@ -780,7 +746,12 @@ begin
             if ScreenUsesCompositeLoadAssets(PostLoadScreenId) then
               ScreenLoadMode := 3;
             RunMainScreenStateLoop;
-            timeEndPeriod(1);
+            // Stop calculation before releasing the UI and its script resources.
+            if TurnCalculationThread <> nil then
+            begin
+              TurnCalculationThread.RequestStop;
+              TurnCalculationThread.WaitForIdle(INFINITE);
+            end;
             HadProtectedStatus := False;
             if Galaxy <> nil then
             begin
@@ -819,7 +790,8 @@ begin
             MemorySnapshotActive := False;
           end;
           FreeAllRandomSounds;
-          SteamCallbackThread.RequestStop;
+          // Join the callback worker before unloading the code it can still call.
+          FreeAndNil(SteamCallbackThread);
           UnloadSteamApi;
           FinalizeScriptHostRuntime;
           FinalizePlatformRuntime;
@@ -830,13 +802,19 @@ begin
           end;
           PurgeCacheDirectoryFiles;
         except
+          // A script may be waiting for a conversation when the UI raises.
+          // Wake it before either retrying startup or freeing script/game state.
+          if TurnCalculationThread <> nil then
+          begin
+            TurnCalculationThread.RequestStop;
+            WaitGameEvent(TurnCalculationThread.IdleEvent, INFINITE);
+          end;
           if not SuppressModRetryPrompt and (SelectedMods <> '') and not SkipModsOnReload then
-            if Windows.MessageBox(
-                    MainWindowHandle,
+            if GameMessageBox(
                     'Failed to launch, do you want to try restarting without mods?',
                     'Exception:',
-                    MB_OKCANCEL or MB_ICONERROR)
-                = IDOK then
+                    $1 or $10)
+                = 1 then
             begin
               ResetScriptHostRuntimeState;
               ResetInstalledPackageState;
@@ -847,9 +825,6 @@ begin
           SkipModsOnReload := False;
           if Galaxy <> nil then
           begin
-            // Native passes the +$28 event field, not the +$08 thread handle.
-            if IsTurnCalculationRunning then
-              TerminateThread(TurnCalculationThread.IdleEvent, 0);
             Galaxy.Free;
             Galaxy := nil;
           end;
@@ -871,12 +846,19 @@ begin
         end;
       except
         on StartupException: Exception do
+        begin
           AppendLogLineThreadSafe(
               'Exception '
                   + StartupException.ClassName
                   + ' with message '
                   + StartupException.Message
           );
+          // The launcher runs this executable directly; report failures there
+          // as well as in the game log, and return a failing process status.
+          WriteLn(StdErr, StartupException.ClassName, ': ', StartupException.Message);
+          DumpExceptionBackTrace(StdErr);
+          ExitCode := 1;
+        end;
       end;
     until not SkipModsOnReload;
   end;

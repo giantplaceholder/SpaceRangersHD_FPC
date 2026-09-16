@@ -75,8 +75,7 @@ uses
   EC_Str,
   EC_Struct,
   GR_Main,
-  GR_GraphBuf,
-  Windows;
+  GR_GraphBuf;
 
 procedure TCGaiControlEC.QueueLoadIfMissing(PendingLoads: TList);
 var
@@ -388,7 +387,7 @@ begin
   ApplyAB2BackgroundFixup(SourceBuffer, CacheKey);
   try
     RawGaiData := AllocEC(SourceBuffer.DataSize);
-    CopyMemory(RawGaiData, SourceBuffer.Data, SourceBuffer.DataSize);
+    System.Move(Pointer(SourceBuffer.Data)^, Pointer(RawGaiData)^, SourceBuffer.DataSize);
     ResidentBytes := SourceBuffer.DataSize;
   except
     RawGaiData := nil;
@@ -433,7 +432,7 @@ begin
   if FindTextOffsetW(ResourceKey, 'Bm.FormAB2.2bg') = 0 then
   begin
     LogGaiRescaleStart;
-    CopyMemory(@OldHeader, SourceBuffer.Data, SizeOf(TGaiHeader));
+    System.Move(Pointer(SourceBuffer.Data)^, Pointer(@OldHeader)^, SizeOf(TGaiHeader));
     if OldHeader.FrameCount <> 1 then
       Exit;
     Offset := ReadDWordEC(AddPointerOffset(SourceBuffer.Data, SizeOf(TGaiHeader)));
@@ -451,7 +450,7 @@ begin
     GraphBuf.AllocateRgbaTight(Image.GetContentSize.X, Image.GetContentSize.Y);
     Image.DecodeToGraphBuf(GraphBuf, False);
     Image.ClearData;
-    GraphBuf.RescaleRGBA_HW(GameScreenWidth, GameScreenHeight, True, 1, 1);
+    GraphBuf.RescaleRgbaLinear(GameScreenWidth, GameScreenHeight, True, 1, 1);
     Image.CreateFromGraphBuf(GraphBuf, 1);
     GraphBuf.Clear;
     OldHeader.Bounds.Right := GameScreenWidth;

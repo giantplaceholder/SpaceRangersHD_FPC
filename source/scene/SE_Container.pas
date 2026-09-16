@@ -9,14 +9,14 @@ unit SE_Container;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
   GI_AlphaImage,
   GI_GAI,
   GI_MessageLoop,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

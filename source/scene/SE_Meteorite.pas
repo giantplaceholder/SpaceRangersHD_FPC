@@ -9,11 +9,11 @@ unit SE_Meteorite;
 interface
 
 uses
+  Types,
   EC_BlockPar,
   EC_Struct,
   GI_GAI,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

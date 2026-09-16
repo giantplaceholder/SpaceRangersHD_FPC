@@ -10,26 +10,36 @@ interface
 
 uses
   EC_Struct,
+  Classes,
+  GameEvents,
+  SysUtils,
   SyncObjs;
 
 type
 
+  EWorkerFailure = class(Exception);
+
   TThreadEC = class;
 
   TThreadEC = class(TObjectEx)
+  private
+    Worker: TThread;
+    Failure: string;
+    procedure CheckFailure;
+  public
     Lock: TCriticalSection;
-    ThreadHandle: Cardinal;
-    ThreadId: Cardinal;
+    ThreadHandle: TThreadID;
+    ThreadId: TThreadID;
     Priority: Byte;
     StopRequested: Boolean;
     Gap12: array[0..1] of Byte;
-    StopEvent: Cardinal;
+    StopEvent: TGameEventHandle;
     Flag18: Boolean;
     Gap19: array[0..2] of Byte;
-    ShutdownEvent: Cardinal;
-    StartEvent: Cardinal;
-    RunningEvent: Cardinal;
-    IdleEvent: Cardinal;
+    ShutdownEvent: TGameEventHandle;
+    StartEvent: TGameEventHandle;
+    RunningEvent: TGameEventHandle;
+    IdleEvent: TGameEventHandle;
     procedure Execute; virtual;
     constructor Create;
     destructor Destroy; override;
@@ -51,135 +61,104 @@ const
 
   ThreadPriorityAboveNormal = 4;
 
-  ThreadPriorityValues: array[0..6] of Integer = (-15, -2, -1, 0, 1, 2, 15);
-
-function ThreadEntryEC(Thread: Pointer): Integer;
-
 implementation
 
-uses
-  Windows,
-  SysUtils,
-  GR_Main;
+type
+  TGameWorker = class(TThread)
+    Owner: TThreadEC;
+    procedure Execute; override;
+  end;
 
-function ThreadEntryEC(Thread: Pointer): Integer;
+procedure TGameWorker.Execute;
 begin
-  try
-    TThreadEC(Thread).ProcessRequests;
-  except
-    on E: Exception do
-      ;
-  end;
-  if TThreadEC(Thread).ThreadHandle <> 0 then
-  begin
-    CloseHandle(TThreadEC(Thread).ThreadHandle);
-    TThreadEC(Thread).ThreadHandle := 0;
-  end;
-  TThreadEC(Thread).ThreadId := 0;
-  Result := 0;
+  Owner.ProcessRequests;
 end;
 
 constructor TThreadEC.Create;
+var
+  NewWorker: TGameWorker;
 begin
   inherited Create;
   Lock := TCriticalSection.Create;
-  StopEvent := CreateEvent(nil, True, False, nil);
-  if StopEvent = 0 then
-    raise Exception.Create('TThreadEC.Create CreateEvent');
-  ShutdownEvent := CreateEvent(nil, False, False, nil);
-  if ShutdownEvent = 0 then
-    raise Exception.Create('TThreadEC.Create CreateEvent');
-  StartEvent := CreateEvent(nil, False, False, nil);
-  if StartEvent = 0 then
-    raise Exception.Create('TThreadEC.Create CreateEvent');
-  RunningEvent := CreateEvent(nil, True, False, nil);
-  if RunningEvent = 0 then
-    raise Exception.Create('TThreadEC.Create CreateEvent');
-  IdleEvent := CreateEvent(nil, True, True, nil);
-  if IdleEvent = 0 then
-    raise Exception.Create('TThreadEC.Create CreateEvent');
-  ThreadHandle := BeginThread(nil, 0, @ThreadEntryEC, Self, CREATE_SUSPENDED, ThreadId);
-  SetThreadPriority(ThreadHandle, THREAD_PRIORITY_NORMAL);
-  ResumeThread(ThreadHandle);
+  StopEvent := CreateGameEvent(True, False);
+  ShutdownEvent := CreateGameEvent(False, False);
+  StartEvent := CreateGameEvent(False, False);
+  RunningEvent := CreateGameEvent(True, False);
+  IdleEvent := CreateGameEvent(True, True);
+  NewWorker := TGameWorker.Create(True);
+  Worker := NewWorker;
+  NewWorker.Owner := Self;
+  ThreadHandle := Worker.Handle;
+  ThreadId := Worker.ThreadID;
+  Worker.Start;
 end;
 
 destructor TThreadEC.Destroy;
 begin
-  if ShutdownEvent <> 0 then
+  if Worker <> nil then
   begin
-    SetEvent(ShutdownEvent);
-    WaitForSingleObject(ThreadHandle, INFINITE);
+    RequestStop;
+    SetGameEvent(ShutdownEvent);
+    Worker.WaitFor;
+    FreeAndNil(Worker);
   end;
-  if IdleEvent <> 0 then
-  begin
-    CloseHandle(IdleEvent);
-    IdleEvent := 0
-  end;
-  if StartEvent <> 0 then
-  begin
-    CloseHandle(StartEvent);
-    StartEvent := 0
-  end;
-  if RunningEvent <> 0 then
-  begin
-    CloseHandle(RunningEvent);
-    RunningEvent := 0
-  end;
-  if ShutdownEvent <> 0 then
-  begin
-    CloseHandle(ShutdownEvent);
-    ShutdownEvent := 0
-  end;
-  if StopEvent <> 0 then
-  begin
-    CloseHandle(StopEvent);
-    StopEvent := 0
-  end;
+  CloseGameEvent(IdleEvent);
+  CloseGameEvent(StartEvent);
+  CloseGameEvent(RunningEvent);
+  CloseGameEvent(ShutdownEvent);
+  CloseGameEvent(StopEvent);
   Lock.Free;
   inherited Destroy;
 end;
 
+procedure TThreadEC.CheckFailure;
+var
+  Message: string;
+begin
+  Lock.Enter;
+  try
+    Message := Failure;
+  finally
+    Lock.Leave;
+  end;
+  if Message <> '' then
+    raise EWorkerFailure.Create(ClassName + ': ' + Message);
+end;
+
 procedure TThreadEC.ProcessRequests;
 var
-  Events: array[0..1] of THandle;
-  WaitResult: Cardinal;
+  Events: array[0..1] of TGameEventHandle;
+  Failed: Boolean;
 begin
   Events[0] := ShutdownEvent;
   Events[1] := StartEvent;
-  while True do
+  while WaitGameEvents(Length(Events), @Events, False, INFINITE) = WAIT_OBJECT_0 + 1 do
   begin
-    WaitResult := WaitForMultipleObjects(Length(Events), @Events, False, INFINITE);
-    if WaitResult <> WAIT_OBJECT_0 + 1 then
-      Break;
-    Lock.Enter;
-    try
-      if not IsRunning then
-      begin
-        ResetEvent(StopEvent);
-        StopRequested := False;
-        ResetEvent(IdleEvent);
-        SetEvent(RunningEvent);
-      end;
-    finally
-      Lock.Leave;
-    end;
+    Failed := False;
     try
       Execute;
     except
       on E: Exception do
       begin
-        AppendLogLineThreadSafe(E.Message);
-        AppendLogLineThreadSafe('Thread exception');
-        raise;
+        Lock.Enter;
+        try
+          Failure := E.ClassName + ': ' + E.Message;
+        finally
+          Lock.Leave;
+        end;
+        Failed := True;
       end;
     end;
     Lock.Enter;
     try
-      ResetEvent(RunningEvent);
-      SetEvent(IdleEvent);
+      ResetGameEvent(RunningEvent);
+      SetGameEvent(IdleEvent);
     finally
       Lock.Leave;
     end;
+    // Publish completion even after failure so a waiting UI can report it.
+    if Failed then
+      Exit;
   end;
 end;
 
@@ -192,8 +171,8 @@ end;
 procedure TThreadEC.SetPriority(Value: Byte);
 begin
   Priority := Value;
-  if ThreadHandle <> 0 then
-    SetThreadPriority(ThreadHandle, ThreadPriorityValues[Value]);
+  if Worker <> nil then
+    Worker.Priority := TThreadPriority(Value);
 end;
 
 procedure TThreadEC.SetFlag18;
@@ -210,7 +189,7 @@ procedure TThreadEC.RequestStop;
 begin
   Lock.Enter;
   StopRequested := True;
-  SetEvent(StopEvent);
+  SetGameEvent(StopEvent);
   Lock.Leave;
 end;
 
@@ -229,22 +208,23 @@ begin
   begin
     Lock.Enter;
     StopRequested := False;
-    ResetEvent(StopEvent);
+    ResetGameEvent(StopEvent);
     Lock.Leave;
   end;
 end;
 
 procedure TThreadEC.Start;
 begin
+  CheckFailure;
   Lock.Enter;
   try
     if IsRunning then
       Exit;
-    ResetEvent(StopEvent);
+    ResetGameEvent(StopEvent);
     StopRequested := False;
-    ResetEvent(IdleEvent);
-    SetEvent(RunningEvent);
-    SetEvent(StartEvent);
+    ResetGameEvent(IdleEvent);
+    SetGameEvent(RunningEvent);
+    SetGameEvent(StartEvent);
   finally
     Lock.Leave;
   end;
@@ -252,17 +232,14 @@ end;
 
 function TThreadEC.IsRunning: Boolean;
 begin
-  Lock.Enter;
-  Result := WaitForSingleObject(IdleEvent, 0) = WAIT_TIMEOUT;
-  Lock.Leave;
+  CheckFailure;
+  Result := WaitGameEvent(IdleEvent, 0) = WAIT_TIMEOUT;
 end;
 
 function TThreadEC.WaitForIdle(TimeoutMs: Cardinal): Boolean;
 begin
-  if WaitForSingleObject(IdleEvent, TimeoutMs) = WAIT_TIMEOUT then
-    Result := False
-  else
-    Result := True;
+  Result := WaitGameEvent(IdleEvent, TimeoutMs) = WAIT_OBJECT_0;
+  CheckFailure;
 end;
 
 end.

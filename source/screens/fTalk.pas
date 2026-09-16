@@ -9,12 +9,12 @@ unit fTalk;
 interface
 
 uses
+  Types,
   EC_Struct,
   EC_CacheFont,
   GI_Label,
   GI_Panel,
   GI_MessageLoop,
-  Types,
   aScript,
   aItem,
   aGalaxyStruct;
@@ -269,7 +269,7 @@ uses
   Classes,
   Math,
   GR_Main,
-  Windows,
+  GameInput,
   aPlanet,
   SE_Space,
   SE_Process,

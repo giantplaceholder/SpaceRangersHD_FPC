@@ -9,14 +9,14 @@ unit SE_Weapon;
 interface
 
 uses
+  Types,
   EC_BlockPar,
   EC_Struct,
   GI_GAI,
   GI_Label,
   GI_MessageLoop,
   GI_PSWeapon,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

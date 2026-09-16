@@ -84,7 +84,7 @@ procedure ab_WorldImage_Update;
 implementation
 
 uses
-  Windows,
+  Types,
   Classes,
   SysUtils,
   EC_Mem,

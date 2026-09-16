@@ -52,7 +52,7 @@ implementation
 
 uses
   GI_Main,
-  Windows,
+  GameInput,
   Classes,
   SysUtils,
   Math,

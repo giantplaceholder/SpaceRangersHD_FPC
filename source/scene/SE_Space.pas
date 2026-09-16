@@ -9,6 +9,7 @@ unit SE_Space;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Buf,
@@ -23,8 +24,7 @@ uses
   GI_StarField,
   GI_StarFieldM,
   GI_StarFieldImg,
-  GI_SpaceImg,
-  Types;
+  GI_SpaceImg;
 
 type
 
@@ -156,9 +156,9 @@ procedure ReleaseSpaceObject(var Obj: TObjectSE);
 implementation
 
 uses
-  Windows,
+  GameInput,
   SysUtils,
-  MMSystem,
+  GameSystem,
   EC_Str,
   GR_Main,
   Globals,
@@ -364,7 +364,7 @@ begin
       if RandomSound <> nil then
         if RandomSoundGroup >= 0 then
         begin
-          Now := timeGetTime;
+          Now := GameTickCount;
           if NextSoundTime < Now then
           begin
             Delay :=
@@ -438,7 +438,7 @@ begin
   RandomSound := FindRandomSound(Name, RandomSoundGroup);
   if RandomSoundGroup >= 0 then
     NextSoundTime :=
-        timeGetTime
+        GameTickCount
             + RandomIntRange(
                 RandomSound.Groups[RandomSoundGroup].NextTimeMin,
                 RandomSound.Groups[RandomSoundGroup].NextTimeMax);
@@ -646,7 +646,7 @@ begin
     Exit;
   PathPointCount := Count;
   PathPoints := AllocEC(Count * SizeOf(TPointF));
-  CopyMemory(PathPoints, Points, Count * SizeOf(TPointF));
+  System.Move(Pointer(Points)^, Pointer(PathPoints)^, Count * SizeOf(TPointF));
 end;
 
 procedure TSpaceSE.DrawMinimap;

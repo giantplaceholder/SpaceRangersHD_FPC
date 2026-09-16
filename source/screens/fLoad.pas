@@ -82,10 +82,10 @@ implementation
 
 uses
   EC_CacheGAI,
-  Windows,
+  GameInput,
   SysUtils,
   Math,
-  MMSystem,
+  GameSystem,
   EC_Cache,
   EC_Str,
   GR_Main,
@@ -552,7 +552,7 @@ begin
       while not MusicManager.IsPlaying do
         SysUtils.Sleep(1);
     end;
-  IntroStartedAt := timeGetTime;
+  IntroStartedAt := GameTickCount;
   if IntroTimer <> nil then
   begin
     CancelCallbackTimer(IntroTimer);
@@ -566,7 +566,7 @@ procedure TfLoad.UpdateIntro(Timer: PCallbackTimerGI; UserData: Integer);
 var
   Fraction: Double;
 begin
-  Fraction := (timeGetTime - IntroStartedAt) / IntroDurationMs;
+  Fraction := (GameTickCount - IntroStartedAt) / IntroDurationMs;
   if Fraction > 1 then
     Fraction := 1;
   if (Fraction >= 1) or (IntroSkipRequest > 0) then

@@ -9,6 +9,7 @@ unit fGameMenu;
 interface
 
 uses
+  GameWindow,
   EC_BlockPar,
   GI_MessageLoop,
   Types;
@@ -44,8 +45,7 @@ uses
   aScript,
   aGalaxyStruct,
   Classes,
-  Windows,
-  ShellAPI,
+  GameInput,
   GR_Main,
   GR_Music,
   Globals,
@@ -153,16 +153,8 @@ end;
 
 procedure TfGameMenu.HelpClicked(Sender: TObjectGI);
 begin
-  ShowWindow(MainWindowHandle, SW_MINIMIZE);
-  // Native $602EEC and $602F20 are the empty and 'open' PAnsiChar literals.
-  ShellExecuteA(
-      0,
-      'open',
-      PAnsiChar(AnsiString(LocalizedText('FormGameMenu.HelpFile'))),
-      '',
-      '',
-      SW_SHOWNORMAL
-  );
+  MinimizeGameWindow;
+  OpenGameURL(LocalizedText('FormGameMenu.HelpFile'));
 end;
 
 procedure TfGameMenu.ExitClicked(Sender: TObjectGI);

@@ -115,7 +115,7 @@ uses
   Classes,
   SysUtils,
   Math,
-  Windows,
+  GameInput,
   EC_Struct,
   EC_Str,
   GR_Main,

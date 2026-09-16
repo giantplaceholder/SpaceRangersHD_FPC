@@ -116,7 +116,7 @@ uses
   fRuinsTalk,
   Classes,
   Math,
-  Windows,
+  GameInput,
   GI_Main,
   GI_Image,
   GI_GraphButton,

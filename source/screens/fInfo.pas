@@ -9,6 +9,7 @@ unit fInfo;
 interface
 
 uses
+  GameWindow,
   GI_Main,
   aGalaxy,
   aPlanet,
@@ -131,9 +132,8 @@ uses
   aScript,
   Classes,
   aTransport,
-  Messages,
+  GameInput,
   EC_Data,
-  Windows,
   SE_Star,
   SE_Planet,
   GI_Image,
@@ -1067,7 +1067,6 @@ end;
 procedure TfInfo.MainPanelKeyDown(Sender: TObjectGI; Key: Cardinal);
 var
   NewPosition: Integer;
-  Msg: TMsg;
 begin
   if (Key = VK_ESCAPE) and (ParentLoop <> nil) then
     RequestClose(1)
@@ -1137,7 +1136,7 @@ begin
       ToggleSearchMode(nil)
     else if (Key = Ord('I')) and not SearchMode then
     begin
-      PeekMessage(Msg, 0, WM_CHAR, WM_CHAR, PM_REMOVE);
+      DiscardGameTextCharacter;
       ToggleSearchMode(nil);
     end
     else if Key = Ord('S') then

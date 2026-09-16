@@ -9,6 +9,7 @@ unit ab_MainForm;
 interface
 
 uses
+  GameSystem,
   Types,
   aGalaxyStruct,
   Classes,
@@ -241,9 +242,10 @@ var
 implementation
 
 uses
+  GameWindow,
   GI_GI,
   aKling,
-  Windows,
+  GameInput,
   SysUtils,
   Math,
   GI_Tail,
@@ -2596,7 +2598,7 @@ begin
       and (SelectedMapName <> 'SkipAB')
       and (SelectedMapName <> 'NoEntry') then
   begin
-    if SysUtils.FileExists(SelectedMapName + '.map') then
+    if SysUtils.FileExists(NativeGamePath(SelectedMapName + '.map')) then
       LoadMapFile(SelectedMapName, True)
     else
       LoadMapResource(SelectedMapName, True);
@@ -3351,7 +3353,7 @@ begin
     begin
       Stage := 25;
       Step := 0.5;
-      if GetAsyncKeyState(VK_CONTROL) and $8000 = $8000 then
+      if GameKeyState(VK_CONTROL) and $8000 = $8000 then
         Step := Step * 10;
       if ForwardKeyDown then
         SphereViewState.PolarAngleDegrees := Max(0, SphereViewState.PolarAngleDegrees - Step);

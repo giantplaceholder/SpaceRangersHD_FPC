@@ -141,7 +141,7 @@ implementation
 uses
   fGameSettings,
   Classes,
-  Windows,
+  GameInput,
   SysUtils,
   Math,
   EC_Str,

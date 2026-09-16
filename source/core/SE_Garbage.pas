@@ -23,11 +23,7 @@ procedure CheckMemoryUsage;
 implementation
 
 uses
-  AclAPI,
-  AccCtrl,
-  PsAPI,
-  TlHelp32,
-  Windows,
+  GameSystem,
   GR_Main,
   SysUtils,
   aGalaxy;
@@ -55,7 +51,7 @@ begin
     CheckingMemoryUsage := True;
     Changed := False;
     Status.Length := SizeOf(Status);
-    GlobalMemoryStatusEx(Status);
+    QueryGameMemory(Status);
     Usage := (Status.TotalVirtual - Status.AvailVirtual) shr 20;
     if (Usage > 512) and (Abs(Usage - PreviousVirtualUsageMB) > 256) then
     begin

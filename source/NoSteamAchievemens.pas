@@ -9,6 +9,7 @@ unit NoSteamAchievemens;
 interface
 
 uses
+  GameSystem,
   SimpleSteamApi,
   EC_BlockPar;
 
@@ -71,7 +72,7 @@ var
   Cursor: PByte;
 begin
   FileName := GetGameUserDirectory + 'achievements.dat';
-  if FileExists(AnsiString(FileName)) then
+  if FileExists(NativeGamePath(AnsiString(FileName))) then
   begin
     Buffer := TBufEC.Create;
     try

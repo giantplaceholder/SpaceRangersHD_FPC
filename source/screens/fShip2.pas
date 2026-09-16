@@ -413,7 +413,7 @@ uses
   aMyFunction,
   ThreadCalc,
   SysUtils,
-  Messages,
+  GameInput,
   fStarMap,
   aTranclucator,
   aRuins,
@@ -430,8 +430,7 @@ uses
   Math,
   GI_Main,
   GI_XviD,
-  Windows,
-  MMSystem;
+  GameSystem;
 
 var
   SelfSkillPointColor: Cardinal;
@@ -7013,7 +7012,7 @@ var
   Progress: Double;
   Video: TxvidGI;
 begin
-  Progress := (timeGetTime - ScriptVideoStartedAt) / 30000;
+  Progress := (GameTickCount - ScriptVideoStartedAt) / 30000;
   if Progress > 1 then
     Progress := 1;
   Video := GetByName('Film') as TxvidGI;
@@ -8043,7 +8042,7 @@ var
   TextSize, WindowSize, TargetSize: TPoint;
   Attempts: Integer;
   TargetRatio, Ratio: Single;
-  Borders: Windows.TRect;
+  Borders: Types.TRect;
 begin
   TargetRatio := 1.6230366;
   Borders := Window.WorkSubRect;
@@ -8138,7 +8137,7 @@ var
   TargetRatio, Ratio: Single;
   TextSize, WindowSize, TargetSize: TPoint;
   Attempts, Reserved: Integer; { Native frame retains one unused local. }
-  Borders: Windows.TRect;
+  Borders: Types.TRect;
   LeftWidth, RightWidth, TotalHeight, EmblemMargin, CenterX, CenterY, RowY: Integer;
 
   procedure MeasurePair(

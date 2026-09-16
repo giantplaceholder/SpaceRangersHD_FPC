@@ -72,7 +72,7 @@ procedure ab_WorldLine_Update;
 implementation
 
 uses
-  Windows,
+  Types,
   Classes,
   SysUtils,
   EC_Mem,

@@ -115,11 +115,14 @@ procedure InitializeSteamAchievements;
 implementation
 
 uses
+{$IFDEF MSWINDOWS}
   Windows,
+{$ENDIF}
   SysUtils,
   EC_BlockPar,
   Achievements;
 
+{$IF Defined(MSWINDOWS) and Defined(CPU386)}
 procedure LoadSteamApi;
 var
   Module: HMODULE;
@@ -167,6 +170,19 @@ begin
     FreeLibrary(Module);
   end;
 end;
+
+{$ELSE}
+procedure LoadSteamApi;
+begin
+  // steam_ach.dll exposes the original game's Win32-only wrapper ABI.
+  // Startup catches this and continues with local achievements.
+  raise Exception.Create('Steam integration requires the original 32-bit Windows wrapper');
+end;
+
+procedure UnloadSteamApi;
+begin
+end;
+{$ENDIF}
 
 procedure InitializeSteamAchievements;
 var

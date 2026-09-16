@@ -9,6 +9,7 @@ unit aTransport;
 interface
 
 uses
+  Types,
   aConst,
   EC_BlockPar,
   EC_Buf,
@@ -131,7 +132,6 @@ uses
   aScript,
   Classes,
   Math,
-  Windows,
   SysUtils,
   aRanger,
   aTranclucator,

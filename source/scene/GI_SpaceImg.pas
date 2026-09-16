@@ -9,10 +9,10 @@ unit GI_SpaceImg;
 interface
 
 uses
+  Types,
   GI_MessageLoop,
   EC_Struct,
-  EC_BlockPar,
-  Types;
+  EC_BlockPar;
 
 type
 
@@ -80,7 +80,6 @@ uses
   GR_Main,
   GR_gi,
   GR_DX,
-  Windows,
   Direct3D9,
   aMyFunction,
   Math;
@@ -131,9 +130,9 @@ begin
   J := ImageCount - 1;
   while J > I do
   begin
-    CopyMemory(
-        AddPointerOffset(Images, J * SizeOf(TSpaceImageGI)),
-        AddPointerOffset(Images, (J - 1) * SizeOf(TSpaceImageGI)),
+    System.Move(
+        Pointer(AddPointerOffset(Images, (J - 1) * SizeOf(TSpaceImageGI)))^,
+        Pointer(AddPointerOffset(Images, J * SizeOf(TSpaceImageGI)))^,
         SizeOf(TSpaceImageGI)
     );
     Dec(J);

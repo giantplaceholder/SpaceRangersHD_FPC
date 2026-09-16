@@ -56,7 +56,7 @@ uses
   Classes,
   SysUtils,
   Math,
-  Windows,
+  GameInput,
   EC_Struct,
   GI_Panel,
   GI_ScrollBar,

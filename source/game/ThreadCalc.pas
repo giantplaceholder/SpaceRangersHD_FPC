@@ -9,6 +9,7 @@ unit ThreadCalc;
 interface
 
 uses
+  GameEvents,
   EC_Thread;
 
 type
@@ -58,8 +59,8 @@ implementation
 uses
   GI_MessageLoop,
   aCalc,
-  Windows,
-  MMSystem,
+  Types,
+  GameSystem,
   SysUtils,
   Math,
   Globals,
@@ -97,6 +98,10 @@ end;
 
 procedure WaitForTurnCalculation;
 begin
+  // Screen close handlers can wait before the top-level shutdown runs. Once
+  // the UI loop is exiting, release any conversation the worker is waiting on.
+  if ExitScreenLoop then
+    TurnCalculationThread.RequestStop;
   if TurnCalculationThread.IsRunning then
     TurnCalculationThread.WaitForIdle(INFINITE);
 end;
@@ -156,9 +161,9 @@ begin
       try
         if (GetPlayer <> nil) and GetPlayer.InNormalSpace then
         begin
-          StartTick := timeGetTime;
+          StartTick := GameTickCount;
           Galaxy.NextDay;
-          EndTick := timeGetTime;
+          EndTick := GameTickCount;
           LastGalaxyTurnDuration := EndTick - StartTick;
           if FilmSpeed = 0 then
             FrameMs := 16
@@ -187,7 +192,6 @@ begin
             AppendLogLineThreadSafe(
                 'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
             );
-          SetEvent(IdleEvent);
           raise;
         end;
       end;
@@ -207,7 +211,6 @@ begin
           AppendLogLineThreadSafe(
               'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
           );
-        SetEvent(IdleEvent);
         raise;
       end;
     end;
@@ -230,7 +233,6 @@ begin
           AppendLogLineThreadSafe(
               'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
           );
-        SetEvent(IdleEvent);
         raise;
       end;
     end;

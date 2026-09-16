@@ -50,7 +50,7 @@ uses
   EC_Mem,
   GR_Main,
   SysUtils,
-  Windows;
+  Types;
 
 constructor TGraphBufPalGR.Create;
 begin
@@ -119,7 +119,7 @@ begin
     PaletteCount := Count;
     Palette := ReAllocREC(Palette, PaletteCount * SizeOf(Palette^));
   end;
-  CopyMemory(Palette, Source, Count * SizeOf(Source^));
+  System.Move(Pointer(Source)^, Pointer(Palette)^, Count * SizeOf(Source^));
 end;
 
 function TGraphBufPalGR.GetPixelIndex(X, Y: Integer): Byte;
@@ -159,7 +159,7 @@ end;
 
 procedure TGraphBufPalGR.FillPixels(Value: Byte);
 begin
-  FillMemory(Pixels, PitchBytes * Height, Value);
+  System.FillChar(Pointer(Pixels)^, PitchBytes * Height, Value);
 end;
 
 end.

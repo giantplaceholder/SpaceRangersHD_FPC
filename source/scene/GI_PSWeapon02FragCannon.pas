@@ -9,10 +9,10 @@ unit GI_PSWeapon02FragCannon;
 interface
 
 uses
+  Types,
   EC_Struct,
   GI_MessageLoop,
-  GI_PSWeapon,
-  Types;
+  GI_PSWeapon;
 
 type
 

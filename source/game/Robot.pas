@@ -9,7 +9,8 @@ unit Robot;
 interface
 
 uses
-  Windows,
+  Dynlibs,
+  GameWindow,
   Types,
   GR_Sound,
   GR_GraphBuf;
@@ -198,7 +199,7 @@ var
 
   MaximumAnisotropy: Cardinal = 0;
 
-  RobotModule: Cardinal = 0;
+  RobotModule: TLibHandle = 0;
 
 function GetRobotMultiSampleIndex: Integer;
 
@@ -266,6 +267,7 @@ function FRun(
 implementation
 
 uses
+  GameSystem,
   GR_Main,
   GlobalsV,
   EC_Mem,
@@ -321,15 +323,16 @@ begin
     RobotCallbacks.ReleaseTextures := RobotReleaseTextures;
     RobotCallbacks.GetMusicVolume := RobotGetMusicVolume;
     RobotCallbacks.SetMusicVolume := RobotSetMusicVolume;
+{$IF Defined(MSWINDOWS) and Defined(CPU386)}
     if DirectXVersion >= $90000 then
     begin
       if LanguageDataConfig.GetBlock('RobotsMap').CountParams('MatrixOverride') > 0 then
       begin
         OverrideName := LanguageDataConfig.GetBlock('RobotsMap').GetParam('MatrixOverride');
-        RobotModule := LoadLibraryW(PWideChar(OverrideName));
+        RobotModule := LoadLibrary(UTF8Encode(OverrideName));
       end
       else
-        RobotModule := Windows.LoadLibrary('MatrixGame.dll');
+        RobotModule := LoadLibrary('MatrixGame.dll');
       if RobotModule <> 0 then
       begin
         GetInterface := GetProcAddress(RobotModule, 'GetRobotInterface');
@@ -349,6 +352,7 @@ begin
         end;
       end;
     end;
+{$ENDIF}
   end;
 end;
 
@@ -470,7 +474,7 @@ var
       while not Lines.IsAtEnd do
       begin
         LineBounds := Font.MeasureTaggedTextBounds(Lines.GetCurrentText, 0, Y, nil);
-        Windows.UnionRect(MergedBounds, MergedBounds, LineBounds);
+        Types.UnionRect(MergedBounds, MergedBounds, LineBounds);
         Inc(Y, Font.GetLineHeight);
         Lines.Next;
       end;
@@ -495,7 +499,7 @@ var
           while not WrappedLines.IsAtEnd do
           begin
             LineBounds := Font.MeasureTaggedTextBounds(WrappedLines.GetCurrentText, 0, Y, nil);
-            Windows.UnionRect(MergedBounds, MergedBounds, LineBounds);
+            Types.UnionRect(MergedBounds, MergedBounds, LineBounds);
             Inc(Y, Font.GetLineHeight);
             WrappedLines.Next;
           end;
@@ -548,7 +552,7 @@ begin
     Image.Width := Buffer.Width;
     Image.Height := Buffer.Height;
     DrawClip := Classes.Rect(0, 0, Width, Height);
-    if not Windows.IntersectRect(DrawClip, DrawClip, SourceClip) then
+    if not Types.IntersectRect(DrawClip, DrawClip, SourceClip) then
       Exit;
     DrawX := 0;
     DrawY := 0;
@@ -754,12 +758,12 @@ begin
     TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).CaptureCursorState(@CursorState);
     if InstallConfig.CountParams('RobotPath') > 0 then
     begin
-      SetCurrentDir(AnsiString(InstallConfig.GetParam('RobotPath')));
+      SetCurrentDir(NativeGamePath(AnsiString(InstallConfig.GetParam('RobotPath'))));
       RobotDirectory := GetCurrentDir;
     end;
     RobotSetProgress(0);
     Memory.Length := SizeOf(Memory);
-    GlobalMemoryStatusEx(Memory);
+    QueryGameMemory(Memory);
     if MemorySnapshotActive or (Galaxy <> nil) or ((Int64(Memory.AvailPhys) shr 30) <= 0) then
       GlobalCache.TrimToBudget(0);
     Result := 1;
@@ -872,7 +876,7 @@ begin
     RobotBattleActive := False;
     AppendLogLineThreadSafe('Planetary battle finished');
     GR_DXReset;
-    Windows.SetWindowTextA(MainWindowHandle, 'Rangers');
+    SetGameWindowTitle('Rangers');
     ApplyGammaRamp(DisplayBrightness, DisplayContrast);
     SoundVolume := SavedSoundVolume;
     MusicVolume := SavedMusicVolume;
@@ -887,13 +891,13 @@ begin
     end;
     TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RestoreCursorState(@CursorState);
     if ShowSystemMouse then
-      while ShowCursor(True) < 0 do
+      while ShowGameCursor(True) < 0 do
     else
-      while ShowCursor(False) >= 0 do
+      while ShowGameCursor(False) >= 0 do
         ;
     TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).InvalidateViewport;
   finally
-    SetCurrentDir(SavedDirectory);
+    SetCurrentDir(NativeGamePath(SavedDirectory));
     LooseFileRoot := '';
   end;
   AppendLogLineThreadSafe('Cleanup after planetary battle finished');

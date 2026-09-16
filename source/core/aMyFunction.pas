@@ -9,9 +9,9 @@ unit aMyFunction;
 interface
 
 uses
+  Types,
   EC_Struct,
-  Classes,
-  Types;
+  Classes;
 
 type
 

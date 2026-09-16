@@ -11,6 +11,7 @@ which reconstructs the **2026-08-11 prerelease** build.
 
 - `source/`: game source, organized by subsystem.
 - `tools/`: build, run, compiler bootstrap, and formatting scripts.
+- `platform/`: Pascal windowing, input, graphics, audio, and OS services.
 - `native/`: OKGF build integration.
 - `vendor/okgf/`: pinned [OKGF](https://github.com/pakompom/okgf) submodule.
 - `vendor/fpc/`: pinned [FPC fork](https://github.com/pakompom/fpc_sr) submodule.

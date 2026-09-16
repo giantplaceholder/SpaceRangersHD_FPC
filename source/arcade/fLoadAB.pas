@@ -81,7 +81,7 @@ uses
   GI_PanelScrollBar,
   GI_ScrollBar,
   Globals,
-  Windows;
+  GameInput;
 
 constructor TfLoadAB.Create;
 begin

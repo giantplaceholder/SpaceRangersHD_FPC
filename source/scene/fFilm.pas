@@ -9,6 +9,7 @@ unit fFilm;
 interface
 
 uses
+  Types,
   EC_Struct,
   EC_Thread,
   GI_GraphBuf,
@@ -17,7 +18,6 @@ uses
   GI_MessageLoop,
   GI_Panel,
   GI_ScrollBar,
-  Types,
   aEFilm;
 
 type
@@ -95,7 +95,7 @@ implementation
 uses
   SysUtils,
   Math,
-  Windows,
+  GameInput,
   fFilmFile,
   Globals,
   GlobalsV,

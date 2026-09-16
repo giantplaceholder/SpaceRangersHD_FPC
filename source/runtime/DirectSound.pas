@@ -8,7 +8,12 @@ unit DirectSound;
 
 interface
 
+uses
+  GameEvents;
+
 const
+
+  WAVE_FORMAT_PCM = 1;
 
   DS_OK = 0;
 
@@ -124,7 +129,7 @@ type
 
   TDSPositionNotify = record
     Offset: Cardinal;
-    EventHandle: Cardinal;
+    EventHandle: TGameEventHandle;
   end;
 
   IDirectSound = interface(IInterface)
@@ -200,10 +205,7 @@ type
           Context: Pointer
       ): LongBool; stdcall;
 
-function DirectSoundEnumerateA(
-    Callback: TDSEnumCallback;
-    Context: Pointer
-): LongInt; stdcall; external 'dsound.dll' name 'DirectSoundEnumerateA';
+function DirectSoundEnumerateA(Callback: TDSEnumCallback; Context: Pointer): LongInt; stdcall;
 
 type
 
@@ -216,5 +218,13 @@ var
   DirectSoundEnumerate: TDirectSoundEnumerate;
 
 implementation
+
+uses
+  GameAudio;
+
+function DirectSoundEnumerateA(Callback: TDSEnumCallback; Context: Pointer): LongInt; stdcall;
+begin
+  Result := EnumerateGameSound(Callback, Context);
+end;
 
 end.

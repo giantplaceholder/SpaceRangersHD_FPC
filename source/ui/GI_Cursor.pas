@@ -21,7 +21,7 @@ type
   TCursorGI = class(TObjectGI)
     ImageControl: TImageGI;
     ImagePath: WideString;
-    CursorHandles: array of Cardinal;
+    CursorHandles: array of Pointer;
     FrameIndices: array of Integer;
     FrameDelays: array of Integer;
     FrameIndex: Integer;
@@ -34,13 +34,14 @@ type
     destructor Destroy; override;
     procedure SetImagePath(const Path: WideString);
     procedure RebuildSystemCursor;
-    function CreateCursorBitmap(Buffer: TGraphBufGR): Cardinal;
+    function CreateNativeCursor(Buffer: TGraphBufGR; Hotspot: TPoint): Pointer;
     procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
   end;
 
 implementation
 
 uses
+  GameWindow,
   Classes,
   EC_Cache,
   EC_CacheGAI,
@@ -48,7 +49,7 @@ uses
   EC_Str,
   GR_Main,
   SysUtils,
-  Windows;
+  SDL2;
 
 constructor TCursorGI.Create(Owner: TObjectGI);
 begin
@@ -67,10 +68,10 @@ begin
     AnimationTimer := nil;
   end;
   for Index := 0 to High(CursorHandles) do
-    if CursorHandles[Index] <> 0 then
+    if CursorHandles[Index] <> nil then
     begin
-      DestroyIcon(CursorHandles[Index]);
-      CursorHandles[Index] := 0;
+      SDL_FreeCursor(CursorHandles[Index]);
+      CursorHandles[Index] := nil;
     end;
   ImagePath := '';
   CursorHandles := nil;
@@ -89,10 +90,10 @@ begin
     AnimationTimer := nil;
   end;
   for Index := 0 to High(CursorHandles) do
-    if CursorHandles[Index] <> 0 then
+    if CursorHandles[Index] <> nil then
     begin
-      DestroyIcon(CursorHandles[Index]);
-      CursorHandles[Index] := 0;
+      SDL_FreeCursor(CursorHandles[Index]);
+      CursorHandles[Index] := nil;
     end;
   ImagePath := '';
   CursorHandles := nil;
@@ -131,8 +132,8 @@ begin
       if High(CursorHandles) >= 0 then
       begin
         FrameIndex := 0;
-        Windows.SetCursor(CursorHandles[FrameIndex]);
-        while ShowCursor(True) < 0 do
+        SDL_SetCursor(CursorHandles[FrameIndex]);
+        while ShowGameCursor(True) < 0 do
           ;
         if High(FrameIndices) > 0 then
         begin
@@ -157,7 +158,7 @@ begin
         MessageLoop.CancelCallbackTimer(AnimationTimer);
         AnimationTimer := nil;
       end;
-      while ShowCursor(False) >= 0 do
+      while ShowGameCursor(False) >= 0 do
         ;
     end;
   end
@@ -190,7 +191,7 @@ var
   Index: Integer;
   Kind, Path: WideString;
   Buffer: TGraphBufGR;
-  Info: TIconInfo;
+  Hotspot: TPoint;
 begin
   if AnimationTimer <> nil then
   begin
@@ -198,10 +199,10 @@ begin
     AnimationTimer := nil;
   end;
   for Index := 0 to High(CursorHandles) do
-    if CursorHandles[Index] <> 0 then
+    if CursorHandles[Index] <> nil then
     begin
-      DestroyIcon(CursorHandles[Index]);
-      CursorHandles[Index] := 0;
+      SDL_FreeCursor(CursorHandles[Index]);
+      CursorHandles[Index] := nil;
     end;
   CursorHandles := nil;
   FrameIndices := nil;
@@ -224,17 +225,11 @@ begin
       for Index := 0 to High(CursorHandles) do
       begin
         Gai.LoadFrameGi(Index).DecodeToGraphBuf(Buffer, False);
-        Info.fIcon := False;
-        Info.xHotspot :=
+        Hotspot.X :=
             OriginPoint.X - (Gai.LoadFrameGi(Index).GetBoundsRect.Left - Gai.GetBoundsRect.Left);
-        Info.yHotspot :=
+        Hotspot.Y :=
             OriginPoint.Y - (Gai.LoadFrameGi(Index).GetBoundsRect.Top - Gai.GetBoundsRect.Top);
-        Info.hbmMask := CreateCursorBitmap(Buffer);
-        Info.hbmColor := Info.hbmMask;
-        CursorHandles[Index] := CreateIconIndirect(Info);
-        if CursorHandles[Index] = 0 then
-          RaiseWideMessage('CreateIconIndirect GetLastError=' + IntToStr(GetLastError));
-        DeleteObject(Info.hbmMask);
+        CursorHandles[Index] := CreateNativeCursor(Buffer, Hotspot);
       end;
     finally
       GaiControl.Release;
@@ -256,15 +251,9 @@ begin
       FrameIndices[0] := 0;
       FrameDelays[0] := 0;
       Gi.Image.DecodeToGraphBuf(Buffer, False);
-      Info.fIcon := False;
-      Info.xHotspot := OriginPoint.X;
-      Info.yHotspot := OriginPoint.Y;
-      Info.hbmMask := CreateCursorBitmap(Buffer);
-      Info.hbmColor := Info.hbmMask;
-      CursorHandles[0] := CreateIconIndirect(Info);
-      if CursorHandles[0] = 0 then
-        RaiseWideMessage('CreateIconIndirect GetLastError=' + IntToStr(GetLastError));
-      DeleteObject(Info.hbmMask);
+      Hotspot.X := OriginPoint.X;
+      Hotspot.Y := OriginPoint.Y;
+      CursorHandles[0] := CreateNativeCursor(Buffer, Hotspot);
     finally
       GiControl.Release;
     end;
@@ -275,8 +264,8 @@ begin
     FrameIndex := 0;
   if Active then
   begin
-    Windows.SetCursor(CursorHandles[FrameIndices[FrameIndex]]);
-    while ShowCursor(True) < 0 do
+    SDL_SetCursor(CursorHandles[FrameIndices[FrameIndex]]);
+    while ShowGameCursor(True) < 0 do
       ;
     if High(FrameIndices) > 0 then
     begin
@@ -295,58 +284,33 @@ begin
   end;
 end;
 
-// This local import has its own native thunk and IAT entry, separate from Windows.
-function CreateDIBSection(
-    DC: HDC;
-    const BitmapInfo: TBitmapInfo;
-    Usage: Cardinal;
-    var Bits: Pointer;
-    Section: THandle;
-    Offset: Cardinal
-): HBITMAP; stdcall; external 'gdi32.dll' name 'CreateDIBSection';
-
-function TCursorGI.CreateCursorBitmap(Buffer: TGraphBufGR): Cardinal;
+function TCursorGI.CreateNativeCursor(Buffer: TGraphBufGR; Hotspot: TPoint): Pointer;
 var
-  DC: HDC;
-  Bitmap: HBitmap;
-  Bits: Pointer;
-  X, Y: Cardinal;
-  Pitch, SourceSkip, DestSkip: Integer;
-  Dest, Source: Pointer;
-  Info: TBitmapV4Header;
+  Surface: Pointer;
 begin
-  Pitch := (Buffer.Width * 4) and not 1;
-  if (Buffer.Width * 4) and 1 <> 0 then
-    Inc(Pitch, 2);
-  FillChar(Info, SizeOf(Info), 0);
-  Info.bV4Size := SizeOf(Info);
-  Info.bV4Width := Buffer.Width;
-  Info.bV4Height := -Buffer.Height;
-  Info.bV4Planes := 1;
-  Info.bV4BitCount := 32;
-  Info.bV4V4Compression := BI_RGB;
-  Info.bV4SizeImage := Buffer.Height * Pitch;
-  DC := GetDC(0);
-  Bitmap := CreateDIBSection(DC, PBitmapInfo(@Info)^, DIB_RGB_COLORS, Bits, 0, 0);
-  if Bitmap = 0 then
-    RaiseWideMessage('DIB section');
-  SourceSkip := Buffer.PitchBytes - Buffer.Width * 4;
-  DestSkip := Pitch - Buffer.Width * 4;
-  Dest := Bits;
-  Source := Buffer.GetPixels;
-  for Y := 0 to Buffer.Height - 1 do
-  begin
-    for X := 0 to Buffer.Width - 1 do
-    begin
-      PCardinal(Dest)^ := PCardinal(Source)^;
-      Source := Pointer(PAnsiChar(Source) + 4);
-      Dest := Pointer(PAnsiChar(Dest) + 4);
-    end;
-    Source := Pointer(PAnsiChar(Source) + SourceSkip);
-    Dest := Pointer(PAnsiChar(Dest) + DestSkip);
+  // The game's cursor images use the same BGRA bytes as the original DIB.
+  // SDL copies the surface into the cursor, so the decoded frame can be reused.
+  Surface :=
+      SDL_CreateRGBSurfaceFrom(
+          Buffer.GetPixels,
+          Buffer.Width,
+          Buffer.Height,
+          32,
+          Buffer.PitchBytes,
+          $FF0000,
+          $FF00,
+          $FF,
+          $FF000000
+      );
+  if Surface = nil then
+    RaiseWideMessage('Cursor surface: ' + string(SDL_GetError));
+  try
+    Result := SDL_CreateColorCursor(Surface, Hotspot.X, Hotspot.Y);
+    if Result = nil then
+      RaiseWideMessage('Cursor: ' + string(SDL_GetError));
+  finally
+    SDL_FreeSurface(Surface);
   end;
-  ReleaseDC(0, DC);
-  Result := Bitmap;
 end;
 
 procedure TCursorGI.AdvanceAnimation(Timer: PCallbackTimerGI; UserData: Integer);
@@ -354,7 +318,7 @@ begin
   Inc(FrameIndex);
   if High(FrameIndices) < FrameIndex then
     FrameIndex := 0;
-  Windows.SetCursor(CursorHandles[FrameIndices[FrameIndex]]);
+  SDL_SetCursor(CursorHandles[FrameIndices[FrameIndex]]);
   if AnimationTimer <> nil then
   begin
     MessageLoop.CancelCallbackTimer(AnimationTimer);

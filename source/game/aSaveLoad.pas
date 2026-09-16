@@ -9,6 +9,7 @@ unit aSaveLoad;
 interface
 
 uses
+  GameSystem,
   EC_Buf,
   EC_Thread,
   SyncObjs;
@@ -67,7 +68,7 @@ uses
   aMyFunction,
   aGalaxyStruct,
   aKling,
-  Windows,
+  Types,
   SysUtils,
   EC_File,
   EC_Str,
@@ -85,7 +86,6 @@ uses
   GI_Main,
   GI_MessageBox,
   EC_Struct,
-  Types,
   aShip,
   aRuins,
   GI_MessageLoop,
@@ -124,13 +124,13 @@ begin
   AutoName := SaveManagerScreen.GetAutoSavePath;
   TurnName := SaveManagerScreen.GetTurnSavePath;
   QuickName := SaveManagerScreen.GetQuickSavePath(1);
-  CreateDir(AnsiString(GetGameUserDirectory + 'Save'));
+  CreateDir(NativeGamePath(AnsiString(GetGameUserDirectory + 'Save')));
   F := nil;
   try
     F := TFileEC.Create;
-    TempName := GetGameUserDirectory + 'save\save.tmp';
-    if FileExists(AnsiString(TempName)) then
-      Windows.DeleteFile(PAnsiChar(AnsiString(TempName)));
+    TempName := GetGameUserDirectory + 'Save\save.tmp';
+    if FileExists(NativeGamePath(AnsiString(TempName))) then
+      SysUtils.DeleteFile(NativeGamePath(TempName));
     F.SetFileName(TempName);
     F.CreateNew;
     HeaderBuffer.SaveToFile(F);
@@ -175,15 +175,15 @@ begin
           OldName := Prefix + IntToWideString(I) + '.sav'
         else
           OldName := QuickName;
-        if FileExists(AnsiString(NewName)) then
-          Windows.DeleteFile(PAnsiChar(AnsiString(NewName)));
-        MoveFileW(PWideChar(OldName), PWideChar(NewName));
+        if FileExists(NativeGamePath(AnsiString(NewName))) then
+          SysUtils.DeleteFile(NativeGamePath(NewName));
+        RenameFile(NativeGamePath(OldName), NativeGamePath(NewName));
         NewName := OldName;
       end;
     end;
-    if FileExists(AnsiString(TargetName)) then
-      Windows.DeleteFile(PAnsiChar(AnsiString(TargetName)));
-    MoveFileW(PWideChar(SourceName), PWideChar(TargetName));
+    if FileExists(NativeGamePath(AnsiString(TargetName))) then
+      SysUtils.DeleteFile(NativeGamePath(TargetName));
+    RenameFile(NativeGamePath(SourceName), NativeGamePath(TargetName));
   except
     on E: Exception do
     begin
@@ -198,8 +198,8 @@ begin
   end;
   if F <> nil then
     F.Free;
-  if FileExists(AnsiString(TempName)) then
-    Windows.DeleteFile(PAnsiChar(AnsiString(TempName)));
+  if FileExists(NativeGamePath(AnsiString(TempName))) then
+    SysUtils.DeleteFile(NativeGamePath(TempName));
   if HeaderBuffer <> nil then
     HeaderBuffer.Free;
   HeaderBuffer := nil;
@@ -420,10 +420,10 @@ begin
     Buffer := TBufEC.Create;
     F.ReadBuffer(@Size, SizeOf(Size));
     if Size > 0 then
-      F.SetPointer(Size, FILE_CURRENT);
+      F.SetPointer(Size, fsFromCurrent);
     F.ReadBuffer(@Size, SizeOf(Size));
     if Size > 0 then
-      F.SetPointer(Size, FILE_CURRENT);
+      F.SetPointer(Size, fsFromCurrent);
     F.ReadBuffer(@Crc, SizeOf(Crc));
     F.ReadBuffer(@Seed, SizeOf(Seed));
     F.ReadBuffer(@Size, SizeOf(Size));

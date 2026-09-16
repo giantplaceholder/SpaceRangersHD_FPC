@@ -9,10 +9,10 @@ unit GI_StarFieldImg;
 interface
 
 uses
+  Types,
   GI_MessageLoop,
   EC_BlockPar,
-  EC_Struct,
-  Types;
+  EC_Struct;
 
 type
 
@@ -82,7 +82,6 @@ uses
   GR_Main,
   GR_gi,
   GR_DX,
-  Windows,
   Direct3D9,
   aMyFunction,
   Math;
@@ -142,7 +141,7 @@ begin
     StarCount := Source.StarCount;
     Capacity := StarCount;
     Stars := ReAllocREC(Stars, SizeOf(TStarFieldImageGI) * Capacity);
-    CopyMemory(Stars, Source.Stars, SizeOf(TStarFieldImageGI) * StarCount);
+    System.Move(Pointer(Source.Stars)^, Pointer(Stars)^, SizeOf(TStarFieldImageGI) * StarCount);
   end;
 end;
 

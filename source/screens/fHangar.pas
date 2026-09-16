@@ -97,7 +97,7 @@ implementation
 
 uses
   fEquipmentShop,
-  Windows,
+  GameInput,
   Math,
   aRanger,
   aPirate,

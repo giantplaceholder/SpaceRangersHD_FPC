@@ -89,9 +89,9 @@ type
 implementation
 
 uses
+  GameWindow,
   CPDiapClass,
   CalcParseClass,
-  Dialogs,
   EC_Str,
   MessageText,
   SequenceClass;
@@ -537,7 +537,7 @@ begin
     if GetLocation(i).Id = LocationId then
       Result := i;
   if Result = 0 then
-    Dialogs.ShowMessage(
+    ShowGameDialog(
         AnsiString('Cannot find Location with Location Number ' + IntToWideString(LocationId))
     );
 end;
@@ -551,7 +551,7 @@ begin
     if GetPath(i).Id = PathId then
       Result := i;
   if Result = 0 then
-    Dialogs.ShowMessage('Cannot find Path by Path Number - error');
+    ShowGameDialog('Cannot find Path by Path Number - error');
 end;
 
 procedure TTextQuest.BuildLegacySequences;
@@ -930,7 +930,7 @@ begin
       end;
     if StartId < 0 then
     begin
-      Dialogs.ShowMessage('Cant find starting location');
+      ShowGameDialog('Cant find starting location');
       Exit;
     end;
     for i := 1 to GetParameterCount do
@@ -1110,7 +1110,7 @@ begin
           Chosen.Free;
           Group.Free;
           Pending.Free;
-          Dialogs.ShowMessage(
+          ShowGameDialog(
               AnsiString('No available answers from location ' + IntToWideString(Location.Id))
           );
           Exit;

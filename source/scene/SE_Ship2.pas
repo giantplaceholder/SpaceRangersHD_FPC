@@ -9,6 +9,7 @@ unit SE_Ship2;
 interface
 
 uses
+  Types,
   Classes,
   EC_BlockPar,
   EC_Struct,
@@ -16,8 +17,7 @@ uses
   GI_MessageLoop,
   GI_RotateImage5,
   GI_Tail,
-  SE_Space,
-  Types;
+  SE_Space;
 
 type
 

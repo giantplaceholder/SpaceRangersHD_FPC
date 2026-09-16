@@ -131,6 +131,7 @@ var
 implementation
 
 uses
+  GameWindow,
   GI_GI,
   aMyFunction,
   aGalaxy,
@@ -147,8 +148,7 @@ uses
   GI_GAI,
   GI_Main,
   GR_gi,
-  Windows,
-  Messages,
+  GameInput,
   fPanelLoad,
   fShip2,
   fRating2,
@@ -1660,9 +1660,9 @@ procedure TfPanelMain.PostMouseMove;
 var
   Point: TPoint;
 begin
-  GetCursorPos(Point);
-  ScreenToClient(MainWindowHandle, Point);
-  PostMessage(MainWindowHandle, WM_MOUSEMOVE, 0, SmallInt(Point.X) or (SmallInt(Point.Y) shl 16));
+  GetGameMouse(Point);
+
+  PostGameMessage(WM_MOUSEMOVE, 0, SmallInt(Point.X) or (SmallInt(Point.Y) shl 16));
 end;
 
 constructor TMessageLoopGIWithMainPanel.Create;

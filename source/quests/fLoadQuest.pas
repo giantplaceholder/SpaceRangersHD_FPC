@@ -9,6 +9,7 @@ unit fLoadQuest;
 interface
 
 uses
+  GameSystem,
   GI_Image,
   GI_MessageLoop,
   Types,
@@ -99,7 +100,7 @@ uses
   Math,
   SysUtils,
   TextQuest,
-  Windows,
+  GameInput,
   aConst,
   aGalaxy,
   aMyFunction;
@@ -830,7 +831,8 @@ var
   I, Count: Integer;
 begin
   CompletionData := nil;
-  if SysUtils.FileExists(AnsiString(GetGameUserDirectory + 'QuestComplate.dat')) then
+  if SysUtils.FileExists(
+      NativeGamePath(AnsiString(GetGameUserDirectory + 'QuestComplate.dat'))) then
   begin
     try
       Buffer := TBufEC.Create;

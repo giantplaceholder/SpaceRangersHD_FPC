@@ -149,7 +149,7 @@ implementation
 
 uses
   aMyFunction,
-  Windows,
+  Types,
   SysUtils,
   Math,
   EC_Mem,

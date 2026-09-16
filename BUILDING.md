@@ -3,7 +3,8 @@
 ## macOS ARM64
 
 Requires Python 3, FPC 3.2.2 for bootstrapping, GNU Make,
-Xcode command-line tools, CMake, pkg-config, SDL2, SDL2_mixer, libjpeg, and libpng.
+Xcode command-line tools, CMake, pkg-config, SDL2 2.26 or newer, libogg, libvorbis, libjpeg, and libpng.
+AVI cinematics also need a native Xvid library (`xvidcore`).
 `FPC_BOOTSTRAP` selects the installed bootstrap compiler.
 
 ```sh

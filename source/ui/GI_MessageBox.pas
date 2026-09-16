@@ -71,7 +71,7 @@ uses
   Globals,
   GR_Main,
   Types,
-  Windows;
+  GameInput;
 
 procedure TMessageBoxGI.OnOpen;
 var

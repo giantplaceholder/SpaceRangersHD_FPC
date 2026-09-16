@@ -10,10 +10,12 @@ unit EC_Expression;
 interface
 
 uses
+  GameScriptLibrary,
+  GameEvents,
   Classes,
   EC_Buf,
   SysUtils,
-  Windows;
+  Types;
 
 type
 
@@ -514,8 +516,8 @@ type
   TScriptDebugState = class(TObject)
     Paused: Boolean;
     Gap5: array[0..2] of Byte;
-    StopEvent: Dword;
-    ResumeEvent: Dword;
+    StopEvent: TGameEventHandle;
+    ResumeEvent: TGameEventHandle;
     StepMode: Byte;
     Gap11: array[0..2] of Byte;
     CurrentUnit: TCodeUnitEC;
@@ -2843,7 +2845,7 @@ begin
     Exit;
   Data := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, Count * SizeOf(TVarEC));
   NameOrder := GameHeap.HeapAlloc(GameHeap.GetProcessHeap, 0, Count * SizeOf(Integer));
-  CopyMemory(NameOrder, Source.NameOrder, Count * SizeOf(Integer));
+  System.Move(Pointer(Source.NameOrder)^, Pointer(NameOrder)^, Count * SizeOf(Integer));
   for i := 0 to Count - 1 do
   begin
     SourceItem := Source.GetItem(i);
@@ -4857,6 +4859,8 @@ begin
       Callee := Left.Resolve(vkEmpty);
       if Callee.RealVType = vkLibraryFun then
       begin
+{$IF Defined(MSWINDOWS) and Defined(CPU386)}
+  {$ASMMODE INTEL}
         Value := Callee.Resolve;
         if High(Value.LibraryFunData) + 1 - 2 <> Instruction.OperandCount - 2 then
           raise ExceptionExpressionEC.Create('Count variable : ' + Left.Name);
@@ -4907,6 +4911,9 @@ begin
           Dest.Value.SetFloat(PSingle(@LibraryWord)^)
         else if Value.LibraryFunData[0] = 4 then
           Dest.Value.SetString(AnsiString('') + PWideChar(LibraryWord));
+{$ELSE}
+        raise ExceptionExpressionEC.Create('Script DLL calls require 32-bit Windows');
+{$ENDIF}
       end
       else if Callee.RealVType = vkExternFun then
       begin
@@ -6831,7 +6838,7 @@ end;
 procedure TCodeEC.RunDebug(Process: TCodeProcessEC; DebugContext: TScriptDebugState);
 var
   Item: TCodeUnitEC;
-  Events: array[0..1] of Dword;
+  Events: array[0..1] of TGameEventHandle;
   WaitResult: Dword;
   Handler: PCodeExceptionHandler;
   Pending: PVarEC;
@@ -6846,7 +6853,7 @@ begin
   Item := First;
   while Item <> nil do
   begin
-    WaitResult := WaitForSingleObject(DebugContext.StopEvent, 0);
+    WaitResult := WaitGameEvent(DebugContext.StopEvent, 0);
     if (WaitResult = WAIT_FAILED)
         or (WaitResult = WAIT_OBJECT_0)
         or (WaitResult = WAIT_ABANDONED_0) then
@@ -6854,8 +6861,8 @@ begin
     if (DebugContext.Paused and (Item.SourceLength > 0)) or Item.Breakpoint then
     begin
       DebugContext.CurrentUnit := Item;
-      ResetEvent(DebugContext.ResumeEvent);
-      WaitResult := WaitForMultipleObjects(Length(Events), @Events, False, INFINITE);
+      ResetGameEvent(DebugContext.ResumeEvent);
+      WaitResult := WaitGameEvents(Length(Events), @Events, False, INFINITE);
       if (WaitResult = WAIT_FAILED)
           or (WaitResult = WAIT_OBJECT_0)
           or ((WaitResult >= WAIT_ABANDONED_0)
@@ -7326,7 +7333,6 @@ end;
 procedure EF_LowerCase(av: array of TVarEC; code: TCodeEC);
 var
   Text: WideString;
-  AnsiText: AnsiString;
   Start, Count: Integer;
 begin
   if High(av) < 1 then
@@ -7344,23 +7350,17 @@ begin
     av[0].SetString(Text);
     Exit;
   end;
-  if GetVersion < $80000000 then
-  begin
-    CharLowerBuffW(PWideChar(Text) + Start, Count);
-    av[0].SetString(Text);
-  end
-  else
-  begin
-    AnsiText := Text;
-    CharLowerBuffA(PAnsiChar(AnsiText) + Start, Count);
-    av[0].SetString(AnsiText);
-  end;
+  // Start/count are UTF-16 code-unit offsets, as in the original Unicode API.
+  Text :=
+      Copy(Text, 1, Start)
+          + WideLowerCase(Copy(Text, Start + 1, Count))
+          + Copy(Text, Start + Count + 1, MaxInt);
+  av[0].SetString(Text);
 end;
 
 procedure EF_UpperCase(av: array of TVarEC; code: TCodeEC);
 var
   Text: WideString;
-  AnsiText: AnsiString;
   Start, Count: Integer;
 begin
   if High(av) < 1 then
@@ -7378,32 +7378,26 @@ begin
     av[0].SetString(Text);
     Exit;
   end;
-  if GetVersion < $80000000 then
-  begin
-    CharUpperBuffW(PWideChar(Text) + Start, Count);
-    av[0].SetString(Text);
-  end
-  else
-  begin
-    AnsiText := Text;
-    // Native ANSI fallback lowercases even for UpperCase.
-    CharLowerBuffA(PAnsiChar(AnsiText) + Start, Count);
-    av[0].SetString(AnsiText);
-  end;
+  // Start/count are UTF-16 code-unit offsets, as in the original Unicode API.
+  Text :=
+      Copy(Text, 1, Start)
+          + WideUpperCase(Copy(Text, Start + 1, Count))
+          + Copy(Text, Start + Count + 1, MaxInt);
+  av[0].SetString(Text);
 end;
 
 procedure EF_LoadLibrary(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) <> 1 then
     Exit;
-  av[0].SetDword(LoadLibraryW(PWideChar(av[1].GetString)));
+  av[0].SetDword(LoadScriptLibrary(av[1].GetString));
 end;
 
 procedure EF_FreeLibrary(av: array of TVarEC; code: TCodeEC);
 begin
   if High(av) <> 1 then
     Exit;
-  av[0].SetInt(Integer(FreeLibrary(av[1].GetDword)));
+  av[0].SetInt(Integer(FreeScriptLibrary(av[1].GetDword)));
 end;
 
 procedure TVarEC.SetLibrarySignature(Signature: array of Dword);
@@ -7424,7 +7418,7 @@ var
 begin
   if High(av) < 3 then
     Exit;
-  Proc := GetProcAddress(av[1].GetDword, PAnsiChar(AnsiString(av[3].GetString)));
+  Proc := ScriptLibraryProc(av[1].GetDword, PAnsiChar(AnsiString(av[3].GetString)));
   if Proc = nil then
   begin
     av[0].SetInt(0);

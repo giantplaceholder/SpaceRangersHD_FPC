@@ -46,7 +46,7 @@ procedure RaiseExceptionWithLogging(
 implementation
 
 uses
-  Windows,
+  GameSystem,
   GR_Main,
   BlockParException,
   BreakMessageGIException;
@@ -90,10 +90,10 @@ begin
       SuppressExceptionLogCopy := False
     else
     begin
-      CreateDir(AnsiString(GetGameUserDirectory + 'Errors'));
+      CreateDir(NativeGamePath(AnsiString(GetGameUserDirectory + 'Errors')));
       TargetName := GetGameUserDirectory + 'Errors\' + WideString(ExceptionLogTimestamp) + '.log';
       SourceName := GetGameUserDirectory + '########.log';
-      CopyFileW(PWideChar(SourceName), PWideChar(TargetName), False);
+      CopyGameFile(SourceName, TargetName);
     end;
   end;
 end;
@@ -135,7 +135,7 @@ end;
 
 initialization
 
-  PreviousRaiseException := TRaiseExceptionCallback(System.RaiseExceptionProc);
-  System.RaiseExceptionProc := @RaiseExceptionWithLogging;
+  // FPC raises language exceptions through a different RTL path. The main
+  // loop and worker boundary report them explicitly.
 
 end.

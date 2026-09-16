@@ -61,9 +61,10 @@ function AcquireCachedSound(Control: TCacheControlEC): TCSoundEC;
 implementation
 
 uses
+  DirectSound,
   EC_Mem,
   GR_Main,
-  MMSystem;
+  GameSystem;
 
 const
   WaveDataChunkId = $61746164; // little-endian 'data'

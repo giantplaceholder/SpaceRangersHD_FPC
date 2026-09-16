@@ -9,9 +9,9 @@ unit GI_Main;
 interface
 
 uses
+  Types,
   GI_MessageLoop,
   SysUtils,
-  Types,
   EC_Struct;
 
 const

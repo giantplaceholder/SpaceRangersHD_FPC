@@ -9,6 +9,7 @@ unit EC_FileStream;
 interface
 
 uses
+  GameEvents,
   EC_Thread,
   EC_File,
   SyncObjs;
@@ -42,7 +43,7 @@ implementation
 uses
   SysUtils,
   EC_Mem,
-  Windows;
+  Types;
 
 constructor TFileStreamEC.Create(BufferBytes: Integer; const FileName: WideString);
 begin
@@ -64,8 +65,8 @@ end;
 destructor TFileStreamEC.Destroy;
 begin
   RequestStop;
-  if IsRunning then
-    WaitForIdle(INFINITE);
+  // Cleanup must join even when the worker has an exception waiting to be reported.
+  WaitGameEvent(IdleEvent, INFINITE);
   if SourceFile <> nil then
   begin
     SourceFile.Free;
@@ -149,7 +150,7 @@ begin
     Chunk := ReadAvailable;
   if Chunk > 0 then
   begin
-    CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
+    System.Move(Pointer(AddPointerOffset(ReadBuffer, ReadPosition))^, Pointer(Destination)^, Chunk);
     Inc(ReadPosition, Chunk);
     Dec(ReadAvailable, Chunk);
     Destination := AddPointerOffset(Destination, Chunk);
@@ -174,7 +175,8 @@ begin
       Chunk := ReadAvailable;
     if Chunk > 0 then
     begin
-      CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
+      System
+          .Move(Pointer(AddPointerOffset(ReadBuffer, ReadPosition))^, Pointer(Destination)^, Chunk);
       Inc(ReadPosition, Chunk);
       Dec(ReadAvailable, Chunk);
       Destination := AddPointerOffset(Destination, Chunk);
@@ -189,7 +191,8 @@ begin
       Chunk := ReadAvailable;
     if Chunk > 0 then
     begin
-      CopyMemory(Destination, AddPointerOffset(ReadBuffer, ReadPosition), Chunk);
+      System
+          .Move(Pointer(AddPointerOffset(ReadBuffer, ReadPosition))^, Pointer(Destination)^, Chunk);
       Inc(ReadPosition, Chunk);
       Dec(ReadAvailable, Chunk);
       Destination := AddPointerOffset(Destination, Chunk);

@@ -9,7 +9,7 @@ unit EC_CacheLightPal;
 interface
 
 uses
-  Windows,
+  Types,
   Classes,
   EC_Buf,
   EC_Cache;
