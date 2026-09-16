@@ -8,7 +8,9 @@ This changelog records game-source changes for Free Pascal compatibility.
   in Double and pulls samples toward the origin. Evaluate the second half with
   reversed controls and `1-t`, preserving the curve, heading unwrapping, sample
   timing and final endpoint. Keep the original evaluation order on targets with
-  wider `Extended`; this restores the curve, not bit-for-bit x87 rounding.
+  wider `Extended`. The game selects 24-bit x87 arithmetic precision while
+  retaining the wider exponent range; this fix restores the mathematical curve
+  on ARM64 without reproducing that intermediate rounding.
 
 - Build the RTL with `CLASSESINLINE` by default and mark `TFPList.Error`
   `noreturn`, allowing checked list accesses to optimize better.

@@ -493,7 +493,8 @@ begin
     X := 0;
     Y := 0;
     Angle := 0;
-    // CHANGE: PORTABILITY - The original $4DC030 uses 80-bit x87 powers.
+    // CHANGE: PORTABILITY - $4DC030 stores powers in 80-bit x87 slots;
+    // the game's 24-bit precision mode still retains their wider exponent range.
     // With Double-sized Extended, (1-T)^198 can underflow to zero for the
     // 199 controls accepted by ship movement, losing all but the last weight.
     // B_i,n(T) = B_n-i,n(1-T): reverse the controls and unwrapped headings
