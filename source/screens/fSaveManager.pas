@@ -1161,10 +1161,12 @@ begin
   end;
   try
 
-    if SysUtils.FindFirst('*.sav', faAnyFile, FindData) = 0 then
+    // Windows also found .SAV files; Unix wildcard matching would omit them.
+    if SysUtils.FindFirst('*', faAnyFile, FindData) = 0 then
     begin
       repeat
-        if (FindData.Attr and faDirectory) = 0 then
+        if ((FindData.Attr and faDirectory) = 0)
+            and SameText(ExtractFileExt(FindData.Name), '.sav') then
         begin
           New(Slot);
           Slot.FileName :=

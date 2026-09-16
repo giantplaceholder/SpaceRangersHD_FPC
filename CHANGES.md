@@ -42,6 +42,9 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Use FPC file enumeration, timestamps, Unicode case conversion and OS-specific
   user directories. Normalize filesystem paths separately from package keys and
   consistently use `Save` for save files, including their temporary output.
+- Preserve Windows' case-insensitive file matching for installed languages,
+  mod language resources, saves and robot maps. Keep the current language when
+  the settings screen has no language choices, instead of saving an empty code.
 - Replace timestamp-counter CPU probes with OS queries and the original fallback;
   use native memory queries for physical memory and FPC heap usage on Unix.
 - Keep legacy script DLL calls and the original Steam/MatrixGame wrappers limited

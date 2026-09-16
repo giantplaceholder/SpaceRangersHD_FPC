@@ -253,10 +253,12 @@ var
   begin
     Result := False;
 
-    if SysUtils.FindFirst('*.txt', faAnyFile, FindData) = 0 then
+    // Preserve Windows' case-insensitive extension matching on Unix too.
+    if SysUtils.FindFirst('*', faAnyFile, FindData) = 0 then
     begin
       repeat
-        if (FindData.Attr and faDirectory) = 0 then
+        if ((FindData.Attr and faDirectory) = 0)
+            and SameText(ExtractFileExt(FindData.Name), '.txt') then
         begin
           FileName := WideString(FindData.Name);
           FileName := LowerCaseWideString(FileName);

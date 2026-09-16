@@ -522,12 +522,13 @@ begin
     Path := '';
     if InstallConfig.CountParams('RobotPath') > 0 then
       Path := InstallConfig.GetParam('RobotPath');
-    if SysUtils
-            .FindFirst(UTF8Encode(NativeGamePath(Path + 'Matrix\Map\*.cmap')), faAnyFile, FindData)
+    // Match the extension separately: Unix masks do not fold case as Windows did.
+    if SysUtils.FindFirst(UTF8Encode(NativeGamePath(Path + 'Matrix\Map\*')), faAnyFile, FindData)
         = 0 then
     begin
       repeat
-        if (FindData.Attr and faDirectory) = 0 then
+        if ((FindData.Attr and faDirectory) = 0)
+            and SameText(ExtractFileExt(FindData.Name), '.cmap') then
         begin
           Path := TrimWideString(LowerCaseWideString(WideString(FindData.Name)));
           I := 0;

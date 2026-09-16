@@ -2149,7 +2149,9 @@ begin
   if not SteamInitialized and (RequestedLanguage = '') then
   begin
     Language := ExtractDelimitedPartW(AvailableLanguageCodes, GetOptionValue('Lang'), ',');
-    if SelectedLanguage <> Language then
+    // With no enumerated languages, the UI displays SelectedLanguage itself.
+    // Applying another option must not replace that fallback with an empty code.
+    if (Language <> '') and (SelectedLanguage <> Language) then
     begin
       SelectedLanguage := Language;
       Text := GetGameUserDirectory + 'Lang.txt';

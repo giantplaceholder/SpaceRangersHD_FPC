@@ -494,7 +494,8 @@ var
 begin
   OldDirectory := GetCurrentDir;
   SetCurrentDir(NativeGamePath(AnsiString(GetGameUserDirectory + 'Cache\')));
-  if SysUtils.FindFirst('*.*', faAnyFile, Search) = 0 then
+  // Win32's *.* also included extensionless cache files.
+  if SysUtils.FindFirst('*', faAnyFile, Search) = 0 then
   begin
     repeat
       FileName := Search.Name;
@@ -517,10 +518,16 @@ var
   Search: TSearchRec;
 begin
   Result := '';
-  if SysUtils.FindFirst('INSTALL_*.txt', faAnyFile, Search) = 0 then
+  // Unix FindFirst masks are case-sensitive even on a case-insensitive volume.
+  // Match the original Windows mask explicitly so INSTALL_ENGLISH.TXT is found.
+  if SysUtils.FindFirst('*', faAnyFile, Search) = 0 then
   begin
     repeat
       FileName := Search.Name;
+      if ((Search.Attr and faDirectory) <> 0)
+          or not SameText(Copy(FileName, 1, 8), 'INSTALL_')
+          or not SameText(ExtractFileExt(FileName), '.txt') then
+        Continue;
       NameLength := Length(FileName);
       LanguageCode := Copy(FileName, 9, NameLength - 12);
       LowerCode := AnsiLowerCase(AnsiString(LanguageCode));
