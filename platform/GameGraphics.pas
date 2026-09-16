@@ -28,6 +28,7 @@ type
     Pixels: Pointer;
     Handle: PSDL_Texture;
     TextureFormat: Cardinal;
+    Generation: LongInt;
     Dirty, Locked, ReadOnly, Screen, Target: Boolean;
     constructor Create(
         W, H: Integer;
@@ -89,6 +90,7 @@ type
     GammaEnabled: Boolean;
     GammaPixels: array of Cardinal;
     GammaTexture: PSDL_Texture;
+    TargetGeneration: LongInt;
     constructor Create(var Parameters: TD3DPresentParameters);
     destructor Destroy; override;
     function TestCooperativeLevel: LongInt; stdcall; override;
@@ -272,7 +274,22 @@ end;
 procedure TSDLStorage.Realize;
 var
   Access: Integer;
+  CurrentGeneration: LongInt;
 begin
+  if Target then
+    CurrentGeneration := GameTargetGeneration
+  else
+    CurrentGeneration := GameTextureGeneration;
+  if (Handle <> nil) and (Generation <> CurrentGeneration) then
+  begin
+    SDL_DestroyTexture(Handle);
+    Handle := nil;
+    // Ordinary textures have authoritative CPU pixels. Render targets do not:
+    // discard any old readback and let the game redraw their lost contents.
+    if Target then
+      FillChar(Pixels^, SizeUInt(Pitch) * Desc.Height, 0);
+    Dirty := True;
+  end;
   if Handle <> nil then
     Exit;
   Access := SDL_TEXTUREACCESS_STATIC;
@@ -283,6 +300,7 @@ begin
     TextureFormat := SDL_PIXELFORMAT_ARGB8888;
   Handle := SDL_CreateTexture(GameSDLRenderer, TextureFormat, Access, Desc.Width, Desc.Height);
   Require(Handle <> nil, string(SDL_GetError));
+  Generation := CurrentGeneration;
 end;
 
 procedure TSDLStorage.Upload;
@@ -504,6 +522,8 @@ var
   Params: TD3DPresentParameters;
   WindowWidth, WindowHeight: Integer;
 begin
+  if GameSDLRenderer <> nil then
+    TestCooperativeLevel;
   Move(Parameters, Params, SizeOf(Params));
   // Direct3D accepts zero back-buffer dimensions in windowed mode and takes
   // the client size. The game sets that size before creating/resetting the device.
@@ -537,11 +557,23 @@ begin
   SDL_DestroyTexture(GammaTexture);
   GammaTexture := nil;
   Result := SetRenderTarget(0, ScreenSurface);
+  TargetGeneration := GameTargetGeneration;
   Move(Params, Parameters, SizeOf(Params));
 end;
 
 function TSDLDevice.TestCooperativeLevel: LongInt;
 begin
+  if TargetGeneration <> GameTargetGeneration then
+  begin
+    // SDL has already recreated its device. Rebind through Realize rather than
+    // resetting the window again, which can itself trigger another SDL reset.
+    Check(SDL_SetRenderTarget(GameSDLRenderer, nil));
+    SDL_DestroyTexture(GammaTexture);
+    GammaTexture := nil;
+    if CurrentTarget <> nil then
+      SetRenderTarget(0, CurrentTarget);
+    TargetGeneration := GameTargetGeneration;
+  end;
   Result := 0;
 end;
 function TSDLDevice.GetBackBuffer(
@@ -633,6 +665,7 @@ function TSDLDevice.GetRenderTargetData(Source, Dest: IDirect3DSurface9): LongIn
 var
   A, B: TSDLStorage;
 begin
+  TestCooperativeLevel;
   A := ImageOf(Source);
   B := ImageOf(Dest);
   Require(
@@ -667,7 +700,7 @@ begin
 end;
 function TSDLDevice.BeginScene: LongInt;
 begin
-  Result := 0
+  Result := TestCooperativeLevel;
 end;
 function TSDLDevice.EndScene: LongInt;
 begin
@@ -684,6 +717,7 @@ var
   Index: SizeInt;
   Color: Cardinal;
 begin
+  TestCooperativeLevel;
   Screen := ImageOf(ScreenSurface);
   Screen.Upload;
   Texture := Screen.Handle;
@@ -723,6 +757,9 @@ begin
   Check(SDL_SetTextureBlendMode(Texture, SDL_BLENDMODE_NONE));
   Check(SDL_RenderCopy(GameSDLRenderer, Texture, nil, nil));
   SDL_RenderPresent(GameSDLRenderer);
+  // A device reset may have happened in Present itself. Never rebind the old
+  // target handle: D3D11 has already freed its backend storage at this point.
+  TestCooperativeLevel;
   CollectTextures;
   Result := SetRenderTarget(0, CurrentTarget);
 end;
@@ -734,6 +771,7 @@ function TSDLDevice.Clear(
     Stencil: Cardinal
 ): LongInt;
 begin
+  TestCooperativeLevel;
   Require((RectCount = 0) and (Flags = 1), 'partial/depth clear');
   Check(
       SDL_SetRenderDrawColor(
@@ -935,6 +973,7 @@ var
   end;
 
 begin
+  TestCooperativeLevel;
   Require(Stride >= SizeOf(TGameVertex), 'vertex stride');
   if PrimitiveCount = 0 then
     Exit(0);

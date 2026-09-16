@@ -29,6 +29,8 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Back the existing drawing and sound interfaces with SDL2. Keep CPU pixel
   access, render targets, gamma ramps, PCM streaming and position notifications.
   Native drivers receive the game's floating-point exception mask before startup.
+- Recreate textures after SDL device loss and redraw discarded render targets.
+  Observe resets during presentation before reusing the old texture handles.
 - Run workers through FPC threads and preserve multi-event waits with SDL
   condition variables. Transfer worker failures to the caller before publishing
   completion; retain cache completion events and entries while callers wait.
@@ -40,6 +42,7 @@ This changelog records game-source changes for Free Pascal compatibility.
   alignment and pixel-center sampling without using SDL rendering on workers.
 - Retain music playback events across tracks, and make script-dialog waits
   respond to calculation shutdown before releasing their UI and script state.
+  Signal music completion even when opening or cleaning up a decoder fails.
 - Decode Vorbis through FPC's native ABI declarations and encode JPEG screenshots
   through FPC's Pascal image package. Read AVI frame chunks in Pascal and use
   native Xvid decoding, replacing Video for Windows.
@@ -49,6 +52,9 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Preserve Windows' case-insensitive file matching for installed languages,
   mod language resources, saves and robot maps. Keep the current language when
   the settings screen has no language choices, instead of saving an empty code.
+  Resolve mismatched filesystem path components on Unix, including loose mod
+  resources and existing output directories. Normalize BMP/PNG writer paths
+  before passing them to OKGF, retaining Unicode names until that boundary.
 - Replace timestamp-counter CPU probes with OS queries and the original fallback;
   use native memory queries for physical memory and FPC heap usage on Unix.
 - Keep legacy script DLL calls and the original Steam/MatrixGame wrappers limited

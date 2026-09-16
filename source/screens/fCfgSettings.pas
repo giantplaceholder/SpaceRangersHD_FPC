@@ -2155,7 +2155,7 @@ begin
     begin
       SelectedLanguage := Language;
       Text := GetGameUserDirectory + 'Lang.txt';
-      AssignFile(LanguageFile, AnsiString(Text));
+      AssignFile(LanguageFile, NativeGamePath(Text));
       Rewrite(LanguageFile);
       Write(LanguageFile, 'Lang=');
       Writeln(LanguageFile, SelectedLanguage);

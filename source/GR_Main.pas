@@ -1313,7 +1313,7 @@ function ReadIndexedImagePixels(
 ): Integer;
 
 function WritePngFile(
-    FileName: PAnsiChar;
+    const FileName: UnicodeString;
     Pixels: Pointer;
     PitchBytes: Integer;
     Width: Integer;
@@ -1323,7 +1323,7 @@ function WritePngFile(
 ): Integer;
 
 function WriteBmpFile(
-    FileName: PAnsiChar;
+    const FileName: UnicodeString;
     Pixels: Pointer;
     PitchBytes: Integer;
     BitsPerPixel: Integer;
@@ -3010,31 +3010,55 @@ begin
 end;
 
 function WritePngFile(
-    FileName: PAnsiChar;
+    const FileName: UnicodeString;
     Pixels: Pointer;
     PitchBytes, Width, Height, HasAlpha, SwapRedBlue: Integer
 ): Integer;
+var
+  NativeName: AnsiString;
 begin
+  // OKGF uses fopen: translate OS paths here, including recorded BMP frames.
+{$IFDEF MSWINDOWS}
+  NativeName := AnsiString(NativeGamePath(FileName));
+{$ELSE}
+  NativeName := UTF8Encode(NativeGamePath(FileName));
+{$ENDIF}
   try
     Result :=
-        OKGF_Write_PNG_File(FileName, Pixels, PitchBytes, Width, Height, HasAlpha, SwapRedBlue);
+        OKGF_Write_PNG_File(
+            PAnsiChar(NativeName),
+            Pixels,
+            PitchBytes,
+            Width,
+            Height,
+            HasAlpha,
+            SwapRedBlue
+        );
   except
     raise Exception.Create('Error in OKGF_Write_PNG_File');
   end;
 end;
 
 function WriteBmpFile(
-    FileName: PAnsiChar;
+    const FileName: UnicodeString;
     Pixels: Pointer;
     PitchBytes, BitsPerPixel: Integer;
     RedMask, GreenMask, BlueMask, AlphaMask: Cardinal;
     Width, Height: Integer
 ): Integer;
+var
+  NativeName: AnsiString;
 begin
+  // OKGF uses fopen: translate OS paths here, including recorded BMP frames.
+{$IFDEF MSWINDOWS}
+  NativeName := AnsiString(NativeGamePath(FileName));
+{$ELSE}
+  NativeName := UTF8Encode(NativeGamePath(FileName));
+{$ENDIF}
   try
     Result :=
         OKGF_Write_BMP_File(
-            FileName,
+            PAnsiChar(NativeName),
             Pixels,
             PitchBytes,
             BitsPerPixel,
@@ -4556,6 +4580,10 @@ begin
     Bounds.Right := Width;
     Bounds.Bottom := Height;
   end;
+  // Window changes preserve the current target, so recover a pending SDL loss
+  // before that handle can be saved and rebound by OpenGameWindow.
+  if Direct3DDevice <> nil then
+    Direct3DDevice.TestCooperativeLevel;
   OpenGameWindow(Width, Height, Direct3DPresentParameters.Windowed, VSyncEnabled);
   if Direct3DPresentParameters.Windowed then
   begin
@@ -5973,8 +6001,20 @@ function MainWindowProc(Window, Message, WParam: Cardinal; LParam: Integer): Int
 var
   Origin: TPoint;
   Bounds: TRect;
+  Index: Integer;
 begin
-  if Message = WM_ACTIVATEAPP then
+  if Message = WM_GAME_RENDER_RESET then
+  begin
+    if Direct3DDevice <> nil then
+      Direct3DDevice.TestCooperativeLevel;
+    FullFrameRedrawRequested := True;
+    // Include modal loops and paused parents: their shared screen target was
+    // lost too. Queue directly even when a continuous loop disables invalidation.
+    if MessageLoopStack <> nil then
+      for Index := 0 to MessageLoopStack.Count - 1 do
+        TMessageLoopGI(MessageLoopStack[Index]).UpdateRects.AddRect(GameScreenRect);
+  end
+  else if Message = WM_ACTIVATEAPP then
   begin
     if WParam <> 0 then
     begin
@@ -6333,7 +6373,7 @@ begin
   if RecordingFrameCount >= 1 then
   begin
     Directory := GetCurrentDir;
-    SetCurrentDir('Film');
+    SetCurrentDir(NativeGamePath('Film'));
     FirstFrameNumber := -1;
     if SysUtils.FindFirst('*', faAnyFile, FindData) = 0 then
     begin
@@ -6365,7 +6405,7 @@ begin
       FileName :=
           AnsiString('Film\' + IntToFixedWidthWideString(FirstFrameNumber + Index, 6) + '.bmp');
       WriteBmpFile(
-          PAnsiChar(FileName),
+          FileName,
           Frame.GetPixels,
           Frame.PitchBytes,
           24,
@@ -7011,7 +7051,7 @@ begin
   if SessionLogLock = nil then
     SessionLogLock := TCriticalSection.Create;
   SessionLogLock.Enter;
-  AssignFile(F, FileName);
+  AssignFile(F, NativeGamePath(FileName));
   Rewrite(F);
   Writeln(F, Text);
   CloseFile(F);

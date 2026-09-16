@@ -202,6 +202,37 @@ begin
   Result := Cardinal(GetTickCount64);
 end;
 
+{$IFDEF UNIX}
+function ResolveGamePathCase(const Path: UnicodeString): UnicodeString;
+var
+  Directory, Name: UnicodeString;
+  Entry: TUnicodeSearchRec;
+begin
+  Result := Path;
+  if (Path = '') or (FileGetAttr(Path) <> -1) then
+    Exit;
+  // Keep exact matches cheap. Resolve each missing component so loose mods
+  // retain Windows filename matching on case-sensitive volumes too. Resolving
+  // the parent also lets new saves/screenshots use an existing mixed-case folder.
+  Directory := ExtractFileDir(Path);
+  Name := ExtractFileName(Path);
+  if Directory <> '' then
+    Directory := IncludeTrailingPathDelimiter(ResolveGamePathCase(Directory));
+  Result := Directory + Name;
+  if (Name = '') or (FileGetAttr(Result) <> -1) then
+    Exit;
+  if FindFirst(Directory + '*', faAnyFile, Entry) = 0 then
+    try
+      repeat
+        if UnicodeSameText(Entry.Name, Name) then
+          Exit(Directory + Entry.Name);
+      until FindNext(Entry) <> 0;
+    finally
+      FindClose(Entry);
+    end;
+end;
+{$ENDIF}
+
 function NativeGamePath(const Path: UnicodeString): UnicodeString;
 var
   Index: Integer;
@@ -211,6 +242,9 @@ begin
   for Index := 1 to Length(Result) do
     if (Result[Index] = '\') or (Result[Index] = '/') then
       Result[Index] := DirectorySeparator;
+{$IFDEF UNIX}
+  Result := ResolveGamePathCase(Result);
+{$ENDIF}
 end;
 
 function GameUserDirectory: UnicodeString;

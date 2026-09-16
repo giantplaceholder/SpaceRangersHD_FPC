@@ -182,66 +182,62 @@ var
   Format: TSoundWaveFormat;
   Chunk: Integer;
 begin
-  if OpenVorbisStream(Decoder, Format, Stream) = 0 then
-  begin
-    Clear;
-    SetGameEvent(CompletionEvent);
-    Exit;
-  end;
+  // Always wake the controller, including when opening the decoder fails or
+  // releasing the failed stream raises during cleanup.
   try
-    Buffer.InitStream(MusicChunkBytes, @Format);
-    if not Buffer.WriteStream(SoundStreamPrimeAll, Decoder) then
-    begin
-      Clear;
-      SetGameEvent(CompletionEvent);
+    if OpenVorbisStream(Decoder, Format, Stream) = 0 then
       Exit;
-    end;
-    if DeferredPlayback then
-    begin
-      WaitGameEvent(StartPlaybackEvent, INFINITE);
-      if IsStopRequested then
-      begin
-        Clear;
-        SetGameEvent(CompletionEvent);
+    try
+      Buffer.InitStream(MusicChunkBytes, @Format);
+      if not Buffer.WriteStream(SoundStreamPrimeAll, Decoder) then
         Exit;
-      end;
-      SetPriority(ThreadPriorityAboveNormal);
-      SysUtils.Sleep(100);
-      SysUtils.Sleep(100);
-    end;
-    Ended := False;
-    if IsIntroTrack then
-      Buffer.SetVolumeScale(1)
-    else
-      Buffer.SetVolumeScale(0);
-    if not IsIntroTrack then
-      Buffer.StartVolumeRamp(100, 0.1);
-    Buffer.Play(False);
-    repeat
-      Chunk := Buffer.WaitForChunk;
-    until Chunk <> 0;
-    while not Ended do
-    begin
-      if ImmediateStop then
-        Break;
-      if IsStopRequested then
+      if DeferredPlayback then
       begin
-        SetStopRequested(False);
-        if not IsIntroTrack then
-          Buffer.StartVolumeRamp(100, -0.1);
+        WaitGameEvent(StartPlaybackEvent, INFINITE);
+        if IsStopRequested then
+          Exit;
+        SetPriority(ThreadPriorityAboveNormal);
+        SysUtils.Sleep(100);
+        SysUtils.Sleep(100);
       end;
-      Ended := not Buffer.WriteStream(Chunk, Decoder);
-      if Stream.EndOfFile then
-        if Stream.FillAvailable + Stream.ReadAvailable <= MusicEndFadeThresholdBytes then
-          RequestStop;
-      Chunk := Buffer.WaitForChunk;
-      if Chunk < 0 then
-        Break;
+      Ended := False;
+      if IsIntroTrack then
+        Buffer.SetVolumeScale(1)
+      else
+        Buffer.SetVolumeScale(0);
+      if not IsIntroTrack then
+        Buffer.StartVolumeRamp(100, 0.1);
+      Buffer.Play(False);
+      repeat
+        Chunk := Buffer.WaitForChunk;
+      until Chunk <> 0;
+      while not Ended do
+      begin
+        if ImmediateStop then
+          Break;
+        if IsStopRequested then
+        begin
+          SetStopRequested(False);
+          if not IsIntroTrack then
+            Buffer.StartVolumeRamp(100, -0.1);
+        end;
+        Ended := not Buffer.WriteStream(Chunk, Decoder);
+        if Stream.EndOfFile then
+          if Stream.FillAvailable + Stream.ReadAvailable <= MusicEndFadeThresholdBytes then
+            RequestStop;
+        Chunk := Buffer.WaitForChunk;
+        if Chunk < 0 then
+          Break;
+      end;
+    except
     end;
-  except
+  finally
+    try
+      Clear;
+    finally
+      SetGameEvent(CompletionEvent);
+    end;
   end;
-  Clear;
-  SetGameEvent(CompletionEvent);
 end;
 
 constructor TMusicControl.Create;

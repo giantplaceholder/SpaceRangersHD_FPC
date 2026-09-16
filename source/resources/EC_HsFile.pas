@@ -198,7 +198,8 @@ procedure CopyLookupKeySuffix(DestSuffixBytes: Pointer; SuffixLength: Integer; v
 implementation
 
 uses
-  EC_OKGF
+  EC_OKGF,
+  GameSystem
 {$IFDEF MSWINDOWS}
   ,
   Windows
@@ -218,17 +219,6 @@ const
   PackCompressionBlockSize = 1 shl PackCompressionBlockShift;
   PackCompressedBufferSize = 72112;
   PackSlotRangeError = 'Номер файла не может быть более ';
-
-// Package keys retain Windows separators. Convert only at the filesystem boundary.
-function NativePackagePath(const Path: UnicodeString): UnicodeString;
-var
-  i: Integer;
-begin
-  Result := Path;
-  for i := 1 to Length(Result) do
-    if (Result[i] = '\') or (Result[i] = '/') then
-      Result[i] := DirectorySeparator;
-end;
 
 function ReadPackageFile(
     Handle: THandle;
@@ -370,7 +360,7 @@ begin
     Exit;
   end;
 
-  PackageHandle := FileOpen(NativePackagePath(PackagePath), fmOpenReadWrite or fmShareDenyNone);
+  PackageHandle := FileOpen(NativeGamePath(PackagePath), fmOpenReadWrite or fmShareDenyNone);
   if PackageHandle = THandle(-1) then
   begin
     raise Exception.Create('Error openning package file [READ]:' + PackagePath);
@@ -465,6 +455,7 @@ var
   Slot: Integer;
   Entry: PPackEntryEC;
   Position: Cardinal;
+  FilePath: UnicodeString;
 begin
   Result := -1;
   Slot := FindFreeOpenSlotIndex;
@@ -480,10 +471,11 @@ begin
   end
   else
   begin
-    if not SysUtils.FileExists(NativePackagePath(LooseFileRoot + EntryPath)) then
+    // Package keys above are unchanged; only loose files need OS path lookup.
+    FilePath := NativeGamePath(LooseFileRoot + EntryPath);
+    if not SysUtils.FileExists(FilePath) then
       Exit;
-    OpenSlots[Slot].FileHandle :=
-        FileOpen(NativePackagePath(LooseFileRoot + EntryPath), DesiredAccess or fmShareDenyWrite);
+    OpenSlots[Slot].FileHandle := FileOpen(FilePath, DesiredAccess or fmShareDenyWrite);
     if OpenSlots[Slot].FileHandle = THandle(-1) then
       Exit;
     OpenSlots[Slot].DataStartOffset := 0;
@@ -541,7 +533,7 @@ begin
   Slot := FindFreeOpenSlotIndex;
   if Slot = -1 then
     Exit;
-  OpenSlots[Slot].FileHandle := FileCreate(NativePackagePath(FilePath), fmShareDenyWrite, &666);
+  OpenSlots[Slot].FileHandle := FileCreate(NativeGamePath(FilePath), fmShareDenyWrite, &666);
   if OpenSlots[Slot].FileHandle = THandle(-1) then
     Exit;
   OpenSlots[Slot].DataStartOffset := 0;

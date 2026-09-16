@@ -42,6 +42,7 @@ var
   OnGameActivated, OnGameDeactivated: TNotifyEvent;
   GameSDLWindow: PSDL_Window;
   GameSDLRenderer: PSDL_Renderer;
+  GameTextureGeneration, GameTargetGeneration: LongInt;
 
 implementation
 
@@ -73,6 +74,17 @@ procedure CheckSDL(Value: Integer);
 begin
   if Value < 0 then
     raise Exception.Create(string(SDL_GetError));
+end;
+
+function WatchRendererReset(UserData: Pointer; Event: PSDL_Event): Integer; cdecl;
+begin
+  // SDL can lose the device inside RenderPresent, before PollGameMessage runs.
+  // Mark handles immediately; recreation and redraw stay on the render thread.
+  if Event^.Kind = SDL_RENDER_DEVICE_RESET then
+    InterlockedIncrement(GameTextureGeneration);
+  if (Event^.Kind = SDL_RENDER_DEVICE_RESET) or (Event^.Kind = SDL_RENDER_TARGETS_RESET) then
+    InterlockedIncrement(GameTargetGeneration);
+  Result := 1;
 end;
 
 procedure RefreshGameCursor;
@@ -113,6 +125,7 @@ begin
   PostedMessageType := SDL_RegisterEvents(1);
   if PostedMessageType = Cardinal(-1) then
     raise Exception.Create('Registering game messages: ' + string(SDL_GetError));
+  SDL_AddEventWatch(WatchRendererReset, nil);
   VideoInitialized := True;
 end;
 
@@ -120,8 +133,10 @@ procedure OpenGameWindow(Width, Height: Integer; Windowed, VSync: Boolean);
 var
   Flags: Cardinal;
   PreviousTarget: PSDL_Texture;
+  TargetGeneration: LongInt;
 begin
   InitializeGameVideo;
+  TargetGeneration := GameTargetGeneration;
   LogicalWidth := Width;
   LogicalHeight := Height;
   if GameSDLWindow = nil then
@@ -165,6 +180,8 @@ begin
   // mouse events and the presented frame to the same logical resolution,
   // including Retina pixels; disabling this leaves SDL2-compat events scaled.
   PreviousTarget := SDL_GetRenderTarget(GameSDLRenderer);
+  if TargetGeneration <> GameTargetGeneration then
+    PreviousTarget := nil;
   CheckSDL(SDL_SetRenderTarget(GameSDLRenderer, nil));
   try
     CheckSDL(SDL_RenderSetLogicalSize(GameSDLRenderer, Width, Height));
@@ -330,6 +347,11 @@ begin
       Exit;
     end;
     case Event.Kind of
+      SDL_RENDER_TARGETS_RESET, SDL_RENDER_DEVICE_RESET:
+      begin
+        Message.Message := WM_GAME_RENDER_RESET;
+        Exit;
+      end;
       SDL_QUIT_EVENT:
       begin
         Message.Message := WM_CLOSE;
@@ -662,5 +684,8 @@ end;
 finalization
   CloseGameWindow;
   if VideoInitialized then
+  begin
+    SDL_DelEventWatch(WatchRendererReset, nil);
     SDL_QuitSubSystem(SDL_INIT_VIDEO or SDL_INIT_TIMER);
+  end;
 end.

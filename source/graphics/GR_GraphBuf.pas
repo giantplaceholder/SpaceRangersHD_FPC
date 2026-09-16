@@ -1812,24 +1812,13 @@ end;
 procedure TGraphBufGR.SavePng(FileName: WideString);
 begin
   LockTexture(True);
-  WritePngFile(PAnsiChar(AnsiString(FileName)), GetPixels, PitchBytes, Width, Height, 1, 1);
+  WritePngFile(FileName, GetPixels, PitchBytes, Width, Height, 1, 1);
 end;
 
 procedure TGraphBufGR.SaveBmp(FileName: WideString);
 begin
   LockTexture(True);
-  WriteBmpFile(
-      PAnsiChar(AnsiString(FileName)),
-      GetPixels,
-      PitchBytes,
-      32,
-      $FF0000,
-      $FF00,
-      $FF,
-      0,
-      Width,
-      Height
-  );
+  WriteBmpFile(FileName, GetPixels, PitchBytes, 32, $FF0000, $FF00, $FF, 0, Width, Height);
 end;
 
 procedure TGraphBufGR.SaveJpeg(FileName: WideString; Quality: Integer);

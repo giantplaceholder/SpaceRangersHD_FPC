@@ -45,6 +45,8 @@ const
   SDL_MOUSEBUTTONDOWN = $401;
   SDL_MOUSEBUTTONUP = $402;
   SDL_MOUSEWHEEL = $403;
+  SDL_RENDER_TARGETS_RESET = $2000;
+  SDL_RENDER_DEVICE_RESET = $2001;
   SDL_USEREVENT = $8000;
   SDL_MUTEX_TIMEDOUT = 1;
   SDL_MUTEX_MAXWAIT = Cardinal($FFFFFFFF);
@@ -135,6 +137,7 @@ type
     8: (Padding: array[0..6] of QWord);
   end;
   PSDL_Event = ^TSDL_Event;
+  TSDL_EventFilter = function(UserData: Pointer; Event: PSDL_Event): Integer; cdecl;
   TSDL_AudioCallback = procedure(UserData: Pointer; Stream: PByte; Length: Integer); cdecl;
   TSDL_AudioSpec = record
     Frequency: Integer;
@@ -331,6 +334,14 @@ function SDL_PeepEvents(
 ): Integer; cdecl; external SDL2Library;
 function SDL_PollEvent(out Event: TSDL_Event): Integer; cdecl; external SDL2Library;
 function SDL_PushEvent(var Event: TSDL_Event): Integer; cdecl; external SDL2Library;
+procedure SDL_AddEventWatch(
+    Filter: TSDL_EventFilter;
+    UserData: Pointer
+); cdecl; external SDL2Library;
+procedure SDL_DelEventWatch(
+    Filter: TSDL_EventFilter;
+    UserData: Pointer
+); cdecl; external SDL2Library;
 function SDL_HasEvents(MinKind, MaxKind: Cardinal): Integer; cdecl; external SDL2Library;
 function SDL_RegisterEvents(Count: Integer): Cardinal; cdecl; external SDL2Library;
 procedure SDL_StartTextInput; cdecl; external SDL2Library;

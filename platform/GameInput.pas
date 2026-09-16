@@ -66,6 +66,8 @@ const
   WM_SYSKEYDOWN = 260;
   WM_SYSKEYUP = 261;
   WM_TIMER = 275;
+  // Internal notification: SDL discarded render targets or the whole device.
+  WM_GAME_RENDER_RESET = $8001;
 
   WHEEL_DELTA = 120;
   MK_MBUTTON = $10;

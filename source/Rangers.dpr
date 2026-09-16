@@ -628,7 +628,7 @@ begin
             LanguageFileName := AnsiString(GetGameUserDirectory + 'Lang.txt');
             if FileExists(NativeGamePath(LanguageFileName)) then
             begin
-              AssignFile(LanguageFile, LanguageFileName);
+              AssignFile(LanguageFile, NativeGamePath(LanguageFileName));
               Reset(LanguageFile);
               while not Eof(LanguageFile) do
               begin
