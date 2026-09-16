@@ -32,6 +32,10 @@ This changelog records game-source changes for Free Pascal compatibility.
 - Run workers through FPC threads and preserve multi-event waits with SDL
   condition variables. Transfer worker failures to the caller before publishing
   completion; retain cache completion events and entries while callers wait.
+- Free script ether entries and their lock during destruction instead of the
+  original unmatched unlock. Release ether, music and resource-file locks on
+  exceptions, and join failed GAI loaders before releasing their image data
+  during destruction.
 - Rescale cached backgrounds with Pascal bilinear interpolation, retaining crop
   alignment and pixel-center sampling without using SDL rendering on workers.
 - Retain music playback events across tracks, and make script-dialog waits

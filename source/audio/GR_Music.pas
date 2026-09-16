@@ -125,12 +125,11 @@ begin
   if DecodeLock = nil then
     Exit;
   DecodeLock.Enter;
-  if Stream <> nil then
-  begin
-    Stream.Free;
-    Stream := nil;
+  try
+    FreeAndNil(Stream);
+  finally
+    DecodeLock.Leave;
   end;
-  DecodeLock.Leave;
 end;
 
 procedure TMusicUnit.LoadFile(const FileName: WideString; Deferred: Boolean);
@@ -330,17 +329,22 @@ begin
       Break;
     SysUtils.Sleep(10);
     ControlLock.Enter;
-    if Queued.IsRunning then
-    begin
-      Previous := Current;
-      Current := Queued;
-      Queued := Previous;
-      CurrentFileName := Current.GetFileName;
-      Current.CompletionEvent := CompletionEvent;
-      Queued.CompletionEvent := 0;
-      SetGameEvent(Current.StartPlaybackEvent);
+    try
+      if Queued.IsRunning then
+      begin
+        Previous := Current;
+        Current := Queued;
+        Queued := Previous;
+        CurrentFileName := Current.GetFileName;
+        Current.CompletionEvent := CompletionEvent;
+        Queued.CompletionEvent := 0;
+        SetGameEvent(Current.StartPlaybackEvent);
+      end;
+    finally
+      // IsRunning can raise a stored worker failure. Release before this worker
+      // exits so later music requests and destruction can still acquire the lock.
+      ControlLock.Leave;
     end;
-    ControlLock.Leave;
   end;
 end;
 

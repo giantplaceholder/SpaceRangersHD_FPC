@@ -174,12 +174,14 @@ end;
 
 destructor TGAIFileGI.Destroy;
 begin
-  CloseImage;
+  // Join through the worker destructor before closing its image. CloseImage's
+  // IsRunning check reports pending worker failures and would abort cleanup.
   if LoaderThread <> nil then
   begin
     LoaderThread.Free;
     LoaderThread := nil;
   end;
+  CloseImage;
   if FrameTimer <> nil then
   begin
     MessageLoop.CancelCallbackTimer(FrameTimer);

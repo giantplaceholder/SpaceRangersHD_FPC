@@ -67,7 +67,11 @@ end;
 
 destructor TEther.Destroy;
 begin
-  Lock.Leave;
+  // Original $4DC894 unlocks an unowned critical section and leaks its storage.
+  // FPC reports that invalid unlock as EThreadError. Destroy the owned data and
+  // lock instead; the script owner has already stopped using this object.
+  Clear;
+  Lock.Free;
   inherited Destroy;
 end;
 
@@ -162,17 +166,22 @@ var
   Index: Integer;
 begin
   Enter;
-  Item := AppendEntry;
-  Item.Name := Name;
-  Item.Value := Value;
-  Index := FindInsertionIndex(Name);
-  Inc(Count);
-  SortedItems := ReAllocREC(SortedItems, Count * SizeOf(TEtherUnit));
-  MoveCount := Count - 1 - Index;
-  if MoveCount > 0 then
-    Move(SortedItems^[Index], SortedItems^[Index + 1], MoveCount * SizeOf(TEtherUnit));
-  SetIndexedEntry(Index, Item);
-  Leave;
+  try
+    Item := AppendEntry;
+    Item.Name := Name;
+    Item.Value := Value;
+    Index := FindInsertionIndex(Name);
+    Inc(Count);
+    SortedItems := ReAllocREC(SortedItems, Count * SizeOf(TEtherUnit));
+    MoveCount := Count - 1 - Index;
+    if MoveCount > 0 then
+      Move(SortedItems^[Index], SortedItems^[Index + 1], MoveCount * SizeOf(TEtherUnit));
+    SetIndexedEntry(Index, Item);
+  finally
+    // A failed allocation or lookup must not leave the lock owned by a worker
+    // that exits before the script is destroyed on the main thread.
+    Leave;
+  end;
 end;
 
 procedure TEther.SaveToBuffer(Buffer: TBufEC);

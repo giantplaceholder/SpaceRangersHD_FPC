@@ -2738,16 +2738,21 @@ var
 begin
   VerifyResourceFileChecksum(Entry.SharedFileRef.FileRef.FileName);
   FileLock.Enter;
-  Entry.SharedFileRef.FileRef.AcquireReadWriteHandle;
   try
-    if Entry.FileOffset <> 0 then
-      Entry.SharedFileRef.FileRef.SetPointer(Entry.FileOffset, fsFromBeginning);
-    Size := Entry.ByteCount;
-    if Size < 0 then
-      Size := Entry.SharedFileRef.FileRef.GetSize - Entry.FileOffset;
-    Dest.LoadFromFileChunk(Entry.SharedFileRef.FileRef, Size);
+    // Opening and closing can also raise. Keep both inside the file-lock guard,
+    // and release the handle only after a successful acquisition.
+    Entry.SharedFileRef.FileRef.AcquireReadWriteHandle;
+    try
+      if Entry.FileOffset <> 0 then
+        Entry.SharedFileRef.FileRef.SetPointer(Entry.FileOffset, fsFromBeginning);
+      Size := Entry.ByteCount;
+      if Size < 0 then
+        Size := Entry.SharedFileRef.FileRef.GetSize - Entry.FileOffset;
+      Dest.LoadFromFileChunk(Entry.SharedFileRef.FileRef, Size);
+    finally
+      Entry.SharedFileRef.FileRef.ReleaseHandle;
+    end;
   finally
-    Entry.SharedFileRef.FileRef.ReleaseHandle;
     FileLock.Leave;
   end;
 end;
