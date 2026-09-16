@@ -2,6 +2,14 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
+- Preserve Bézier path smoothing on targets where `Extended` is Double-sized
+  (including ARM64). The original x87 recurrence starts with `(1-t)^(count-1)`;
+  with the 199 controls allowed by ship movement, this underflows near the end
+  in Double and pulls samples toward the origin. Evaluate the second half with
+  reversed controls and `1-t`, preserving the curve, heading unwrapping, sample
+  timing and final endpoint. Keep the original evaluation order on targets with
+  wider `Extended`; this restores the curve, not bit-for-bit x87 rounding.
+
 - Build the RTL with `CLASSESINLINE` by default and mark `TFPList.Error`
   `noreturn`, allowing checked list accesses to optimize better.
 - Offer macOS LTO separately through `--lto`, with isolated runtime, game-unit
