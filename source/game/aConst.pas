@@ -4615,13 +4615,19 @@ begin
     if ItemType in Mask then
       Inc(Count);
   Count := RandomIntRange(1, Count);
-  for ItemType := Ord(Low(TItemType)) to Ord(High(TItemType)) do
+  // Native $837BB3 advances past type 75 to 76 on exhaustion, even for an empty mask.
+  // A selected type breaks before that increment; keep the preceding RNG call.
+  ItemType := Ord(Low(TItemType));
+  while ItemType <= Ord(High(TItemType)) do
+  begin
     if ItemType in Mask then
     begin
       Dec(Count);
       if Count = 0 then
         Break;
     end;
+    Inc(ItemType);
+  end;
   Result := ItemType;
 end;
 
@@ -4635,13 +4641,19 @@ begin
     if ItemType in Mask then
       Inc(Count);
   Count := NextRandomIntRange(1, Count, Seed);
-  for ItemType := Ord(Low(TItemType)) to Ord(High(TItemType)) do
+  // Native $837C35 advances past type 75 to 76 on exhaustion, even for an empty mask.
+  // A selected type breaks before that increment; keep the preceding seeded RNG call.
+  ItemType := Ord(Low(TItemType));
+  while ItemType <= Ord(High(TItemType)) do
+  begin
     if ItemType in Mask then
     begin
       Dec(Count);
       if Count = 0 then
         Break;
     end;
+    Inc(ItemType);
+  end;
   Result := ItemType;
 end;
 

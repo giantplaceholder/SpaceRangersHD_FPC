@@ -857,13 +857,17 @@ begin
     Exit;
   end;
   Value := 0;
-  for i := 0 to Count - 1 do
+  // Native $460100 exhausts to Count; Break retains the dot index.
+  // The extra increment at $460108 below also runs when no dot was found.
+  i := 0;
+  while i < Count do
   begin
     C := Ord(Text[i + 1]);
     if (C >= Ord('0')) and (C <= Ord('9')) then
       Value := Value * 10 + (C - Ord('0'))
     else if C = Ord('.') then
       Break;
+    Inc(i);
   end;
   Inc(i);
   Divisor := 10;

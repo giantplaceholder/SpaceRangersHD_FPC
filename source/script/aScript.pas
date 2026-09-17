@@ -1814,13 +1814,16 @@ begin
       Continue;
     if Strict then
     begin
-      for J := 0 to ShipCount - 1 do
+      // Native $64F4B5 advances even for self; exhaustion gives ShipCount and accepts.
+      // An enemy/partner match breaks before the increment and rejects the candidate.
+      J := 0;
+      while J < ShipCount do
       begin
         OtherShip := TShip(Star.Ships[J]);
-        if OtherShip = Ship then
-          Continue;
-        if (OtherShip.EnemyShip = Ship) or (OtherShip.PartnerShip = Ship) then
+        if (OtherShip <> Ship)
+            and ((OtherShip.EnemyShip = Ship) or (OtherShip.PartnerShip = Ship)) then
           Break;
+        Inc(J);
       end;
       if J < ShipCount then
         Continue;

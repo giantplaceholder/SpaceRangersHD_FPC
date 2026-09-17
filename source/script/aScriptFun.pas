@@ -2601,25 +2601,33 @@ begin
   for I := 0 to Count - 1 do
   begin
     Planet := TPlanet(Star.Planets[I]);
-    for J := 0 to FilterCount - 1 do
+    // Native $6099D1 preserves J for an empty filter string.
+    // No earlier write initializes [EBP-$2C]; empty filters use that incoming value.
+    // $609AC2 exhausts to FilterCount and accepts; Break retains a rejecting filter.
+    if FilterCount > 0 then
     begin
-      Filter := ExtractDelimitedPartW(Filters, J, ',');
-      if (Filter = 'NotMaloc') and (Planet.OwnerId = Byte(oiMaloc)) then
-        Break;
-      if (Filter = 'NotPeleng') and (Planet.OwnerId = Byte(oiPeleng)) then
-        Break;
-      if (Filter = 'NotPeople') and (Planet.OwnerId = Byte(oiHuman)) then
-        Break;
-      if (Filter = 'NotFei') and (Planet.OwnerId = Byte(oiFeyan)) then
-        Break;
-      if (Filter = 'NotGaal') and (Planet.OwnerId = Byte(oiGaal)) then
-        Break;
-      if (Filter = 'NotKling') and (Planet.OwnerId = Byte(oiDominator)) then
-        Break;
-      if (Filter = 'NotPirateClan') and (Planet.OwnerId = Byte(oiPirate)) then
-        Break;
-      if (Filter = 'NotNone') and (Planet.OwnerId = Byte(oiUninhabited)) then
-        Break;
+      J := 0;
+      while J < FilterCount do
+      begin
+        Filter := ExtractDelimitedPartW(Filters, J, ',');
+        if (Filter = 'NotMaloc') and (Planet.OwnerId = Byte(oiMaloc)) then
+          Break;
+        if (Filter = 'NotPeleng') and (Planet.OwnerId = Byte(oiPeleng)) then
+          Break;
+        if (Filter = 'NotPeople') and (Planet.OwnerId = Byte(oiHuman)) then
+          Break;
+        if (Filter = 'NotFei') and (Planet.OwnerId = Byte(oiFeyan)) then
+          Break;
+        if (Filter = 'NotGaal') and (Planet.OwnerId = Byte(oiGaal)) then
+          Break;
+        if (Filter = 'NotKling') and (Planet.OwnerId = Byte(oiDominator)) then
+          Break;
+        if (Filter = 'NotPirateClan') and (Planet.OwnerId = Byte(oiPirate)) then
+          Break;
+        if (Filter = 'NotNone') and (Planet.OwnerId = Byte(oiUninhabited)) then
+          Break;
+        Inc(J);
+      end;
     end;
     if J >= FilterCount then
       Planets.Add(Planet);
@@ -3446,9 +3454,15 @@ begin
   for I := 0 to ShipCount - 1 do
   begin
     Binding := TScriptShip(CurrentScript.Ships[I]);
-    for J := 0 to GroupCount - 1 do
+    // Native $60C276 exhausts to GroupCount; Break retains the matching group index.
+    // High(av)>=3 above guarantees this scan has at least two groups.
+    J := 0;
+    while J < GroupCount do
+    begin
       if av[2 + J].GetInt = Binding.GroupIndex then
         Break;
+      Inc(J);
+    end;
     if J >= GroupCount then
       Continue;
     if (Binding.Ship.CurrentStar = Ship.CurrentStar) and Binding.Ship.InNormalSpace then
@@ -3467,7 +3481,7 @@ end;
 procedure SF_ChangeState(av: array of TVarEC; code: TCodeEC);
 var
   Ship: TShip;
-  Index: Integer;
+  Index, StateCount: Integer;
   Snapshot: TScriptContextSnapshot;
 begin
   if High(av) < 1 then
@@ -3476,9 +3490,20 @@ begin
     Index := av[1].GetInt
   else
   begin
-    for Index := 0 to CurrentScript.States.Count - 1 do
-      if TScriptState(CurrentScript.States[Index]).Name = av[1].GetString then
-        Break;
+    StateCount := CurrentScript.States.Count;
+    // Native $60C3AA leaves Index untouched when the state list is empty.
+    // Its string-argument path has no earlier write to the native [EBP-$10] slot.
+    // $60C3E6 exhausts to StateCount (the error path); Break retains a matching state.
+    if StateCount > 0 then
+    begin
+      Index := 0;
+      while Index < StateCount do
+      begin
+        if TScriptState(CurrentScript.States[Index]).Name = av[1].GetString then
+          Break;
+        Inc(Index);
+      end;
+    end;
     if Index >= CurrentScript.States.Count then
       raise Exception.Create('Error.Script ChangeState ' + av[1].GetString);
   end;

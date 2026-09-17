@@ -630,7 +630,7 @@ end;
 
 function TLocation.SelectEvent(var Parameters: TList): TEvent;
 var
-  i, j, Attempts: Integer;
+  i, j, Attempts, ScanEnd: Integer;
   Found: Boolean;
   Text: WideString;
   Calc: TCalcParse;
@@ -675,11 +675,16 @@ begin
         end
         else if Attempts > Max(20, EventCount * 2) then
         begin
-          for j := i + 1 to i + EventCount do
+          // Native $4E855E exhausts to i+EventCount+1; Break retains the nonblank event.
+          // Keep that extra step in the modulo below when every event text is blank.
+          ScanEnd := i + EventCount;
+          j := i + 1;
+          while j <= ScanEnd do
           begin
             Text := TrimWideString(Events[1 + j mod EventCount].Text.Text);
             if Text <> '' then
               Break;
+            Inc(j);
           end;
           Found := True;
           Result := Events[1 + j mod EventCount];

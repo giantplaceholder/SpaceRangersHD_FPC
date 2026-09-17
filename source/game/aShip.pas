@@ -16774,9 +16774,15 @@ begin
             if (TShip(PAnsiChar(Self) + 0).CurrentStar = OtherBinding.Ship.CurrentStar)
                 and OtherBinding.Ship.InNormalSpace then
             begin
-              for GroupIndex := 0 to GroupCount - 1 do
+              // Native $77ADBE exhausts to GroupCount; Break retains a matching group.
+              // The enclosing nonnil array guard excludes an empty group list.
+              GroupIndex := 0;
+              while GroupIndex < GroupCount do
+              begin
                 if State.EnemyGroupIndices[GroupIndex] = OtherBinding.GroupIndex then
                   Break;
+                Inc(GroupIndex);
+              end;
               if GroupIndex < GroupCount then
               begin
                 Distance := PointDistanceSquared(Position, OtherBinding.Ship.Position);

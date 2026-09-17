@@ -2,6 +2,15 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
+- Preserve Delphi Win32's exhausted-loop behavior in asteroid collision searches,
+  script ship/group/state selection, planet filters, quest-event fallback,
+  weighted item/text selection and numeric/quoted-text scans. Advance search
+  indices explicitly, retaining the matching index on `Break` and the incoming
+  counter on exposed skipped-loop paths. Record the revolution's rolled
+  government separately: exhausting its descending byte counter selects no goods
+  event, including when the attempt limit forces a new government. Reproduce the
+  reward function's zeroed counter when both congratulations-text scans are empty.
+
 - Preserve Bézier path smoothing on targets where `Extended` is Double-sized
   (including ARM64). The original x87 recurrence starts with `(1-t)^(count-1)`;
   with the 199 controls allowed by ship movement, this underflows near the end

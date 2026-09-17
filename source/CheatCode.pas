@@ -1964,9 +1964,19 @@ begin
         // The native double-quote test compares against two characters.
         if (Quote = #39) or (WideString(Quote) = '""') then
         begin
-          for Index := 2 to Count do
-            if Value[Index] = Quote then
-              Break;
+          // Native $50C16D skips initialization for a lone quote.
+          // No earlier write initializes its [EBP-$10] slot on that path.
+          // $50C18B advances to Count+1 on exhaustion; Break retains the quote index.
+          if Count >= 2 then
+          begin
+            Index := 2;
+            while Index <= Count do
+            begin
+              if Value[Index] = Quote then
+                Break;
+              Inc(Index);
+            end;
+          end;
           if Index < Count then
           begin
             ScriptName := CopyWideStringUnchecked(Value, 2, Index - 2);

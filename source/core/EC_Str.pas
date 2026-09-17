@@ -692,13 +692,17 @@ begin
     Exit
   end;
   Value := 0;
-  for i := 0 to TextLength - 1 do
+  // Native $86FF12 exhausts to TextLength; Break retains the separator index.
+  // The extra increment at $86FF1A below also runs when no separator was found.
+  i := 0;
+  while i < TextLength do
   begin
     Code := Integer(PWideChar(Pointer(Text))[i]);
     if (Code >= Ord('0')) and (Code <= Ord('9')) then
       Value := Value * 10 + (Code - Ord('0'))
     else if (Code = Ord('.')) or (Code = Ord(',')) then
       Break;
+    Inc(i);
   end;
   Inc(i);
   Divisor := 10;
@@ -734,13 +738,17 @@ begin
     Exit
   end;
   Value := 0;
-  for i := 0 to TextLength - 1 do
+  // Native $87003A exhausts to TextLength; Break retains the separator index.
+  // The extra increment at $870042 below also runs when no separator was found.
+  i := 0;
+  while i < TextLength do
   begin
     Code := Integer(PWideChar(Pointer(Text))[i]);
     if (Code >= Ord('0')) and (Code <= Ord('9')) then
       Value := Value * 10 + (Code - Ord('0'))
     else if (Code = Ord('.')) or (Code = Ord(',')) then
       Break;
+    Inc(i);
   end;
   Inc(i);
   Divisor := 10;

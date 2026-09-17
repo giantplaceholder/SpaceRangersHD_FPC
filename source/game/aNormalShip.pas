@@ -324,6 +324,7 @@ const
   RewardVictims = [stKling..Ord(rstCustomStation)];
 var
   I, MinimumPriority, RewardKind, Quantity, ModuleIndex, TotalPriority, Priority, Roll: Integer;
+  CongratulationsCount: Integer;
   TextBlock: TBlockParEC;
   Prefix: WideString;
   Award: Byte;
@@ -425,6 +426,8 @@ begin
       else
         Prefix := 'PlanetCongratulations.LiberationStarPirateClanFromKling.';
       TotalPriority := 0;
+      // Native $73E713-$73E71F zeroes the frame, including I; both empty scans retain 0.
+      I := 0;
       for I := 0 to StrToInt(LookupLocalizedTextByKey(Prefix + 'CongratulationsCount')) - 1 do
       begin
         TextBlock := LanguageDataConfig.FindBlockByPath(Prefix + IntToStr(I));
@@ -443,18 +446,26 @@ begin
               TotalPriority,
               Integer(Seed) * ((Integer(Seed) + Galaxy.CurrentTurn) div 20)
           );
-      for I := 0 to StrToInt(LookupLocalizedTextByKey(Prefix + 'CongratulationsCount')) - 1 do
+      CongratulationsCount := StrToInt(LookupLocalizedTextByKey(Prefix + 'CongratulationsCount'));
+      // Native $73EEA1 leaves I untouched when there are no entries.
+      // $73EF99 exhausts to CongratulationsCount; a priority match retains its index.
+      if CongratulationsCount > 0 then
       begin
-        TextBlock := LanguageDataConfig.FindBlockByPath(Prefix + IntToStr(I));
-        if TextBlock <> nil then
+        I := 0;
+        while I < CongratulationsCount do
         begin
-          if TextBlock.CountParams('Priority') <= 0 then
-            Priority := 10
-          else
-            Priority := StrToInt(LookupLocalizedTextByKey(Prefix + IntToStr(I) + '.Priority'));
-          Dec(TotalPriority, Priority);
-          if Roll > TotalPriority then
-            Break;
+          TextBlock := LanguageDataConfig.FindBlockByPath(Prefix + IntToStr(I));
+          if TextBlock <> nil then
+          begin
+            if TextBlock.CountParams('Priority') <= 0 then
+              Priority := 10
+            else
+              Priority := StrToInt(LookupLocalizedTextByKey(Prefix + IntToStr(I) + '.Priority'));
+            Dec(TotalPriority, Priority);
+            if Roll > TotalPriority then
+              Break;
+          end;
+          Inc(I);
         end;
       end;
       Result := LocalizedColorText(Prefix + IntToStr(I) + '.Text');

@@ -3860,7 +3860,7 @@ end;
 procedure TPlanet.TriggerGovernmentRevolution;
 var
   NewGovernment, Candidate: TPlanetGovernment;
-  i, Attempts, Roll: Integer;
+  i, Attempts, Roll, GoodsGovernment: Integer;
   Ranger: TRanger;
   ItemType: Byte;
   GoodsMask: TItemTypeMask;
@@ -3871,9 +3871,12 @@ begin
   NewsType := 1;
   repeat
     Roll := NextRandomIntRange(0, 100, RandomState);
+    // An exhausted Delphi byte counter wraps to 255 at $78D329 and matches no goods event.
+    GoodsGovernment := -1;
     for Candidate := pgDemocracy downto pgAnarchy do
       if aConst.PlanetRaceMarket[RaceId].GovernmentRollThresholds[Ord(Candidate)] <= Roll then
       begin
+        GoodsGovernment := Ord(Candidate);
         NewGovernment := Candidate;
         case NewGovernment of
           pgAnarchy: NewsType := 1;
@@ -3929,11 +3932,12 @@ begin
             Name
         )
     );
-  // The goods event uses Candidate even when the attempt limit changes NewGovernment.
-  case Candidate of
-    pgAnarchy: ForceGoodsScarcity(True, [0, 1, 2, 6]);
-    pgDictatorship: ForceGoodsScarcity(True, [0, 1, 6]);
-    pgMonarchy:
+  // Native $78D4C6 uses the rolled candidate, even after the attempt limit changes
+  // NewGovernment; $78D4CC rejects the exhausted byte (255), represented here by -1.
+  case GoodsGovernment of
+    Ord(pgAnarchy): ForceGoodsScarcity(True, [0, 1, 2, 6]);
+    Ord(pgDictatorship): ForceGoodsScarcity(True, [0, 1, 6]);
+    Ord(pgMonarchy):
     begin
       GoodsMask := [0];
       for ItemType := 1 to 7 do
@@ -3941,12 +3945,12 @@ begin
           Include(GoodsMask, ItemType);
       ForceGoodsSurplus(True, GoodsMask);
     end;
-    pgRepublic:
+    Ord(pgRepublic):
     begin
       ForceGoodsScarcity(True, [4]);
       ForceGoodsSurplus(True, [2, 6]);
     end;
-    pgDemocracy:
+    Ord(pgDemocracy):
     begin
       ForceGoodsScarcity(True, [3, 4]);
       ForceGoodsSurplus(True, [2, 6]);

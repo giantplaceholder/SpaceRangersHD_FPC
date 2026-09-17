@@ -15925,18 +15925,26 @@ begin
           begin
             Planet := nil;
             Quantity := Self.Planets.Count;
-            for i := 0 to (Quantity - 1) do
+            // Native $7CAE7F skips initialization when empty; $7CAF50 exhausts to Quantity.
+            // A hit retains its index; the empty path keeps the earlier i and Planet=nil.
+            // Native [EBP-$18] is uninitialized if no earlier scan or pickup assigned i.
+            if Quantity > 0 then
             begin
-              Planet := Self.Planets[i];
-              Point := Planet.GetPosition;
-              WorkX := Point.X;
-              WorkY := Point.Y;
-              ImpactX := Asteroid.Position.X;
-              ImpactY := Asteroid.Position.Y;
-              if Planet.GraphicRadius * Planet.GraphicRadius
-                  >= (WorkX - ImpactX) * (WorkX - ImpactX)
-                      + (WorkY - ImpactY) * (WorkY - ImpactY) then
-                Break;
+              i := 0;
+              while i < Quantity do
+              begin
+                Planet := Self.Planets[i];
+                Point := Planet.GetPosition;
+                WorkX := Point.X;
+                WorkY := Point.Y;
+                ImpactX := Asteroid.Position.X;
+                ImpactY := Asteroid.Position.Y;
+                if Planet.GraphicRadius * Planet.GraphicRadius
+                    >= (WorkX - ImpactX) * (WorkX - ImpactX)
+                        + (WorkY - ImpactY) * (WorkY - ImpactY) then
+                  Break;
+                Inc(i);
+              end;
             end;
             if Self.Planets.Count > i then
             begin
@@ -15989,15 +15997,22 @@ begin
             begin
               Ship := nil;
               Quantity := Self.Ships.Count;
-              for i := 0 to (Quantity - 1) do
+              // Native $7CB25D skips initialization when empty; $7CB2DC exhausts to Quantity.
+              // A hit retains its index; the empty path keeps the earlier i and Ship=nil.
+              if Quantity > 0 then
               begin
-                Ship := Self.Ships[i];
-                if Ship.InNormalSpace
-                    and (not Ship.IsHullDestroyed
-                        and ((PointDistanceSquared(Asteroid.Position, Ship.Position) <= 2500.0)
-                            and ((GetPlayer = Ship)
-                                or ((Ship.ScriptShip = nil) or Ship.HasScriptStateText)))) then
-                  Break;
+                i := 0;
+                while i < Quantity do
+                begin
+                  Ship := Self.Ships[i];
+                  if Ship.InNormalSpace
+                      and (not Ship.IsHullDestroyed
+                          and ((PointDistanceSquared(Asteroid.Position, Ship.Position) <= 2500.0)
+                              and ((GetPlayer = Ship)
+                                  or ((Ship.ScriptShip = nil) or Ship.HasScriptStateText)))) then
+                    Break;
+                  Inc(i);
+                end;
               end;
               if Self.Ships.Count <= i then
                 Continue;
