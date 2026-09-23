@@ -31,6 +31,7 @@ type
     AppearanceIndex: Integer;
     MapPath: WideString;
     BoundaryKind: Integer;
+    PortalSlotCount: Integer; // Native +$44 stays zero; distinct from OutgoingCount.
     Danger: Double;
     ApproachDanger: Double;
     RouteCost: Double;

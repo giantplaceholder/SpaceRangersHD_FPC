@@ -2155,7 +2155,7 @@ var
       Integer; // Native reserves an unused dword before BlockCount; original name/type unknown.
   BlockCount, Weight: Integer;
   Config, Selected: TBlockParEC;
-  Exits: array[0..2] of Integer;
+  Exits: array[-1..2] of Integer;
 begin
   Weight := Min(10, Round(GridSize * 0.8));
   if Weight < 1 then
@@ -2375,6 +2375,9 @@ begin
           (StartArcadeSpace.MapPosition.X + EndArcadeSpace.MapPosition.X) div 2,
           (StartArcadeSpace.MapPosition.Y + EndArcadeSpace.MapPosition.Y) div 2
       );
+  // Native Exits[-1] aliases this Point result's Y at [ebp-$B8] (0x54272F).
+  // Keep an explicit slot for it, carrying swaps across all subsequent nodes.
+  Exits[-1] := ArcadeMapCenter.Y;
   if GetPlayer <> nil then
   begin
     if KellerArcadeShip <> nil then
@@ -2452,21 +2455,22 @@ begin
     Exits[0] := 0;
     Exits[1] := 0;
     Exits[2] := 0;
-    // Map selection above requires support for this number of outgoing links.
-    // Shuffle those exit indices; terminal nodes have no exits to shuffle.
-    if Space.OutgoingCount > 1 then
+    // Native shuffles using the separate +$44 field (0x542BFC), even when zero.
+    // RandomRange(0, -1) selects -1 or 0; both are valid slots in this array.
+    if (Space.PortalSlotCount < 0) or (Space.PortalSlotCount > 3) then
+      RaiseWideMessage('Error in ABSpaceBuild: portal slot count');
+    if Space.PortalSlotCount > 1 then
       Exits[1] := 1;
-    if Space.OutgoingCount > 2 then
+    if Space.PortalSlotCount > 2 then
       Exits[2] := 2;
-    if Space.OutgoingCount > 0 then
-      for Index := 0 to 4 do
-      begin
-        Attempt := RandomRange(0, Space.OutgoingCount - 1);
-        OtherIndex := RandomRange(0, Space.OutgoingCount - 1);
-        Choice := Exits[Attempt];
-        Exits[Attempt] := Exits[OtherIndex];
-        Exits[OtherIndex] := Choice;
-      end;
+    for Index := 0 to 4 do
+    begin
+      Attempt := RandomRange(0, Space.PortalSlotCount - 1);
+      OtherIndex := RandomRange(0, Space.PortalSlotCount - 1);
+      Choice := Exits[Attempt];
+      Exits[Attempt] := Exits[OtherIndex];
+      Exits[OtherIndex] := Choice;
+    end;
     Index := 0;
     Link := FirstArcadeSpaceLink;
     while Link <> nil do

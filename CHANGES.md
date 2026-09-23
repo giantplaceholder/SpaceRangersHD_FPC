@@ -2,9 +2,10 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
-- Fix arcade-battle startup by shuffling the actual outgoing-link indices and
-  skipping nodes without exits. The unused, uninitialized portal-count field
-  allowed negative array indices during map generation.
+- Preserve native arcade exit shuffling, including its zero-filled portal-count
+  field and ten RNG calls per node. Model the original `Exits[-1]` stack overlap
+  as an explicit array slot initialized from the map-center Y coordinate and
+  carried between nodes, preserving exit values without out-of-bounds access.
 - Remove the unused VFW import, which pulled `AVIFIL32.DLL` into Unix builds
   despite video playback already using `GameAVI`.
 - Present an initial cleared SDL frame when creating the window. Wayland needs
