@@ -28,7 +28,6 @@ type
   TfGalaxy2 = class(TMessageLoopGIWithMainPanel)
     MapPanel: TPanelGI;
     ViewMode: Byte;
-    GapD9: array[0..2] of Byte;
     HideBuffer: TGraphBufGI;
     MapPixelBounds: TRect;
     GalaxyOrigin: TPointF;
@@ -45,12 +44,10 @@ type
     JumpAnimation: TgaiGI;
     JumpLightImages: array[0..2] of TImageGI;
     CapturePreviewOnOpen: Boolean;
-    Gap135: array[0..2] of Byte;
     CreateMarkerButton: TGraphButtonGI;
     CreateMarkerImagePath: WideString;
     CreateMarkerActiveImagePath: WideString;
     CreateMarkerMode: Boolean;
-    Gap145: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure ProcessCallbackTimers; override;
@@ -105,6 +102,7 @@ uses
   GI_GI,
   ThreadCalc,
   aCalc,
+  EC_CacheBitmap,
   Globals,
   GR_Main,
   GR_GraphBuf,
@@ -141,6 +139,9 @@ uses
   SE_Ruins,
   SE_Ship2,
   aRuins;
+
+const
+  GalaxySummaryWhiteColorTag = '<color=255,255,254>';
 
 constructor TfGalaxy2.Create;
 begin
@@ -222,7 +223,7 @@ var
   NameLabel, ForceLabel: TLabelGI;
   Text, ColoredName: WideString;
   Planet: TPlanet;
-  OwnerId: Byte;
+  OwnerId: TOwnerId;
   HoleImage: TImageGI;
   BufferOffset: TPoint;
   Hole, SelectedHole: THole;
@@ -460,7 +461,7 @@ begin
       for J := 0 to Star.Planets.Count - 1 do
       begin
         Planet := Star.Planets[J];
-        if Planet.OwnerId <> Byte(oiUninhabited) then
+        if Planet.OwnerId <> oiUninhabited then
           Break;
       end;
       Text := Star.Name;
@@ -475,8 +476,8 @@ begin
             ColoredName + WrapTextInColor(Copy(Text, 1, K), OwnerInfo[Planet.OwnerId].ColorTag);
         Delete(Text, 1, K);
         if Text <> '' then
-          for OwnerId := Byte(oiMaloc) to 7 do
-            if (OwnerId <> Byte(oiUninhabited))
+          for OwnerId := oiMaloc to oiPirate do
+            if (OwnerId <> oiUninhabited)
                 and (Star.CountPlanetsByOwner(OwnerId) > 0)
                 and (Planet.OwnerId <> OwnerId) then
             begin
@@ -516,7 +517,7 @@ begin
             if Length(BossText) > 0 then
               BossText := BossText + '-';
             BossText :=
-                BossText + WrapTextInColor(LocalizedText('FormGalaxy.Boss1')[1], '<color=255,0,0>');
+                BossText + WrapTextInColor(LocalizedText('FormGalaxy.Boss1')[1], RedColorTag);
           end
           else
             Inc(BlazerCount);
@@ -529,8 +530,7 @@ begin
             if Length(BossText) > 0 then
               BossText := BossText + '-';
             BossText :=
-                BossText
-                    + WrapTextInColor(LocalizedText('FormGalaxy.Boss2')[1], '<color=0,128,255>');
+                BossText + WrapTextInColor(LocalizedText('FormGalaxy.Boss2')[1], AzureColorTag);
           end
           else
             Inc(KellerCount);
@@ -543,7 +543,7 @@ begin
             if Length(BossText) > 0 then
               BossText := BossText + '-';
             BossText :=
-                BossText + WrapTextInColor(LocalizedText('FormGalaxy.Boss3')[1], '<color=0,255,0>');
+                BossText + WrapTextInColor(LocalizedText('FormGalaxy.Boss3')[1], GreenColorTag);
           end
           else
             Inc(TerronCount);
@@ -552,31 +552,32 @@ begin
         begin
           if Length(ForceText) > 0 then
             ForceText := ForceText + '-';
-          ForceText := ForceText + WrapTextInColor(IntToStr(CoalitionCount), '<color=255,240,100>');
+          ForceText := ForceText + WrapTextInColor(IntToStr(CoalitionCount), TextHighlightColorTag);
         end;
         if BlazerCount > 0 then
         begin
           if Length(ForceText) > 0 then
             ForceText := ForceText + '-';
-          ForceText := ForceText + WrapTextInColor(IntToStr(BlazerCount), '<color=255,0,0>');
+          ForceText := ForceText + WrapTextInColor(IntToStr(BlazerCount), RedColorTag);
         end;
         if KellerCount > 0 then
         begin
           if Length(ForceText) > 0 then
             ForceText := ForceText + '-';
-          ForceText := ForceText + WrapTextInColor(IntToStr(KellerCount), '<color=0,128,255>');
+          ForceText := ForceText + WrapTextInColor(IntToStr(KellerCount), AzureColorTag);
         end;
         if TerronCount > 0 then
         begin
           if Length(ForceText) > 0 then
             ForceText := ForceText + '-';
-          ForceText := ForceText + WrapTextInColor(IntToStr(TerronCount), '<color=0,255,0>');
+          ForceText := ForceText + WrapTextInColor(IntToStr(TerronCount), GreenColorTag);
         end;
         if PirateCount > 0 then
         begin
           if Length(ForceText) > 0 then
             ForceText := ForceText + '-';
-          ForceText := ForceText + WrapTextInColor(IntToStr(PirateCount), '<color=255,255,254>');
+          ForceText :=
+              ForceText + WrapTextInColor(IntToStr(PirateCount), GalaxySummaryWhiteColorTag);
         end;
         if CustomCount > 0 then
         begin
@@ -594,7 +595,7 @@ begin
             ForceText :=
                 ForceText + WrapTextInColor(IntToStr(OtherCount), LookupNamedColorTag(OtherFaction))
           else
-            ForceText := ForceText + WrapTextInColor(IntToStr(OtherCount), '<color=127,127,127>');
+            ForceText := ForceText + WrapTextInColor(IntToStr(OtherCount), GrayColorTag);
         end;
         if Length(BossText) > 0 then
         begin
@@ -724,8 +725,7 @@ begin
   end;
   with GetByName('RadarDetect') as TCircleGI do
   begin
-    if (GetPlayer.GetRadar <> nil)
-        and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactRadar)) > 0) then
+    if (GetPlayer.GetRadar <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactRadar) > 0) then
     begin
       SetActive(True);
       SetCenter(ToAbsolutePoint(GalaxyPointToMapPoint(GetPlayer.CurrentStar.Position)));
@@ -877,7 +877,7 @@ var
   First, Second: TPointF;
 begin
   Result := False;
-  if (GetPlayer.GetRadar <> nil) and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactRadar)) > 0) then
+  if (GetPlayer.GetRadar <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactRadar) > 0) then
   begin
     First := Star.Position;
     Second := GetPlayer.CurrentStar.Position;
@@ -1341,7 +1341,7 @@ begin
           Self,
           FormatText1(
               LocalizedText('FormGalaxy.NeedFuelOrEngine'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Star>',
               SelectedJumpStar.Name
           ),
@@ -1445,7 +1445,7 @@ var
   IconInset: Cardinal;
   NameWidth, DetailWidth, RowCount, SummaryLines: Integer;
   ObjectDistance: Single;
-  OwnerId: Byte;
+  OwnerId: TOwnerId;
   CurrentChild: TObjectGI;
   Planet: TPlanet;
   CustomInfo: TCustomSystemInfo;
@@ -1674,7 +1674,7 @@ begin
     else if TObject(Objects[I]) is TRuins then
       OwnerId := TRuins(Objects[I]).OwnerId
     else
-      OwnerId := Byte(oiUninhabited);
+      OwnerId := oiUninhabited;
     if TObject(Objects[I]) is TRuins then
     begin
       with TLabelGI.Create(Owner) do
@@ -1719,7 +1719,7 @@ begin
           with TGraphBufGI.Create(Owner, False) do
           begin
             SourceHasPerPixelAlpha := True;
-            LoadBitmapPathAsRgba(ExtractDelimitedPartW(Value, J, ',') + '?RGBA');
+            LoadBitmapPathAsRgba(ExtractDelimitedPartW(Value, J, ',') + RgbaImagePathSuffix);
             SetPosition(Classes.Point(IconX, RowHeight * I + 1));
             SetSize(Classes.Point(RowHeight - 2, RowHeight - 2));
             if (ClientSize.X < GraphBuf.Width) or (ClientSize.Y < GraphBuf.Height) then
@@ -1759,7 +1759,7 @@ begin
           DetailWidth := Max(DetailWidth, ClientSize.X + GiScalePixels(35));
         end;
     end
-    else if OwnerId <> Byte(oiUninhabited) then
+    else if OwnerId <> oiUninhabited then
       if not (TObject(Objects[I]) is TPlanet)
           or not (TObject(Objects[I]) as TPlanet).IsMainPiratePlanet then
         with TGraphBufGI.Create(Owner, False) do
@@ -1770,7 +1770,7 @@ begin
                       GetFactionEmblemPath((TObject(Objects[I]) as TPlanet).GetFactionResourceName),
                       1,
                       ',')
-                  + '?RGBA'
+                  + RgbaImagePathSuffix
           );
           SetPosition(Classes.Point(NameWidth + 5 + RowHeight + 5 + 1, RowHeight * I + 1));
           SetSize(Classes.Point(RowHeight - 2, RowHeight - 2));
@@ -1792,15 +1792,14 @@ begin
     if TObject(Objects[I]) is TPlanet then
     begin
       Planet := TPlanet(Objects[I]);
-      if (Planet.OwnerId in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)])
+      if (Planet.OwnerId in [oiMaloc..oiGaal, oiPirate])
           and not Planet.IsMainPiratePlanet
           and (Planet.CurrentStar.Status.CustomFaction = '') then
       begin
         IconX := NameWidth + 5 + RowHeight + 5 + 1;
         with TImageGI.Create(Owner) do
         begin
-          case Integer((TObject(Objects[I]) as TPlanet).GetRelationLevelToShip(GetPlayer))
-              and $7F of
+          case Ord((TObject(Objects[I]) as TPlanet).GetRelationLevelToShip(GetPlayer)) of
             0: SetImagePath('GI,Bm.FormGalaxy2.Face4');
             1: SetImagePath('GI,Bm.FormGalaxy2.Face3');
             2: SetImagePath('GI,Bm.FormGalaxy2.Face2');
@@ -1840,8 +1839,7 @@ begin
           SetText(LowerCaseWideString(LocalizedText('ShipType.TypeName.PB')));
           DetailWidth := Max(DetailWidth, ClientSize.X + GiScalePixels(35));
         end
-      else if (Planet.OwnerId = Byte(oiUninhabited))
-          and (Planet.GetUnexploredSurfaceTileCount = 0) then
+      else if (Planet.OwnerId = oiUninhabited) and (Planet.GetUnexploredSurfaceTileCount = 0) then
         with TLabelGI.Create(Owner) do
         begin
           if GiResourceVariant = 2 then
@@ -1979,7 +1977,7 @@ end;
 function TfGalaxy2.BuildStarShipSummary(Star: TStar; var LineCount: Integer): WideString;
 var
   Ship: TShip;
-  UnknownCount, OtherFactionCount: Integer;
+  UndetectedShipCount, OtherFactionCount: Integer;
   OtherFaction, StarFaction: WideString;
   StarFactionCount: Integer;
   Kling: TKling;
@@ -1994,7 +1992,7 @@ var
   Summary, Line: WideString;
   I, J, GroupIndex: Integer;
   Planet: TPlanet;
-  Kind: TKlingType;
+  DominatorIndex: TDominatorDisplayIndex;
   Role: Byte;
   PirateRole: Integer;
   ColorTag: WideString;
@@ -2008,7 +2006,7 @@ var
       Exit;
     if not GetPlayer.CanResolveObjectWithScanner(Ship) or not CanRevealBossPresence(Ship) then
     begin
-      Inc(UnknownCount);
+      Inc(UndetectedShipCount);
       Exit;
     end;
     if Ship.CurrentStanding = ssCustom then
@@ -2044,25 +2042,25 @@ var
           if TRanger(Ship).ExcludedFromRating or Ship.HasScriptStateText then
           begin
             if ((GetPlayer = Ship) or (GetPlayer = Ship.PartnerShip))
-                and (GetPlayer.OwnerId = Byte(oiPirate)) then
+                and (GetPlayer.OwnerId = oiPirate) then
               Inc(ScriptedPirates)
             else
               Inc(ScriptedCoalition);
           end
           else if ((GetPlayer = Ship) or (GetPlayer = Ship.PartnerShip))
-              and (GetPlayer.OwnerId = Byte(oiPirate)) then
+              and (GetPlayer.OwnerId = oiPirate) then
             Inc(RoleCounts[11])
           else
             Inc(RoleCounts[0]);
         stPirate:
           if Ship.HasScriptStateText then
           begin
-            if Ship.OwnerId = Byte(oiPirate) then
+            if Ship.OwnerId = oiPirate then
               Inc(ScriptedPirates)
             else
               Inc(ScriptedCoalition);
           end
-          else if Ship.OwnerId <> Byte(oiPirate) then
+          else if Ship.OwnerId <> oiPirate then
             Inc(RoleCounts[2])
           else
           begin
@@ -2097,11 +2095,9 @@ var
               Inc(ScriptedCoalition)
             else
             begin
-              if (Ship as TTranclucator).OwnerShip.OwnerId
-                  in TOwnerMask(PlanetOwnerMasks.Coalition) then
+              if (Ship as TTranclucator).OwnerShip.OwnerId in PlanetOwnerMasks.Coalition then
                 Inc(ScriptedCoalition)
-              else if (Ship as TTranclucator).OwnerShip.OwnerId
-                  in TOwnerMask(PlanetOwnerMasks.PirateClan) then
+              else if (Ship as TTranclucator).OwnerShip.OwnerId in PlanetOwnerMasks.PirateClan then
                 Inc(ScriptedPirates);
             end;
           end
@@ -2109,15 +2105,13 @@ var
             Inc(CoalitionTranclucators)
           else
           begin
-            if (Ship as TTranclucator).OwnerShip.OwnerId
-                in TOwnerMask(PlanetOwnerMasks.Coalition) then
+            if (Ship as TTranclucator).OwnerShip.OwnerId in PlanetOwnerMasks.Coalition then
               Inc(CoalitionTranclucators)
-            else if (Ship as TTranclucator).OwnerShip.OwnerId
-                in TOwnerMask(PlanetOwnerMasks.PirateClan) then
+            else if (Ship as TTranclucator).OwnerShip.OwnerId in PlanetOwnerMasks.PirateClan then
               Inc(PirateTranclucators);
           end;
       else
-        if Ship.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)] then
+        if Ship.TypeId in [rstRangerCenter..rstCustomStation] then
           case Star.ControlFaction of
             sfCoalition:
               if Ship.CurrentStanding in [ssCoalitionMilitary..ssPiratePassive] then
@@ -2142,9 +2136,9 @@ var
   begin
     Result := '';
     case Series of
-      dsBlazer: Result := '<color=255,0,0>';
-      dsKeller: Result := '<color=0,128,255>';
-      dsTerron: Result := '<color=0,255,0>';
+      dsBlazer: Result := RedColorTag;
+      dsKeller: Result := AzureColorTag;
+      dsTerron: Result := GreenColorTag;
     end;
   end;
 
@@ -2158,7 +2152,7 @@ var
   end;
 
 begin
-  UnknownCount := 0;
+  UndetectedShipCount := 0;
   OtherFactionCount := 0;
   StarFactionCount := 0;
   CoalitionTranclucators := 0;
@@ -2171,14 +2165,14 @@ begin
   OtherFaction := '';
   Summary := '';
   for Series := dsBlazer to dsTerron do
-    for Kind := Low(TKlingType) to High(TKlingType) do
-      DominatorCounts[Series, Kind] := 0;
+    for DominatorIndex := Ord(Low(TKlingType)) to Ord(High(TKlingType)) do
+      DominatorCounts[Series, TKlingType(DominatorIndex)] := 0;
   for Role := 0 to 10 do
     RoleCounts[Role] := 0;
   for I := 0 to Star.Ships.Count - 1 do
   begin
     Ship := Star.Ships[I];
-    if (Ship.CurrentPlanet = nil) or (Ship.CurrentPlanet.OwnerId <> Byte(oiUninhabited)) then
+    if (Ship.CurrentPlanet = nil) or (Ship.CurrentPlanet.OwnerId <> oiUninhabited) then
       AccumulateShip;
   end;
   for I := 0 to Star.Planets.Count - 1 do
@@ -2200,39 +2194,39 @@ begin
     if RoleCounts[Role] > 0 then
     begin
       if HasSeparator then
-        Line := Line + WrapTextInColor('-', '<color=127,127,127>');
+        Line := Line + WrapTextInColor('-', GrayColorTag);
       HasSeparator := True;
       LineActive := True;
       Line :=
           Line
               + WrapTextInColor(
                   LocalizedText('FormGalaxy.FriendShip' + IntToStr(GroupIndex)),
-                  '<color=254,217,7>');
-      Line := Line + WrapTextInColor(IntToStr(RoleCounts[Role]), '<color=255,255,254>');
+                  GoldColorTag);
+      Line := Line + WrapTextInColor(IntToStr(RoleCounts[Role]), GalaxySummaryWhiteColorTag);
     end;
   end;
   if ScriptedCoalition > 0 then
   begin
     if HasSeparator then
-      Line := Line + WrapTextInColor('-', '<color=127,127,127>');
-    Line := Line + WrapTextInColor('?', '<color=254,217,7>');
-    Line := Line + WrapTextInColor(IntToStr(ScriptedCoalition), '<color=255,255,254>');
+      Line := Line + WrapTextInColor('-', GrayColorTag);
+    Line := Line + WrapTextInColor('?', GoldColorTag);
+    Line := Line + WrapTextInColor(IntToStr(ScriptedCoalition), GalaxySummaryWhiteColorTag);
     LineActive := True;
   end;
   if (CoalitionStations > 0) or (CoalitionTranclucators > 0) then
     Line := Line + '     ';
   if CoalitionStations > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
-    Line := Line + WrapTextInColor(IntToStr(CoalitionStations), '<color=255,0,255>');
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
+    Line := Line + WrapTextInColor(IntToStr(CoalitionStations), MagentaColorTag);
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   if CoalitionTranclucators > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
-    Line := Line + WrapTextInColor(IntToStr(CoalitionTranclucators), '<color=0,255,255>');
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
+    Line := Line + WrapTextInColor(IntToStr(CoalitionTranclucators), CyanColorTag);
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   AppendLine;
@@ -2243,57 +2237,58 @@ begin
     if RoleCounts[PirateRole + 10] > 0 then
     begin
       if HasSeparator then
-        Line := Line + WrapTextInColor('-', '<color=127,127,127>');
+        Line := Line + WrapTextInColor('-', GrayColorTag);
       HasSeparator := True;
       LineActive := True;
       Line :=
           Line
               + WrapTextInColor(
                   LocalizedText('FormGalaxy.PirateClanShip' + IntToStr(PirateRole)),
-                  '<color=255,255,254>');
-      Line := Line + WrapTextInColor(IntToStr(RoleCounts[PirateRole + 10]), '<color=255,255,254>');
+                  GalaxySummaryWhiteColorTag);
+      Line :=
+          Line + WrapTextInColor(IntToStr(RoleCounts[PirateRole + 10]), GalaxySummaryWhiteColorTag);
     end;
   if ScriptedPirates > 0 then
   begin
     if HasSeparator then
-      Line := Line + WrapTextInColor('-', '<color=127,127,127>');
-    Line := Line + WrapTextInColor('?', '<color=255,255,254>');
-    Line := Line + WrapTextInColor(IntToStr(ScriptedPirates), '<color=255,255,254>');
+      Line := Line + WrapTextInColor('-', GrayColorTag);
+    Line := Line + WrapTextInColor('?', GalaxySummaryWhiteColorTag);
+    Line := Line + WrapTextInColor(IntToStr(ScriptedPirates), GalaxySummaryWhiteColorTag);
     LineActive := True;
   end;
   if (PirateStations > 0) or (PirateTranclucators > 0) then
     Line := Line + '     ';
   if PirateStations > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
-    Line := Line + WrapTextInColor(IntToStr(PirateStations), '<color=255,0,255>');
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
+    Line := Line + WrapTextInColor(IntToStr(PirateStations), MagentaColorTag);
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   if PirateTranclucators > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
-    Line := Line + WrapTextInColor(IntToStr(PirateTranclucators), '<color=0,255,255>');
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
+    Line := Line + WrapTextInColor(IntToStr(PirateTranclucators), CyanColorTag);
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   AppendLine;
   Line := '';
   if StarFactionCount > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
     Line := Line + WrapTextInColor(IntToStr(StarFactionCount), LookupNamedColorTag(StarFaction));
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   if OtherFactionCount > 0 then
   begin
-    Line := Line + WrapTextInColor('(', '<color=127,127,127>');
+    Line := Line + WrapTextInColor('(', GrayColorTag);
     if OtherFaction <> '' then
       Line := Line + WrapTextInColor(IntToStr(OtherFactionCount), LookupNamedColorTag(OtherFaction))
     else
-      Line := Line + WrapTextInColor(IntToStr(OtherFactionCount), '<color=127,127,127>');
-    Line := Line + WrapTextInColor(')', '<color=127,127,127>');
+      Line := Line + WrapTextInColor(IntToStr(OtherFactionCount), GrayColorTag);
+    Line := Line + WrapTextInColor(')', GrayColorTag);
     LineActive := True;
   end;
   AppendLine;
@@ -2303,26 +2298,27 @@ begin
     LineActive := False;
     HasSeparator := False;
     ColorTag := SeriesColor;
-    for Kind := Low(TKlingType) to High(TKlingType) do
-      if (DominatorDisplayOrder[Ord(Kind)] <> ktBoss)
-          and (DominatorCounts[Series, DominatorDisplayOrder[Ord(Kind)]] > 0) then
+    for DominatorIndex := Low(DominatorDisplayOrder) to High(DominatorDisplayOrder) do
+      if (DominatorDisplayOrder[DominatorIndex] <> ktBoss)
+          and (DominatorCounts[Series, DominatorDisplayOrder[DominatorIndex]] > 0) then
       begin
         if HasSeparator then
-          Line := Line + WrapTextInColor('-', '<color=127,127,127>');
+          Line := Line + WrapTextInColor('-', GrayColorTag);
         HasSeparator := True;
         LineActive := True;
         Line :=
             Line
                 + WrapTextInColor(
                     LocalizedText(
-                        'FormGalaxy.DomikShip' + IntToStr(Ord(DominatorDisplayOrder[Ord(Kind)]))
+                        'FormGalaxy.DomikShip'
+                            + IntToStr(Ord(DominatorDisplayOrder[DominatorIndex]))
                     ),
                     ColorTag);
         Line :=
             Line
                 + WrapTextInColor(
-                    IntToStr(DominatorCounts[Series, DominatorDisplayOrder[Ord(Kind)]]),
-                    '<color=255,255,254>');
+                    IntToStr(DominatorCounts[Series, DominatorDisplayOrder[DominatorIndex]]),
+                    GalaxySummaryWhiteColorTag);
       end;
     AppendLine;
   end;
@@ -2335,7 +2331,7 @@ begin
     if DominatorCounts[Series, ktBoss] > 0 then
     begin
       if LineActive then
-        Line := Line + WrapTextInColor(', ', '<color=127,127,127>');
+        Line := Line + WrapTextInColor(', ', GrayColorTag);
       Line :=
           Line + WrapTextInColor(LocalizedText('FormGalaxy.Boss' + IntToStr(GroupIndex)), ColorTag);
       LineActive := True;
@@ -2345,12 +2341,10 @@ begin
   AppendLine;
   Line := '';
   LineActive := False;
-  if UnknownCount > 0 then
+  if UndetectedShipCount > 0 then
   begin
-    Line :=
-        Line
-            + WrapTextInColor(LocalizedText('FormGalaxy.UnknowShip') + ': ', '<color=127,127,127>');
-    Line := Line + WrapTextInColor(IntToStr(UnknownCount), '<color=255,255,254>');
+    Line := Line + WrapTextInColor(LocalizedText('FormGalaxy.UnknowShip') + ': ', GrayColorTag);
+    Line := Line + WrapTextInColor(IntToStr(UndetectedShipCount), GalaxySummaryWhiteColorTag);
     LineActive := True;
   end;
   AppendLine;
@@ -2443,13 +2437,12 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    else if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
     begin
       if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
         MusicManager.PlayCategory(
             'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                    .InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                 + 'Pirate'
         )
       else
@@ -2463,16 +2456,13 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+    else if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
       );
   end
   else if GetPlayer.InNormalSpace then
@@ -2507,7 +2497,7 @@ var
   CursorAlignment: array[0..2] of Byte;
   State: TCursorStateGI;
 begin
-  ParentLoop.RootUiObject.NativeHook50;
+  ParentLoop.RootUiObject.OnModalSuspend;
   ParentLoop.CaptureCursorState(@State);
   ParentLoop.SetCursorActive(False);
   ParentLoop.DrawQueuedUpdateRects;
@@ -2522,7 +2512,7 @@ begin
   ParentLoop.InvalidateViewport;
   ParentLoop.RestoreCursorState(@State);
   ParentLoop.UpdateCursorPosition;
-  ParentLoop.RootUiObject.NativeHook48;
+  ParentLoop.RootUiObject.OnModalResume;
   PostMouseMoveMessage;
 end;
 

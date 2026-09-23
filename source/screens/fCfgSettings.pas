@@ -34,7 +34,6 @@ type
     ModeLeaveTimer: PCallbackTimerGI;
     RobotAvailability: Integer;
     HasInstalledPackages: Boolean;
-    Gap13D: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;
@@ -403,7 +402,7 @@ begin
   AddOptionSlider(ValueLabel, 0, 100, MaxPlayerNews, 1, FormatInteger);
   ValueLabel :=
       AddOptionLabel('TurnSaveStep', LocalizedText('FormCfgSettings.TurnSaveStep'), False);
-  AddOptionSlider(ValueLabel, 0, 365, TurnSaveStep, 1, FormatTurnSaveStep);
+  AddOptionSlider(ValueLabel, 0, TurnsPerYear, TurnSaveStep, 1, FormatTurnSaveStep);
   ValueLabel :=
       AddOptionLabel('QuickSaveExtraSlots', LocalizedText('FormCfgSettings.QuickSaveSlots'), False);
   AddOptionSlider(ValueLabel, 0, 9, QuickSaveExtraSlots, 1, FormatInteger);
@@ -1345,20 +1344,20 @@ begin
     if GameDisplayModes[Index].Width = 0 then
       ValueLabel.SetText(
           ValueLabel.HelpText
-              + '<color=255,240,100>'
+              + TextHighlightColorTag
               + ' '
               + LocalizedText('FormCfgSettings.HelpAuto')
-              + '</color>'
+              + EndColorTag
       )
     else
       ValueLabel.SetText(
           ValueLabel.HelpText
-              + '<color=255,240,100>'
+              + TextHighlightColorTag
               + ' '
               + WideString(IntToStr(GameDisplayModes[Index].Width))
               + 'x'
               + WideString(IntToStr(GameDisplayModes[Index].Height))
-              + '</color>'
+              + EndColorTag
       );
   end;
 end;
@@ -1375,20 +1374,20 @@ begin
     if RobotDisplayModes[Index].Width = 0 then
       ValueLabel.SetText(
           ValueLabel.HelpText
-              + '<color=255,240,100>'
+              + TextHighlightColorTag
               + ' '
               + LocalizedText('FormCfgSettings.HelpAuto')
-              + '</color>'
+              + EndColorTag
       )
     else
       ValueLabel.SetText(
           ValueLabel.HelpText
-              + '<color=255,240,100>'
+              + TextHighlightColorTag
               + ' '
               + WideString(IntToStr(RobotDisplayModes[Index].Width))
               + 'x'
               + WideString(IntToStr(RobotDisplayModes[Index].Height))
-              + '</color>'
+              + EndColorTag
       );
   end;
 end;
@@ -1407,7 +1406,7 @@ begin
             ValueLabel.HelpText,
             '<Value>',
             WideString(IntToStr(SupportedMultiSamples[Index])),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         )
     );
   end;
@@ -1432,7 +1431,7 @@ begin
             ValueLabel.HelpText,
             '<Value>',
             WideString(IntToStr(Sender.Position)),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         )
     );
   end;
@@ -1457,7 +1456,7 @@ begin
             ValueLabel.HelpText,
             '<Value>',
             WideString(IntToStr(Sender.Position)),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         )
     );
   end;
@@ -1475,7 +1474,7 @@ begin
             ValueLabel.HelpText,
             '<Value>',
             WideString(IntToStr(Sender.Position)),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         )
     );
   end;
@@ -1501,7 +1500,7 @@ begin
               LocalizedText('FormCfgSettings.TurnSaveStep2'),
               '<Value>',
               WideString(IntToStr(Value)),
-              '<color=255,240,100>'
+              TextHighlightColorTag
           )
     else
       Text :=
@@ -1509,10 +1508,10 @@ begin
               LocalizedText('FormCfgSettings.TurnSaveStep3'),
               '<Value>',
               WideString(IntToStr(Value)),
-              '<color=255,240,100>'
+              TextHighlightColorTag
           );
     ValueLabel
-        .SetText(ReplaceColoredToken(ValueLabel.HelpText, '<Text>', Text, '<color=255,240,100>'));
+        .SetText(ReplaceColoredToken(ValueLabel.HelpText, '<Text>', Text, TextHighlightColorTag));
   end;
 end;
 
@@ -1534,12 +1533,12 @@ begin
               LocalizedText('FormCfgSettings.ForsageTurnOffStep'),
               '<Value>',
               WideString(IntToStr(100 - Value)),
-              '<color=255,240,100>'
+              TextHighlightColorTag
           )
     else
       Text := LocalizedText('FormCfgSettings.ForsageTurnOffAlways');
     ValueLabel
-        .SetText(ReplaceColoredToken(ValueLabel.HelpText, '<Text>', Text, '<color=255,240,100>'));
+        .SetText(ReplaceColoredToken(ValueLabel.HelpText, '<Text>', Text, TextHighlightColorTag));
   end;
 end;
 
@@ -2501,13 +2500,12 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    else if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
     begin
       if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
         MusicManager.PlayCategory(
             'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                    .InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                 + 'Pirate'
         )
       else
@@ -2521,16 +2519,13 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+    else if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
       );
   end
   else if GetPlayer.InNormalSpace then

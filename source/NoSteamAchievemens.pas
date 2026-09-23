@@ -49,7 +49,7 @@ begin
         Text,
         '<Achievement>',
         LocalizedColorText('Achievements.' + Block.GetParam('Id') + '.Name'),
-        '<color=0,71,234>'
+        BrightBlueColorTag
     );
     ImagePath := 'GI,Bm.FormAchievements.Img.' + Block.GetParam('Id');
     PopupController.QueueNotification(Text, ImagePath);
@@ -82,26 +82,28 @@ begin
               or (Buffer.GetByteAt(7) shl 8)
               or (Buffer.GetByteAt(4) shl 16)
               or (Buffer.GetByteAt(5) shl 24);
-      Cursor := PByte(PAnsiChar(Buffer.Data) + 8);
+      Cursor := @PEncodedTableHeaderEC(Buffer.Data).Checksum;
       Size := Buffer.DataSize;
       for Index := 8 to Size - 1 do
       begin
         Cursor^ := Cursor^ xor Byte(Seed - 1);
-        Seed := 16807 * (Seed mod 127773) - 2836 * (Seed div 127773);
+        Seed :=
+            SeedRngMultiplier * (Seed mod SeedRngQuotient)
+                - SeedRngRemainder * (Seed div SeedRngQuotient);
         if Seed <= 0 then
-          Inc(Seed, $7FFFFFFF);
+          Inc(Seed, SeedRngModulus);
         Cursor := PByte(PAnsiChar(Cursor) + 1);
       end;
       Checksum := 0;
-      Cursor := PByte(PAnsiChar(Buffer.Data) + 12);
-      for Index := 12 to Size - 1 do
+      Cursor := PByte(PAnsiChar(Buffer.Data) + SizeOf(TEncodedTableHeaderEC));
+      for Index := SizeOf(TEncodedTableHeaderEC) to Size - 1 do
       begin
         Inc(Checksum, Byte(Cursor^ xor $FF));
         Cursor := PByte(PAnsiChar(Cursor) + 1);
       end;
       if Buffer.GetUInt32At(8) <> Cardinal(Checksum) then
         raise EAbort.Create('Error unpacking achievements.dat');
-      Buffer.SetPosition(12);
+      Buffer.SetPosition(SizeOf(TEncodedTableHeaderEC));
       Count := Buffer.GetInt32;
       for Index := 0 to Count - 1 do
       begin
@@ -151,20 +153,22 @@ begin
   end;
   Size := Buffer.DataSize;
   Checksum := 0;
-  Cursor := PByte(PAnsiChar(Buffer.Data) + 12);
-  for Index := 12 to Size - 1 do
+  Cursor := PByte(PAnsiChar(Buffer.Data) + SizeOf(TEncodedTableHeaderEC));
+  for Index := SizeOf(TEncodedTableHeaderEC) to Size - 1 do
   begin
     Inc(Checksum, Byte(Cursor^ xor $FF));
     Cursor := PByte(PAnsiChar(Cursor) + 1);
   end;
   Buffer.SetInt32At(8, Checksum);
-  Cursor := PByte(PAnsiChar(Buffer.Data) + 8);
+  Cursor := @PEncodedTableHeaderEC(Buffer.Data).Checksum;
   for Index := 8 to Size - 1 do
   begin
     Cursor^ := Cursor^ xor Byte(Seed - 1);
-    Seed := 16807 * (Seed mod 127773) - 2836 * (Seed div 127773);
+    Seed :=
+        SeedRngMultiplier * (Seed mod SeedRngQuotient)
+            - SeedRngRemainder * (Seed div SeedRngQuotient);
     if Seed <= 0 then
-      Inc(Seed, $7FFFFFFF);
+      Inc(Seed, SeedRngModulus);
     Cursor := PByte(PAnsiChar(Cursor) + 1);
   end;
   Buffer.CompressZlibPayloadInPlace(False);

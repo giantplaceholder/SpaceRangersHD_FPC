@@ -24,11 +24,10 @@ type
   {$Z1}
   TGridTypeGI = (gtHide = 0, gtCell = 1, gtRow = 2, gtCol = 3);
 
-  TGridRowGI = packed record
+  TGridRowGI = record
     Height: Integer;
     AutoHeightMinimum: Integer;
     AutoHeight: Boolean;
-    Gap9: array[0..2] of Byte;
   end;
 
   TGridCanSelectCellEventGI = function(Sender: TObjectGI; Cell: TPoint): Boolean of object;
@@ -41,7 +40,6 @@ type
     FontName: WideString;
     TextColor: Cardinal;
     GridType: TGridTypeGI;
-    Gap189: array[0..2] of Byte;
     GridColor: Cardinal;
     BackgroundImage: TImageGI;
     ActiveCellImage: TImageGI;
@@ -49,7 +47,6 @@ type
     ActiveCell: TPoint;
     RowSelect: Boolean;
     ColSelect: Boolean;
-    Gap1A6: array[0..1] of Byte;
     SelectionChangedCallback: TObjectNotifyEventGI;
     CanSelectCellCallback: TGridCanSelectCellEventGI;
     RepeatedCellClickCallback: TObjectNotifyEventGI;

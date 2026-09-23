@@ -28,12 +28,10 @@ type
     Longitude: Double;
     PolarAngle: Double;
     Radius: Single;
-    Gap1C: array[0..3] of Byte;
     Position: TVector3D;
     ScreenX: Integer;
     ScreenY: Integer;
     Projected: Boolean;
-    Gap41: array[0..2] of Byte;
     Kind: Integer;
     WorldImage: PabWorldImage;
     Gap4C: array[0..7] of Byte;
@@ -55,7 +53,6 @@ type
     WorldLine: PabWorldLine;
     Collidable: Boolean;
     Visible: Boolean;
-    Gap26: array[0..1] of Byte;
     Segments: array[0..1] of PPolyLineSegmentGI;
     Gap30: array[0..3] of Byte;
   end;

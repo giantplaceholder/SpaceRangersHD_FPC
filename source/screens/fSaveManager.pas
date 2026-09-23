@@ -50,7 +50,6 @@ type
     PreviewTimer: PCallbackTimerGI;
     PreviewSound: TSoundBufferControl;
     Closing: Boolean;
-    GapE1: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;
@@ -211,7 +210,7 @@ begin
   GetByName('CaptionLoad').SetActive(SaveManagerMode = smmLoad);
   GetByName('CaptionSave').SetActive(SaveManagerMode = smmSave);
   if (SaveWriter <> nil) and SaveWriter.IsRunning then
-    SaveWriter.WaitForIdle($FFFFFFFF);
+    SaveWriter.WaitForIdle(INFINITE);
   RebuildSlotControls;
   if Slots.Count <= 0 then
     PreviewSound.SetVolume(1);
@@ -1148,10 +1147,10 @@ begin
   if SaveManagerMode = smmSave then
   begin
     New(NewSlot);
-    if GetPlayer.OwnerId = Byte(oiPirate) then
+    if GetPlayer.OwnerId = oiPirate then
       NewSlot.RaceName :=
-          OwnerInfo[Ord(oiPirate)].InternalName
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.PilotRace)) and $7F].InternalName
+          OwnerInfo[oiPirate].InternalName
+              + OwnerInfo[RaceToOwner(GetPlayer.PilotRace)].InternalName
     else
       NewSlot.RaceName := OwnerInfo[GetPlayer.OwnerId].InternalName;
   end;

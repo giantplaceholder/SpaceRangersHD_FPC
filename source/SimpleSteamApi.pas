@@ -11,17 +11,15 @@ type
 
   PointerToTAchievementData = ^TAchievementData;
 
-  TAchievementData = packed record
+  TAchievementData = record
     Name: PStartupWideString;
     Description: PStartupWideString;
     Achieved: Boolean;
     HasProgress: Boolean;
-    GapA: array[0..1] of Byte;
     Reserved0C: Integer;
     MaxValue: Integer;
     Value: Integer;
     IconPath: PStartupWideString;
-    Gap1C: array[0..3] of Byte;
     Date: Int64;
   end;
 

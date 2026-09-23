@@ -24,15 +24,13 @@ type
     Y: Single;
     Depth: Single;
     InverseDepth: Single;
-    Gap1C: array[0..3] of Byte;
     OrbitCenter: TVector3D;
     Unknown38: TVector3D;
     ImageSize: TPoint;
     ImageOffset: TPoint;
     PixelPosition: TPoint;
     OrbitStepDegrees: Double;
-    Unknown70: Integer;
-    Gap74: array[0..3] of Byte;
+    SavedTemplateIndex: Integer;
     OrbitAngleRadians: Double;
     OrbitRadius: Double;
   end;
@@ -43,7 +41,6 @@ type
     ImageCount: Integer;
     Images: PSpaceImageGI;
     ViewDirty: Boolean;
-    Gap129: array[0..2] of Byte;
     ViewPosition: TPointF;
     AnimationTimer: PCallbackTimerGI;
     procedure LoadFromConfigPath(const Path: WideString); override;
@@ -157,7 +154,7 @@ begin
     TCGaiControlEC(SpaceImageTemplates[Image.TemplateIndex].CacheControl).Release;
   end;
   Image.Unknown38 := MakeVector3D(0, 0, 0);
-  Image.Unknown70 := 0;
+  Image.SavedTemplateIndex := 0;
   Image.OrbitAngleRadians := 0;
   Image.OrbitRadius := 0;
   Image.OrbitCenter := MakeVector3D(0, 0, 0);
@@ -255,8 +252,7 @@ begin
     end;
     if (Image.OrbitRadius <> 0) and (Image.OrbitStepDegrees <> 0) then
     begin
-      Image.OrbitAngleRadians :=
-          (3.1415926 / 180) * Image.OrbitStepDegrees + Image.OrbitAngleRadians;
+      Image.OrbitAngleRadians := (GamePi / 180) * Image.OrbitStepDegrees + Image.OrbitAngleRadians;
       Image.X := Sin(Image.OrbitAngleRadians) * Image.OrbitRadius + Image.OrbitCenter.X;
       Image.Y := Image.OrbitCenter.Y - Cos(Image.OrbitAngleRadians) * Image.OrbitRadius;
     end;
@@ -371,7 +367,7 @@ begin
               Bounds.Left + Origin.X,
               Bounds.Top + Origin.Y,
               255,
-              $FFFFFF,
+              RgbWhite,
               @ClipRect,
               False,
               False

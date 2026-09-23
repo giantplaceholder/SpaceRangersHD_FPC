@@ -57,6 +57,7 @@ implementation
 
 uses
   GlobalsV,
+  aMyFunction,
   Classes,
   EC_Str,
   GI_GraphButton,
@@ -117,9 +118,9 @@ begin
   TextLabel.SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
   TextLabel.SetText(
       ReplaceAllWideString(
-          ReplaceAllWideString(MessageText, '<color=255,240,100>', '<color=0,50,200>'),
-          '<color=0,255,0>',
-          '<color=255,255,0>'
+          ReplaceAllWideString(MessageText, TextHighlightColorTag, DialogHighlightColorTag),
+          GreenColorTag,
+          YellowColorTag
       )
   );
   Attempts := 100;
@@ -305,7 +306,7 @@ var
   Dialog: TMessageBoxGI;
   CursorState: TCursorStateGI;
 begin
-  Parent.RootUiObject.NativeHook50;
+  Parent.RootUiObject.OnModalSuspend;
   Parent.CaptureCursorState(@CursorState);
   Parent.SetCursorActive(False);
   Parent.DrawQueuedUpdateRects;
@@ -327,7 +328,7 @@ begin
   end;
   Parent.RestoreCursorState(@CursorState);
   Parent.UpdateCursorPosition;
-  Parent.RootUiObject.NativeHook48;
+  Parent.RootUiObject.OnModalResume;
   if Result = 254 then
     BreakUiMessage;
 end;

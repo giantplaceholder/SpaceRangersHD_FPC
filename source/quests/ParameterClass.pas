@@ -30,7 +30,6 @@ type
     CriticalAtMinimum: Boolean;
     Enabled: Boolean;
     IsMoney: Boolean;
-    Gap25: array[0..2] of Byte;
     ValueText: TTextField;
     ViewStrings: array of TParViewString;
     ViewStringCount: Integer;

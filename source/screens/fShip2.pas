@@ -6,6 +6,7 @@ interface
 
 uses
   aConst,
+  aGalaxyStruct,
   EC_CacheFont,
   aGalaxy,
   Classes,
@@ -42,18 +43,15 @@ type
   TPlayerHoldUnit = class(TObject)
     Kind: TPlayerHoldKind;
     GoodsIndex: Byte;
-    Gap9: array[0..2] of Byte;
     ItemId: Integer;
     DisplayOrder: Integer;
     Item: TItem;
     Retained: Boolean;
-    Gap19: array[0..2] of Byte;
   end;
 
   TfShip2 = class(TMessageLoopGIWithMainPanel)
-    FlagD4: Boolean;
+    ReopenRequested: Boolean;
     PlayServiceAnimations: Boolean;
-    GapD6: array[0..1] of Byte;
     ItemInfoWindow: TWindowGI;
     ItemImage: TImageGI;
     ItemNameLabel: TLabelGI;
@@ -85,14 +83,12 @@ type
     HoldFirstIndex: Integer;
     SelectedHoldKind: TPlayerHoldKind;
     SelectedGoodsIndex: Byte;
-    Gap351: array[0..2] of Byte;
     SelectedGoodsQuantity: Integer;
     SelectedGoodsCost: Integer;
     SelectedHoldItem: TItem;
     SelectedHoldOrigin: Integer;
     SelectedHoldSlot: Integer;
     SelectedHoldUsesDisplayOrder: Boolean;
-    Gap369: array[0..2] of Byte;
     RightPanelSlideTimer: PCallbackTimerGI;
     RightPanelSlideStep: Integer;
     PanelSlideWidth: Integer;
@@ -108,12 +104,10 @@ type
     ItemPriceLabelPosition: TPoint;
     ItemRaceImagePosition: TPoint;
     DisplayedItemKey: PtrInt;
-    Flag3BC: Boolean;
+    ShipStateChanged: Boolean;
     PreserveSpaceMusic: Boolean;
-    Gap3BE: array[0..1] of Byte;
     SelectedReward: Integer;
     MoneyWarningVisible: Boolean;
-    Gap3C5: array[0..2] of Byte;
     MoneyWarningTicks: Integer;
     MoneyWarningTimer: PCallbackTimerGI;
     HoveredEquipmentAnimation: TgaiGI;
@@ -144,14 +138,11 @@ type
     HoldScrollTimer: PCallbackTimerGI;
     ShipLoopSound: TSoundBufferControl;
     HighlightRepairableEquipment: Boolean;
-    Gap491: array[0..2] of Byte;
     SavedCaptainFrame: Integer;
     RemoteHoldVisible: Boolean;
-    Gap499: array[0..2] of Byte;
     ShipToInspect: TShip;
     SavedShipExperience: Integer;
     RemoteHoldMode: Boolean;
-    Gap4A5: array[0..2] of Byte;
     RemoteHoldImages: array[0..54] of TImageGI;
     RemoteHoldFirstOrder: Integer;
     procedure ProcessWindowMessage(Message: Cardinal; WParam: Cardinal; LParam: Integer); override;
@@ -180,7 +171,7 @@ type
     procedure ShowShipPropertyInfo(Sender: TObjectGI);
     procedure HideShipPropertyInfo(Sender: TObjectGI);
     procedure UpdateInfoHint(First: Integer; Second: Integer);
-    function SlotToTip(SlotName: WideString): Byte;
+    function SlotToTip(SlotName: WideString): TItemType;
     function IsCompatibleSlot(ItemType: TItemType; SlotType: TItemType): Boolean;
     procedure RefreshEquipmentSlotControls;
     procedure RefreshShipView;
@@ -334,13 +325,13 @@ var
 
   PlayerHoldShip: TShip = nil;
 
-function RankToImage(Rank: Byte): WideString;
+function RankToImage(Rank: TShipRank): WideString;
 
-function RankToImageSmall(Rank: Byte): WideString;
+function RankToImageSmall(Rank: TShipRank): WideString;
 
-function PirateRankToImage(Rank: Byte): WideString;
+function PirateRankToImage(Rank: TShipRank): WideString;
 
-function PirateRankToImageSmall(Rank: Byte): WideString;
+function PirateRankToImageSmall(Rank: TShipRank): WideString;
 
 procedure InitializePlayerHoldView;
 
@@ -413,7 +404,6 @@ uses
   fStarMap,
   aTranclucator,
   aRuins,
-  aGalaxyStruct,
   fEquipmentShop,
   GI_PanelScrollBar,
   GI_ScrollBar,
@@ -432,7 +422,7 @@ var
   SelfSkillPointColor: Cardinal;
   OtherSkillPointColor: Cardinal;
 
-function RankToImage(Rank: Byte): WideString;
+function RankToImage(Rank: TShipRank): WideString;
 begin
   if Rank in [0..7] then
     Result := 'GI,Bm.FormRating2.2Rank' + IntToStr(Integer(Rank) + 1)
@@ -440,7 +430,7 @@ begin
     RaiseWideMessage('No image for rank in function RankToImage(tr:TRank):WideString;');
 end;
 
-function RankToImageSmall(Rank: Byte): WideString;
+function RankToImageSmall(Rank: TShipRank): WideString;
 begin
   if Rank in [0..7] then
     Result := 'GI,Bm.FormShip2.2Rank' + IntToStr(Integer(Rank) + 1)
@@ -448,7 +438,7 @@ begin
     RaiseWideMessage('No image for rank in function RankToImageSmall(tr:TRank):WideString;');
 end;
 
-function PirateRankToImage(Rank: Byte): WideString;
+function PirateRankToImage(Rank: TShipRank): WideString;
 begin
   if Rank in [0..7] then
     Result := 'GI,Bm.FormShip2.PRank' + IntToStr(Integer(Rank) + 1)
@@ -458,7 +448,7 @@ begin
     );
 end;
 
-function PirateRankToImageSmall(Rank: Byte): WideString;
+function PirateRankToImageSmall(Rank: TShipRank): WideString;
 begin
   if Rank in [0..7] then
     Result := 'GI,Bm.FormShip2.PRank' + IntToStr(Integer(Rank) + 1) + 's'
@@ -503,7 +493,7 @@ begin
     Entry := PlayerHoldEntries[I];
     Entry.Retained := Entry.Kind = phkEmpty;
   end;
-  for Goods := 0 to 7 do
+  for Goods := Low(TGoodsIndex) to High(TGoodsIndex) do
   begin
     if not IncludeFilteredItems then
       if not GetPlayer.CanAccessHoldGoods(Goods) then
@@ -1139,8 +1129,8 @@ var
   Control: TObjectGI;
 begin
   inherited OnOpen;
-  SetLength(ArtefactSlotZones, DefaultHullSlotCounts[8]);
-  for I := 0 to DefaultHullSlotCounts[8] - 1 do
+  SetLength(ArtefactSlotZones, DefaultHullSlotCounts[sskArtefact]);
+  for I := 0 to DefaultHullSlotCounts[sskArtefact] - 1 do
     ArtefactSlotZones[I] := GetByName('Art' + IntToStr(I) + 'z') as TZoneGI;
   if ShipToInspect <> nil then
     PlayerHoldShip := ShipToInspect
@@ -1153,10 +1143,10 @@ begin
   (GetByName('PM_Logo') as TGraphButtonGI).SetHitTestDisabled(True);
   HighlightRepairableEquipment := False;
   CustomCursorEnabled := True;
-  UpdateActionCursor(FlagD4);
+  UpdateActionCursor(ReopenRequested);
   SetCursorActive(True);
-  SavedFlag := FlagD4;
-  FlagD4 := False;
+  SavedFlag := ReopenRequested;
+  ReopenRequested := False;
   if SavedFlag then
   begin
     PlayerHoldShip.ScriptItemsAct(satOnReEnteringForm, nil, nil, 0);
@@ -1169,8 +1159,8 @@ begin
     if GetPlayer <> PlayerHoldShip then
       GetPlayer.ScriptItemsAct(satOnEnteringOtherShip, nil, nil, 0);
   end;
-  ScriptChangedFlag := FlagD4;
-  FlagD4 := SavedFlag;
+  ScriptChangedFlag := ReopenRequested;
+  ReopenRequested := SavedFlag;
   MainPanel.OnOpen;
   if CurrentScreenId = screenArcadeBattle then
     MainPanel.Hide
@@ -1192,9 +1182,9 @@ begin
               or (Galaxy.IdToMissile(((Item as TWeapon).Target as TMissile).Id) = nil)) then
         (Item as TWeapon).Target := nil;
   end;
-  if not FlagD4 then
+  if not ReopenRequested then
     RemoveEmptyPlayerHoldSlots;
-  if not FlagD4 then
+  if not ReopenRequested then
     StorageFirstSlot := 0;
   GetPlayer.RepairDuplicateStorageSlots(GetLocalStorageOwner);
   RefreshEquipmentSlotControls;
@@ -1203,8 +1193,8 @@ begin
     CaptureScreenBackground(True, 0);
   BackgroundBuffer.BindExternalGraphBuf(AuxRenderBuffer);
   PreserveSpaceMusic := ArcadeBattleScreen = ParentLoop;
-  Flag3BC := False;
-  if not FlagD4 then
+  ShipStateChanged := False;
+  if not ReopenRequested then
   begin
     SelectedHoldKind := phkEmpty;
     SelectedHoldItem := nil;
@@ -1264,23 +1254,21 @@ begin
     if PlayerHoldShip is TKling then
       SetImagePath(
           RankToImage(
-              Byte(
-                  DominatorShipDefinitions[Ord((PlayerHoldShip as TKling).KlingType)].RankImageIndex
-              )
+              Byte(DominatorShipDefinitions[(PlayerHoldShip as TKling).KlingType].RankImageIndex)
           )
       )
     else if PlayerHoldShip is TRuins then
       SetImagePath(RankToImage(6))
     else if PlayerHoldShip is TTranclucator then
       SetImagePath(RankToImage(3))
-    else if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId <> Byte(oiPirate)) then
+    else if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId <> oiPirate) then
       SetImagePath(RankToImage((PlayerHoldShip as TNormalShip).Rank))
     else
       SetActive(False);
   end;
   with GetByName('RankAdd') as TImageGI do
   begin
-    if (GetPlayer = PlayerHoldShip) and (GetPlayer.OwnerId = Byte(oiPirate)) then
+    if (GetPlayer = PlayerHoldShip) and (GetPlayer.OwnerId = oiPirate) then
       SetActive(False)
     else if PlayerHoldShip is TRanger then
     begin
@@ -1293,7 +1281,7 @@ begin
   end;
   with GetByName('RankI2') as TImageGI do
   begin
-    if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId = Byte(oiPirate)) then
+    if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId = oiPirate) then
     begin
       SetActive(True);
       MouseEnterCallback := ShowShipPropertyInfo;
@@ -1307,7 +1295,7 @@ begin
     SetActive(False);
   with GetByName('RankAdd2') as TImageGI do
   begin
-    if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId = Byte(oiPirate)) then
+    if (PlayerHoldShip is TNormalShip) and (PlayerHoldShip.OwnerId = oiPirate) then
     begin
       SetPosition(Classes.Point(193, 58));
       MouseEnterCallback := ShowShipPropertyInfo;
@@ -1421,7 +1409,7 @@ begin
     CancelCallbackTimer(RightPanelSlideTimer);
     RightPanelSlideTimer := nil;
   end;
-  if not FlagD4 or RemoteHoldMode then
+  if not ReopenRequested or RemoteHoldMode then
   begin
     with GetByName('PanelRight') do
     begin
@@ -1441,7 +1429,7 @@ begin
     with GetByName('PanelLH') do
       SetActive(True);
   end;
-  if not FlagD4 or not RemoteHoldMode then
+  if not ReopenRequested or not RemoteHoldMode then
   begin
     with GetByName('PanelRH') do
     begin
@@ -1463,7 +1451,7 @@ begin
   end;
   with GetByName('PanelDestr') do
   begin
-    if not FlagD4 then
+    if not ReopenRequested then
       SetPosition(Classes.Point(DestrPanelSlideWidth, LocalPosition.Y))
     else
       SetPosition(Classes.Point(DestrPanelRestLeft, LocalPosition.Y));
@@ -1486,7 +1474,7 @@ begin
             and (GetPlayer.RuinsMode = 0)
             and (QueuedArcadeBattles.Count <= 0)
     );
-  if not FlagD4 then
+  if not ReopenRequested then
   begin
     RightPanelSlideStep := 20;
     RightPanelSlideTimer := ScheduleCallbackTimer(20, 20, SlideRightPanelTimer);
@@ -1522,7 +1510,7 @@ begin
       RestartPlayback;
     end;
   end;
-  if FlagD4 then
+  if ReopenRequested then
   begin
     if StorageUpButton.Active then
       StorageDownClicked(nil)
@@ -1608,7 +1596,7 @@ begin
   for I := 0 to 7 do
   begin
     SlotCount := 1;
-    if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+    if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
       SlotCount := 5;
     for J := 0 to SlotCount - 1 do
       with GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(J) + 'Repair')
@@ -1626,7 +1614,7 @@ begin
           end;
         end;
   end;
-  for J := 0 to DefaultHullSlotCounts[8] - 1 do
+  for J := 0 to DefaultHullSlotCounts[sskArtefact] - 1 do
   begin
     Control := FindControlByPath('Art' + IntToStr(J) + 'Repair');
     if Control <> nil then
@@ -1635,14 +1623,14 @@ begin
   RefreshLoadEquippedRocketsButton;
   GetByName('SC_Panel').SetActive(CanUseLocalStorage);
   CustomCursorEnabled := True;
-  UpdateActionCursor(FlagD4);
+  UpdateActionCursor(ReopenRequested);
   SetCursorActive(True);
   ShipLoopSound.SetVolume(1.0);
   PlayServiceAnimations := False;
-  FlagD4 := ScriptChangedFlag;
+  ReopenRequested := ScriptChangedFlag;
   MainPanel.RebuildMessageButtons(False);
   Galaxy.PrimeIntegrityChecksum1(501);
-  if not FlagD4 then
+  if not ReopenRequested then
     Galaxy.PrimeIntegrityChecksum2(502);
 end;
 
@@ -1652,18 +1640,18 @@ var
   Binding: TScriptShip;
 begin
   Galaxy.CheckIntegrityChecksum1(503);
-  if not FlagD4 then
+  if not ReopenRequested then
     Galaxy.CheckIntegrityChecksum2(504);
   inherited OnClose;
   if ShipToInspect <> nil then
     PlayerHoldShip := ShipToInspect
   else
     PlayerHoldShip := GetPlayer;
-  if not FlagD4 then
+  if not ReopenRequested then
   begin
-    PlayerHoldShip.ScriptItemsAct($19, nil, nil, 0);
+    PlayerHoldShip.ScriptItemsAct(satOnLeavingForm, nil, nil, 0);
     if GetPlayer <> PlayerHoldShip then
-      GetPlayer.ScriptItemsAct($1C, nil, nil, 0);
+      GetPlayer.ScriptItemsAct(satOnLeavingOtherShip, nil, nil, 0);
   end;
   BackgroundBuffer.GraphBuf.Clear;
   if HoldScrollTimer <> nil then
@@ -1727,7 +1715,7 @@ begin
     CancelCallbackTimer(PropertyInfoHideTimer);
     PropertyInfoHideTimer := nil;
   end;
-  if not FlagD4 then
+  if not ReopenRequested then
     ReturnSelectedHoldEntry;
   if RightPanelSlideTimer <> nil then
   begin
@@ -1768,15 +1756,15 @@ begin
     end;
   end;
   GetPlayer.RefreshStorageBubbles;
-  if not FlagD4 then
+  if not ReopenRequested then
   begin
     ShipLoopSound.SetVolume(0.0);
     PlayerHoldShip := nil;
     ShipToInspect := nil;
   end;
-  CustomCursorEnabled := not FlagD4;
+  CustomCursorEnabled := not ReopenRequested;
   SavedCaptainFrame := (GetByName('CaptainA') as TgaiGI).SequenceFrame;
-  Flag3BC := True;
+  ShipStateChanged := True;
   RemoteHoldVisible := False;
   MainPanel.OnClose;
 end;
@@ -1784,7 +1772,7 @@ end;
 function TfShip2.CanUseLocalStorage: Boolean;
 begin
   Result :=
-      ((GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)))
+      ((GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited))
               or (GetPlayer.IsDockedToShip and (GetPlayer.RuinsMode = 0)))
           and (QueuedArcadeBattles.Count <= 0);
 end;
@@ -1811,86 +1799,77 @@ var
 begin
   HideRewardTooltip;
   if (Ship.AwardIds = nil) or (Ship.AwardIds.Count < 1) then
-    // The value expression preserves the native receiver-before-argument order.
-    TGraphBufGI(PtrInt(RewardsBuffer) + 0).SetActive(False)
+  begin
+    RewardsBuffer.SetActive(False);
+    Exit;
+  end;
+  Count := Min(Ship.AwardVisibleCount, Ship.AwardIds.Count);
+  IconSize := GiScalePixels(20);
+  VisibleCount := (RewardsBuffer.ClientSize.X - 2) div IconSize;
+  if Count <= VisibleCount then
+    Spacing := IconSize
   else
   begin
-    Count := Min(Ship.AwardVisibleCount, Ship.AwardIds.Count);
-    IconSize := GiScalePixels(20);
-    VisibleCount := (RewardsBuffer.ClientSize.X - 2) div IconSize;
-    if Count <= VisibleCount then
-      Spacing := IconSize
+    VisibleCount := Min(30, Count);
+    Spacing := (RewardsBuffer.ClientSize.X - 2 - IconSize) / (VisibleCount - 1);
+  end;
+  with RewardsBuffer do
+  begin
+    SetActive(True);
+    SetImageKindX(ikxLeft);
+    SetImageKindY(ikyBottom);
+    GraphBuf.AllocateRgbaTight(
+        Max(ClientSize.X, Round(VisibleCount * Spacing + IconSize - Spacing)) + 2,
+        IconSize + 2
+    );
+    MouseMoveCallback := RewardsMouseMove;
+    MouseLeaveCallback := RewardsMouseLeave;
+    LeftButtonDownCallback := RewardsMouseDown;
+    GraphBuf.ClearPixels;
+    SourceHasPerPixelAlpha := True;
+  end;
+  Icon := TGraphBufGR.Create(False);
+  Shadow := TGraphBufGR.Create(False);
+  Index := Max(0, Count - VisibleCount);
+  I := 0;
+  while Index < Count do
+  begin
+    Award := Byte(Ship.AwardIds[Index]);
+    if Award < 10 then
+      Path := 'Bm.FormRewards.' + GiResourceSuffix + '_0' + IntToStr(Award)
+    else
+      Path := 'Bm.FormRewards.' + GiResourceSuffix + '_' + IntToStr(Award);
+    LoadGiByPathIntoGraphBuf(Path, Icon);
+    if Cardinal(Icon.Width) >= Cardinal(Icon.Height) then
+      Icon.RescaleRgba(IconSize, Round(IconSize / Cardinal(Icon.Width) * Cardinal(Icon.Height)), 5)
+    else
+      Icon.RescaleRgba(Round(IconSize / Cardinal(Icon.Height) * Cardinal(Icon.Width)), IconSize, 5);
+    Shadow.AllocateRgbaTight(Icon.Width, Icon.Height);
+    Shadow.CopyRect32(Classes.Point(0, 0), Icon, Classes.Rect(0, 0, Icon.Width, Icon.Height));
+    Shadow.MakeShadow;
+    if (Icon.Height > IconSize)
+        or (RewardsBuffer.GraphBuf.Width < Round(I * Spacing) + Icon.Width) then
+    begin
+      { The native renderer skips icons outside the allocated buffer. }
+    end
     else
     begin
-      VisibleCount := Min(30, Count);
-      Spacing := (RewardsBuffer.ClientSize.X - 2 - IconSize) / (VisibleCount - 1);
-    end;
-    with RewardsBuffer do
-    begin
-      SetActive(True);
-      SetImageKindX(ikxLeft);
-      SetImageKindY(ikyBottom);
-      GraphBuf.AllocateRgbaTight(
-          Max(ClientSize.X, Round(VisibleCount * Spacing + IconSize - Spacing)) + 2,
-          IconSize + 2
+      RewardsBuffer.GraphBuf.BlendRect32(
+          Classes.Point(Round(I * Spacing) + 2, 2),
+          Shadow,
+          Classes.Rect(0, 0, Icon.Width, Icon.Height)
       );
-      MouseMoveCallback := RewardsMouseMove;
-      MouseLeaveCallback := RewardsMouseLeave;
-      LeftButtonDownCallback := RewardsMouseDown;
-      GraphBuf.ClearPixels;
-      SourceHasPerPixelAlpha := True;
+      RewardsBuffer.GraphBuf.BlendRect32(
+          Classes.Point(Round(I * Spacing), 0),
+          Icon,
+          Classes.Rect(0, 0, Icon.Width, Icon.Height)
+      );
     end;
-    Icon := TGraphBufGR.Create(False);
-    Shadow := TGraphBufGR.Create(False);
-    Index := Max(0, Count - VisibleCount);
-    I := 0;
-    while Index < Count do
-    begin
-      Award := Byte(Ship.AwardIds[Index]);
-      if Award < 10 then
-        Path := 'Bm.FormRewards.' + GiResourceSuffix + '_0' + IntToStr(Award)
-      else
-        Path := 'Bm.FormRewards.' + GiResourceSuffix + '_' + IntToStr(Award);
-      LoadGiByPathIntoGraphBuf(Path, Icon);
-      if Cardinal(Icon.Width) >= Cardinal(Icon.Height) then
-        Icon.RescaleRgba(
-            IconSize,
-            Round(IconSize / Cardinal(Icon.Width) * Cardinal(Icon.Height)),
-            5
-        )
-      else
-        Icon.RescaleRgba(
-            Round(IconSize / Cardinal(Icon.Height) * Cardinal(Icon.Width)),
-            IconSize,
-            5
-        );
-      Shadow.AllocateRgbaTight(Icon.Width, Icon.Height);
-      Shadow.CopyRect32(Classes.Point(0, 0), Icon, Classes.Rect(0, 0, Icon.Width, Icon.Height));
-      Shadow.MakeShadow;
-      if (Icon.Height > IconSize)
-          or (RewardsBuffer.GraphBuf.Width < Round(I * Spacing) + Icon.Width) then
-      begin
-        { The native renderer skips icons outside the allocated buffer. }
-      end
-      else
-      begin
-        RewardsBuffer.GraphBuf.BlendRect32(
-            Classes.Point(Round(I * Spacing) + 2, 2),
-            Shadow,
-            Classes.Rect(0, 0, Icon.Width, Icon.Height)
-        );
-        RewardsBuffer.GraphBuf.BlendRect32(
-            Classes.Point(Round(I * Spacing), 0),
-            Icon,
-            Classes.Rect(0, 0, Icon.Width, Icon.Height)
-        );
-      end;
-      Inc(Index);
-      Inc(I);
-    end;
-    Icon.Free;
-    Shadow.Free;
+    Inc(Index);
+    Inc(I);
   end;
+  Icon.Free;
+  Shadow.Free;
 end;
 
 procedure TfShip2.RewardsMouseMove(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
@@ -2043,7 +2022,7 @@ end;
 
 procedure TfShip2.CloseClicked(Sender: TObjectGI);
 begin
-  if not FlagD4 then
+  if not ReopenRequested then
   begin
     Galaxy.CheckIntegrityChecksum1(427);
     ReturnSelectedHoldEntry;
@@ -2056,7 +2035,7 @@ end;
 
 procedure TfShip2.RewardsMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
 begin
-  if UiRuntimeFlag
+  if AwardDialogsEnabled
       and not PlayerHoldShip.InHyperspace
       and (QueuedArcadeBattles.Count <= 0)
       and RewardsBuffer.Active then
@@ -2077,8 +2056,8 @@ begin
     else
     begin
       Galaxy.CheckIntegrityChecksum1(334);
-      Flag3BC := True;
-      FlagD4 := True;
+      ShipStateChanged := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -2137,30 +2116,30 @@ begin
             CustomDescription,
             '<Data1>',
             IntToStr(Info.Data[1]),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
         ReplaceTextToken(
             CustomDescription,
             '<Data2>',
             IntToStr(Info.Data[2]),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
         ReplaceTextToken(
             CustomDescription,
             '<Data3>',
             IntToStr(Info.Data[3]),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
-        ReplaceTextToken(CustomDescription, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(CustomDescription, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(CustomDescription, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(CustomDescription, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(CustomDescription, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(CustomDescription, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         CustomName := LocalizedColorText('ShipInfo.AddInfo.CustomInfos.' + Info.TypeName + '.Name');
-        ReplaceTextToken(CustomName, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(CustomName, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(CustomName, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(CustomName, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(CustomName, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(CustomName, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(CustomName, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(CustomName, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(CustomName, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(CustomName, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(CustomName, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(CustomName, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         Sender.HelpText := CustomName + '~' + CustomDescription;
       end;
       with GetByName('RankImage') as TGraphBufGI do
@@ -2225,7 +2204,7 @@ begin
                     + ' '
                     + FormatText2(
                         LocalizedText('Rank.NextRankText'),
-                        '<color=255,240,100>',
+                        TextHighlightColorTag,
                         '<NextRank>',
                         Ship.GetNextRankName,
                         '<WarPoints>',
@@ -2236,7 +2215,7 @@ begin
                     + ' '
                     + FormatText1(
                         LocalizedText('Rank.NextRankGetText'),
-                        '<color=255,240,100>',
+                        TextHighlightColorTag,
                         '<NextRank>',
                         Ship.GetNextRankName);
         end;
@@ -2261,7 +2240,7 @@ begin
                     + ' '
                     + FormatText2(
                         LocalizedText('RankPirate.NextRankText'),
-                        '<color=255,240,100>',
+                        TextHighlightColorTag,
                         '<NextRank>',
                         Ship.GetNextPirateRankName,
                         '<WarPoints>',
@@ -2272,7 +2251,7 @@ begin
                     + ' '
                     + FormatText1(
                         LocalizedText('RankPirate.NextRankGetText'),
-                        '<color=255,240,100>',
+                        TextHighlightColorTag,
                         '<NextRank>',
                         Ship.GetNextPirateRankName);
         end;
@@ -2296,55 +2275,42 @@ begin
       Skill := TPilotSkill(ExtractDigitsToIntW(Sender.ControlName));
       Title :=
           WrapTextInColor(
-              LocalizedText('Skills.' + SkillConfigNames[Ord(Skill)] + '.Name'),
+              LocalizedText('Skills.' + SkillConfigNames[Skill] + '.Name'),
               InfoNameColorTag
           );
       Description :=
           FormatText1(
-              LocalizedText('Skills.' + SkillConfigNames[Ord(Skill)] + '.Text'),
-              '<color=255,240,100>',
+              LocalizedText('Skills.' + SkillConfigNames[Skill] + '.Text'),
+              TextHighlightColorTag,
               '<SkillValue>',
-              IntToStr(
-                  PilotSkillEffects[
-                      Integer(PlayerHoldShip.GetEffectiveSkillLevel(Skill)) and $7F,
-                      Ord(Skill)
-                  ]
-              )
+              IntToStr(PilotSkillEffects[PlayerHoldShip.GetEffectiveSkillLevel(Skill), Skill])
           );
       ReplaceTextToken(
           Description,
           '<SkillLevel>',
-          IntToStr(Integer(PlayerHoldShip.GetEffectiveSkillLevel(Skill)) and $7F),
-          '<color=255,240,100>'
+          IntToStr(PlayerHoldShip.GetEffectiveSkillLevel(Skill)),
+          TextHighlightColorTag
       );
       if Skill = psTechnical then
         ReplaceTextToken(
             Description,
             '<N>',
             IntToStr(PlayerHoldShip.GetSatelliteLimit),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
       if Skill = psTrading then
         ReplaceTextToken(
             Description,
             '<SkillValue2>',
-            IntToStr(
-                TradingSkillSalePercent[
-                    Integer(PlayerHoldShip.GetEffectiveSkillLevel(Skill)) and $7F
-                ]
-            ),
-            '<color=255,240,100>'
+            IntToStr(TradingSkillSalePercent[PlayerHoldShip.GetEffectiveSkillLevel(Skill)]),
+            TextHighlightColorTag
         );
       if Skill = psLeadership then
         ReplaceTextToken(
             Description,
             '<SkillValue2>',
-            IntToStr(
-                LeadershipExperiencePercent[
-                    Integer(PlayerHoldShip.GetEffectiveSkillLevel(Skill)) and $7F
-                ]
-            ),
-            '<color=255,240,100>'
+            IntToStr(LeadershipExperiencePercent[PlayerHoldShip.GetEffectiveSkillLevel(Skill)]),
+            TextHighlightColorTag
         );
       if PlayerHoldShip.GetBaseSkillLevel(Skill) < 6 then
         Description :=
@@ -2353,11 +2319,9 @@ begin
                 + #13#10
                 + FormatText1(
                     LocalizedText('Skills.PointForNextLevel'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<PointForNextLevel>',
-                    IntToStr(
-                        SkillTrainingCosts[PlayerHoldShip.BaseSkills[Ord(Skill)] + 1, Ord(Skill)]
-                    ));
+                    IntToStr(SkillTrainingCosts[PlayerHoldShip.BaseSkills[Skill] + 1, Skill]));
     end;
     (GetByName('RankName') as TLabelGI).SetText(Title);
     (GetByName('RankText') as TLabelGI).SetText(Description);
@@ -2407,7 +2371,7 @@ procedure TfShip2.UpdateInfoHint(First, Second: Integer);
 begin
 end;
 
-function TfShip2.SlotToTip(SlotName: WideString): Byte;
+function TfShip2.SlotToTip(SlotName: WideString): TItemType;
 var
   Name: WideString;
   I: Integer;
@@ -2416,7 +2380,7 @@ begin
   for I := 0 to 7 do
     if Name = EquipmentSlotLayouts[I].Name then
     begin
-      Result := Byte(EquipmentSlotLayouts[I].ItemType);
+      Result := EquipmentSlotLayouts[I].ItemType;
       Exit;
     end;
   raise Exception.Create('SlotToTip');
@@ -2426,8 +2390,8 @@ function TfShip2.IsCompatibleSlot(ItemType, SlotType: TItemType): Boolean;
 begin
   Result :=
       (ItemType = SlotType)
-          or ((ItemType in [t_Weapon1..t_CustomWeapon])
-              and (SlotType in [t_Weapon1..t_CustomWeapon]));
+          or ((ItemType in [t_IndustrialLaser..t_CustomWeapon])
+              and (SlotType in [t_IndustrialLaser..t_CustomWeapon]));
 end;
 
 procedure TfShip2.RefreshEquipmentSlotControls;
@@ -2437,9 +2401,9 @@ begin
   for I := 0 to 7 do
   begin
     MaximumSlots := 1;
-    if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+    if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
       MaximumSlots := 5;
-    Count := PlayerHoldShip.GetSlotCountForItemType(Byte(EquipmentSlotLayouts[I].ItemType));
+    Count := PlayerHoldShip.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
     for Slot := 0 to Count - 1 do
     begin
       EquipmentSlotZones[I, Slot] :=
@@ -2452,7 +2416,7 @@ begin
       GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'Set')
           .SetActive(False);
     end;
-    if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+    if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
     begin
       for Slot := Count to 4 do
       begin
@@ -2499,7 +2463,7 @@ begin
   RefreshEquipmentSlotControls;
   with GetByName('LifeLeft') as TImageGI do
   begin
-    if PlayerHoldShip.CountActiveArtefacts(Ord(t_ArtBio)) > 0 then
+    if PlayerHoldShip.CountActiveArtefacts(t_ArtBio) > 0 then
     begin
       SetActive(True);
       if PlayerHoldShip.HasActiveDisease then
@@ -2514,7 +2478,7 @@ begin
   end;
   with GetByName('LifeRight') as TImageGI do
   begin
-    if PlayerHoldShip.CountActiveArtefacts(Ord(t_ArtBio)) > 0 then
+    if PlayerHoldShip.CountActiveArtefacts(t_ArtBio) > 0 then
     begin
       SetActive(True);
       if PlayerHoldShip.HasActiveDisease then
@@ -2527,18 +2491,18 @@ begin
     else
       SetActive(False);
   end;
-  Text := IntToStr(Integer(PlayerHoldShip.GetDefensePercent) and $7F) + '%';
+  Text := IntToStr(PlayerHoldShip.GetDefensePercent) + '%';
   Text := Text + ' + ' + WrapTextInColor(IntToStr(PlayerHoldShip.GetArmor), '');
   (GetByName('IDef') as TLabelGI).SetText(Text);
   (GetByName('IMass') as TLabelGI).SetText(IntToStr(PlayerHoldShip.CalculateMass));
   if PlayerHoldShip.CalculateSpeed <= 0 then
-    Text := '<color=255,0,0>'
+    Text := RedColorTag
   else
     Text := '';
   (GetByName('ISpeed') as TLabelGI)
       .SetText(WrapTextInColor(IntToStr(PlayerHoldShip.CalculateSpeed), Text));
   if PlayerHoldShip.GetCargoFreeSpace < 0 then
-    Text := '<color=255,0,0>'
+    Text := RedColorTag
   else
     Text := '';
   (GetByName('IEmpty') as TLabelGI)
@@ -2570,10 +2534,10 @@ begin
   end;
   for I := 0 to 7 do
   begin
-    SlotCount := PlayerHoldShip.GetSlotCountForItemType(Byte(EquipmentSlotLayouts[I].ItemType));
+    SlotCount := PlayerHoldShip.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
     for Slot := 0 to SlotCount - 1 do
     begin
-      Item := PlayerHoldShip.FindEquippedItemInSlot(Byte(EquipmentSlotLayouts[I].ItemType), Slot);
+      Item := PlayerHoldShip.FindEquippedItemInSlot(EquipmentSlotLayouts[I].ItemType, Slot);
       SlotImage :=
           GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'i') as TImageGI;
       if SlotImage.UserValue = 0 then
@@ -2706,7 +2670,7 @@ begin
               and (SelectedHoldItem is TArtefact)
               and PlayerHoldShip.IsEquipmentUsable(Item)
               and PlayerHoldShip
-                  .CanBoostArtefact(Byte(TArtefact(SelectedHoldItem).GetEffectiveType), Item, True);
+                  .CanBoostArtefact(TArtefact(SelectedHoldItem).GetEffectiveType, Item, True);
       if Highlight and (Item <> nil) and (Item.NoDropFlag > 0) then
         Highlight := False;
       GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'a')
@@ -2725,7 +2689,7 @@ begin
                   and not Boost);
       GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'Ex').SetActive(Boost);
     end;
-    if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+    if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
     begin
       for Slot := SlotCount to 4 do
         (GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(Slot) + 'z') as TZoneGI)
@@ -2738,22 +2702,22 @@ begin
                 .ZoneMouseDownCallback :=
             nil;
   end;
-  SlotCount := PlayerHoldShip.GetSlotCountForItemType(Ord(t_Artefact));
+  SlotCount := PlayerHoldShip.GetSlotCountForItemType(t_Artefact);
   for Slot := 0 to SlotCount - 1 do
   begin
-    Artefact := PlayerHoldShip.FindEquippedItemInSlot(Ord(t_Artefact), Slot) as TArtefact;
+    Artefact := PlayerHoldShip.FindEquippedItemInSlot(t_Artefact, Slot) as TArtefact;
     Highlight :=
         (SelectedHoldKind = phkArtefact)
-            and (Byte(SelectedHoldItem.ItemType)
+            and (SelectedHoldItem.ItemType
                 in [
-                    Ord(t_Artefact)..Ord(t_ArtefactAntigrav),
-                    Ord(t_ArtDefToEnergy)..Ord(t_ArtGiperJump),
-                    Ord(t_ArtDefToArms1)..Ord(t_ArtFastRacks)]);
+                    t_Artefact..t_ArtefactAntigrav,
+                    t_ArtDefToEnergy..t_ArtGiperJump,
+                    t_ArtDefToArms1..t_ArtFastRacks]);
     DuplicateSlot := -1;
     if Highlight and not Galaxy.AreDuplicateArtefactsEnabled then
     begin
       SelectedType := SelectedHoldItem.ItemType;
-      if (Byte(SelectedType) in [Ord(t_Artefact)..Ord(t_Artefact2)])
+      if (SelectedType in [t_Artefact..t_Artefact2])
           and TArtefactCustom(SelectedHoldItem).SharedUse then
         SelectedType := TArtefactCustom(SelectedHoldItem).CountsAsItemType;
       for I := 0 to PlayerHoldShip.Artefacts.Count - 1 do
@@ -2765,7 +2729,7 @@ begin
           if (Byte(InstalledType) in [8..9]) and TArtefactCustom(Item).SharedUse then
             InstalledType := TArtefactCustom(Item).CountsAsItemType;
           if (SelectedType = InstalledType)
-              and (not (Byte(SelectedType) in [Ord(t_Artefact)..Ord(t_Artefact2)])
+              and (not (SelectedType in [t_Artefact..t_Artefact2])
                   or (Item.ConfigBlockName = TEquipment(SelectedHoldItem).ConfigBlockName)) then
           begin
             DuplicateSlot := Item.AssignedSlotData;
@@ -2779,11 +2743,11 @@ begin
     if not Highlight
         and (Artefact <> nil)
         and (Artefact.BrokenFlag = 0)
-        and (PlayerHoldShip.CanBoostArtefact(Byte(Artefact.GetEffectiveType), nil, False)
+        and (PlayerHoldShip.CanBoostArtefact(Artefact.GetEffectiveType, nil, False)
             or ((SelectedHoldKind = phkEquipment)
                 and (SelectedHoldItem is TEquipment)
                 and PlayerHoldShip.CanBoostArtefact(
-                    Byte(Artefact.GetEffectiveType),
+                    Artefact.GetEffectiveType,
                     TEquipment(SelectedHoldItem),
                     True))) then
       Boost := True
@@ -2812,25 +2776,25 @@ begin
     end;
     with GetByName('Art' + IntToStr(Slot) + 'z') as TZoneGI do
     begin
-      SetActive({$B+} (Highlight or (Artefact <> nil)) {$B-});
+      SetActive((Artefact <> nil) or Highlight);
       if Highlight or (SelectedHoldKind = phkEmpty) then
         ZoneMouseDownCallback := ArtefactSlotMouseDown
       else if (Artefact <> nil) and (SelectedHoldKind = phkEquipment) then
         ZoneMouseDownCallback := UseOnArtefactSlot
       else if (Artefact <> nil)
           and (SelectedHoldKind = phkArtefact)
-          and not (Byte(SelectedHoldItem.ItemType)
+          and not (SelectedHoldItem.ItemType
               in [
-                  Ord(t_Artefact)..Ord(t_ArtefactAntigrav),
-                  Ord(t_ArtDefToEnergy)..Ord(t_ArtGiperJump),
-                  Ord(t_ArtDefToArms1)..Ord(t_ArtFastRacks)]) then
+                  t_Artefact..t_ArtefactAntigrav,
+                  t_ArtDefToEnergy..t_ArtGiperJump,
+                  t_ArtDefToArms1..t_ArtFastRacks]) then
         ZoneMouseDownCallback := UseOnArtefactSlot
       else
         ZoneMouseDownCallback := nil;
     end;
     GetByName('Art' + IntToStr(Slot) + 'off').SetActive(False);
   end;
-  for Slot := SlotCount to DefaultHullSlotCounts[8] - 1 do
+  for Slot := SlotCount to DefaultHullSlotCounts[sskArtefact] - 1 do
   begin
     GetByName('Art' + IntToStr(Slot) + 'n').SetActive(False);
     GetByName('Art' + IntToStr(Slot) + 'b').SetActive(False);
@@ -2971,7 +2935,7 @@ begin
       and (SelectedHoldItem is TArtefact)
       and not GetByName('HullA').Active
       and PlayerHoldShip.CanBoostArtefact(
-          Byte(TArtefact(SelectedHoldItem).GetEffectiveType),
+          TArtefact(SelectedHoldItem).GetEffectiveType,
           PlayerHoldShip.GetHull,
           True) then
     GetByName('HullEx').SetActive(True)
@@ -2996,7 +2960,7 @@ begin
     SetText(
         FormatText2(
             LocalizedText('FormShip.DestrEnergy'),
-            '<color=0,71,234>',
+            BrightBlueColorTag,
             '<Value1>',
             IntToStr(PlayerHoldShip.GetHull.Energy),
             '<Value2>',
@@ -3014,7 +2978,7 @@ begin
     SetText(
         FormatText2(
             LocalizedText('FormShip.DestrCount'),
-            '<color=0,71,234>',
+            BrightBlueColorTag,
             '<Count>',
             IntToStr(PlayerHoldShip.CountActiveInterceptorTargets),
             '<Cost>',
@@ -3026,7 +2990,7 @@ begin
         '-'
             + FormatText1(
                 LocalizedText('FormShip.DestrPerDay'),
-                '<color=0,71,234>',
+                BrightBlueColorTag,
                 '<Value>',
                 IntToStr(PlayerHoldShip.CountActiveInterceptorTargets * 3))
     );
@@ -3035,7 +2999,7 @@ begin
         '+'
             + FormatText1(
                 LocalizedText('FormShip.DestrPerDay'),
-                '<color=0,71,234>',
+                BrightBlueColorTag,
                 '<Value>',
                 IntToStr(PlayerHoldShip.GetHullEnergyRegeneration))
     );
@@ -3136,37 +3100,37 @@ begin
   Skill(
       0,
       PlayerHoldShip.GetBaseSkillLevel(psAccuracy),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psAccuracy)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psAccuracy),
       PlayerHoldShip.CanTrainSkill(psAccuracy)
   );
   Skill(
       1,
       PlayerHoldShip.GetBaseSkillLevel(psManeuverability),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psManeuverability)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psManeuverability),
       PlayerHoldShip.CanTrainSkill(psManeuverability)
   );
   Skill(
       2,
       PlayerHoldShip.GetBaseSkillLevel(psTechnical),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psTechnical)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psTechnical),
       PlayerHoldShip.CanTrainSkill(psTechnical)
   );
   Skill(
       3,
       PlayerHoldShip.GetBaseSkillLevel(psTrading),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psTrading)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psTrading),
       PlayerHoldShip.CanTrainSkill(psTrading) and OrdinaryShip
   );
   Skill(
       4,
       PlayerHoldShip.GetBaseSkillLevel(psCharisma),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psCharisma)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psCharisma),
       PlayerHoldShip.CanTrainSkill(psCharisma) and OrdinaryShip
   );
   Skill(
       5,
       PlayerHoldShip.GetBaseSkillLevel(psLeadership),
-      Integer(PlayerHoldShip.GetEffectiveSkillLevel(psLeadership)) and $7F,
+      PlayerHoldShip.GetEffectiveSkillLevel(psLeadership),
       PlayerHoldShip.CanTrainSkill(psLeadership) and OrdinaryShip
   );
   with SkillButtons[0] do
@@ -3207,12 +3171,11 @@ begin
   end;
   if ((Kind = phkEquipment) or (Kind = phkArtefact))
       and (Item as TEquipment).NeedsRepair
-      and ((Item.ItemType <> t_Protoplasm) or (GetPlayer.DockedTo.TypeId <> Byte(rstRangerCenter)))
+      and ((Item.ItemType <> t_Protoplasm) or (GetPlayer.DockedTo.TypeId <> rstRangerCenter))
       and not PreserveSpaceMusic
       and (GetPlayer.IsDockedToShip
           or (GetPlayer.IsOnPlanet
-              and not (GetPlayer.CurrentPlanet.OwnerId
-                  in [Ord(oiDominator), Ord(oiUninhabited)]))) then
+              and not (GetPlayer.CurrentPlanet.OwnerId in [oiDominator, oiUninhabited]))) then
   begin
     OpenSpecialSlot1;
     with GetByName('SC_Slot1_Text') as TLabelGI do
@@ -3236,8 +3199,7 @@ begin
       and not PreserveSpaceMusic
       and (GetPlayer.IsDockedToShip
           or (GetPlayer.IsOnPlanet
-              and not (GetPlayer.CurrentPlanet.OwnerId
-                  in [Ord(oiDominator), Ord(oiUninhabited)]))) then
+              and not (GetPlayer.CurrentPlanet.OwnerId in [oiDominator, oiUninhabited]))) then
   begin
     OpenSpecialSlot2;
     with GetByName('SC_Slot2_Text') as TLabelGI do
@@ -3271,8 +3233,7 @@ begin
       and not PreserveSpaceMusic
       and (GetPlayer.IsDockedToShip
           or (GetPlayer.IsOnPlanet
-              and not (GetPlayer.CurrentPlanet.OwnerId
-                  in [Ord(oiDominator), Ord(oiUninhabited)]))) then
+              and not (GetPlayer.CurrentPlanet.OwnerId in [oiDominator, oiUninhabited]))) then
   begin
     OpenSpecialSlot3;
     with GetByName('SC_Slot3_Text') as TLabelGI do
@@ -3294,8 +3255,7 @@ begin
       and not PreserveSpaceMusic
       and (GetPlayer.IsDockedToShip
           or (GetPlayer.IsOnPlanet
-              and not (GetPlayer.CurrentPlanet.OwnerId
-                  in [Ord(oiDominator), Ord(oiUninhabited)]))) then
+              and not (GetPlayer.CurrentPlanet.OwnerId in [oiDominator, oiUninhabited]))) then
   begin
     OpenSpecialSlot3;
     with GetByName('SC_Slot3_Text') as TLabelGI do
@@ -3307,7 +3267,11 @@ begin
                 GetPlayer.CurrentPlanet.OwnerId
             )
       else
-        I := CalculateRoundedFuelCost((Item as TCistern).Capacity - (Item as TCistern).Fuel, 6);
+        I :=
+            CalculateRoundedFuelCost(
+                (Item as TCistern).Capacity - (Item as TCistern).Fuel,
+                oiUninhabited
+            );
       SetText(FormatText1(LocalizedText('FormShip.Fuel'), '', '<Money>', IntToStr(I)));
     end;
   end
@@ -3317,8 +3281,7 @@ begin
       and not PreserveSpaceMusic
       and (GetPlayer.IsDockedToShip
           or (GetPlayer.IsOnPlanet
-              and not (GetPlayer.CurrentPlanet.OwnerId
-                  in [Ord(oiDominator), Ord(oiUninhabited)]))) then
+              and not (GetPlayer.CurrentPlanet.OwnerId in [oiDominator, oiUninhabited]))) then
   begin
     OpenSpecialSlot3;
     with GetByName('SC_Slot3_Text') as TLabelGI do
@@ -3330,7 +3293,11 @@ begin
                 GetPlayer.CurrentPlanet.OwnerId
             )
       else
-        I := CalculateRoundedFuelCost((Item as TFuelTanks).Capacity - (Item as TFuelTanks).Fuel, 6);
+        I :=
+            CalculateRoundedFuelCost(
+                (Item as TFuelTanks).Capacity - (Item as TFuelTanks).Fuel,
+                oiUninhabited
+            );
       SetText(FormatText1(LocalizedText('FormShip.Fuel'), '', '<Money>', IntToStr(I)));
     end;
   end
@@ -3414,7 +3381,7 @@ end;
 
 procedure TfShip2.EquipmentSlotMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
 var
-  ItemType: Byte;
+  ItemType: TItemType;
   Slot, Quantity: Integer;
   Item: TEquipment;
   Text: WideString;
@@ -3441,14 +3408,14 @@ begin
       if (PlayerHoldShip is TRuins)
           and ((Item is TEngine)
               or (Item is TFuelTanks)
-              or ((Item is TCargoHook) and (PlayerHoldShip.TypeId = Byte(rstDominion)))) then
+              or ((Item is TCargoHook) and (PlayerHoldShip.TypeId = rstDominion))) then
       begin
         SoundManager.PlaySound('Sound.NoMoney');
         ShowMessageBoxGI(
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(Item.GetDisplayName)
             ),
@@ -3463,7 +3430,7 @@ begin
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.TrancMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(Item.GetDisplayName)
             ),
@@ -3501,7 +3468,7 @@ begin
       Text :=
           FormatText2(
               LocalizedText('MicroModuls.AddToItem'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<ModuleName>',
               (SelectedHoldItem as TMicroModule).GetPlainName,
               '<ItemName>',
@@ -3522,7 +3489,7 @@ begin
     else if (SelectedHoldKind = phkEquipment)
         and (SelectedHoldItem.ItemType = t_Cistern)
         and ((SelectedHoldItem as TCistern).Fuel > 0)
-        and (ItemType = Byte(t_FuelTanks))
+        and (ItemType = t_FuelTanks)
         and (PlayerHoldShip.FindEquippedItemInSlot(ItemType, Slot) <> nil)
         and ((PlayerHoldShip.FindEquippedItemInSlot(ItemType, Slot) as TFuelTanks).Fuel
             < (PlayerHoldShip.FindEquippedItemInSlot(ItemType, Slot) as TFuelTanks).Capacity) then
@@ -3544,7 +3511,7 @@ begin
       end;
     end
     else if (SelectedHoldKind = phkEquipment)
-        and IsCompatibleSlot(TItemType(ItemType), SelectedHoldItem.ItemType) then
+        and IsCompatibleSlot(ItemType, SelectedHoldItem.ItemType) then
     begin
       Item := PlayerHoldShip.FindEquippedItemInSlot(ItemType, Slot);
       if (Item <> nil) and (Item.EquippedFlag <> 0) then
@@ -3559,8 +3526,7 @@ begin
       SoundManager.PlaySound('Sound.SlotPut');
       if (PlayerHoldShip is TTranclucator)
           and (SelectedHoldItem is TWeapon)
-          and (Byte(TWeapon(SelectedHoldItem).GetWeaponInfo.ShotType)
-              in [Ord(wstTorpedo)..Ord(wstRocket)])
+          and (TWeapon(SelectedHoldItem).GetWeaponInfo.ShotType in [wstTorpedo..wstRocket])
           and (PlayerHoldShip.GetRadar = nil) then
         ShowMessageBoxGI(
             Self,
@@ -3671,8 +3637,8 @@ begin
     RefreshShipView
   else if not RemoteHoldVisible then
   begin
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -3688,7 +3654,7 @@ begin
   Galaxy.CheckIntegrityChecksum1(443);
   if SelectedHoldKind = phkEmpty then
   begin
-    Equipment := PlayerHoldShip.FindEquippedItemInSlot(Ord(t_Artefact), Slot);
+    Equipment := PlayerHoldShip.FindEquippedItemInSlot(t_Artefact, Slot);
     if Equipment <> nil then
     begin
       Item := Equipment as TArtefact;
@@ -3707,7 +3673,7 @@ begin
   end
   else if SelectedHoldKind = phkArtefact then
   begin
-    Equipment := PlayerHoldShip.FindEquippedItemInSlot(Ord(t_Artefact), Slot);
+    Equipment := PlayerHoldShip.FindEquippedItemInSlot(t_Artefact, Slot);
     if (Equipment <> nil) and (Equipment.EquippedFlag <> 0) then
       Equipment.Unequip;
     PlayerHoldShip.Artefacts.Add(SelectedHoldItem);
@@ -3736,8 +3702,8 @@ begin
   end
   else if not RemoteHoldVisible then
   begin
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -3751,7 +3717,7 @@ var
 begin
   Slot := ExtractDigitsToIntW(Sender.ControlName);
   Galaxy.CheckIntegrityChecksum1(443);
-  Item := PlayerHoldShip.FindEquippedItemInSlot(Ord(t_Artefact), Slot);
+  Item := PlayerHoldShip.FindEquippedItemInSlot(t_Artefact, Slot);
   if Item = nil then
     Exit;
   if SelectedHoldKind in [phkGoods] then
@@ -3852,8 +3818,8 @@ begin
   end
   else if not RemoteHoldVisible then
   begin
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -3880,8 +3846,8 @@ var
       RefreshShipView
     else if not RemoteHoldVisible then
     begin
-      Flag3BC := True;
-      FlagD4 := True;
+      ShipStateChanged := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -3944,7 +3910,7 @@ begin
                   'GI,' + GetItemTypeBitmapPath(TItemType(SelectedGoodsIndex)),
                   FormatText1(
                       LocalizedText('FormShip.FromStorageItem'),
-                      '<color=0,50,200>',
+                      DialogHighlightColorTag,
                       '<Name>',
                       LowerCaseWideString(GetStackableItemTypeName(TItemType(SelectedGoodsIndex)))
                   ),
@@ -4127,7 +4093,7 @@ begin
                   'GI,' + GetShopItemIconName(SelectedHoldItem) + 's',
                   FormatText1(
                       LocalizedText('FormShip.FromStorageItem'),
-                      '<color=0,50,200>',
+                      DialogHighlightColorTag,
                       '<Name>',
                       LowerCaseWideString(GetStackableItemName(SelectedHoldItem))
                   ),
@@ -4413,7 +4379,7 @@ begin
         Text :=
             FormatText2(
                 LocalizedText('MicroModuls.AddToItem'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<ModuleName>',
                 (SelectedHoldItem as TMicroModule).GetPlainName,
                 '<ItemName>',
@@ -4761,7 +4727,7 @@ begin
     Text :=
         FormatText2(
             LocalizedText('MicroModuls.AddToItem'),
-            '<color=255,240,100>',
+            TextHighlightColorTag,
             '<ModuleName>',
             (SelectedHoldItem as TMicroModule).GetPlainName,
             '<ItemName>',
@@ -4924,8 +4890,8 @@ begin
     Galaxy.PrimeIntegrityChecksum1(467);
     UpdateActionCursor(True);
     RefreshShipView;
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -4935,7 +4901,7 @@ function TfShip2.ConfigureChameleon: Boolean;
 var
   Choice, ExpectedCharges, I: Integer;
   Series: TDominatorSeries;
-  VisualType: Byte;
+  VisualType: TKlingType;
   Ship: TShip;
 
   function ChameleonDialogChoiceToSeries(Choice: Integer): TDominatorSeries;
@@ -4960,9 +4926,9 @@ begin
     VisualType := PlayerHoldShip.SelectChameleonVisualType;
     if ShowChameleonDialog(
             Self,
-            PlayerHoldShip.ChameleonCharges[0],
-            PlayerHoldShip.ChameleonCharges[1],
-            PlayerHoldShip.ChameleonCharges[2],
+            PlayerHoldShip.ChameleonCharges[dsBlazer],
+            PlayerHoldShip.ChameleonCharges[dsKeller],
+            PlayerHoldShip.ChameleonCharges[dsTerron],
             VisualType,
             PlayerHoldShip.ChameleonActive,
             Choice)
@@ -4985,12 +4951,12 @@ begin
       else
       begin
         Series := ChameleonDialogChoiceToSeries(Choice);
-        ExpectedCharges := Max(0, PlayerHoldShip.ChameleonCharges[Ord(Series)] - 1);
-        PlayerHoldShip.ChameleonCharges[Ord(Series)] := ExpectedCharges;
+        ExpectedCharges := Max(0, PlayerHoldShip.ChameleonCharges[Series] - 1);
+        PlayerHoldShip.ChameleonCharges[Series] := ExpectedCharges;
         PlayerHoldShip.ChameleonSeries := Series;
         PlayerHoldShip.ChameleonActive := True;
         SysUtils.Sleep(1);
-        if (PlayerHoldShip.ChameleonCharges[Ord(Series)] <> ExpectedCharges)
+        if (PlayerHoldShip.ChameleonCharges[Series] <> ExpectedCharges)
             and not GR_Main.CCInterface.GetTamperDetected then
           GR_Main.CCInterface.SetTamperDetected(True);
       end;
@@ -5164,9 +5130,8 @@ begin
         else
         begin
           if ((SelectedHoldKind = phkEquipment) or (SelectedHoldKind = phkArtefact))
-              and (PlayerHoldShip.FindEquippedItemInSlot(
-                      Byte(SelectedHoldItem.ItemType),
-                      -SelectedHoldSlot - 1)
+              and (PlayerHoldShip
+                      .FindEquippedItemInSlot(SelectedHoldItem.ItemType, -SelectedHoldSlot - 1)
                   = nil) then
           begin
             (SelectedHoldItem as TEquipment).EquippedFlag := 0;
@@ -5317,7 +5282,7 @@ begin
           Self,
           FormatText1(
               LocalizedText('FormShip.SetHotEqu'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Key>',
               '"' + Chr(Key) + '"'
           ),
@@ -5346,8 +5311,8 @@ begin
     end;
     if (GetPlayer = PlayerHoldShip) and (Key = Ord('K')) and ConfigureChameleon then
     begin
-      Flag3BC := True;
-      FlagD4 := True;
+      ShipStateChanged := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       Galaxy.PrimeIntegrityChecksum1(475);
       CloseClicked(nil);
@@ -5374,7 +5339,7 @@ begin
           (PlayerHoldShip.GetSlotCount(sskAfterburner) > 0)
               and PlayerHoldShip.IsEquipmentUsable(PlayerHoldShip.GetEngine)
               and PlayerHoldShip.InNormalSpace;
-      if {$B+} (CanAfterburn and not PlayerHoldShip.AfterburnerActive) {$B-} then
+      if not PlayerHoldShip.AfterburnerActive and CanAfterburn then
       begin
         SoundManager.PlaySound('Sound.ForsageOn');
         PlayerHoldShip.AfterburnerActive := True;
@@ -5605,7 +5570,7 @@ var
         Index := 0;
         while Index < PlayerHoldShip.GetSlotCount(sskArtefact) do
         begin
-          Equipment := PlayerHoldShip.FindEquippedItemInSlot(Byte(ItemType), Index);
+          Equipment := PlayerHoldShip.FindEquippedItemInSlot(ItemType, Index);
           if Equipment = nil then
           begin
             Inc(Slot, Index);
@@ -5642,7 +5607,7 @@ var
       Slot := -1;
       if SelectedHoldItem.ItemType in [t_FuelTanks..t_DefGenerator] then
         Slot := Ord(SelectedHoldItem.ItemType) - 42
-      else if SelectedHoldItem.ItemType in [t_Weapon1..t_CustomWeapon] then
+      else if SelectedHoldItem.ItemType in [t_IndustrialLaser..t_CustomWeapon] then
         Slot := 8;
       if Slot < 0 then
         Exit;
@@ -5651,8 +5616,7 @@ var
         Index := 0;
         while Index < PlayerHoldShip.GetSlotCount(sskWeapon) do
         begin
-          if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), Index)
-              = nil then
+          if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, Index) = nil then
           begin
             Inc(Slot, Index);
             Break;
@@ -5686,7 +5650,7 @@ begin
     if Zone.ContainsPoint(Point) then
       Changed := ConfigureChameleon;
   end;
-  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)))
+  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited))
       or (GetPlayer.IsDockedToShip and (GetPlayer.RuinsMode = 0)) then
   begin
     if not Changed then
@@ -5720,7 +5684,7 @@ begin
           Break;
         end;
       end;
-      for I := 1 to DefaultHullSlotCounts[8] do
+      for I := 1 to DefaultHullSlotCounts[sskArtefact] do
       begin
         Zone := ArtefactSlotZones[I - 1];
         if Zone.Parent.Active and Zone.ContainsPoint(Point) then
@@ -5821,8 +5785,8 @@ begin
         end;
       if Changed then
       begin
-        Flag3BC := True;
-        FlagD4 := True;
+        ShipStateChanged := True;
+        ReopenRequested := True;
         PlayTransitionSounds := False;
         CloseClicked(nil);
       end;
@@ -5958,7 +5922,7 @@ begin
             Break;
           end;
         end;
-        for I := 1 to DefaultHullSlotCounts[8] do
+        for I := 1 to DefaultHullSlotCounts[sskArtefact] do
         begin
           Zone := ArtefactSlotZones[I - 1];
           if Zone.ContainsPoint(Point) then
@@ -6047,8 +6011,8 @@ begin
   Galaxy.PrimeIntegrityChecksum1(473);
   if Changed then
   begin
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -6133,7 +6097,7 @@ begin
               'GI,' + GetShopItemIconName(SelectedHoldItem) + 's',
               FormatText1(
                   LocalizedText('FormShip.ThrowItem'),
-                  '<color=0,50,200>',
+                  DialogHighlightColorTag,
                   '<Name>',
                   LowerCaseWideString(GetStackableItemName(SelectedHoldItem))
               ),
@@ -6207,7 +6171,7 @@ begin
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
             ),
@@ -6225,7 +6189,7 @@ begin
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.TrancMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
             ),
@@ -6243,7 +6207,7 @@ begin
           Text :=
               FormatText1(
                   LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Item>',
                   RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
               )
@@ -6262,7 +6226,7 @@ begin
           Text :=
               FormatText1(
                   LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Item>',
                   RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
               )
@@ -6365,7 +6329,7 @@ begin
                 'GI,' + GetItemTypeBitmapPath(TItemType(SelectedGoodsIndex)),
                 FormatText1(
                     LocalizedText('FormShip.ThrowItem'),
-                    '<color=0,50,200>',
+                    DialogHighlightColorTag,
                     '<Name>',
                     LowerCaseWideString(GetStackableItemTypeName(TItemType(SelectedGoodsIndex)))
                 ),
@@ -6431,7 +6395,7 @@ begin
   RemoveEmptyPlayerHoldSlots;
   if not RemoteHoldVisible then
   begin
-    FlagD4 := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -6460,7 +6424,7 @@ begin
                 'GI,' + GetShopItemIconName(SelectedHoldItem) + 's',
                 FormatText1(
                     LocalizedText('FormShip.ThrowItem'),
-                    '<color=0,50,200>',
+                    DialogHighlightColorTag,
                     '<Name>',
                     LowerCaseWideString(GetStackableItemName(SelectedHoldItem))
                 ),
@@ -6532,7 +6496,7 @@ begin
                   'GI,' + GetItemTypeBitmapPath(TItemType(SelectedGoodsIndex)),
                   FormatText1(
                       LocalizedText('FormShip.ThrowItem'),
-                      '<color=0,50,200>',
+                      DialogHighlightColorTag,
                       '<Name>',
                       LowerCaseWideString(GetStackableItemTypeName(TItemType(SelectedGoodsIndex)))
                   ),
@@ -6576,14 +6540,14 @@ begin
       and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       ShowMessageBoxGI(
           Self,
           ReplaceColoredToken(
               LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       )
@@ -6594,7 +6558,7 @@ begin
               LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       );
@@ -6606,7 +6570,7 @@ begin
   begin
     if not GetPlayer.CanRepairEquipmentTech(SelectedHoldItem as TEquipment) then
     begin
-      Flag3BC := True;
+      ShipStateChanged := True;
       ShowMessageBoxGI(
           Self,
           LocalizedText('FormShip.TooAdvancedForRepair'),
@@ -6639,7 +6603,7 @@ begin
               Self,
               FormatText1(
                   LocalizedText('FormShip.RepairMsgNeedNode'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<NeedNode>',
                   IntToStr(Nodes - GetPlayer.GetAvailableNodeCount(PlayerHoldShip))
               ),
@@ -6651,7 +6615,7 @@ begin
                 Self,
                 FormatText1(
                     LocalizedText('FormShip.RepairMsgEnoughNode'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<NeedNode>',
                     IntToStr(Nodes)
                 ),
@@ -6662,18 +6626,18 @@ begin
       end;
       GetPlayer.SetMoney(GetPlayer.Money - (SelectedHoldItem as TEquipment).CalculateRepairCost);
       (SelectedHoldItem as TEquipment).Repair;
-      Flag3BC := True;
+      ShipStateChanged := True;
       SoundManager.PlaySound('Sound.Repair');
       if SelectedHoldKind = phkEquipment then
       begin
         I := 0;
-        while I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) do
+        while I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) do
         begin
-          if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), I) = nil then
+          if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, I) = nil then
             Break;
           Inc(I);
         end;
-        if I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) then
+        if I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) then
         begin
           if SelectedHoldItem is TWeapon then
             (SelectedHoldItem as TWeapon).Target := nil;
@@ -6692,19 +6656,19 @@ begin
               or Galaxy.AreDuplicateArtefactsEnabled) then
       begin
         I := 0;
-        while I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) do
+        while I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) do
         begin
-          if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), I) = nil then
+          if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, I) = nil then
             Break;
           Inc(I);
         end;
-        if I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) then
+        if I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) then
         begin
           PlayerHoldShip.Artefacts.Add(SelectedHoldItem);
-          if (PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType))
+          if (PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType)
                   <= Integer((SelectedHoldItem as TEquipment).AssignedSlotData))
               or (PlayerHoldShip.FindEquippedItemInSlot(
-                      Byte(SelectedHoldItem.ItemType),
+                      SelectedHoldItem.ItemType,
                       Integer((SelectedHoldItem as TEquipment).AssignedSlotData))
                   <> nil) then
             (SelectedHoldItem as TEquipment).AssignedSlotData := I;
@@ -6719,7 +6683,7 @@ begin
     end
     else
     begin
-      Flag3BC := True;
+      ShipStateChanged := True;
       Text := '';
       if PlayerHoldShip.DockedTo <> nil then
       begin
@@ -6748,7 +6712,7 @@ begin
     end;
   end;
   RemoveEmptyPlayerHoldSlots;
-  FlagD4 := True;
+  ReopenRequested := True;
   PlayTransitionSounds := False;
   CloseClicked(nil);
 end;
@@ -6771,14 +6735,14 @@ begin
       and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       ShowMessageBoxGI(
           Self,
           ReplaceColoredToken(
               LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       )
@@ -6789,7 +6753,7 @@ begin
               LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       );
@@ -6808,7 +6772,7 @@ begin
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
             ),
@@ -6825,7 +6789,7 @@ begin
           Self,
           FormatText1(
               LocalizedColorText('FormShip.TrancMoveItemInvalid'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Item>',
               RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
           ),
@@ -6838,7 +6802,7 @@ begin
                 Self,
                 FormatText1(
                     LocalizedColorText('FormShip.SellItemQuestion'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<Item>',
                     SelectedHoldItem.GetDisplayName
                 ),
@@ -6854,7 +6818,7 @@ begin
                   'GI,' + GetShopItemIconName(SelectedHoldItem) + 's',
                   FormatText1(
                       LocalizedText('FormShip.SellItem'),
-                      '<color=0,50,200>',
+                      DialogHighlightColorTag,
                       '<Name>',
                       LowerCaseWideString(GetStackableItemName(SelectedHoldItem))
                   ),
@@ -6915,7 +6879,7 @@ begin
       Event.AddTextData(SelectedHoldItem.GetDisplayName);
       Event.AddTextData(SelectedHoldItem.GetCategoryConfigName);
     end;
-    Flag3BC := True;
+    ShipStateChanged := True;
     if SelectedHoldItem is TWeapon then
       (SelectedHoldItem as TWeapon).Target := nil;
     if (SelectedHoldKind = phkEquipment)
@@ -6925,7 +6889,7 @@ begin
       SelectedHoldItem.Free;
       SelectedHoldItem := nil;
     end
-    else if (SelectedHoldItem.OwnerId in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)])
+    else if (SelectedHoldItem.OwnerId in [oiMaloc..oiGaal, oiPirate])
         and (SelectedHoldKind = phkEquipment)
         and (SelectedHoldItem.ItemType in [t_Hull..t_CustomWeapon])
         and (not (SelectedHoldItem is TWeapon)
@@ -6972,7 +6936,7 @@ begin
                   'GI,' + GetItemTypeBitmapPath(TItemType(SelectedGoodsIndex)),
                   FormatText1(
                       LocalizedText('FormShip.SellItem'),
-                      '<color=0,50,200>',
+                      DialogHighlightColorTag,
                       '<Name>',
                       LowerCaseWideString(GoodsMarket[SelectedGoodsIndex].DisplayName)
                   ),
@@ -6987,7 +6951,7 @@ begin
           or (Count < 1)
           or (Count > SelectedGoodsQuantity) then
         Exit;
-    Flag3BC := True;
+    ShipStateChanged := True;
     SoundManager.PlaySound('Sound.Sell');
     Inc(GetPlayer.CargoGoods[SelectedGoodsIndex].Count, SelectedGoodsQuantity);
     Inc(GetPlayer.CargoGoods[SelectedGoodsIndex].TotalCost, SelectedGoodsCost);
@@ -6998,7 +6962,7 @@ begin
     RefreshShipView;
   end;
   RemoveEmptyPlayerHoldSlots;
-  FlagD4 := True;
+  ReopenRequested := True;
   PlayTransitionSounds := False;
   CloseClicked(nil);
 end;
@@ -7068,8 +7032,8 @@ begin
         RefreshShipView;
         if ActionResult <> 1 then
         begin
-          Flag3BC := True;
-          FlagD4 := True;
+          ShipStateChanged := True;
+          ReopenRequested := True;
           PlayTransitionSounds := False;
         end;
         CloseClicked(nil);
@@ -7096,8 +7060,8 @@ begin
       begin
         if ActionResult <> 1 then
         begin
-          Flag3BC := True;
-          FlagD4 := True;
+          ShipStateChanged := True;
+          ReopenRequested := True;
           PlayTransitionSounds := False;
         end;
         CloseClicked(nil);
@@ -7115,14 +7079,14 @@ begin
         Text := (SelectedHoldItem as TTreasureMap).PreviewTablePage2;
       Galaxy.CheckIntegrityChecksum1(520);
       AddOrUpdatePlayerBubble(
-          7,
+          pmUserNote,
           Galaxy.CurrentTurn,
           Text,
           (SelectedHoldItem as TTreasureMap).GetTargetPlanetName
       );
       MainPanel.RebuildMessageButtons(False);
       ReturnSelectedHoldEntry;
-      FlagD4 := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -7146,8 +7110,8 @@ begin
           RefreshShipView;
           if ActionResult <> 1 then
           begin
-            Flag3BC := True;
-            FlagD4 := True;
+            ShipStateChanged := True;
+            ReopenRequested := True;
             PlayTransitionSounds := False;
           end;
           CloseClicked(nil);
@@ -7157,7 +7121,7 @@ begin
     else if SelectedHoldKind = phkArtefact then
     begin
       RemoveEmptyPlayerHoldSlots;
-      FlagD4 := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -7183,7 +7147,7 @@ begin
     if GetPlayer.IsOnPlanet then
       UnitPrice := CalculateFuelCost(1, GetPlayer.CurrentPlanet.OwnerId)
     else
-      UnitPrice := CalculateFuelCost(1, 6);
+      UnitPrice := CalculateFuelCost(1, oiUninhabited);
     Affordable := Min(Limit, Trunc(GetPlayer.Money / UnitPrice));
     if Affordable <= 0 then
     begin
@@ -7197,9 +7161,9 @@ begin
       Text :=
           LocalizedText('FormShip.FuelAct')
               + #13#10
-              + '<color=0,50,200>'
+              + DialogHighlightColorTag
               + LocalizedText('Items.Cistern.Name2')
-              + '</color>';
+              + EndColorTag;
       if ShowCountDialogWithFont(
               Self,
               '',
@@ -7219,7 +7183,7 @@ begin
     if GetPlayer.IsOnPlanet then
       Cost := CalculateRoundedFuelCost(Amount, GetPlayer.CurrentPlanet.OwnerId)
     else
-      Cost := CalculateRoundedFuelCost(Amount, 6);
+      Cost := CalculateRoundedFuelCost(Amount, oiUninhabited);
     if GetPlayer.Money < Cost then
     begin
       SoundManager.PlaySound('Sound.NoMoney');
@@ -7232,7 +7196,7 @@ begin
     SoundManager.PlaySound('Sound.Buy');
     RefreshShipView;
     RemoveEmptyPlayerHoldSlots;
-    FlagD4 := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end
@@ -7245,7 +7209,7 @@ begin
     if GetPlayer.IsOnPlanet then
       UnitPrice := CalculateFuelCost(1, GetPlayer.CurrentPlanet.OwnerId)
     else
-      UnitPrice := CalculateFuelCost(1, 6);
+      UnitPrice := CalculateFuelCost(1, oiUninhabited);
     Affordable := Min(Limit, Trunc(GetPlayer.Money / UnitPrice));
     if Affordable <= 0 then
     begin
@@ -7259,9 +7223,9 @@ begin
       Text :=
           LocalizedText('FormShip.FuelAct')
               + #13#10
-              + '<color=0,50,200>'
+              + DialogHighlightColorTag
               + FuelTanks.GetDisplayName
-              + '</color>';
+              + EndColorTag;
       if ShowCountDialogWithFont(
               Self,
               '',
@@ -7281,7 +7245,7 @@ begin
     if GetPlayer.IsOnPlanet then
       Cost := CalculateRoundedFuelCost(Amount, GetPlayer.CurrentPlanet.OwnerId)
     else
-      Cost := CalculateRoundedFuelCost(Amount, 6);
+      Cost := CalculateRoundedFuelCost(Amount, oiUninhabited);
     if GetPlayer.Money < Cost then
     begin
       SoundManager.PlaySound('Sound.NoMoney');
@@ -7294,7 +7258,7 @@ begin
     SoundManager.PlaySound('Sound.Buy');
     RefreshShipView;
     RemoveEmptyPlayerHoldSlots;
-    FlagD4 := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end
@@ -7304,14 +7268,14 @@ begin
         and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
         and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
     begin
-      if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
         ShowMessageBoxGI(
             Self,
             ReplaceColoredToken(
                 LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
                 '<Planet>',
                 GetPlayer.CurrentPlanet.Name,
-                '<color=255,240,100>'
+                TextHighlightColorTag
             ),
             mbgCancel or mbgWarning
         )
@@ -7322,7 +7286,7 @@ begin
                 LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
                 '<Planet>',
                 GetPlayer.CurrentPlanet.Name,
-                '<color=255,240,100>'
+                TextHighlightColorTag
             ),
             mbgCancel or mbgWarning
         );
@@ -7349,9 +7313,9 @@ begin
         Text :=
             LocalizedText('FormShip.MissileAct')
                 + #13#10
-                + '<color=0,50,200>'
+                + DialogHighlightColorTag
                 + Weapon.GetDisplayName
-                + '</color>';
+                + EndColorTag;
         if ShowCountDialogWithFont(
                 Self,
                 '',
@@ -7379,13 +7343,13 @@ begin
       Inc(Weapon.Ammo, Amount);
       SoundManager.PlaySound('Sound.Buy');
       Cost := 0;
-      while Cost < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) do
+      while Cost < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) do
       begin
-        if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), Cost) = nil then
+        if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, Cost) = nil then
           Break;
         Inc(Cost);
       end;
-      if Cost < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) then
+      if Cost < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) then
       begin
         if SelectedHoldItem is TWeapon then
           (SelectedHoldItem as TWeapon).Target := nil;
@@ -7401,7 +7365,7 @@ begin
       Galaxy.PrimeIntegrityChecksum1(501);
       RefreshShipView;
       RemoveEmptyPlayerHoldSlots;
-      FlagD4 := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -7420,14 +7384,14 @@ begin
       and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       ShowMessageBoxGI(
           Self,
           ReplaceColoredToken(
               LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       )
@@ -7438,7 +7402,7 @@ begin
               LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       );
@@ -7482,7 +7446,7 @@ begin
           Self,
           FormatText1(
               LocalizedText('FormShip.RepairMsgAllNeedNode'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<NeedNode>',
               IntToStr(Nodes)
           ),
@@ -7494,7 +7458,7 @@ begin
             Self,
             FormatText1(
                 LocalizedText('FormShip.RepairMsgEnoughNode'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<NeedNode>',
                 IntToStr(Nodes)
             ),
@@ -7534,7 +7498,7 @@ begin
           Control :=
               GetByName(
                   'S_'
-                      + ItemTypeNames[Ord(Item.ItemType)]
+                      + ItemTypeNames[Item.ItemType]
                       + '_'
                       + IntToStr(Integer(Item.AssignedSlotData) and EquipmentSlotIndexMask)
                       + 'Repair'
@@ -7544,18 +7508,18 @@ begin
             SetActive(True);
       end;
     end;
-    Flag3BC := True;
+    ShipStateChanged := True;
     SoundManager.PlaySound('Sound.Repair');
     if SelectedHoldKind = phkEquipment then
     begin
       I := 0;
-      while I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) do
+      while I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) do
       begin
-        if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), I) = nil then
+        if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, I) = nil then
           Break;
         Inc(I);
       end;
-      if I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) then
+      if I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) then
       begin
         if SelectedHoldItem is TWeapon then
           (SelectedHoldItem as TWeapon).Target := nil;
@@ -7583,7 +7547,7 @@ begin
     RefreshShipView;
     RemoveEmptyPlayerHoldSlots;
     PlayServiceAnimations := True;
-    FlagD4 := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -7623,14 +7587,14 @@ begin
       and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       ShowMessageBoxGI(
           Self,
           ReplaceColoredToken(
               LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       )
@@ -7641,7 +7605,7 @@ begin
               LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       );
@@ -7676,7 +7640,7 @@ begin
         Self,
         FormatText1(
             LocalizedColorText('FormShip.ReloadAll.' + Suffix + '.NoMoney'),
-            '<color=255,240,100>',
+            TextHighlightColorTag,
             '<Money>',
             IntToStr(Cost)
         ),
@@ -7688,7 +7652,7 @@ begin
           Self,
           FormatText1(
               LocalizedColorText('FormShip.ReloadAll.' + Suffix + '.Confirm'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Money>',
               IntToStr(Cost)
           ),
@@ -7719,18 +7683,18 @@ begin
   Event := AddGalaxyEvent('PlayerBuysMissiles');
   Event.AddData(Cost);
   Event.AddData(Quantity);
-  Flag3BC := True;
+  ShipStateChanged := True;
   SoundManager.PlaySound('Sound.Buy');
   if SelectedHoldKind = phkEquipment then
   begin
     I := 0;
-    while I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) do
+    while I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) do
     begin
-      if PlayerHoldShip.FindEquippedItemInSlot(Byte(SelectedHoldItem.ItemType), I) = nil then
+      if PlayerHoldShip.FindEquippedItemInSlot(SelectedHoldItem.ItemType, I) = nil then
         Break;
       Inc(I);
     end;
-    if I < PlayerHoldShip.GetSlotCountForItemType(Byte(SelectedHoldItem.ItemType)) then
+    if I < PlayerHoldShip.GetSlotCountForItemType(SelectedHoldItem.ItemType) then
     begin
       if SelectedHoldItem is TWeapon then
         (SelectedHoldItem as TWeapon).Target := nil;
@@ -7758,7 +7722,7 @@ begin
   RefreshShipView;
   RemoveEmptyPlayerHoldSlots;
   PlayServiceAnimations := True;
-  FlagD4 := True;
+  ReopenRequested := True;
   PlayTransitionSounds := False;
   CloseClicked(nil);
 end;
@@ -7806,10 +7770,10 @@ begin
   CenterY := False;
   if not Found then
   begin
-    Count := PlayerHoldShip.GetSlotCountForItemType(Ord(t_Artefact));
+    Count := PlayerHoldShip.GetSlotCountForItemType(t_Artefact);
     for Slot := 0 to Count - 1 do
     begin
-      Item := PlayerHoldShip.FindEquippedItemInSlot(Ord(t_Artefact), Slot);
+      Item := PlayerHoldShip.FindEquippedItemInSlot(t_Artefact, Slot);
       if Item <> nil then
         with ArtefactSlotZones[Slot] do
           if HitTest(GetCursorPoint) then
@@ -7830,10 +7794,10 @@ begin
   if not Found then
     for I := 0 to 7 do
     begin
-      Count := PlayerHoldShip.GetSlotCountForItemType(Byte(EquipmentSlotLayouts[I].ItemType));
+      Count := PlayerHoldShip.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
       for Slot := 0 to Count - 1 do
       begin
-        Item := PlayerHoldShip.FindEquippedItemInSlot(Byte(EquipmentSlotLayouts[I].ItemType), Slot);
+        Item := PlayerHoldShip.FindEquippedItemInSlot(EquipmentSlotLayouts[I].ItemType, Slot);
         if Item <> nil then
           with EquipmentSlotZones[I, Slot] do
             if HitTest(GetCursorPoint) then
@@ -8376,7 +8340,7 @@ begin
       EquipmentShopScreen.RefreshHullInfo(
           Self,
           Item as THull,
-          Equipment.GetInfoText('<color=255,240,100>', PlayerHoldShip),
+          Equipment.GetInfoText(TextHighlightColorTag, PlayerHoldShip),
           True
       );
       ItemInfoWindow.SetActive(False);
@@ -8467,7 +8431,7 @@ begin
       end;
       ItemNameLabel.SetText('');
       ItemNameLabel.SetText(WrapTextInColor(Equipment.GetDisplayName, InfoNameColorTag));
-      ItemDescriptionLabel.SetText(Equipment.GetInfoText('<color=255,240,100>', PlayerHoldShip));
+      ItemDescriptionLabel.SetText(Equipment.GetInfoText(TextHighlightColorTag, PlayerHoldShip));
       ItemSizeLabel.SetText(IntToStr(Equipment.Weight));
       ItemPriceLabel.SetText(IntToStr(Equipment.Cost));
       with ItemRaceImage do
@@ -8609,7 +8573,7 @@ begin
             + #13#10
             + FormatText1(
                 LocalizedText('FormShip.CostGoods'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<OldCost>',
                 IntToStr(Round(PlayerHoldShip.GetAverageCargoCost(Good))));
     if (GetByName('InfoName') as TLabelGI).GetText
@@ -8703,7 +8667,7 @@ begin
             + #13#10
             + FormatText1(
                 LocalizedText('FormShip.CostGoods'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<OldCost>',
                 IntToStr(Round(AverageCost)));
     (GetByName('InfoName') as TLabelGI)
@@ -9333,7 +9297,7 @@ begin
               'GI,' + GetShopItemIconName(SelectedHoldItem) + 's',
               FormatText1(
                   LocalizedText('FormShip.StorageItem'),
-                  '<color=0,50,200>',
+                  DialogHighlightColorTag,
                   '<Name>',
                   LowerCaseWideString(GetStackableItemName(SelectedHoldItem))
               ),
@@ -9378,7 +9342,7 @@ begin
             Self,
             FormatText1(
                 LocalizedColorText('FormShip.RuinMoveItemInvalid'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Item>',
                 RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
             ),
@@ -9396,7 +9360,7 @@ begin
           Self,
           FormatText1(
               LocalizedColorText('FormShip.TrancMoveItemInvalid'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Item>',
               RemoveTextTagsW(SelectedHoldItem.GetDisplayName)
           ),
@@ -9447,7 +9411,7 @@ begin
               'GI,' + GetItemTypeBitmapPath(TItemType(SelectedGoodsIndex)),
               FormatText1(
                   LocalizedText('FormShip.StorageItem'),
-                  '<color=0,50,200>',
+                  DialogHighlightColorTag,
                   '<Name>',
                   LowerCaseWideString(GetStackableItemTypeName(TItemType(SelectedGoodsIndex)))
               ),
@@ -9537,8 +9501,8 @@ begin
   Galaxy.CheckIntegrityChecksum1(515);
   if not RemoteHoldVisible then
   begin
-    Flag3BC := True;
-    FlagD4 := True;
+    ShipStateChanged := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;
@@ -9559,9 +9523,9 @@ var
   Panel: TPanelScrollBarGI;
   Height: Integer;
   I, Kind, Turn: Integer;
-  ProgramIndex: Byte;
+  ProgramIndex: TProgramIndex;
   Name, SeriesName, TypeName, CountText, Text, ChargesText, Description, Title: WideString;
-  ColorIndex: Byte;
+  Series: TDominatorSeries;
   Info: PCustomShipInfo;
   Block: TBlockParEC;
 
@@ -9613,13 +9577,13 @@ var
     Panel.VerticalScrollBar.SetSmallChange(LabelControl.GetLineHeight);
   end;
 
-  function GetShipInfoColor(ColorIndex: Byte): WideString;
+  function ChameleonSeriesColor(Series: TDominatorSeries): WideString;
   begin
     Result := '';
-    case ColorIndex of
-      0: Result := '<color=255,0,0>';
-      1: Result := '<color=0,128,255>';
-      2: Result := '<color=0,255,0>';
+    case Series of
+      dsBlazer: Result := RedColorTag;
+      dsKeller: Result := AzureColorTag;
+      dsTerron: Result := GreenColorTag;
     end;
   end;
 
@@ -9630,23 +9594,26 @@ begin
   Panel.SetDragScrollingEnabled(True);
   Height := 0;
   for I := 1 to 24 do
-    if PlayerHoldShip.IsHealthEffectActive(I) then
+    if PlayerHoldShip.IsHealthEffectActive(TCaptainHealthEffect(I)) then
     begin
       if I < 13 then
         Kind := 1
       else
         Kind := 2;
-      Name := CaptainHealthDefinitions[I].Name + '~' + CaptainHealthDefinitions[I].Text;
-      if PlayerHoldShip.CountActiveArtefacts(Ord(t_ArtBio)) > 0 then
+      Name :=
+          CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name
+              + '~'
+              + CaptainHealthDefinitions[TCaptainHealthEffect(I)].Text;
+      if PlayerHoldShip.CountActiveArtefacts(t_ArtBio) > 0 then
       begin
-        Turn := PlayerHoldShip.CaptainHealth[I].ExpireTurn;
+        Turn := PlayerHoldShip.CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn;
         if Kind = 1 then
           Name :=
               Name
                   + #13#10
                   + FormatText1(
                       LocalizedText('Illness.Illness.EndDate'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Date>',
                       Galaxy.FormatTurnDate(Turn))
         else
@@ -9655,17 +9622,17 @@ begin
                   + #13#10
                   + FormatText1(
                       LocalizedText('Illness.Stimulant.EndDate'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Date>',
                       Galaxy.FormatTurnDate(Turn));
       end;
-      AddLine(Kind, CaptainHealthDefinitions[I].Name, Name, 0);
+      AddLine(Kind, CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name, Name, 0);
     end;
   for I := 1 to 1 do
     if PlayerHoldShip.RadiationHealth[I].Progress > 0 then
     begin
       Name := RadiationHealthDefinitions[I].Name + '~' + RadiationHealthDefinitions[I].Text;
-      if PlayerHoldShip.CountActiveArtefacts(Ord(t_ArtBio)) > 0 then
+      if PlayerHoldShip.CountActiveArtefacts(t_ArtBio) > 0 then
       begin
         Turn := Round(100 - 100 * PlayerHoldShip.RadiationHealth[1].Progress);
         Name :=
@@ -9673,7 +9640,7 @@ begin
                 + #13#10
                 + FormatText1(
                     LocalizedText('Illness.ExtraIllness.' + IntToStr(I) + '.TextEx'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<Percent>',
                     IntToStr(Turn) + '%');
       end;
@@ -9689,7 +9656,7 @@ begin
               + '~'
               + FormatText1(
                   LocalizedText('ShipInfo.AddInfo.MedPolicy.Text'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Date>',
                   Galaxy.FormatTurnDate(Galaxy.CurrentTurn + GetPlayer.MedicalPolicyTicks)),
           0
@@ -9704,7 +9671,7 @@ begin
               + '~'
               + FormatText2(
                   LocalizedText('ShipInfo.AddInfo.DebtInfo.Text'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Money>',
                   IntToStr(GetPlayer.DebtAmount),
                   '<Date>',
@@ -9720,20 +9687,20 @@ begin
           Text,
           '<Date>',
           Galaxy.FormatTurnDate(GetPlayer.DepositStartTurn),
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
-      ReplaceTextToken(Text, '<Money>', IntToStr(GetPlayer.DepositAmount), '<color=255,240,100>');
+      ReplaceTextToken(Text, '<Money>', IntToStr(GetPlayer.DepositAmount), TextHighlightColorTag);
       ReplaceTextToken(
           Text,
           '<Percent>',
           FloatToStrF(GetPlayer.DepositInterestRate, ffFixed, 1, 1),
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
       ReplaceTextToken(
           Text,
           '<Sum>',
           IntToStr(GetPlayer.ComputeDepositAccruedValue),
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
       AddLine(0, Name, Name + '~' + Text, 0);
     end;
@@ -9745,7 +9712,7 @@ begin
           Text,
           '<Date>',
           Galaxy.FormatTurnDate(Galaxy.CurrentTurn + GetPlayer.PirateLicenseTicks),
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
       AddLine(0, Name, Name + '~' + Text, 0);
     end;
@@ -9757,20 +9724,20 @@ begin
       begin
         SeriesName :=
             LookupLocalizedTextByKey(
-                'ShipType.Dominator.' + DominatorSeriesNames[Ord(GetPlayer.ChameleonSeries)] + '.0'
+                'ShipType.Dominator.' + DominatorSeriesNames[GetPlayer.ChameleonSeries] + '.0'
             );
         TypeName :=
             LookupLocalizedTextByKey(
                 'ShipType.Dominator.'
-                    + DominatorSeriesNames[Ord(GetPlayer.ChameleonSeries)]
+                    + DominatorSeriesNames[GetPlayer.ChameleonSeries]
                     + '.'
-                    + IntToStr(GetPlayer.ChameleonVisualType)
+                    + IntToStr(Ord(GetPlayer.ChameleonVisualType))
             );
         CountText := IntToStr(GetPlayer.ChameleonDisplayCount);
         Text :=
             FormatText3(
                 LocalizedText('ShipInfo.AddInfo.Chameleon.Text'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Series>',
                 SeriesName,
                 '<Type>',
@@ -9785,25 +9752,25 @@ begin
           Text := Text + #13#10;
         Text := Text + LocalizedText('ShipInfo.AddInfo.Chameleon.Charge');
         ChargesText := '';
-        for ColorIndex := 0 to 2 do
-          if GetPlayer.ChameleonCharges[ColorIndex] > 0 then
+        for Series := Low(TDominatorSeries) to High(TDominatorSeries) do
+          if GetPlayer.ChameleonCharges[Series] > 0 then
           begin
             SeriesName :=
                 LookupLocalizedTextByKey(
-                    'ShipType.Dominator.' + DominatorSeriesNames[ColorIndex] + '.0'
+                    'ShipType.Dominator.' + DominatorSeriesNames[Series] + '.0'
                 );
             CountText :=
                 FormatText1(
                     LocalizedText('ShipInfo.AddInfo.Chameleon.Count'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<Count>',
-                    IntToStr(GetPlayer.ChameleonCharges[ColorIndex])
+                    IntToStr(GetPlayer.ChameleonCharges[Series])
                 );
             if Length(ChargesText) > 0 then
               ChargesText := ChargesText + #13#10;
             ChargesText :=
                 ChargesText
-                    + WrapTextInColor(SeriesName, GetShipInfoColor(ColorIndex))
+                    + WrapTextInColor(SeriesName, ChameleonSeriesColor(Series))
                     + ' - '
                     + CountText;
           end;
@@ -9839,19 +9806,19 @@ begin
             LocalizedColorText('ShipInfo.AddInfo.CustomInfos.' + Info.TypeName + '.Description');
       if Description <> WideString('NoShow') then
       begin
-        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         Title := Block.GetParam('Name');
-        ReplaceTextToken(Title, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Title, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Title, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Title, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Title, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Title, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Title, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Title, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Title, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Title, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Title, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Title, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         AddLine(StrToInt(Block.GetParam('Icon')), Title, Title + '~' + Description, PtrInt(Info));
       end;
     end;
@@ -9896,13 +9863,12 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    else if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
     begin
       if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
         MusicManager.PlayCategory(
             'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                    .InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                 + 'Pirate'
         )
       else
@@ -9916,16 +9882,13 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+    else if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
       );
   end
   else if not PreserveSpaceMusic and PlayerHoldShip.InNormalSpace then
@@ -10087,7 +10050,7 @@ var
           Byte; // Native three unused bytes between the Boolean result and packed cursor record.
   State: TCursorStateGI;
 begin
-  ParentLoop.RootUiObject.NativeHook50;
+  ParentLoop.RootUiObject.OnModalSuspend;
   ParentLoop.CaptureCursorState(@State);
   ParentLoop.SetCursorActive(False);
   ParentLoop.DrawQueuedUpdateRects;
@@ -10099,7 +10062,7 @@ begin
   ParentLoop.InvalidateViewport;
   ParentLoop.RestoreCursorState(@State);
   ParentLoop.UpdateCursorPosition;
-  ParentLoop.RootUiObject.NativeHook48;
+  ParentLoop.RootUiObject.OnModalResume;
   PostMouseMoveMessage;
 end;
 
@@ -10114,8 +10077,8 @@ begin
     if PlayerHoldShip.RetrieveStoredItems(GetLocalStorageOwner) then
     begin
       Galaxy.PrimeIntegrityChecksum1(516);
-      Flag3BC := True;
-      FlagD4 := True;
+      ShipStateChanged := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -10143,31 +10106,24 @@ begin
       for I := 0 to GetPlayer.StorageEntries.Count - 1 do
       begin
         Entry := GetPlayer.StorageEntries[I];
-        if Entry <> nil then
-          if Entry.LocationOwner = Location then
-          begin
-            Item := Entry.Item;
-            if Item <> nil then
-              if (Item.NoDropFlag <= 0)
-                  and ((Item.ScriptItem = nil) or TScriptItem(Item.ScriptItem).CanSell) then
-                if Item is TGoods then
-                  Inc(
-                      Value,
-                      TGoods(Item).Quantity
-                          * GetPlayer.ShopGoodsSellPrice(
-                              Byte(TGoods(Item).ItemType),
-                              TObject(PtrInt(Location) + 0))
-                  )
-                else if Item is TEquipment then
-                  Inc(
-                      Value,
-                      Item.CalculateResaleValue(GetPlayer.GetEffectiveSkillLevel(psTrading))
-                  );
-          end;
+        if (Entry = nil) or (Entry.LocationOwner <> Location) then
+          Continue;
+        Item := Entry.Item;
+        if Item <> nil then
+          if (Item.NoDropFlag <= 0)
+              and ((Item.ScriptItem = nil) or TScriptItem(Item.ScriptItem).CanSell) then
+            if Item is TGoods then
+              Inc(
+                  Value,
+                  TGoods(Item).Quantity
+                      * GetPlayer.ShopGoodsSellPrice(Byte(Item.ItemType), Location)
+              )
+            else if Item is TEquipment then
+              Inc(Value, Item.CalculateResaleValue(GetPlayer.GetEffectiveSkillLevel(psTrading)));
       end;
       if Value > 0 then
       begin
-        ReplaceTextToken(Text, '<Cost>', IntToStr(Value), '<color=255,240,100>');
+        ReplaceTextToken(Text, '<Cost>', IntToStr(Value), TextHighlightColorTag);
         if ShowMessageBoxGI(Self, Text, mbgOK or mbgCancel or mbgQuestion) <> 2 then
           SellAllItems(1);
       end;
@@ -10186,8 +10142,8 @@ begin
     if PlayerHoldShip.StoreLooseInventoryAt(GetLocalStorageOwner) then
     begin
       Galaxy.PrimeIntegrityChecksum1(520);
-      Flag3BC := True;
-      FlagD4 := True;
+      ShipStateChanged := True;
+      ReopenRequested := True;
       PlayTransitionSounds := False;
       CloseClicked(nil);
     end;
@@ -10230,7 +10186,7 @@ begin
       and (GetPlayer.RuinsMode <= 0) then
     if GetPlayer.IsDocked
         and ((GetPlayer.CurrentPlanet = nil)
-            or (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited))) then
+            or (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited)) then
     begin
       Text := LocalizedColorText('FormShip.SellAllFromHold');
       Value := 0;
@@ -10238,7 +10194,7 @@ begin
         Location := GetPlayer.CurrentPlanet
       else
         Location := GetPlayer.DockedTo;
-      for Good := 0 to 7 do
+      for Good := Low(TGoodsIndex) to High(TGoodsIndex) do
         Inc(
             Value,
             PlayerHoldShip.CargoGoods[Good].Count * GetPlayer.ShopGoodsSellPrice(Good, Location)
@@ -10266,7 +10222,7 @@ begin
       end;
       if Value > 0 then
       begin
-        ReplaceTextToken(Text, '<Cost>', IntToStr(Value), '<color=255,240,100>');
+        ReplaceTextToken(Text, '<Cost>', IntToStr(Value), TextHighlightColorTag);
         if ShowMessageBoxGI(Self, Text, mbgOK or mbgCancel or mbgQuestion) <> 2 then
           SellAllItems(0);
       end;
@@ -10462,7 +10418,7 @@ begin
           or (PlayerHoldShip.DockedTo <> nil)
           or (PlayerHoldShip is TRuins))
       and ((PlayerHoldShip.CurrentPlanet = nil)
-          or (PlayerHoldShip.CurrentPlanet.OwnerId <> Byte(oiUninhabited)))
+          or (PlayerHoldShip.CurrentPlanet.OwnerId <> oiUninhabited))
       and ((GetPlayer <> PlayerHoldShip) or (GetPlayer.RuinsMode <= 0)) then
     for I := 1 to 5 do
       if PlayerHoldShip.Weapons[I] <> nil then
@@ -10533,7 +10489,7 @@ var
         (Item as TWeapon).Target := nil;
       if (Item.ItemType = t_Hull) and ((Item as THull).HullType = htSpecial) then
         Item.Free
-      else if (Item.OwnerId in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)])
+      else if (Item.OwnerId in [oiMaloc..oiGaal, oiPirate])
           and (Item.ItemType in [t_Hull..t_CustomWeapon])
           and (not (Item is TWeapon)
               or (TWeapon(Item).GetWeaponInfo.Availability <> waNotSoldAndNodeRepair)) then
@@ -10558,21 +10514,21 @@ begin
       or (GetPlayer.RuinsMode > 0)
       or (QueuedArcadeBattles.Count > 0)
       or ((GetPlayer.CurrentPlanet <> nil)
-          and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiUninhabited))) then
+          and (GetPlayer.CurrentPlanet.OwnerId = oiUninhabited)) then
     Exit;
   if GetPlayer.IsOnPlanet
       and (GetPlayer.CurrentPlanet <> nil)
       and (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlBad)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       ShowMessageBoxGI(
           Self,
           ReplaceColoredToken(
               LocalizedColorText('FormShip.SellOrBuyInPiratePlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       )
@@ -10583,7 +10539,7 @@ begin
               LocalizedColorText('FormShip.SellOrBuyInPlanetAndBadRelations'),
               '<Planet>',
               GetPlayer.CurrentPlanet.Name,
-              '<color=255,240,100>'
+              TextHighlightColorTag
           ),
           mbgCancel or mbgWarning
       );
@@ -10623,7 +10579,7 @@ begin
                   Self,
                   FormatText1(
                       LocalizedColorText('FormShip.SellItemQuestion'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Item>',
                       Item.GetDisplayName
                   ),
@@ -10638,7 +10594,7 @@ begin
       end;
       Dec(I);
     end;
-    for Good := 0 to 7 do
+    for Good := Low(TGoodsIndex) to High(TGoodsIndex) do
       if PlayerHoldShip.CargoGoods[Good].Count > 0 then
         if GetPlayer.CanAccessHoldGoods(Good) then
         begin
@@ -10695,7 +10651,7 @@ begin
                   Self,
                   FormatText1(
                       LocalizedColorText('FormShip.SellItemQuestion'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Item>',
                       Item.GetDisplayName
                   ),
@@ -10734,12 +10690,12 @@ begin
   end;
   if Changed then
   begin
-    Flag3BC := True;
+    ShipStateChanged := True;
     if PlaySaleSound then
       SoundManager.PlaySound('Sound.Sell');
     Galaxy.PrimeIntegrityChecksum1(518);
     RefreshShipView;
-    FlagD4 := True;
+    ReopenRequested := True;
     PlayTransitionSounds := False;
     CloseClicked(nil);
   end;

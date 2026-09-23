@@ -19,7 +19,6 @@ type
 
   TMissileSE = class(TObjectSE)
     Angle: Byte;
-    Gap4D: array[0..2] of Byte;
     ImageScale: Single;
     Image: TRotateImage5GI;
     AnimationTimer: PSpaceTimerSE;

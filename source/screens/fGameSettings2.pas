@@ -25,13 +25,11 @@ type
     CollapsedLevelPanelTop: Integer;
     LevelPanelTop: Integer;
     LevelPanelTimer: PCallbackTimerGI;
-    PlayerRace: Byte;
-    GapDD: array[0..2] of Byte;
+    PlayerRace: TOwnerId;
     CharacterPreset: Integer;
     CaptainPortraitIndex: Integer;
-    LastPortraitByRace: array[0..4] of Integer;
-    StartingSkills: array[0..1] of Byte;
-    GapFE: array[0..1] of Byte;
+    LastPortraitByRace: array[oiMaloc..oiGaal] of Integer;
+    StartingSkills: array[0..1] of TPilotSkill;
     SelectedSkillSlot: Integer;
     StartingItemChoices: array[0..1] of Integer;
     SelectedItemSlot: Integer;
@@ -40,11 +38,9 @@ type
     DifficultyLevels: TGalaxyDifficultyLevels;
     PlayerNameEdited: Boolean;
     PlayerNameValid: Boolean;
-    Gap127: array[0..0] of Byte;
     IronWillImage: TImageGI;
     IronWillLabel: TLabelGI;
     IronWill: Boolean;
-    Gap131: array[0..2] of Byte;
     ActiveExtendedGroup: Integer;
     ExtendedGroupPanels: array[0..3] of TPanelGI;
     ExtendedGroupNextY: array[0..3] of Integer;
@@ -170,12 +166,12 @@ procedure TfGameSettings2.InitializeLayout;
 var
   I, J: Integer;
   Text: WideString;
-  Race: Byte;
+  Race: TOwnerId;
   Unused: Integer; // Native O- stack reserves this unused local.
 begin
   inherited InitializeLayout;
   AppendLogTextThreadSafe('fGameSettings2... ');
-  for Race := 0 to 4 do
+  for Race := oiMaloc to oiGaal do
   begin
     I := -1;
     repeat
@@ -184,8 +180,7 @@ begin
       if I < 10 then
         Text := '0' + Text;
     until GameDataConfig
-            .GetBlockByPath(
-                'StyleFace' + OwnerInfo[Integer(RaceToOwner(Race)) and $7F].InternalName)
+            .GetBlockByPath('StyleFace' + OwnerInfo[RaceToOwner(Race)].InternalName)
             .CountParams(Text)
         <= 0;
     LastPortraitByRace[Race] := I - 1;
@@ -355,16 +350,19 @@ begin
   for I := 0 to 11 do
     ItemTypeByChoice[I] := I + 43;
   for I := 0 to 11 do
-    if ItemTypeByChoice[I] in [Ord(t_Weapon1)..Ord(t_Weapon18)] then
+    if ItemTypeByChoice[I] in [Ord(t_IndustrialLaser)..Ord(t_Lirecron)] then
       (GetByName('ItemI' + IntToStr(I + 1)) as TImageGI)
           .SetImagePath(
-              'GI,Bm.Items.' + GiResourceSuffix + ItemTypeNames[ItemTypeByChoice[I]] + 's')
+              'GI,Bm.Items.'
+                  + GiResourceSuffix
+                  + ItemTypeNames[TItemType(ItemTypeByChoice[I])]
+                  + 's')
     else
       (GetByName('ItemI' + IntToStr(I + 1)) as TImageGI)
           .SetImagePath(
               'GI,Bm.Items.'
                   + GiResourceSuffix
-                  + ItemTypeNames[ItemTypeByChoice[I]]
+                  + ItemTypeNames[TItemType(ItemTypeByChoice[I])]
                   + IntToStr(1)
                   + 's');
   for I := 1 to 4 do
@@ -481,33 +479,33 @@ begin
     Text := NewGameSettingsConfig.GetParamByPathOrMarker('Race');
     if Text = 'Maloc' then
     begin
-      PlayerRace := 0;
+      PlayerRace := oiMaloc;
       RaceClicked(GetByName('RaceMaloc'));
     end
     else if Text = 'Peleng' then
     begin
-      PlayerRace := 1;
+      PlayerRace := oiPeleng;
       RaceClicked(GetByName('RacePeleng'));
     end
     else if Text = 'Fei' then
     begin
-      PlayerRace := 3;
+      PlayerRace := oiFeyan;
       RaceClicked(GetByName('RaceFei'));
     end
     else if Text = 'Gaal' then
     begin
-      PlayerRace := 4;
+      PlayerRace := oiGaal;
       RaceClicked(GetByName('RaceGaal'));
     end
     else
     begin
-      PlayerRace := 2;
+      PlayerRace := oiHuman;
       RaceClicked(GetByName('RacePeople'));
     end;
   end
   else
   begin
-    PlayerRace := 2;
+    PlayerRace := oiHuman;
     RaceClicked(GetByName('RacePeople'));
   end;
   if (NewGameSettingsConfig.CountParamsByPath('Name') > 0)
@@ -542,14 +540,14 @@ begin
           <> ExtractDigitsToIntW(NewGameSettingsConfig.GetParamByPathOrMarker('Skill2'))) then
   begin
     StartingSkills[0] :=
-        ExtractDigitsToIntW(NewGameSettingsConfig.GetParamByPathOrMarker('Skill1'));
+        TPilotSkill(ExtractDigitsToIntW(NewGameSettingsConfig.GetParamByPathOrMarker('Skill1')));
     StartingSkills[1] :=
-        ExtractDigitsToIntW(NewGameSettingsConfig.GetParamByPathOrMarker('Skill2'));
+        TPilotSkill(ExtractDigitsToIntW(NewGameSettingsConfig.GetParamByPathOrMarker('Skill2')));
   end
   else
   begin
-    StartingSkills[0] := 0;
-    StartingSkills[1] := 3;
+    StartingSkills[0] := psAccuracy;
+    StartingSkills[1] := psTrading;
   end;
   RefreshStartingSkills;
   SelectedItemSlot := 0;
@@ -1498,12 +1496,12 @@ end;
 
 procedure TfGameSettings2.RaceClicked(Sender: TObjectGI);
 begin
-  PlayerRace := Sender.UserValue;
-  (GetByName('RaceMaloc') as TGraphButtonGI).SetDown(PlayerRace = 0);
-  (GetByName('RacePeleng') as TGraphButtonGI).SetDown(PlayerRace = 1);
-  (GetByName('RacePeople') as TGraphButtonGI).SetDown(PlayerRace = 2);
-  (GetByName('RaceFei') as TGraphButtonGI).SetDown(PlayerRace = 3);
-  (GetByName('RaceGaal') as TGraphButtonGI).SetDown(PlayerRace = 4);
+  PlayerRace := TOwnerId(Sender.UserValue);
+  (GetByName('RaceMaloc') as TGraphButtonGI).SetDown(PlayerRace = oiMaloc);
+  (GetByName('RacePeleng') as TGraphButtonGI).SetDown(PlayerRace = oiPeleng);
+  (GetByName('RacePeople') as TGraphButtonGI).SetDown(PlayerRace = oiHuman);
+  (GetByName('RaceFei') as TGraphButtonGI).SetDown(PlayerRace = oiFeyan);
+  (GetByName('RaceGaal') as TGraphButtonGI).SetDown(PlayerRace = oiGaal);
   CaptainPortraitIndex := 0;
   RefreshPortrait;
   if not PlayerNameEdited then
@@ -1538,7 +1536,7 @@ begin
       SetImagePath(
           'GI,Bm.Captain.'
               + GiResourceSuffix
-              + OwnerInfo[Integer(RaceToOwner(PlayerRace)) and $7F].InternalName
+              + OwnerInfo[RaceToOwner(PlayerRace)].InternalName
               + IntToStr(CaptainPortraitIndex)
               + 'i'
       );
@@ -1557,7 +1555,7 @@ begin
       SetImagePath(
           'Bm.Captain.'
               + GiResourceSuffix
-              + OwnerInfo[Integer(RaceToOwner(PlayerRace)) and $7F].InternalName
+              + OwnerInfo[RaceToOwner(PlayerRace)].InternalName
               + IntToStr(CaptainPortraitIndex)
               + 'a'
       );
@@ -1587,14 +1585,14 @@ end;
 
 procedure TfGameSettings2.RefreshStartingSkills;
 var
-  Skill: Byte;
+  Skill: TPilotSkill;
   Number, Slot: Integer;
   Selected: Boolean;
 begin
   with GetByName('SkillCur') do
-    SetPosition(Classes.Point(68 + 55 * StartingSkills[SelectedSkillSlot], 109));
+    SetPosition(Classes.Point(68 + 55 * Ord(StartingSkills[SelectedSkillSlot]), 109));
   Number := 1;
-  for Skill := 0 to 5 do
+  for Skill := Low(TPilotSkill) to High(TPilotSkill) do
   begin
     Selected := False;
     for Slot := 0 to 1 do
@@ -1611,11 +1609,11 @@ end;
 procedure TfGameSettings2.StartingSkillClicked(Sender: TObjectGI);
 var
   Slot: Integer;
-  Skill: Byte;
+  Skill: TPilotSkill;
 begin
   if (GetByName('LevelOpen') as TGraphButtonGI).Active then
   begin
-    Skill := ExtractDigitsToIntW(Sender.ControlName) - 1;
+    Skill := TPilotSkill(ExtractDigitsToIntW(Sender.ControlName) - 1);
     for Slot := 0 to 1 do
       if StartingSkills[Slot] = Skill then
       begin
@@ -1699,13 +1697,13 @@ begin
     Average := Average + 50 + DifficultyLevels[I] * 50;
   Average := Average div 8;
   if Average = 50 then
-    Color := '<color=0,255,0>'
+    Color := GreenColorTag
   else if Average <= 100 then
     Color := '<color=254,255,255>'
   else if Average <= 150 then
-    Color := '<color=255,240,100>'
+    Color := TextHighlightColorTag
   else if Average <= 200 then
-    Color := '<color=255,166,0>'
+    Color := OrangeColorTag
   else
     Color :=
         '<color=255,' + IntToWideString(Round(RemapClamped(Average, 200, 500, 166, 0))) + ',0>';
@@ -1917,12 +1915,11 @@ begin
         NewGameSettingsConfig.SetOrAddParam('IronWill', 'True')
       else
         NewGameSettingsConfig.SetOrAddParam('IronWill', 'False');
-      NewGameSettingsConfig
-          .SetOrAddParam('Race', OwnerInfo[Integer(RaceToOwner(PlayerRace)) and $7F].InternalName);
+      NewGameSettingsConfig.SetOrAddParam('Race', OwnerInfo[RaceToOwner(PlayerRace)].InternalName);
       NewGameSettingsConfig.SetOrAddParam('Char', IntToStr(CharacterPreset));
       NewGameSettingsConfig.SetOrAddParam('Face', IntToStr(CaptainPortraitIndex));
-      NewGameSettingsConfig.SetOrAddParam('Skill1', IntToStr(StartingSkills[0]));
-      NewGameSettingsConfig.SetOrAddParam('Skill2', IntToStr(StartingSkills[1]));
+      NewGameSettingsConfig.SetOrAddParam('Skill1', IntToStr(Ord(StartingSkills[0])));
+      NewGameSettingsConfig.SetOrAddParam('Skill2', IntToStr(Ord(StartingSkills[1])));
       NewGameSettingsConfig.SetOrAddParam('Item1', IntToStr(StartingItemChoices[0]));
       NewGameSettingsConfig.SetOrAddParam('Item2', IntToStr(StartingItemChoices[1]));
       for I := 0 to 7 do
@@ -2070,7 +2067,7 @@ begin
   Text :=
       LocalizedColorText(
           'FormGameSet2.'
-              + OwnerInfo[Integer(RaceToOwner(PlayerRace)) and $7F].InternalName
+              + OwnerInfo[RaceToOwner(PlayerRace)].InternalName
               + '.Char'
               + IntToStr(CharacterPreset)
       );
@@ -2078,7 +2075,7 @@ begin
       Text,
       '<Name>',
       TrimWideString((GetByName('PlayerName') as TEditGI).Text),
-      '<color=255,240,100>'
+      TextHighlightColorTag
   );
   (GetByName('Info') as TLabelGI).SetText(Text);
 end;
@@ -2512,7 +2509,7 @@ procedure TfGameSettings2.FormatExtendedInteger(Sender: TCountBarGI);
 begin
   if Sender.UserIndex <> 0 then
     with TLabelGI(Sender.UserIndex) do
-      SetText(HelpText + '<color=255,240,100>' + ' ' + IntToStr(Sender.Position) + '</color>');
+      SetText(HelpText + TextHighlightColorTag + ' ' + IntToStr(Sender.Position) + EndColorTag);
 end;
 
 procedure TfGameSettings2.FormatExtendedAutoPercent(Sender: TCountBarGI);
@@ -2526,28 +2523,28 @@ begin
       if Value = 0 then
         SetText(
             HelpText
-                + '<color=255,240,100>'
+                + TextHighlightColorTag
                 + ' '
                 + LocalizedText('FormGameSet2.Extended.HelpAuto')
-                + '</color>'
+                + EndColorTag
         )
       else if Value <= 25 then
         SetText(
             HelpText
-                + '<color=255,240,100>'
+                + TextHighlightColorTag
                 + ' '
                 + IntToStr(50 + Round((Value - 1) * 6.25))
                 + '%'
-                + '</color>'
+                + EndColorTag
         )
       else
         SetText(
             HelpText
-                + '<color=255,166,0>'
+                + OrangeColorTag
                 + ' '
                 + IntToStr(50 + Round((Value - 1) * 6.25))
                 + '%'
-                + '</color>'
+                + EndColorTag
         );
     end;
 end;
@@ -2562,11 +2559,11 @@ begin
       Value := Sender.Position;
       SetText(
           HelpText
-              + '<color=255,240,100>'
+              + TextHighlightColorTag
               + ' '
               + IntToStr(50 + Round(Value * 6.25))
               + '%'
-              + '</color>'
+              + EndColorTag
       );
     end;
 end;
@@ -2579,7 +2576,7 @@ begin
     with TLabelGI(Sender.UserIndex) do
     begin
       Value := Sender.Position;
-      SetText(HelpText + '<color=255,240,100>' + ' ' + IntToStr(Value) + '%' + '</color>');
+      SetText(HelpText + TextHighlightColorTag + ' ' + IntToStr(Value) + '%' + EndColorTag);
     end;
 end;
 

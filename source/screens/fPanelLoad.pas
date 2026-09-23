@@ -20,7 +20,6 @@ type
     Screen: TMessageLoopGI;
     ProgressSegments: array[0..16] of TImageGI;
     LayoutAdjusted: Boolean;
-    Gap4D: array[0..2] of Byte;
     BackgroundImage: TObjectGI;
     ShipPanelImage: TObjectGI;
     LoadAnimation: TObjectGI;
@@ -40,7 +39,6 @@ type
     TopShutter: TPanelGI;
     BottomShutter: TPanelGI;
     HasShutters: Boolean;
-    Gap99: array[0..2] of Byte;
     ShutterDirection: Integer;
     constructor Create;
     destructor Destroy; override;

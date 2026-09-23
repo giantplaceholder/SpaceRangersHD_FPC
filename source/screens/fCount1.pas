@@ -23,7 +23,6 @@ type
     Value: Integer;
     Items: TList;
     Dragging: Boolean;
-    GapF1: array[0..2] of Byte;
     RepeatTimer: PCallbackTimerGI;
     RepeatCount: Cardinal;
     procedure OnOpen; override;
@@ -387,7 +386,7 @@ var
   Dialog: TfCount1;
   State: TCursorStateGI;
 begin
-  Parent.RootUiObject.NativeHook50;
+  Parent.RootUiObject.OnModalSuspend;
   Parent.CaptureCursorState(@State);
   Parent.SetCursorActive(False);
   Parent.DrawQueuedUpdateRects;
@@ -415,7 +414,7 @@ begin
   end;
   Parent.RestoreCursorState(@State);
   Parent.UpdateCursorPosition;
-  Parent.RootUiObject.NativeHook48;
+  Parent.RootUiObject.OnModalResume;
 end;
 
 end.

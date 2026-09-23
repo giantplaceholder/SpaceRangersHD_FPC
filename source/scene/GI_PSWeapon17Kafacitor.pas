@@ -22,10 +22,8 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    Gap13: array[0..0] of Byte;
     Velocity: TPointF;
     State: Byte;
-    Gap1D: array[0..2] of Byte;
   end;
 
   TKafacitorPalette = array[0..1] of Word;

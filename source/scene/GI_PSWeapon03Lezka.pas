@@ -26,7 +26,6 @@ type
     AlphaStep: Integer;
     Velocity: TPointF;
     State: Byte;
-    Gap21: array[0..2] of Byte;
   end;
 
   TLezkaPalette = array[0..8] of Single;
@@ -46,7 +45,6 @@ type
     FirstParticle: PLezkaParticle;
     LastParticle: PLezkaParticle;
     ProjectionBounds: TRect;
-    Gap14C: array[0..3] of Byte;
     LengthScale: Double;
     OriginalLength: Double;
     PaletteIndex: Integer;

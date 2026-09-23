@@ -23,7 +23,6 @@ type
     DeferredPlayback: Boolean;
     RequestedFileName: WideString;
     ImmediateStop: Boolean;
-    Gap39: array[0..2] of Byte;
     Buffer: TSoundBuffer;
     DecodeLock: TCriticalSection;
     Stream: TFileStreamEC;

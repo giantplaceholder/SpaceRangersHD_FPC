@@ -9,6 +9,56 @@ uses
   EC_Struct,
   Classes;
 
+const
+
+  GamePi = 3.1415926;
+
+  GameTwoPi = 6.2831852;
+
+  RandomFloatResolution = 1000;
+
+  TextHighlightColorTag = '<color=255,240,100>';
+
+  DialogHighlightColorTag = '<color=0,50,200>';
+
+  EquipmentBonusColorTag = '<color=255,167,84>';
+
+  DialogEquipmentBonusColorTag = '<color=240,100,30>';
+
+  DialogGreenColorTag = '<color=0,130,0>';
+
+  EndColorTag = '</color>';
+
+  RedColorTag = '<color=255,0,0>';
+
+  GreenColorTag = '<color=0,255,0>';
+
+  GrayColorTag = '<color=127,127,127>';
+
+  YellowColorTag = '<color=255,255,0>';
+
+  BlackColorTag = '<color=0,0,0>';
+
+  MagentaColorTag = '<color=255,0,255>';
+
+  CyanColorTag = '<color=0,255,255>';
+
+  OrangeColorTag = '<color=255,166,0>';
+
+  GoldColorTag = '<color=254,217,7>';
+
+  AzureColorTag = '<color=0,128,255>';
+
+  DarkGreenColorTag = '<color=45,105,45>';
+
+  BrightBlueColorTag = '<color=0,71,234>';
+
+  MicroModuleHighPriorityColorTag = '<color=17,139,255>';
+
+  DefaultInfoNameColorTag = '<color=57,239,255>';
+
+  DefaultInfoHullSeriesColorTag = '<color=82,166,255>';
+
 type
 
   TPolarPoint = record
@@ -23,9 +73,9 @@ type
 
 var
 
-  InfoNameColorTag: WideString = '<color=57,239,255>';
+  InfoNameColorTag: WideString = DefaultInfoNameColorTag;
 
-  InfoHullSeriesColorTag: WideString = '<color=82,166,255>';
+  InfoHullSeriesColorTag: WideString = DefaultInfoHullSeriesColorTag;
 
 type
 
@@ -277,22 +327,31 @@ end;
 
 function RandomUnitFloat: Single;
 begin
-  Result := RandomIntRange(1, 1000) / 1000;
+  Result := RandomIntRange(1, RandomFloatResolution) / RandomFloatResolution;
 end;
 
 function SeededRandomUnitFloat(Seed: Cardinal): Single;
 begin
-  Result := SeededRandomIntRange(1, 1000, Seed) / 1000;
+  Result := SeededRandomIntRange(1, RandomFloatResolution, Seed) / RandomFloatResolution;
 end;
 
 function RandomFloatRange(BoundA, BoundB: Double): Double;
 begin
-  Result := RandomIntRange(Trunc(BoundA * 1000 + 1), Trunc(BoundB * 1000 + 1)) / 1000;
+  Result :=
+      RandomIntRange(
+              Trunc(BoundA * RandomFloatResolution + 1),
+              Trunc(BoundB * RandomFloatResolution + 1))
+          / RandomFloatResolution;
 end;
 
 function SeededRandomFloatRange(Seed: Cardinal; BoundA, BoundB: Double): Double;
 begin
-  Result := SeededRandomIntRange(Trunc(BoundA * 1000 + 1), Trunc(BoundB * 1000 + 1), Seed) / 1000;
+  Result :=
+      SeededRandomIntRange(
+              Trunc(BoundA * RandomFloatResolution + 1),
+              Trunc(BoundB * RandomFloatResolution + 1),
+              Seed)
+          / RandomFloatResolution;
 end;
 
 function StepRandomSeed(Seed: Cardinal): Cardinal;
@@ -342,7 +401,12 @@ begin
     Seed := Seed * 7981 + 567 + Seed div 7931;
     if Seed = OldSeed then
       Seed := Seed * 6281 + 317 + Seed div 7311;
-    Result := SeededRandomIntRange(Trunc(BoundA * 1000 + 1), Trunc(BoundB * 1000 + 1), Seed) / 1000;
+    Result :=
+        SeededRandomIntRange(
+                Trunc(BoundA * RandomFloatResolution + 1),
+                Trunc(BoundB * RandomFloatResolution + 1),
+                Seed)
+            / RandomFloatResolution;
   end;
 end;
 
@@ -437,7 +501,7 @@ end;
 
 function RadiansToHeadingDegrees(Angle: Double): Double;
 begin
-  Result := Angle * (180 / 3.1415926);
+  Result := Angle * (180 / GamePi);
   if Result < 0 then
     Result := 360 + Result;
 end;
@@ -446,7 +510,7 @@ function HeadingDegreesToRadians(Angle: Double): Double;
 begin
   if Angle > 180 then
     Angle := Angle - 360;
-  Result := Angle * (3.1415926 / 180);
+  Result := Angle * (GamePi / 180);
 end;
 
 function PointBearingDegrees(PointA, PointB: TPointF): Double;
@@ -827,21 +891,21 @@ end;
 procedure ReplaceTextToken(var Text: WideString; Token, Replacement, ColorTag: WideString);
 begin
   if ColorTag <> '' then
-    Replacement := ColorTag + Replacement + '</color>';
+    Replacement := ColorTag + Replacement + EndColorTag;
   Text := ReplaceAllWideString(Text, Token, Replacement);
 end;
 
 function ReplaceColoredToken(Text, Token, Replacement, ColorTag: WideString): WideString;
 begin
   if ColorTag <> '' then
-    Replacement := ColorTag + Replacement + '</color>';
+    Replacement := ColorTag + Replacement + EndColorTag;
   Result := ReplaceAllWideString(Text, Token, Replacement);
 end;
 
 function FormatText1(Text, ColorTag, Token, Replacement: WideString): WideString;
 begin
   if ColorTag <> '' then
-    Replacement := ColorTag + Replacement + '</color>';
+    Replacement := ColorTag + Replacement + EndColorTag;
   Result := ReplaceAllWideString(Text, Token, Replacement);
 end;
 
@@ -856,8 +920,8 @@ function FormatText2(
 begin
   if ColorTag <> '' then
   begin
-    Replacement1 := ColorTag + Replacement1 + '</color>';
-    Replacement2 := ColorTag + Replacement2 + '</color>';
+    Replacement1 := ColorTag + Replacement1 + EndColorTag;
+    Replacement2 := ColorTag + Replacement2 + EndColorTag;
   end;
   Result :=
       ReplaceAllWideString(ReplaceAllWideString(Text, Token1, Replacement1), Token2, Replacement2);
@@ -876,9 +940,9 @@ function FormatText3(
 begin
   if ColorTag <> '' then
   begin
-    Replacement1 := ColorTag + Replacement1 + '</color>';
-    Replacement2 := ColorTag + Replacement2 + '</color>';
-    Replacement3 := ColorTag + Replacement3 + '</color>';
+    Replacement1 := ColorTag + Replacement1 + EndColorTag;
+    Replacement2 := ColorTag + Replacement2 + EndColorTag;
+    Replacement3 := ColorTag + Replacement3 + EndColorTag;
   end;
   Result :=
       ReplaceAllWideString(
@@ -895,19 +959,19 @@ end;
 function WrapTextInColor(Text, ColorTag: WideString): WideString;
 begin
   if (ColorTag <> '') and (Text <> '') then
-    Result := ColorTag + Text + '</color>'
+    Result := ColorTag + Text + EndColorTag
   else
     Result := Text;
 end;
 
 function NormalizeTextHighlightColors(Text: WideString): WideString;
 begin
-  Result := FormatText1(Text, '', '<color=17,139,255>', '<color=255,240,100>');
-  Result := FormatText1(Result, '', '<color=127,127,127>', '<color=255,240,100>');
-  Result := FormatText1(Result, '', '<color=191,185,128>', '<color=255,240,100>');
-  Result := FormatText1(Result, '', InfoNameColorTag, '<color=255,240,100>');
-  Result := FormatText1(Result, '', '<color=39,172,177>', '<color=255,240,100>');
-  Result := FormatText1(Result, '', InfoHullSeriesColorTag, '<color=255,240,100>');
+  Result := FormatText1(Text, '', MicroModuleHighPriorityColorTag, TextHighlightColorTag);
+  Result := FormatText1(Result, '', GrayColorTag, TextHighlightColorTag);
+  Result := FormatText1(Result, '', '<color=191,185,128>', TextHighlightColorTag);
+  Result := FormatText1(Result, '', InfoNameColorTag, TextHighlightColorTag);
+  Result := FormatText1(Result, '', '<color=39,172,177>', TextHighlightColorTag);
+  Result := FormatText1(Result, '', InfoHullSeriesColorTag, TextHighlightColorTag);
 end;
 
 function IncrementWrapped(var Value: Integer; Minimum, Maximum: Integer): Integer;

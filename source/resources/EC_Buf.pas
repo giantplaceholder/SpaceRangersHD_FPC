@@ -8,9 +8,30 @@ uses
   EC_File,
   EC_Struct;
 
+const
+
+  SeedRngMultiplier = 16807;
+
+  SeedRngQuotient = 127773;
+
+  SeedRngRemainder = 2836;
+
+  SeedRngModulus = $7FFFFFFF;
+
 type
 
   TBufEC = class;
+
+  PointerToTEncodedTableHeaderEC = ^TEncodedTableHeaderEC;
+
+  TEncodedTableHeaderEC = packed record
+    Version: Integer;
+    SeedHighWord: Word;
+    SeedLowWord: Word;
+    Checksum: Cardinal;
+  end;
+
+  PEncodedTableHeaderEC = PointerToTEncodedTableHeaderEC;
 
   TBufEC = class(TObjectEx)
     DataSize: Integer;
@@ -737,9 +758,11 @@ var
   function StepDatXorSeedState:
       Integer; { Nested helper of TBufEC.ApplyDatXorCipher; requires its parent stack frame. }
   begin
-    State := 16807 * (State mod 127773) - 2836 * (State div 127773);
+    State :=
+        SeedRngMultiplier * (State mod SeedRngQuotient)
+            - SeedRngRemainder * (State div SeedRngQuotient);
     if State <= 0 then
-      State := State + $7FFFFFFF;
+      State := State + SeedRngModulus;
     Result := State - 1;
   end;
 

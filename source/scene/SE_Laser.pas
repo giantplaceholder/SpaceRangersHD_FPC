@@ -27,7 +27,6 @@ type
     FrameIndex: Integer;
     AnimationTimer: PCallbackTimerGI;
     ManualAnimation: Boolean;
-    Gap6D: array[0..2] of Byte;
     EndPosition: TPointF;
     procedure AttachToSpace(ASpace: TSpaceSE); override;
     procedure DetachFromSpace; override;
@@ -48,7 +47,8 @@ implementation
 
 uses
   Math,
-  GI_Main;
+  GI_Main,
+  aMyFunction;
 
 destructor TLaserSE.Destroy;
 begin
@@ -95,7 +95,7 @@ begin
   Angle := ArcTan2(TargetPosition.X - Position.X, -(TargetPosition.Y - Position.Y));
   AngleSin := Sin(Angle);
   AngleCos := Cos(Angle);
-  ImageAngle := Round(Angle / 3.1415926 * 127) and $FF;
+  ImageAngle := Round(Angle / GamePi * 127) and $FF;
   Distance := SegmentSize / 2;
   BeamLength := Sqrt(Sqr(TargetPosition.X - Position.X) + Sqr(TargetPosition.Y - Position.Y));
   Segments := TList.Create;

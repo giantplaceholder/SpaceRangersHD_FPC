@@ -5,6 +5,7 @@ unit aKling;
 interface
 
 uses
+  aConst,
   EC_Buf,
   aItem,
   aGalaxy,
@@ -19,11 +20,9 @@ type
   TKling = class(TShip)
     KlingType: TKlingType;
     DominatorSeries: TDominatorSeries;
-    Gap4D2: array[0..1] of Byte;
     ActiveProgramAppliedTurn: Integer;
-    ActiveProgramId: Byte;
+    ActiveProgramId: TProgramIndex;
     AuraEffectShownThisTurn: Boolean;
-    Gap4DA: array[0..1] of Byte;
     procedure SaveToBuffer(Buffer: TBufEC); override;
     procedure LoadFromBuffer(Buffer: TBufEC; Galaxy: TGalaxy); override;
     procedure ResolveLoadedReferences(Galaxy: TGalaxy); override;
@@ -32,10 +31,10 @@ type
     procedure AssignWeaponTargetsInStar; override;
     function GetName: WideString; override;
     function GetFullName(const Separator: WideString): WideString; override;
-    function GetGreetingShipCategory: Byte; override;
+    function GetGreetingShipCategory: TGreetingShipCategory; override;
     function GetHomeStar: TStar; override;
     function GetDominantCareer: TRangerCareer; override;
-    function GetStrengthScaledPirateStatus: Byte; override;
+    function GetStrengthScaledPirateStatus: TPercent; override;
     function GetDesiredCargoFreeSpace: Integer; override;
     procedure RefuelAtLocation; override;
     function CalculateSpeed: Integer; override;
@@ -51,7 +50,7 @@ type
     function RecomputeFearState: Boolean; override;
     function AcceptsRansomDemandFrom(Ship: TShip): Boolean; override;
     function TrustsAttackRequester(Ship: TShip): Boolean; override;
-    function EvaluateAllyRelationAndStrength(Ship: TShip): Boolean; override;
+    function AcceptsAppealFrom(Ship: TShip): Boolean; override;
     procedure UpdateAfterburnerState; override;
     procedure ProcessCombatDialogue; override;
     procedure ReactToExtortionDemand(Ranger: Pointer); override;
@@ -110,7 +109,7 @@ type
     procedure CoordinateSeriesInvasions(Series: TDominatorSeries);
     procedure MoveToRandomPatrolPoint;
     procedure MoveNearKellerMissionHole;
-    function IsProgramActive(ProgramId: Byte): Boolean;
+    function IsProgramActive(ProgramId: TProgramIndex): Boolean;
     procedure SetInventoryDominatorOwner;
     procedure ImproveStandardEquipment;
     procedure DetectAttackingPlayer(Attacker: TShip);
@@ -121,53 +120,55 @@ type
 
 var
 
-  DominatorEquipmentSizeIndices: array[0..7] of array[0..1] of Integer =
+  DominatorEquipmentSizeIndices: array[TKlingType] of array[0..1] of Integer =
       ((1, 1), (1, 3), (2, 4), (3, 4), (3, 5), (4, 5), (1, 1), (4, 5));
 
   DominatorWeaponDistributionByTier: array[1..7] of Integer = (1, 1, 2, 2, 3, 3, 4);
 
-  DominatorWeaponWeights: array[1..4] of array[0..7] of array[50..64] of Integer = (
+  DominatorWeaponWeights:
+          array[1..4] of array[TKlingType] of array[t_IndustrialLaser..t_TorpedoTube] of Integer =
       (
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
-          (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
-          (0, 0, 0, 0, 10, 0, 20, 30, 0, 0, 0, 0, 0, 0, 40),
-          (0, 20, 0, 20, 0, 30, 30, 0, 0, 0, 0, 0, 0, 0, 0),
-          (25, 0, 50, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (15, 0, 50, 0, 25, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0)
-      ),
-      (
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
-          (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
-          (0, 0, 0, 0, 10, 0, 20, 30, 0, 0, 0, 0, 0, 0, 40),
-          (0, 20, 0, 20, 0, 30, 30, 0, 0, 0, 0, 0, 0, 0, 0),
-          (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
-      ),
-      (
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
-          (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
-          (0, 0, 0, 0, 5, 0, 5, 20, 0, 10, 10, 0, 0, 0, 50),
-          (0, 5, 0, 5, 0, 30, 20, 0, 15, 0, 0, 25, 0, 0, 0),
-          (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
-      ),
-      (
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 30, 15, 35, 10),
-          (0, 0, 0, 10, 0, 0, 0, 0, 25, 10, 0, 10, 30, 0, 15),
-          (0, 0, 0, 0, 5, 0, 5, 20, 0, 10, 10, 0, 0, 0, 50),
-          (0, 5, 0, 5, 0, 30, 20, 0, 15, 0, 0, 25, 0, 0, 0),
-          (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
-          (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
-          (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
-      )
-  );
+          (
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
+              (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
+              (0, 0, 0, 0, 10, 0, 20, 30, 0, 0, 0, 0, 0, 0, 40),
+              (0, 20, 0, 20, 0, 30, 30, 0, 0, 0, 0, 0, 0, 0, 0),
+              (25, 0, 50, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (15, 0, 50, 0, 25, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0)
+          ),
+          (
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
+              (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
+              (0, 0, 0, 0, 10, 0, 20, 30, 0, 0, 0, 0, 0, 0, 40),
+              (0, 20, 0, 20, 0, 30, 30, 0, 0, 0, 0, 0, 0, 0, 0),
+              (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
+          ),
+          (
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 5, 30, 5, 25, 5),
+              (0, 0, 0, 30, 0, 0, 0, 0, 25, 5, 5, 0, 30, 0, 5),
+              (0, 0, 0, 0, 5, 0, 5, 20, 0, 10, 10, 0, 0, 0, 50),
+              (0, 5, 0, 5, 0, 30, 20, 0, 15, 0, 0, 25, 0, 0, 0),
+              (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
+          ),
+          (
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 30, 15, 35, 10),
+              (0, 0, 0, 10, 0, 0, 0, 0, 25, 10, 0, 10, 30, 0, 15),
+              (0, 0, 0, 0, 5, 0, 5, 20, 0, 10, 10, 0, 0, 0, 50),
+              (0, 5, 0, 5, 0, 30, 20, 0, 15, 0, 0, 25, 0, 0, 0),
+              (5, 0, 30, 0, 10, 0, 0, 0, 0, 5, 50, 0, 0, 0, 0),
+              (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 25, 50),
+              (0, 0, 10, 0, 40, 0, 15, 30, 5, 0, 0, 0, 0, 0, 0)
+          )
+      );
 
   DominatorGenerationTuning: array[1..7] of array[1..19] of Integer = (
       (65, 1, 3, 1, 3, 1, 3, 1, 3, 1, 5, 1, 2, 5, 25, 5, 20, 0, 10),
@@ -206,8 +207,13 @@ uses
   EC_Str,
   Math,
   EC_Struct,
-  aPlayer,
-  aConst;
+  aPlayer;
+
+const
+  // Native ANSI exception text contains UTF-8 bytes; ordinary Russian literals
+  // compile to Windows-1251. Text: Клинг выпустился со скоростью 0
+  DominatorZeroSpeedError =
+      #$D0#$9A#$D0#$BB#$D0#$B8#$D0#$BD#$D0#$B3#$20#$D0#$B2#$D1#$8B#$D0#$BF#$D1#$83#$D1#$81#$D1#$82#$D0#$B8#$D0#$BB#$D1#$81#$D1#$8F#$20#$D1#$81#$D0#$BE#$20#$D1#$81#$D0#$BA#$D0#$BE#$D1#$80#$D0#$BE#$D1#$81#$D1#$82#$D1#$8C#$D1#$8E#$20#$30;
 
 destructor TKling.Destroy;
 var
@@ -227,14 +233,14 @@ end;
 procedure TKling.InitBlazer(Star: TStar);
 begin
   TypeId := stKling;
-  OwnerId := Byte(oiDominator);
+  OwnerId := oiDominator;
   KlingType := ktBoss;
   DominatorSeries := dsBlazer;
   SetMoney(MaxInt);
   NodeReserve :=
       Round(
           NextRandomFloatRange(0.8, 1.2, RandomState)
-              * DominatorShipDefinitions[Ord(KlingType)].BaseNodeReserve
+              * DominatorShipDefinitions[KlingType].BaseNodeReserve
               * Galaxy.GetNodeDropModifier
       );
   Position.X := 0;
@@ -245,7 +251,7 @@ begin
   HomePlanet := nil;
   CurrentPlanet := nil;
   Inc(CurrentStar.ShipTypeCounts[stKling]);
-  Name := DominatorShipDefinitions[Ord(KlingType)].DisplayNames[Ord(DominatorSeries)];
+  Name := DominatorShipDefinitions[KlingType].DisplayNames[DominatorSeries];
   RefreshCombatSkills;
   ActiveProgramAppliedTurn := 0;
   ChameleonActive := False;
@@ -257,48 +263,44 @@ begin
               * NextRandomFloatRange(0.9, 1.1, RandomState)
       ),
       8,
-      Ord(oiDominator),
+      oiDominator,
       -1,
       False
   );
-  CreateAndEquipFuelTanks(100, 8, Ord(oiDominator));
-  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, Ord(oiDominator));
+  CreateAndEquipFuelTanks(100, 8, oiDominator);
+  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, oiDominator);
   CreateAndEquipWeapon(
-      Ord(t_Weapon15),
-      Round(WeaponInfos[Ord(t_Weapon15)].AverageSize * EquipmentSizeFactors[5]),
+      t_TorpedoTube,
+      Round(WeaponInfos[t_TorpedoTube].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon15),
-      Round(WeaponInfos[Ord(t_Weapon15)].AverageSize * EquipmentSizeFactors[5]),
+      t_TorpedoTube,
+      Round(WeaponInfos[t_TorpedoTube].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon13),
-      Round(WeaponInfos[Ord(t_Weapon13)].AverageSize * EquipmentSizeFactors[5]),
+      t_IMHO9000,
+      Round(WeaponInfos[t_IMHO9000].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon11),
-      Round(WeaponInfos[Ord(t_Weapon11)].AverageSize * EquipmentSizeFactors[5]),
+      t_Disintegrator,
+      Round(WeaponInfos[t_Disintegrator].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   if Galaxy.GetDifficultyTierIndex > 0 then
     CreateAndEquipWeapon(
-        Ord(t_Weapon12),
-        Round(WeaponInfos[Ord(t_Weapon12)].AverageSize * EquipmentSizeFactors[5]),
+        t_Turbogravitron,
+        Round(WeaponInfos[t_Turbogravitron].AverageSize * EquipmentSizeFactors[5]),
         8,
-        Ord(oiDominator)
+        oiDominator
     );
-  CreateAndEquipDefGenerator(
-      Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]),
-      8,
-      Ord(oiDominator)
-  );
+  CreateAndEquipDefGenerator(Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]), 8, oiDominator);
   CreateAndEquipRepairRobot(
       Round(RepairRobotBaseSize * EquipmentSizeFactors[5]),
       Round(RemapClamped(Galaxy.GetEffectiveDifficultyLevel, 0, 24, 4, 8)),
@@ -314,21 +316,20 @@ begin
   RefreshDerivedStats(True);
   RefreshCurrentStanding;
   if Speed = 0 then
-    raise Exception.Create(
-        #$D0#$9A#$D0#$BB#$D0#$B8#$D0#$BD#$D0#$B3#$20#$D0#$B2#$D1#$8B#$D0#$BF#$D1#$83#$D1#$81#$D1#$82#$D0#$B8#$D0#$BB#$D1#$81#$D1#$8F#$20#$D1#$81#$D0#$BE#$20#$D1#$81#$D0#$BA#$D0#$BE#$D1#$80#$D0#$BE#$D1#$81#$D1#$82#$D1#$8C#$D1#$8E#$20#$30);
+    raise Exception.Create(DominatorZeroSpeedError);
 end;
 
 procedure TKling.InitKeller(Star: TStar);
 begin
   TypeId := stKling;
-  OwnerId := Byte(oiDominator);
+  OwnerId := oiDominator;
   KlingType := ktBoss;
   DominatorSeries := dsKeller;
   SetMoney(MaxInt);
   NodeReserve :=
       Round(
           NextRandomFloatRange(0.8, 1.2, RandomState)
-              * DominatorShipDefinitions[Ord(KlingType)].BaseNodeReserve
+              * DominatorShipDefinitions[KlingType].BaseNodeReserve
       );
   Position.X := 0;
   Position.Y := 0;
@@ -338,7 +339,7 @@ begin
   HomePlanet := nil;
   CurrentPlanet := nil;
   Inc(CurrentStar.ShipTypeCounts[stKling]);
-  Name := DominatorShipDefinitions[Ord(KlingType)].DisplayNames[Ord(DominatorSeries)];
+  Name := DominatorShipDefinitions[KlingType].DisplayNames[DominatorSeries];
   RefreshCombatSkills;
   ActiveProgramAppliedTurn := 0;
   ChameleonActive := False;
@@ -350,48 +351,44 @@ begin
               * NextRandomFloatRange(0.9, 1.1, RandomState)
       ),
       8,
-      Ord(oiDominator),
+      oiDominator,
       -1,
       False
   );
-  CreateAndEquipFuelTanks(100, 8, Ord(oiDominator));
-  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, Ord(oiDominator));
+  CreateAndEquipFuelTanks(100, 8, oiDominator);
+  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, oiDominator);
   CreateAndEquipWeapon(
-      Ord(t_Weapon15),
-      Round(WeaponInfos[Ord(t_Weapon15)].AverageSize * EquipmentSizeFactors[5]),
+      t_TorpedoTube,
+      Round(WeaponInfos[t_TorpedoTube].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon14),
-      Round(WeaponInfos[Ord(t_Weapon14)].AverageSize * EquipmentSizeFactors[5]),
+      t_Vertix,
+      Round(WeaponInfos[t_Vertix].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon13),
-      Round(WeaponInfos[Ord(t_Weapon13)].AverageSize * EquipmentSizeFactors[5]),
+      t_IMHO9000,
+      Round(WeaponInfos[t_IMHO9000].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon9),
-      Round(WeaponInfos[Ord(t_Weapon9)].AverageSize * EquipmentSizeFactors[5]),
+      t_Multiresonator,
+      Round(WeaponInfos[t_Multiresonator].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   if Galaxy.GetDifficultyTierIndex > 0 then
     CreateAndEquipWeapon(
-        Ord(t_Weapon10),
-        Round(WeaponInfos[Ord(t_Weapon10)].AverageSize * EquipmentSizeFactors[5]),
+        t_AtomicVision,
+        Round(WeaponInfos[t_AtomicVision].AverageSize * EquipmentSizeFactors[5]),
         8,
-        Ord(oiDominator)
+        oiDominator
     );
-  CreateAndEquipDefGenerator(
-      Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]),
-      8,
-      Ord(oiDominator)
-  );
+  CreateAndEquipDefGenerator(Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]), 8, oiDominator);
   Inc(
       CreateAndEquipRepairRobot(
               Round(RepairRobotBaseSize * EquipmentSizeFactors[5]),
@@ -413,8 +410,7 @@ begin
   RefreshDerivedStats(True);
   RefreshCurrentStanding;
   if Speed = 0 then
-    raise Exception.Create(
-        #$D0#$9A#$D0#$BB#$D0#$B8#$D0#$BD#$D0#$B3#$20#$D0#$B2#$D1#$8B#$D0#$BF#$D1#$83#$D1#$81#$D1#$82#$D0#$B8#$D0#$BB#$D1#$81#$D1#$8F#$20#$D1#$81#$D0#$BE#$20#$D1#$81#$D0#$BA#$D0#$BE#$D1#$80#$D0#$BE#$D1#$81#$D1#$82#$D1#$8C#$D1#$8E#$20#$30);
+    raise Exception.Create(DominatorZeroSpeedError);
 end;
 
 procedure TKling.InitTerron(Star: TStar);
@@ -424,27 +420,26 @@ var
   Weapon: TWeapon;
 begin
   TypeId := stKling;
-  OwnerId := Byte(oiDominator);
+  OwnerId := oiDominator;
   KlingType := ktBoss;
   DominatorSeries := dsTerron;
   SetMoney(MaxInt);
   NodeReserve :=
       Round(
           NextRandomFloatRange(0.8, 1.2, RandomState)
-              * DominatorShipDefinitions[Ord(KlingType)].BaseNodeReserve
+              * DominatorShipDefinitions[KlingType].BaseNodeReserve
       );
   Position.X := 1000;
   Position.Y := 0;
   CurrentStar := Star;
-  CurrentStar.Name :=
-      LookupLocalizedTextByKey('Star.' + DominatorSeriesNames[Ord(DominatorSeries)]);
+  CurrentStar.Name := LookupLocalizedTextByKey('Star.' + DominatorSeriesNames[DominatorSeries]);
   for I := 0 to Star.Planets.Count - 1 do
   begin
     Planet := Star.Planets[I];
-    if Planet.OwnerId in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)] then
+    if Planet.OwnerId in [oiMaloc..oiGaal, oiPirate] then
     begin
-      Planet.OwnerId := Byte(oiMaloc);
-      Planet.RaceId := Byte(oiMaloc);
+      Planet.OwnerId := oiMaloc;
+      Planet.RaceId := oiMaloc;
     end;
   end;
   CurrentStar.Ships.Add(Self);
@@ -452,7 +447,7 @@ begin
   HomePlanet := nil;
   CurrentPlanet := nil;
   Inc(CurrentStar.ShipTypeCounts[stKling]);
-  Name := DominatorShipDefinitions[Ord(KlingType)].DisplayNames[Ord(DominatorSeries)];
+  Name := DominatorShipDefinitions[KlingType].DisplayNames[DominatorSeries];
   RefreshCombatSkills;
   ActiveProgramAppliedTurn := 0;
   ChameleonActive := False;
@@ -465,56 +460,52 @@ begin
                       * NextRandomFloatRange(0.9, 1.1, RandomState)
               ),
               8,
-              Ord(oiDominator),
+              oiDominator,
               -1,
               False)
           .Armor,
       Galaxy.GetEffectiveDifficultyLevel div 4
   );
-  CreateAndEquipFuelTanks(100, 8, Ord(oiDominator));
-  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, Ord(oiDominator));
+  CreateAndEquipFuelTanks(100, 8, oiDominator);
+  CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 8, oiDominator);
   Weapon :=
       CreateAndEquipWeapon(
-          Ord(t_Weapon13),
-          Round(WeaponInfos[Ord(t_Weapon13)].AverageSize * EquipmentSizeFactors[5]),
+          t_IMHO9000,
+          Round(WeaponInfos[t_IMHO9000].AverageSize * EquipmentSizeFactors[5]),
           8,
-          Ord(oiDominator)
+          oiDominator
       );
   Inc(Weapon.Range, 5 * Galaxy.GetEffectiveDifficultyLevel);
   Inc(Weapon.MaxDamage, Galaxy.GetEffectiveDifficultyLevel div 2);
   CreateAndEquipWeapon(
-      Ord(t_Weapon4),
-      Round(WeaponInfos[Ord(t_Weapon4)].AverageSize * EquipmentSizeFactors[5]),
+      t_MissileLauncher,
+      Round(WeaponInfos[t_MissileLauncher].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   CreateAndEquipWeapon(
-      Ord(t_Weapon4),
-      Round(WeaponInfos[Ord(t_Weapon4)].AverageSize * EquipmentSizeFactors[5]),
+      t_MissileLauncher,
+      Round(WeaponInfos[t_MissileLauncher].AverageSize * EquipmentSizeFactors[5]),
       8,
-      Ord(oiDominator)
+      oiDominator
   );
   Weapon :=
       CreateAndEquipWeapon(
-          Ord(t_Weapon9),
-          Round(WeaponInfos[Ord(t_Weapon9)].AverageSize * EquipmentSizeFactors[5]),
+          t_Multiresonator,
+          Round(WeaponInfos[t_Multiresonator].AverageSize * EquipmentSizeFactors[5]),
           8,
-          Ord(oiDominator)
+          oiDominator
       );
   Inc(Weapon.Range, 5 * Galaxy.GetEffectiveDifficultyLevel);
   Inc(Weapon.MaxDamage, Galaxy.GetEffectiveDifficultyLevel div 2);
   if Galaxy.GetDifficultyTierIndex > 1 then
     CreateAndEquipWeapon(
-        Ord(t_Weapon15),
-        Round(WeaponInfos[Ord(t_Weapon15)].AverageSize * EquipmentSizeFactors[5]),
+        t_TorpedoTube,
+        Round(WeaponInfos[t_TorpedoTube].AverageSize * EquipmentSizeFactors[5]),
         8,
-        Ord(oiDominator)
+        oiDominator
     );
-  CreateAndEquipDefGenerator(
-      Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]),
-      8,
-      Ord(oiDominator)
-  );
+  CreateAndEquipDefGenerator(Round(DefGeneratorBaseSize * EquipmentSizeFactors[5]), 8, oiDominator);
   CreateAndEquipRepairRobot(
       Round(RepairRobotBaseSize * EquipmentSizeFactors[5]),
       Round(RemapClamped(Galaxy.GetEffectiveDifficultyLevel, 0, 24, 4, 8)),
@@ -534,21 +525,19 @@ begin
   RefreshDerivedStats(True);
   RefreshCurrentStanding;
   if Speed = 0 then
-    raise Exception.Create(
-        #$D0#$9A#$D0#$BB#$D0#$B8#$D0#$BD#$D0#$B3#$20#$D0#$B2#$D1#$8B#$D0#$BF#$D1#$83#$D1#$81#$D1#$82#$D0#$B8#$D0#$BB#$D1#$81#$D1#$8F#$20#$D1#$81#$D0#$BE#$20#$D1#$81#$D0#$BA#$D0#$BE#$D1#$80#$D0#$BE#$D1#$81#$D1#$82#$D1#$8C#$D1#$8E#$20#$30);
+    raise Exception.Create(DominatorZeroSpeedError);
 end;
 
 procedure TKling.InitializeDominator(Kind: TKlingType; Planet: TPlanet; Series: TDominatorSeries);
 begin
   TypeId := stKling;
-  OwnerId := Byte(oiDominator);
+  OwnerId := oiDominator;
   KlingType := Kind;
   DominatorSeries := Series;
-  SetMoney(Round(Galaxy.MaxRangerWealth * DominatorShipDefinitions[Ord(Kind)].InitialWealthScale));
+  SetMoney(Round(Galaxy.MaxRangerWealth * DominatorShipDefinitions[Kind].InitialWealthScale));
   NodeReserve :=
       Round(
-          (NextRandomUnitFloat(RandomState) + 0.5)
-              * DominatorShipDefinitions[Ord(Kind)].BaseNodeReserve
+          (NextRandomUnitFloat(RandomState) + 0.5) * DominatorShipDefinitions[Kind].BaseNodeReserve
       );
   if KlingType <> ktBoss then
   begin
@@ -598,7 +587,7 @@ var
   MaximumSizeIndex, MinimumSizeIndex, Rating, WarRating, DistanceRating, Distribution: Integer;
   Roll, I, WeightSum, WeaponCount, TechLevel, ImprovementChance, Attempts: Integer;
   Equipment: TEquipment;
-  WeaponType: Byte;
+  WeaponType: TItemType;
   Chosen, Accepted: Boolean;
 
   function RandomInteger(BoundA, BoundB: Integer): Integer;
@@ -620,8 +609,8 @@ var
     Result :=
         RandomEquipmentSize(
             BaseSize,
-            DominatorEquipmentSizeIndices[Ord(KlingType), 1],
-            DominatorEquipmentSizeIndices[Ord(KlingType), 0]
+            DominatorEquipmentSizeIndices[KlingType, 1],
+            DominatorEquipmentSizeIndices[KlingType, 0]
         );
   end;
 
@@ -666,25 +655,14 @@ var
             )
         );
   end;
-  procedure EquipGeneratedHook(Ship: TKling; Tech: Integer); inline;
-  var
-    MaximumTech, Size: Integer;
-  begin
-    Size := SizeForKind(CargoHookBaseSize);
-    if Tech < 7 then
-      MaximumTech := Tech
-    else
-      MaximumTech := 7;
-    Ship.CreateAndEquipCargoHook(Size, RandomInteger(1, MaximumTech), Ord(oiDominator));
-  end;
 
 begin
   InitializeDominator(Kind, Planet, Series);
-  ControlPercent := Integer(Galaxy.GetFactionControlPercent(Ord(sfDominators))) and $7F;
+  ControlPercent := Galaxy.GetFactionControlPercent(sfDominators);
   Rating :=
       Round(
           125 * Galaxy.GetEffectiveDifficultyLevel
-              + RemapClamped(Galaxy.CurrentTurn, 300, 22200, 0, 3000)
+              + RemapClamped(Galaxy.CurrentTurn, GalaxyWarmupTurns, 22200, 0, 3000)
       );
   WarRating := -150 * Galaxy.WarDeltaWin[1];
   DistanceRating := 0;
@@ -723,7 +701,7 @@ begin
       Round(
           RemapClamped(
               Galaxy.CurrentTurn,
-              300,
+              GalaxyWarmupTurns,
               11250,
               MaximumControl div 4,
               3 * MaximumControl div 4
@@ -734,41 +712,29 @@ begin
   CreateAndEquipHull(
       Round(
           RandomInteger(
-                  DominatorShipDefinitions[Ord(KlingType)].MinimumHullSize,
-                  DominatorShipDefinitions[Ord(KlingType)].MaximumHullSize)
+                  DominatorShipDefinitions[KlingType].MinimumHullSize,
+                  DominatorShipDefinitions[KlingType].MaximumHullSize)
               * HullCapacityScale
       ),
       RandomTuning(2, 3),
-      Ord(oiDominator),
+      oiDominator,
       -1,
       False
   );
-  CreateAndEquipEngine(SizeForKind(EngineBaseSize), RandomTuning(10, 11), Ord(oiDominator));
+  CreateAndEquipEngine(SizeForKind(EngineBaseSize), RandomTuning(10, 11), oiDominator);
   if RandomInteger(1, 100) <= InterpolatedTuning(14, 15) then
-    CreateAndEquipRepairRobot(
-        SizeForKind(RepairRobotBaseSize),
-        RandomTuning(4, 5),
-        Ord(oiDominator)
-    );
+    CreateAndEquipRepairRobot(SizeForKind(RepairRobotBaseSize), RandomTuning(4, 5), oiDominator);
   if RandomInteger(1, 100) <= InterpolatedTuning(16, 17) then
-    CreateAndEquipDefGenerator(
-        SizeForKind(DefGeneratorBaseSize),
-        RandomTuning(6, 7),
-        Ord(oiDominator)
-    );
+    CreateAndEquipDefGenerator(SizeForKind(DefGeneratorBaseSize), RandomTuning(6, 7), oiDominator);
   TechLevel := Galaxy.TechLevel;
-  CreateAndEquipFuelTanks(
-      SizeForKind(FuelTanksBaseSize),
-      RandomInteger(1, TechLevel),
-      Ord(oiDominator)
+  CreateAndEquipFuelTanks(SizeForKind(FuelTanksBaseSize), RandomInteger(1, TechLevel), oiDominator);
+  CreateAndEquipRadar(SizeForKind(RadarBaseSize), RandomInteger(1, TechLevel), oiDominator);
+  CreateAndEquipScanner(SizeForKind(ScannerBaseSize), RandomInteger(1, TechLevel), oiDominator);
+  CreateAndEquipCargoHook(
+      SizeForKind(CargoHookBaseSize),
+      RandomInteger(1, Min(TechLevel, 7)),
+      oiDominator
   );
-  CreateAndEquipRadar(SizeForKind(RadarBaseSize), RandomInteger(1, TechLevel), Ord(oiDominator));
-  CreateAndEquipScanner(
-      SizeForKind(ScannerBaseSize),
-      RandomInteger(1, TechLevel),
-      Ord(oiDominator)
-  );
-  EquipGeneratedHook(Self, TechLevel);
   Distribution := DominatorWeaponDistributionByTier[Tier];
   WeaponCount := RandomTuning(12, 13);
   for I := 1 to WeaponCount do
@@ -779,17 +745,17 @@ begin
       Inc(Attempts);
       if Attempts > 1000 then
         Break;
-      WeaponType := 50;
+      WeaponType := t_IndustrialLaser;
       Roll := RandomInteger(1, 100);
       Chosen := False;
       WeightSum := 0;
-      while (WeaponType <= 64) and not Chosen do
+      while (WeaponType <= t_TorpedoTube) and not Chosen do
       begin
-        Inc(WeightSum, DominatorWeaponWeights[Distribution, Ord(KlingType), WeaponType]);
+        Inc(WeightSum, DominatorWeaponWeights[Distribution, KlingType, WeaponType]);
         if Roll <= WeightSum then
         begin
-          MaximumSizeIndex := DominatorEquipmentSizeIndices[Ord(KlingType), 0];
-          MinimumSizeIndex := DominatorEquipmentSizeIndices[Ord(KlingType), 1];
+          MaximumSizeIndex := DominatorEquipmentSizeIndices[KlingType, 0];
+          MinimumSizeIndex := DominatorEquipmentSizeIndices[KlingType, 1];
           if WeaponInfos[WeaponType].ShotType = wstAreaDamage then
           begin
             MaximumSizeIndex := 2;
@@ -797,9 +763,11 @@ begin
           end;
           Accepted :=
               not Galaxy.AreDominatorRacialWeaponsEnabled
-                  or (((DominatorSeries <> dsBlazer) or not (WeaponType in [62, 63]))
-                      and ((DominatorSeries <> dsTerron) or not (WeaponType in [63, 64]))
-                      and ((DominatorSeries <> dsKeller) or not (WeaponType in [62, 64])));
+                  or (((DominatorSeries <> dsBlazer) or not (WeaponType in [t_IMHO9000, t_Vertix]))
+                      and ((DominatorSeries <> dsTerron)
+                          or not (WeaponType in [t_Vertix, t_TorpedoTube]))
+                      and ((DominatorSeries <> dsKeller)
+                          or not (WeaponType in [t_IMHO9000, t_TorpedoTube])));
           if Accepted then
             CreateAndEquipWeapon(
                 WeaponType,
@@ -809,7 +777,7 @@ begin
                     MinimumSizeIndex
                 ),
                 RandomTuning(8, 9),
-                Ord(oiDominator)
+                oiDominator
             );
           Chosen := True;
         end;
@@ -874,7 +842,7 @@ begin
   KlingType := TKlingType(Buffer.GetByte);
   DominatorSeries := TDominatorSeries(Buffer.GetByte);
   ActiveProgramAppliedTurn := Buffer.GetInt32;
-  ActiveProgramId := Buffer.GetByte;
+  ActiveProgramId := TProgramIndex(Buffer.GetByte);
   if LoadedSaveVersion <= 147 then
     ClearRecentlyDroppedItems;
 end;
@@ -927,26 +895,6 @@ procedure TKling.NextDayLogic;
 var
   Stage: Integer;
   Ship: TShip;
-  procedure FollowDistantLeader(
-      Leader: TShip;
-      Follower: TKling;
-      var ProgressStage: Integer
-  ); inline;
-  var
-    Minimum: Integer;
-    Distance: Extended;
-  begin
-    Distance := Sqrt(Sqr(Leader.Position.X) + Sqr(Leader.Position.Y));
-    if 8 * Leader.Speed < 2 * Follower.Speed then
-      Minimum := 8 * Leader.Speed
-    else
-      Minimum := 2 * Follower.Speed;
-    if Distance > Minimum then
-    begin
-      ProgressStage := 12;
-      Follower.OrderFollowShip(Leader, 1, False);
-    end;
-  end;
 
 begin
   Stage := 0;
@@ -978,7 +926,7 @@ begin
       if (DominatorSeries = dsTerron)
           and (TerronShip <> nil)
           and not HasIndependentScriptFaction
-          and (Galaxy.TerronToStarTurn >= $40000000) then
+          and (Galaxy.TerronToStarTurn >= TerronTransformationFlag) then
       begin
         if CurrentStar <> TerronShip.CurrentStar then
           OrderJump(TerronShip.CurrentStar, False)
@@ -1000,7 +948,7 @@ begin
             and PartnerShip.InNormalSpace
             and (PartnerShip.Order = soJump)
             and (PartnerShip.EstimateOrderTravelTurns <= 3) then
-          OrderFollowShip(PartnerShip, 0, True)
+          OrderFollowShip(PartnerShip, fmFollowNear, True)
         else if (not OrderAbsolute or not (OrderTarget is TShip))
             and (not (OrderTarget is TStar) or (EstimateOrderTravelTurns >= 3)) then
         begin
@@ -1033,7 +981,12 @@ begin
             Stage := 11;
             Ship := SelectBertorLeader;
             if Ship <> nil then
-              FollowDistantLeader(Ship, Self, Stage);
+              if Sqrt(Sqr(Ship.Position.X) + Sqr(Ship.Position.Y))
+                  > Min(8 * Ship.Speed, 2 * Speed) then
+              begin
+                Stage := 12;
+                OrderFollowShip(Ship, fmMinWeaponRange, False);
+              end;
           end;
           Stage := 13;
           if Order = soNone then
@@ -1087,7 +1040,7 @@ begin
       AssignWeaponTargetsInStar;
       if (DominatorSeries = dsTerron)
           and (TerronShip <> nil)
-          and (Galaxy.TerronToStarTurn >= $40000000) then
+          and (Galaxy.TerronToStarTurn >= TerronTransformationFlag) then
       begin
         if CurrentStar <> TerronShip.CurrentStar then
           OrderJump(TerronShip.CurrentStar, False)
@@ -1232,7 +1185,7 @@ begin
     if InNormalSpace then
     begin
       CoordinateSeriesInvasions(dsKeller);
-      if (Galaxy.CountFactionStars(Ord(sfDominators)) < 2)
+      if (Galaxy.CountFactionStars(sfDominators) < 2)
           and (GetPlayer <> nil)
           and (GetPlayer.IsOutsideStarSpace or (GetPlayer.CurrentStar <> CurrentStar)) then
         IntervalBonus := 30
@@ -1245,7 +1198,7 @@ begin
           or ((GetPlayer <> nil)
               and ((GetPlayer.CurrentStar = CurrentStar) or (GetPlayer.OrderTarget = CurrentStar))
               and (Galaxy.TechLevel < 7)
-              and (Galaxy.GetFactionControlPercent(Ord(sfCoalition)) < 70)) then
+              and (Galaxy.GetFactionControlPercent(sfCoalition) < 70)) then
       begin
         Stage := 2;
         Hole := Galaxy.FindHoleInStarByKind(CurrentStar, 4);
@@ -1330,7 +1283,7 @@ begin
           and GetPlayer.InNormalSpace
           and IsPlayerCamouflageEffective(GetPlayer)
           and GetPlayer.ChameleonActive
-          and (GetPlayer.ChameleonVisualType in [6]);
+          and (GetPlayer.ChameleonVisualType in [ktBertor]);
   if PlayerIsBertor then
   begin
     Result := GetPlayer;
@@ -1437,9 +1390,9 @@ begin
     for I := 0 to CurrentStar.Planets.Count - 1 do
     begin
       Planet := CurrentStar.Planets[I];
-      if (Planet.OwnerId = Byte(oiDominator))
+      if (Planet.OwnerId = oiDominator)
           or ((Planet.CurrentStar.Id = Galaxy.KellerResearchTargetStarId)
-              and (Planet.OwnerId <> Byte(oiUninhabited))
+              and (Planet.OwnerId <> oiUninhabited)
               and (KellerShip <> nil)) then
         PlanetQueue.Add(Planet);
     end;
@@ -1447,12 +1400,12 @@ end;
 
 function TKling.CanQueueReachablePlanet(Planet: TPlanet): Boolean;
 begin
-  Result := Planet.OwnerId = Byte(oiDominator);
+  Result := Planet.OwnerId = oiDominator;
 end;
 
 function TKling.RetreatToReinforcedStar: Boolean;
 const
-  DominatorShipMask = [0];
+  DominatorShipMask = [stKling];
 var
   I: Integer;
   Star: TStar;
@@ -1505,7 +1458,7 @@ end;
 
 function TKling.FindKellerAttackTarget: TStar;
 const
-  CoalitionShipMask = [1..5];
+  CoalitionShipMask = [stRanger..stTranclucator];
 var
   I, J, Score, BestScore, Index: Integer;
   BestStar, Star, Neighbor: TStar;
@@ -1526,9 +1479,9 @@ begin
         and ((BlazerShip = nil) or (BlazerShip.CurrentStar <> Star))
         and ((TerronShip = nil) or (TerronShip.CurrentStar <> Star))
         and ((Star.ControlFaction <> sfDominators) or (Star.Battle <> 0)) then
-      if (Galaxy.CurrentTurn > 300)
+      if (Galaxy.CurrentTurn > GalaxyWarmupTurns)
           or (PointDistanceSquared(Star.Position, GetPlayer.CurrentStar.Position)
-              >= Sqr((1 - Galaxy.CurrentTurn / 300) * 70 + 35)) then
+              >= Sqr((1 - Galaxy.CurrentTurn / GalaxyWarmupTurns) * 70 + 35)) then
         if ((Star.Battle = 0)
                 or (Star.DominatorSeries <> dsKeller)
                 or (Star.ShipTypeCounts[stKling] <= 6))
@@ -1552,7 +1505,8 @@ begin
           Score := Round(Score * NextRandomFloatRange(1, 3, RandomState));
           if (GetPlayer.HomePlanet.CurrentStar = Star)
               and (Galaxy.CurrentTurn
-                  < Galaxy.InterpolateDifficulty(-1, 1.2, 1, 0.7, 0.5) * 800 + 300) then
+                  < Galaxy.InterpolateDifficulty(-1, 1.2, 1, 0.7, 0.5) * 800
+                      + GalaxyWarmupTurns) then
             Score := MaxInt - 1;
           if Score < BestScore then
           begin
@@ -1619,7 +1573,7 @@ begin
             = 0)
         or (Galaxy.CurrentTurn mod 230 = 0)
         or ((Galaxy.CurrentTurn mod NextRandomIntRange(5, 10, RandomState) = 0)
-            and (Galaxy.CountFactionStars(Ord(sfDominators)) < 2))
+            and (Galaxy.CountFactionStars(sfDominators) < 2))
         or (Galaxy.KellerResearchTargetStarId <> 0) then
     begin
       if Galaxy.KellerResearchTargetStarId = 0 then
@@ -1629,17 +1583,17 @@ begin
       if Galaxy.KellerTargetStar <> nil then
       begin
         Galaxy.KellerMissionState := 1;
-        if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0) then
+        if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0) then
         begin
           Text :=
               FormatText1(
                   LocalizedColorText('Artefacts.ArtAnalyzer.KellerHole'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Star>',
                   Galaxy.KellerTargetStar.Name
               );
           if Text <> '' then
-            AddOrUpdatePlayerBubble(0, Galaxy.CurrentTurn, Text, '');
+            AddOrUpdatePlayerBubble(pmGalaxyNews, Galaxy.CurrentTurn, Text, '');
         end;
       end;
     end;
@@ -1652,8 +1606,8 @@ begin
       and (Galaxy.KellerLeaveTurn = 0)
       and (NextRandomIntRange(0, 1000, RandomState) + 1000 <= Galaxy.CurrentTurn) then
     if NextRandomIntRange(0, 10000, RandomState)
-        < Galaxy.GetFactionControlPercent(Ord(sfDominators))
-            * (100 - Galaxy.GetFactionControlPercent(Ord(sfDominators))) then
+        < Galaxy.GetFactionControlPercent(sfDominators)
+            * (100 - Galaxy.GetFactionControlPercent(sfDominators)) then
       if NextRandomIntRange(0, 1000, RandomState)
           > RemapClamped(Galaxy.GetDominatorSeriesControlShare(dsKeller), 0.7, 1.2, 0, 1000) then
       begin
@@ -1720,13 +1674,7 @@ begin
     Count :=
         NextRandomIntRange(1, RandomMaximum, RandomState)
             + Round(
-                RemapClamped(
-                    Integer(Galaxy.GetFactionControlPercent(Ord(sfDominators))) and $7F,
-                    0,
-                    Threshold,
-                    12,
-                    2
-                ));
+                RemapClamped(Galaxy.GetFactionControlPercent(sfDominators), 0, Threshold, 12, 2));
     if Galaxy.CurrentTurn >= 666 then
       if Galaxy.DominatorModLevel = 1 then
         Count := 15
@@ -1759,19 +1707,20 @@ begin
   for I := 0 to CurrentStar.Ships.Count - 1 do
   begin
     Ship := CurrentStar.Ships[I];
-    if Ship.InNormalSpace then
-      if not (Ship is TKling) then
-      begin
-        if not IsPlayerCamouflageEffective(Ship) then
-          Exit;
-      end
-      else
-      begin
-        if TKling(Ship).DominatorSeries <> DominatorSeries then
-          Exit;
-        if (TKling(Ship).KlingType in [ktEquentor..ktShtip]) and (Ship <> Self) then
-          Inc(EscortCount);
-      end;
+    if not Ship.InNormalSpace then
+      Continue;
+    if not (Ship is TKling) then
+    begin
+      if not IsPlayerCamouflageEffective(Ship) then
+        Exit;
+    end
+    else
+    begin
+      if TKling(Ship).DominatorSeries <> DominatorSeries then
+        Exit;
+      if (TKling(Ship).KlingType in [ktEquantor..ktShtip]) and (Ship <> Self) then
+        Inc(EscortCount);
+    end;
   end;
   if EscortCount < 2 then
     Exit;
@@ -1779,14 +1728,14 @@ begin
   for I := 0 to Constellation.Stars.Count - 1 do
   begin
     Star := Constellation.Stars[I];
-    if (TStar(PtrInt(Star) + 0) <> CurrentStar)
+    if (Star <> CurrentStar)
         and not IsStarProtectedByScript(Star)
         and (Star.ShipTypeCounts[stKling] >= 6)
         and ((KellerShip = nil) or not KellerShip.InNormalSpace or (KellerShip.CurrentStar <> Star))
         and ((TerronShip = nil) or not TerronShip.InNormalSpace or (TerronShip.CurrentStar <> Star))
         and ((BlazerShip = nil) or not BlazerShip.InNormalSpace or (BlazerShip.CurrentStar <> Star))
         and (Star.ControlFaction in [sfDominators])
-        and (TDominatorSeries(Byte(Star.DominatorSeries) + Byte(0)) = DominatorSeries)
+        and (Star.DominatorSeries = DominatorSeries)
         and (Star.Battle = 0)
         and (Star.Status.CustomFaction = '') then
       Stars.Add(Star);
@@ -1848,14 +1797,22 @@ begin
   CurrentStar.DaysSinceLastNpcShipSpawn := SpawnTimer;
 end;
 
-// Native diagnostic literal pool precedes the invasion helpers.
+// Native diagnostic literal pool precedes the invasion helpers. These stored
+// strings contain UTF-8 decoded as Windows-1251, then widened to UTF-16.
+// Numeric escapes preserve the native code points; comments show the decoded Russian.
 var
   DominatorDebugMessages: array[0..6] of WideString = (
+      // Decoded text: Ахтунг! Босс Террон атакован!
       #1056#1106#1057#8230#1057#8218#1057#1107#1056#1029#1056#1110#33#32#1056#8216#1056#1109#1057#1027#1057#1027#32#1056#1118#1056#181#1057#1026#1057#1026#1056#1109#1056#1029#32#1056#176#1057#8218#1056#176#1056#1108#1056#1109#1056#1030#1056#176#1056#1029#33,
+      // Decoded text: Меняем боевую позицию
       #1056#1114#1056#181#1056#1029#1057#1039#1056#181#1056#1112#32#1056#177#1056#1109#1056#181#1056#1030#1057#1107#1057#1035#32#1056#1111#1056#1109#1056#183#1056#1105#1057#8224#1056#1105#1057#1035,
+      // Decoded text: Срочно подкрепление!
       #1056#1038#1057#1026#1056#1109#1057#8225#1056#1029#1056#1109#32#1056#1111#1056#1109#1056#1169#1056#1108#1057#1026#1056#181#1056#1111#1056#187#1056#181#1056#1029#1056#1105#1056#181#33,
+      // Decoded text: Пора потеснить соседей
       #1056#1119#1056#1109#1057#1026#1056#176#32#1056#1111#1056#1109#1057#8218#1056#181#1057#1027#1056#1029#1056#1105#1057#8218#1057#1034#32#1057#1027#1056#1109#1057#1027#1056#181#1056#1169#1056#181#1056#8470,
+      // Decoded text: Солдаты на фронт
       #1056#1038#1056#1109#1056#187#1056#1169#1056#176#1057#8218#1057#8249#32#1056#1029#1056#176#32#1057#8222#1057#1026#1056#1109#1056#1029#1057#8218,
+      // Decoded text: Надо расширять границы
       #1056#1116#1056#176#1056#1169#1056#1109#32#1057#1026#1056#176#1057#1027#1057#8364#1056#1105#1057#1026#1057#1039#1057#8218#1057#1034#32#1056#1110#1057#1026#1056#176#1056#1029#1056#1105#1057#8224#1057#8249,
       ''
   );
@@ -1995,7 +1952,7 @@ var
           and (Ship <> BlazerShip)
           and (Ship <> KellerShip)
           and (Ship <> TerronShip)
-          and ((Ship as TKling).KlingType in [ktEquentor..ktShtip])
+          and ((Ship as TKling).KlingType in [ktEquantor..ktShtip])
           and ((Ship as TKling).ActiveProgramAppliedTurn <= 0) then
       begin
         Ship.OrderJump(TargetStar, True);
@@ -2006,23 +1963,23 @@ var
         and (Sent > 0)
         and (TargetStar.ControlFaction <> sfDominators)
         and (TargetStar.Status.CustomFaction = '') then
-      if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0) then
+      if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0) then
       begin
         Text :=
             FormatText1(
                 LocalizedText('Artefacts.ArtAnalyzer.AttackDomik'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Star>',
                 TargetStar.Name
             );
         if Text <> '' then
-          AddOrUpdatePlayerBubble(0, Galaxy.CurrentTurn, Text, '');
+          AddOrUpdatePlayerBubble(pmGalaxyNews, Galaxy.CurrentTurn, Text, '');
       end;
   end;
 begin
   if GetPlayer = nil then
     Exit;
-  ControlPercent := Galaxy.GetFactionControlPercent(Ord(sfDominators));
+  ControlPercent := Galaxy.GetFactionControlPercent(sfDominators);
   BaseChance :=
       Round(Galaxy.ScaleDifficultyExponentially(Galaxy.GetDominatorAggressionLevel, 10, 2));
   ControlThreshold := Round(5 * Galaxy.GetDominatorAggressionLevel / 8) + 80;
@@ -2074,10 +2031,10 @@ begin
             if (TargetStar.Constellation.Id <> 20)
                 and (TargetStar <> Origin)
                 and not IsStarProtectedByScript(TargetStar) then
-              if (Galaxy.CurrentTurn > 300)
+              if (Galaxy.CurrentTurn > GalaxyWarmupTurns)
                   or ((GetPlayer.CurrentStar <> TargetStar)
                       and (PointDistanceSquared(TargetStar.Position, GetPlayer.CurrentStar.Position)
-                          >= Sqr((1 - Galaxy.CurrentTurn / 300) * 70 + 35))) then
+                          >= Sqr((1 - Galaxy.CurrentTurn / GalaxyWarmupTurns) * 70 + 35))) then
                 if (BlazerShip = nil)
                     or (Galaxy.BlazerLandingPlanetId = 0)
                     or (BlazerShip.CurrentStar <> TargetStar) then
@@ -2169,10 +2126,7 @@ begin
   if TypeNameOverrideKey <> '' then
   begin
     Path :=
-        'ShipType.Dominator.'
-            + DominatorSeriesNames[Ord(DominatorSeries)]
-            + '.'
-            + TypeNameOverrideKey;
+        'ShipType.Dominator.' + DominatorSeriesNames[DominatorSeries] + '.' + TypeNameOverrideKey;
     if LanguageDataConfig.CountParamsByPath(Path) > 0 then
       Text := LocalizedText(Path)
     else
@@ -2183,15 +2137,12 @@ begin
       Result := Name;
   end
   else if KlingType = ktBoss then
-    Result := DominatorShipDefinitions[Ord(KlingType)].DisplayNames[Ord(DominatorSeries)]
+    Result := DominatorShipDefinitions[KlingType].DisplayNames[DominatorSeries]
   else
-    Result :=
-        DominatorShipDefinitions[Ord(KlingType)].DisplayNames[Ord(DominatorSeries)]
-            + Separator
-            + Name;
+    Result := DominatorShipDefinitions[KlingType].DisplayNames[DominatorSeries] + Separator + Name;
 end;
 
-function TKling.GetGreetingShipCategory: Byte;
+function TKling.GetGreetingShipCategory: TGreetingShipCategory;
 begin
   Result := gscKling;
 end;
@@ -2201,7 +2152,7 @@ begin
   Result := rcWarrior;
 end;
 
-function TKling.GetStrengthScaledPirateStatus: Byte;
+function TKling.GetStrengthScaledPirateStatus: TPercent;
 begin
   Result := 100;
 end;
@@ -2211,7 +2162,7 @@ begin
   Result := 0;
 end;
 
-function TKling.IsProgramActive(ProgramId: Byte): Boolean;
+function TKling.IsProgramActive(ProgramId: TProgramIndex): Boolean;
 begin
   Result := (ActiveProgramAppliedTurn > 0) and (ProgramId = ActiveProgramId);
 end;
@@ -2230,7 +2181,7 @@ begin
   for I := 0 to Inventory.Count - 1 do
   begin
     Equipment := Inventory[I];
-    Equipment.OwnerId := Byte(oiDominator);
+    Equipment.OwnerId := oiDominator;
     Equipment.DominatorSeries := DominatorSeries;
   end;
 end;
@@ -2297,7 +2248,7 @@ end;
 
 procedure TKling.ReactToAttack(Attacker: TShip);
 begin
-  if Attacker.OwnerId <> Byte(oiDominator) then
+  if Attacker.OwnerId <> oiDominator then
     EnemyShip := Attacker
   else if (Attacker as TKling).DominatorSeries <> DominatorSeries then
     EnemyShip := Attacker;
@@ -2318,7 +2269,7 @@ begin
   Result := False;
 end;
 
-function TKling.EvaluateAllyRelationAndStrength(Ship: TShip): Boolean;
+function TKling.AcceptsAppealFrom(Ship: TShip): Boolean;
 begin
   Result := Ship.OwnerId = OwnerId;
 end;
@@ -2426,7 +2377,7 @@ begin
     begin
       Asteroid := CurrentStar.Asteroids[I];
       Distance := PointDistanceSquared(Position, Asteroid.Position);
-      if Distance <= 1000000 then
+      if Distance <= AsteroidTargetRangeSquared then
         for J := 1 to WeaponCount do
         begin
           Weapon := Weapons[J];
@@ -2449,15 +2400,15 @@ procedure TKling.DetectAttackingPlayer(Attacker: TShip);
 begin
   if (GetPlayer = Attacker)
       and (Attacker.CurrentStar = CurrentStar)
-      and not TPlayer(Attacker).ChameleonDetected[Ord(DominatorSeries)]
-      and (GetPlayer.ChameleonLogic[Ord(DominatorSeries)] < 2)
+      and not TPlayer(Attacker).ChameleonDetected[DominatorSeries]
+      and (GetPlayer.ChameleonLogic[DominatorSeries] < 2)
       and not HasIndependentScriptFaction then
   begin
-    TPlayer(Attacker).ChameleonDetected[Ord(DominatorSeries)] := True;
+    TPlayer(Attacker).ChameleonDetected[DominatorSeries] := True;
     if TPlayer(Attacker).ChameleonActive
         and (TPlayer(Attacker).ChameleonSeries = DominatorSeries) then
       AddOrUpdatePlayerBubble(
-          0,
+          pmGalaxyNews,
           Galaxy.CurrentTurn,
           LocalizedText('ShipInfo.AddInfo.Chameleon.Detect'),
           ''
@@ -2472,12 +2423,12 @@ begin
       and (GetPlayer = Ship)
       and not HasIndependentScriptFaction
       and not Ship.IsOutsideStarSpace
-      and (not TPlayer(Ship).ChameleonDetected[Ord(DominatorSeries)]
-          or (GetPlayer.ChameleonLogic[Ord(DominatorSeries)] >= 2)) then
+      and (not TPlayer(Ship).ChameleonDetected[DominatorSeries]
+          or (GetPlayer.ChameleonLogic[DominatorSeries] >= 2)) then
   begin
     if (not TPlayer(Ship).ChameleonActive or (TPlayer(Ship).ChameleonSeries <> DominatorSeries))
-        and (GetPlayer.ChameleonLogic[Ord(DominatorSeries)] = 0) then
-      TPlayer(Ship).ChameleonDetected[Ord(DominatorSeries)] := True
+        and (GetPlayer.ChameleonLogic[DominatorSeries] = 0) then
+      TPlayer(Ship).ChameleonDetected[DominatorSeries] := True
     else
       Result := True;
   end;
@@ -2510,14 +2461,14 @@ begin
                     = TScriptShip(Ship.ScriptShip).StateText) then
               Continue;
           end
-          else if ((Ship.OwnerId = Byte(oiDominator))
+          else if ((Ship.OwnerId = oiDominator)
                   and ((Ship as TKling).DominatorSeries = DominatorSeries)
                   and (Ship.CurrentStanding <> ssCustom))
               or IsPlayerCamouflageEffective(Ship) then
             Continue;
           if (EnemyShip = nil)
-              or not (Ship.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)])
-              or (EnemyShip.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)]) then
+              or not (Ship.TypeId in [rstRangerCenter..rstCustomStation])
+              or (EnemyShip.TypeId in [rstRangerCenter..rstCustomStation]) then
           begin
             Distance := PointDistance(Position, Ship.Position);
             if NextRandomFloatRange(0.3, 3, RandomState) * BestDistance > Distance then
@@ -2538,9 +2489,9 @@ begin
   if (EnemyShip <> nil) and (EnemyShip.CurrentStar = CurrentStar) then
     if EnemyShip.InNormalSpace then
       if ShouldKamikaze then
-        OrderFollowShip(EnemyShip, 3, False)
+        OrderFollowShip(EnemyShip, fmKamikaze, False)
       else
-        OrderFollowShip(EnemyShip, 1, False)
+        OrderFollowShip(EnemyShip, fmMinWeaponRange, False)
     else if EnemyShip.CurrentPlanet <> nil then
       OrderMove(EnemyShip.CurrentPlanet.GetPosition, False);
 end;
@@ -2622,9 +2573,9 @@ var
 begin
   if KlingType = ktBoss then
   begin
-    BaseSkills[0] := 6;
-    BaseSkills[1] := 6;
-    BaseSkills[5] := 6;
+    BaseSkills[psAccuracy] := 6;
+    BaseSkills[psManeuverability] := 6;
+    BaseSkills[psLeadership] := 6;
   end
   else
   begin
@@ -2654,13 +2605,13 @@ begin
       end;
     StartPercent := 1;
     MidPercent := Threshold div 2;
-    Percent := Galaxy.GetFactionControlPercent(Ord(sfDominators));
+    Percent := Galaxy.GetFactionControlPercent(sfDominators);
     Lower := Round(RemapClamped(Percent, StartPercent, MidPercent, Maximum, Minimum));
     Upper := Round(RemapClamped(Percent, MidPercent, Threshold, Maximum, Minimum));
     Lower := Min(Lower, Upper);
-    BaseSkills[0] := NextRandomIntRange(Lower, Upper, RandomState);
-    BaseSkills[1] := NextRandomIntRange(Lower, Upper, RandomState);
-    BaseSkills[2] := 6;
+    BaseSkills[psAccuracy] := NextRandomIntRange(Lower, Upper, RandomState);
+    BaseSkills[psManeuverability] := NextRandomIntRange(Lower, Upper, RandomState);
+    BaseSkills[psTechnical] := 6;
   end;
   TechKnowledge := 8;
 end;
@@ -2706,7 +2657,7 @@ end;
 
 procedure TKling.RefreshCurrentStanding;
 var
-  StandingMode: Integer;
+  StandingMode: TScriptStandingOverrideMode;
 begin
   StandingMode := GetScriptStandingOverrideMode;
   if StandingMode = ssmCustomFaction then

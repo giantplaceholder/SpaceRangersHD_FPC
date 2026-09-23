@@ -28,7 +28,6 @@ type
     Depth: Single;
     InverseDepth: Single;
     Color: Word;
-    Gap12: array[0..1] of Byte;
   end;
 
   PStarFieldPoint = PointerToTStarFieldPoint;
@@ -59,7 +58,6 @@ type
     ViewPosition: TPointF;
     Unknown150: Integer;
     ViewDirty: Boolean;
-    Gap155: array[0..2] of Byte;
     Pixels: PStarFieldPixel;
     PixelCapacity: Integer;
     PixelCount: Integer;
@@ -498,7 +496,7 @@ begin
                 Bounds.Left,
                 Bounds.Top,
                 255,
-                $FFFFFF,
+                RgbWhite,
                 @Intersection,
                 False,
                 False

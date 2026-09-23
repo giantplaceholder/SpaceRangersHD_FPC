@@ -37,7 +37,6 @@ type
     SatelliteInventoryPageStart: Integer;
     SatelliteInventorySlots: array[0..5] of TImageGI;
     ResearchPanelVisible: Boolean;
-    Gap7911: array[0..2] of Byte;
     ItemInfoWindow: TWindowGI;
     ItemInfoImage: TImageGI;
     ItemInfoNameLabel: TLabelGI;
@@ -48,7 +47,6 @@ type
     ItemInfoHideTimer: PCallbackTimerGI;
     HoveredItem: TItem;
     SatellitePanelNeedsLayout: Boolean;
-    Gap7939: array[0..2] of Byte;
     SatelliteMovementTimer: PCallbackTimerGI;
     ProbeSignalTimer: PCallbackTimerGI;
     ProbeSignalSound: TSoundBufferControl;
@@ -57,7 +55,6 @@ type
     HeldSatelliteOrigin: Integer;
     HoveringSurfaceLoot: Boolean;
     NewSurfaceLootDiscovered: Boolean;
-    Gap7956: array[0..1] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;
@@ -334,7 +331,7 @@ begin
               Self,
               FormatText1(
                   LanguageDataConfig.GetParamByPathOrMarker('FormPlanetNO.SatelliteInPlanet'),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Name>',
                   GetPlayer.CurrentPlanet.Name
               ),
@@ -355,7 +352,7 @@ begin
   StarMapScreen.SetMapCenterManually(TruncatePointF(GetPlayer.Position));
   PlayerStar.RefreshSpaceObjectPositions;
   RunGlobalScriptsForContext(GetPlayer.CurrentStar, 1);
-  if (GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(3) then
+  if (GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(heHolyFanaticism) then
     Galaxy.EnableDominatorSurfaces
   else
     Galaxy.DisableDominatorSurfaces;
@@ -488,7 +485,7 @@ begin
               > 0) then
       begin
         QuestId := Quest.QuestNumber;
-        if (Quest.QuestNumber < 10000)
+        if (Quest.QuestNumber < FirstLicensedQuestId)
             or ((LanguageDataConfig.GetBlock('PlanetQuest').CountBlocks('PlanetQuestLic') > 0)
                 and (LanguageDataConfig
                         .GetBlock('PlanetQuest')
@@ -517,16 +514,16 @@ begin
             Text,
             '<CurPlanet>',
             (Quest.ObjectiveTarget as TPlanet).Name,
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
         ReplaceTextToken(
             Text,
             '<CurStar>',
             (Quest.ObjectiveTarget as TPlanet).CurrentStar.Name,
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
-        ReplaceTextToken(Text, '<FromPlanet>', Quest.Planet.Name, '<color=255,240,100>');
-        ReplaceTextToken(Text, '<FromStar>', Quest.Planet.CurrentStar.Name, '<color=255,240,100>');
+        ReplaceTextToken(Text, '<FromPlanet>', Quest.Planet.Name, TextHighlightColorTag);
+        ReplaceTextToken(Text, '<FromStar>', Quest.Planet.CurrentStar.Name, TextHighlightColorTag);
       end;
       SetText(Text);
       Window.SetSize(
@@ -1172,7 +1169,7 @@ begin
                   or ((Entry.TerrainKind = ptHill)
                       and (GetPlayer.CurrentPlanet.HillExplored >= Entry.SurfaceTileIndex)))
               and not Entry.Unavailable)
-          or ((GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0)
+          or ((GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0)
               and (Entry.Item is TEquipmentWithActCode)
               and TEquipmentWithActCode(Entry.Item).DisplayAsArtefact) then
       begin
@@ -1330,7 +1327,7 @@ begin
               LocalizedColorText('FormPlanetNO.Space'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.WaterTiles),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   (GetByName('LandSpace') as TLabelGI)
       .SetText(
@@ -1338,7 +1335,7 @@ begin
               LocalizedColorText('FormPlanetNO.Space'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.LandTiles),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   (GetByName('HillSpace') as TLabelGI)
       .SetText(
@@ -1346,7 +1343,7 @@ begin
               LocalizedColorText('FormPlanetNO.Space'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.HillTiles),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   (GetByName('WaterComplate') as TLabelGI)
       .SetText(
@@ -1354,7 +1351,7 @@ begin
               LocalizedColorText('FormPlanetNO.Complate'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.WaterExplored),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   (GetByName('LandComplate') as TLabelGI)
       .SetText(
@@ -1362,7 +1359,7 @@ begin
               LocalizedColorText('FormPlanetNO.Complate'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.LandExplored),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   (GetByName('HillComplate') as TLabelGI)
       .SetText(
@@ -1370,7 +1367,7 @@ begin
               LocalizedColorText('FormPlanetNO.Complate'),
               '<val>',
               IntToStr(GetPlayer.CurrentPlanet.HillExplored),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           ));
   WaterRate := 0;
   LandRate := 0;
@@ -1415,7 +1412,7 @@ begin
               LocalizedColorText('FormPlanetNO.TimeLeft'),
               '<val>',
               IntToStr(WaterRate),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           )
       );
     end;
@@ -1438,7 +1435,7 @@ begin
               LocalizedColorText('FormPlanetNO.TimeLeft'),
               '<val>',
               IntToStr(LandRate),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           )
       );
     end;
@@ -1461,7 +1458,7 @@ begin
               LocalizedColorText('FormPlanetNO.TimeLeft'),
               '<val>',
               IntToStr(HillRate),
-              '<color=0,50,200>'
+              DialogHighlightColorTag
           )
       );
     end;
@@ -1805,7 +1802,6 @@ begin
     ProbeSignalSound.SetVolume(Min(1, ProbeSignalSound.Volume + 0.02));
 end;
 
-// The explicit script receiver value preserves native argument evaluation order.
 procedure TfPlanetNO.UpdateItemInfoPopup(Item: TItem);
 const
   DurableTypes = [0..79] - [0..7, 9, 23..25, 35..38, 42, 69..72, 74..79];
@@ -1814,160 +1810,142 @@ var
   BarWidth, CapWidth, MinimumWidth: Integer;
   Reserved7C, Reserved80, Reserved84: Integer; // Unused native stack locals.
 begin
-  if Item <> HoveredItem then
+  if Item = HoveredItem then
+    Exit;
+  HoveredItem := Item;
+  if Item = nil then
   begin
-    HoveredItem := Item;
-    if Item = nil then
+    if ItemInfoHideTimer <> nil then
     begin
-      if ItemInfoHideTimer <> nil then
-      begin
-        CancelCallbackTimer(ItemInfoHideTimer);
-        ItemInfoHideTimer := nil;
-      end;
-      ItemInfoHideTimer := ScheduleCallbackTimer(300, 99999, HideItemInfoPopup);
-    end
+      CancelCallbackTimer(ItemInfoHideTimer);
+      ItemInfoHideTimer := nil;
+    end;
+    ItemInfoHideTimer := ScheduleCallbackTimer(300, 99999, HideItemInfoPopup);
+    Exit;
+  end;
+  if ItemInfoHideTimer <> nil then
+  begin
+    CancelCallbackTimer(ItemInfoHideTimer);
+    ItemInfoHideTimer := nil;
+  end;
+  if Item is TGoods then
+  begin
+    ShowGoodsInfoPopup(Item as TGoods);
+    Exit;
+  end;
+  if (Galaxy <> nil) and not Galaxy.Destroying and (GetPlayer <> nil) then
+  begin
+    if Item.ScriptItem <> nil then
+      TScriptItem(Item.ScriptItem)
+          .RunActionCode(satOnShowingItemInfo, nil, GetPlayer.CurrentPlanet, nil, 0);
+    if Item is TEquipmentWithActCode then
+      RunItemConfigActionCode(Item, satOnShowingItemInfo, nil, GetPlayer.CurrentPlanet, nil, 0);
+  end;
+  Equipment := Item as TEquipment;
+  ItemInfoWindow.SetActive(True);
+  with ItemInfoImage do
+  begin
+    SetImagePath('GI,' + Equipment.GetBitmapResourceName + 's');
+    SetImageKindX(ikxCenter);
+    SetImageKindY(ikyCenter);
+    SetPosition(SubtractPoints(ShipScreen.ItemImageCenter, GetVisualCenter));
+  end;
+  ItemInfoNameLabel.SetText(WrapTextInColor(Equipment.GetDisplayName, InfoNameColorTag));
+  ItemInfoTextLabel.SetText(Equipment.GetInfoText(TextHighlightColorTag, GetPlayer));
+  ItemInfoSizeLabel.SetText(IntToStr(Equipment.Weight));
+  ItemInfoCostLabel.SetText(IntToStr(Equipment.Cost));
+  with ItemInfoRaceIcon do
+  begin
+    SetImagePath(GetFactionEmblemPath(Equipment.GetOwnerConfigName));
+    SetImageKindX(ikxCenter);
+    SetImageKindY(ikyCenter);
+  end;
+  if not (Byte(Equipment.ItemType) in DurableTypes) and (Equipment.ItemType <> t_Hull) then
+  begin
+    with GetByName('InfoDurable') as TImageGI do
+      Parent.Parent.SetActive(False);
+    MinimumWidth := 0;
+  end
+  else
+  begin
+    if Equipment is THull then
+      BarWidth :=
+          Round(
+              Sqrt(Equipment.Weight / HullBaseSize / Max(0.1, Equipment.GetFragilityFactor([])))
+                  * 64
+          )
     else
+      BarWidth := Round(64 / Max(0.1, Equipment.GetFragilityFactor([])));
+    BarWidth := Min(192, Max(32, BarWidth));
+    with GetByName('InfoDurableLeft') as TImageGI do
     begin
-      if ItemInfoHideTimer <> nil then
-      begin
-        CancelCallbackTimer(ItemInfoHideTimer);
-        ItemInfoHideTimer := nil;
-      end;
-      if Item is TGoods then
-        ShowGoodsInfoPopup(Item as TGoods)
+      CapWidth := GetContentSize.X;
+      MinimumWidth :=
+          2 * CapWidth
+              + BarWidth
+              + LocalPosition.X
+              + Parent.LocalPosition.X
+              + 2 * Parent.Parent.LocalPosition.X;
+    end;
+    with GetByName('InfoDurable') as TImageGI do
+    begin
+      Parent.Parent.SetActive(True);
+      Parent.Parent.SetSize(Classes.Point(2 * CapWidth + BarWidth, Parent.Parent.ClientSize.Y));
+      Parent.SetSize(Classes.Point(BarWidth + 2, Parent.Parent.ClientSize.Y));
+      if Equipment.ItemType = t_Hull then
+        SetPosition(
+            Classes.Point(
+                Round((Equipment as THull).HullPoints / (Equipment as THull).Weight * BarWidth)
+                    - (GetContentSize.X - 5),
+                LocalPosition.Y
+            )
+        )
       else
-      begin
-        if (Galaxy <> nil) and not Galaxy.Destroying and (GetPlayer <> nil) then
-        begin
-          if Item.ScriptItem <> nil then
-            TScriptItem(PtrInt(Item.ScriptItem) + 0)
-                .RunActionCode(satOnShowingItemInfo, nil, GetPlayer.CurrentPlanet, nil, 0);
-          if Item is TEquipmentWithActCode then
-            RunItemConfigActionCode(
-                Item,
-                satOnShowingItemInfo,
-                nil,
-                GetPlayer.CurrentPlanet,
-                nil,
-                0
-            );
-        end;
-        Equipment := Item as TEquipment;
-        ItemInfoWindow.SetActive(True);
-        with ItemInfoImage do
-        begin
-          SetImagePath('GI,' + Equipment.GetBitmapResourceName + 's');
-          SetImageKindX(ikxCenter);
-          SetImageKindY(ikyCenter);
-          SetPosition(SubtractPoints(ShipScreen.ItemImageCenter, GetVisualCenter));
-        end;
-        ItemInfoNameLabel.SetText(WrapTextInColor(Equipment.GetDisplayName, InfoNameColorTag));
-        ItemInfoTextLabel.SetText(Equipment.GetInfoText('<color=255,240,100>', GetPlayer));
-        ItemInfoSizeLabel.SetText(IntToStr(Equipment.Weight));
-        ItemInfoCostLabel.SetText(IntToStr(Equipment.Cost));
-        with ItemInfoRaceIcon do
-        begin
-          SetImagePath(GetFactionEmblemPath(Equipment.GetOwnerConfigName));
-          SetImageKindX(ikxCenter);
-          SetImageKindY(ikyCenter);
-        end;
-        if not (Byte(Equipment.ItemType) in DurableTypes) and (Equipment.ItemType <> t_Hull) then
-        begin
-          with GetByName('InfoDurable') as TImageGI do
-            Parent.Parent.SetActive(False);
-          MinimumWidth := 0;
-        end
-        else
-        begin
-          if Equipment is THull then
-            BarWidth :=
-                Round(
-                    Sqrt(
-                            Equipment.Weight
-                                / HullBaseSize
-                                / Max(0.1, Equipment.GetFragilityFactor([])))
-                        * 64
-                )
-          else
-            BarWidth := Round(64 / Max(0.1, Equipment.GetFragilityFactor([])));
-          BarWidth := Min(192, Max(32, BarWidth));
-          with GetByName('InfoDurableLeft') as TImageGI do
-          begin
-            CapWidth := GetContentSize.X;
-            MinimumWidth :=
-                2 * CapWidth
-                    + BarWidth
-                    + LocalPosition.X
-                    + Parent.LocalPosition.X
-                    + 2 * Parent.Parent.LocalPosition.X;
-          end;
-          with GetByName('InfoDurable') as TImageGI do
-          begin
-            Parent.Parent.SetActive(True);
-            Parent.Parent.SetSize(
-                Classes.Point(2 * CapWidth + BarWidth, Parent.Parent.ClientSize.Y)
-            );
-            Parent.SetSize(Classes.Point(BarWidth + 2, Parent.Parent.ClientSize.Y));
-            if Equipment.ItemType = t_Hull then
-              SetPosition(
-                  Classes.Point(
-                      Round(
-                              (Equipment as THull).HullPoints
-                                  / (Equipment as THull).Weight
-                                  * BarWidth)
-                          - (GetContentSize.X - 5),
-                      LocalPosition.Y
-                  )
-              )
-            else
-              SetPosition(
-                  Classes.Point(
-                      Round(BarWidth * (Equipment.ConditionPercent / 100)) - (GetContentSize.X - 5),
-                      LocalPosition.Y
-                  )
-              );
-          end;
-          with GetByName('InfoDurableRight') as TImageGI do
-          begin
-            SetPosition(Classes.Point(BarWidth + CapWidth - GetContentSize.X, LocalPosition.Y));
-            Parent.SetPosition(Classes.Point(CapWidth, Parent.LocalPosition.Y));
-            Parent.SetSize(Classes.Point(BarWidth + CapWidth, Parent.ClientSize.Y));
-          end;
-          with GetByName('InfoDurableBack') as TImageGI do
-          begin
-            SetPosition(Classes.Point(BarWidth + 1 - GetContentSize.X, LocalPosition.Y));
-            Parent.SetSize(Classes.Point(BarWidth + CapWidth, Parent.ClientSize.Y));
-          end;
-        end;
-        ShipScreen.LayoutItemInfo(
-            ItemInfoWindow,
-            ItemInfoNameLabel,
-            ItemInfoTextLabel,
-            True,
-            True,
-            MinimumWidth
-        );
-        ItemInfoSizeLabel.SetPosition(
+        SetPosition(
             Classes.Point(
-                ShipScreen.ItemSizeLabelPosition.X,
-                ItemInfoWindow.ClientSize.Y + ShipScreen.ItemSizeLabelPosition.Y
+                Round(BarWidth * (Equipment.ConditionPercent / 100)) - (GetContentSize.X - 5),
+                LocalPosition.Y
             )
         );
-        ItemInfoCostLabel.SetPosition(
-            Classes.Point(
-                ShipScreen.ItemPriceLabelPosition.X,
-                ItemInfoWindow.ClientSize.Y + ShipScreen.ItemPriceLabelPosition.Y
-            )
-        );
-        ItemInfoRaceIcon.SetPosition(
-            Classes.Point(
-                ItemInfoWindow.ClientSize.X + ShipScreen.ItemRaceImagePosition.X,
-                ItemInfoWindow.ClientSize.Y + ShipScreen.ItemRaceImagePosition.Y
-            )
-        );
-      end;
+    end;
+    with GetByName('InfoDurableRight') as TImageGI do
+    begin
+      SetPosition(Classes.Point(BarWidth + CapWidth - GetContentSize.X, LocalPosition.Y));
+      Parent.SetPosition(Classes.Point(CapWidth, Parent.LocalPosition.Y));
+      Parent.SetSize(Classes.Point(BarWidth + CapWidth, Parent.ClientSize.Y));
+    end;
+    with GetByName('InfoDurableBack') as TImageGI do
+    begin
+      SetPosition(Classes.Point(BarWidth + 1 - GetContentSize.X, LocalPosition.Y));
+      Parent.SetSize(Classes.Point(BarWidth + CapWidth, Parent.ClientSize.Y));
     end;
   end;
+  ShipScreen.LayoutItemInfo(
+      ItemInfoWindow,
+      ItemInfoNameLabel,
+      ItemInfoTextLabel,
+      True,
+      True,
+      MinimumWidth
+  );
+  ItemInfoSizeLabel.SetPosition(
+      Classes.Point(
+          ShipScreen.ItemSizeLabelPosition.X,
+          ItemInfoWindow.ClientSize.Y + ShipScreen.ItemSizeLabelPosition.Y
+      )
+  );
+  ItemInfoCostLabel.SetPosition(
+      Classes.Point(
+          ShipScreen.ItemPriceLabelPosition.X,
+          ItemInfoWindow.ClientSize.Y + ShipScreen.ItemPriceLabelPosition.Y
+      )
+  );
+  ItemInfoRaceIcon.SetPosition(
+      Classes.Point(
+          ItemInfoWindow.ClientSize.X + ShipScreen.ItemRaceImagePosition.X,
+          ItemInfoWindow.ClientSize.Y + ShipScreen.ItemRaceImagePosition.Y
+      )
+  );
 end;
 
 procedure TfPlanetNO.ShowGoodsInfoPopup(Item: TGoods);
@@ -1988,11 +1966,7 @@ begin
   (GetByName('InfoPrice') as TLabelGI).SetText(IntToStr(Item.Cost));
   with GetByName('EmRace') as TImageGI do
   begin
-    SetImagePath(
-        GetFactionEmblemPath(
-            OwnerInfo[Integer(RaceToOwner(GetPlayer.PilotRace)) and $7F].InternalName
-        )
-    );
+    SetImagePath(GetFactionEmblemPath(OwnerInfo[RaceToOwner(GetPlayer.PilotRace)].InternalName));
     SetImageKindX(ikxCenter);
     SetImageKindY(ikyCenter);
   end;
@@ -2108,13 +2082,12 @@ begin
     Exit;
   end;
   if GetPlayer.CurrentPlanet <> nil then
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
     begin
       if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
         MusicManager.PlayCategory(
             'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                    .InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                 + 'Pirate'
         )
       else

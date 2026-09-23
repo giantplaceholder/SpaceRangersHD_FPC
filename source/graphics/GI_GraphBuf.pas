@@ -22,7 +22,6 @@ type
     HalfAlpha: Boolean;
     SourceHasPerPixelAlpha: Boolean;
     UsesExternalGraphBuf: Boolean;
-    Gap129: array[0..2] of Byte;
     procedure Clear; override;
     procedure LoadFromConfigPath(const Path: WideString); override;
     procedure Draw(ClipRect: TRect); override;
@@ -637,7 +636,7 @@ begin
             X,
             Y,
             255 - (Ord(HalfAlpha) shl 7),
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False

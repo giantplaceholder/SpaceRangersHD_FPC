@@ -107,24 +107,19 @@ type
 
   PointerToTScriptVDRequest = ^TScriptVDRequest;
 
-  TScriptActionTypeSet = set of 0..61;
+  TScriptActionTypeSet = set of TScriptActionType;
 
   TScriptStepTypeSet = set of 0..11;
 
-  TScriptEconomyMask = set of 0..7;
+  TScriptShipTypeMask = set of THullType;
 
-  TScriptGovernmentMask = set of 0..7;
+  TScriptDominatorMasks = array[TKlingType] of TDominatorSeriesMask;
 
-  TScriptShipTypeMask = set of 0..15;
-
-  TScriptDominatorMasks = array[0..7] of TDominatorSeriesMask;
-
-  TScriptStarConstraint = packed record
+  TScriptStarConstraint = record
     OtherStar: TScriptStar;
     MinDistance: Integer;
     MaxDistance: Integer;
     RequireBlackHole: Boolean;
-    GapD: array[0..2] of Byte;
   end;
 
   TDialogOverride = packed record
@@ -139,7 +134,7 @@ type
 
   PScriptShipRequirement = PointerToTScriptShipOtb;
 
-  TDialogInject = packed record
+  TDialogInject = record
     Script: TScript;
     DialogName: WideString;
     Text: WideString;
@@ -148,7 +143,6 @@ type
     // Runtime GAnswerData can carry an object address.
     AnswerData: PtrUInt;
     ReplaceGreeting: Boolean;
-    Gap19: array[0..2] of Byte;
     ActionCode: WideString;
     ActionScript: TScript;
   end;
@@ -162,22 +156,21 @@ type
     MaxCombatBalance: Single;
   end;
 
-  TDialogBlock = packed record
+  TDialogBlock = record
     Text: WideString;
     Script: TScript;
     Mode: Byte;
-    Gap9: array[0..2] of Byte;
   end;
 
   TScriptPlanet = packed record
     Name: WideString;
     RaceMask: TOwnerMask;
     OwnerMask: TOwnerMask;
-    EconomyMask: TScriptEconomyMask;
-    GovernmentMask: TScriptGovernmentMask;
+    EconomyMask: TPlanetEconomies;
+    GovernmentMask: TPlanetGovernments;
     MinOrbitPercent: Integer;
     MaxOrbitPercent: Integer;
-    DefinitionText: WideString;
+    DialogChoiceText: WideString;
     Planet: TPlanet;
   end;
 
@@ -208,7 +201,6 @@ type
     ConstellationIndex: Integer;
     RejectHostilePresence: Boolean;
     ProtectStar: Boolean;
-    GapE: array[0..1] of Byte;
     Constraints: array of TScriptStarConstraint;
     Planets: array of TScriptPlanet;
     ShipRequirements: array of TScriptShipOtb;
@@ -233,12 +225,11 @@ type
     EndState: Boolean;
     Hit: Boolean;
     HitPlayer: Boolean;
-    Gap2B: array[0..0] of Byte;
     constructor Create;
     destructor Destroy; override;
     function GetGroup: TScriptGroup;
     function RunActionCode(
-        ActionType: Byte;
+        ActionType: TScriptActionType;
         Ship: TShip;
         Object1: TObject;
         Object2: TObject;
@@ -274,12 +265,10 @@ type
     Weight: Integer;
     Level: Integer;
     DefinitionValue1C: Integer;
-    OwnerId: Byte;
-    Gap21: array[0..2] of Byte;
+    OwnerId: TOwnerId;
     ConfigName: WideString;
     Item: TItem;
     CanSell: Boolean;
-    Gap2D: array[0..2] of Byte;
     Data: array[1..3] of Integer;
     TextData1: WideString;
     TextData2: WideString;
@@ -290,13 +279,12 @@ type
     ActionTypeMask: TScriptActionTypeSet;
     StepTypeMask: TScriptStepTypeSet;
     ActionCodeInitialized: Boolean;
-    Gap5F: array[0..0] of Byte;
     Script: TScript;
     constructor Create;
     destructor Destroy; override;
     procedure CompileActionCode;
     function RunActionCode(
-        ActionType: Byte;
+        ActionType: TScriptActionType;
         Ship: TShip;
         Object1: TObject;
         Object2: TObject;
@@ -312,7 +300,6 @@ type
     InitialStateIndex: Integer;
     OwnerMask: TOwnerMask;
     ShipTypeMask: TScriptShipTypeMask;
-    Gap17: array[0..0] of Byte;
     MinCount: Integer;
     MaxCount: Integer;
     MinSpeed: Integer;
@@ -321,7 +308,6 @@ type
     MinCargoHookLevel: Integer;
     MinFreeCargoSpace: Integer;
     IncludePlayer: Boolean;
-    Gap35: array[0..2] of Byte;
     StationNames: WideString;
     DominatorMasks: TScriptDominatorMasks;
     MinStrength: Single;
@@ -333,7 +319,7 @@ type
     MinPirateStatus: Integer;
     MaxPirateStatus: Integer;
     MaxDistanceFromPlanet: Integer;
-    DefinitionText: WideString;
+    StationDialogVariable: WideString;
     Ships: TList;
     constructor Create;
     destructor Destroy; override;
@@ -349,14 +335,12 @@ type
     PickupItemVarName: WideString;
     PickupItem: TScriptItem;
     PickUpNearbyItems: Boolean;
-    Gap25: array[0..2] of Byte;
-    AuxiliaryText: WideString;
-    AuxiliaryCode: TCodeEC;
+    DialogTextOrVariable: WideString;
+    DialogCode: TCodeEC;
     OnActionText: WideString;
     ActionCode: TCodeEC;
     ActionTypeMask: TScriptActionTypeSet;
     StepTypeMask: TScriptStepTypeSet;
-    Gap42: array[0..1] of Byte;
     EntryCode: TCodeEC;
     StateCode: TCodeEC;
     constructor Create;
@@ -400,13 +384,12 @@ type
     DialogAnswers: TList;
     InitCode: TCodeEC;
     TurnCode: TCodeEC;
-    AuxiliaryCode: TCodeEC;
+    DialogCode: TCodeEC;
     Ether: TEther;
     CurrentShip: TShip;
     CurrentDialog: Integer;
     CurrentAnswer: Integer;
     SkipGreeting: Boolean;
-    Gap51: array[0..2] of Byte;
     GroupRelations: array of TScriptGroupRelation;
     AnchorPlanet: TPlanet;
     EtherIds: TStringsEC;
@@ -420,7 +403,7 @@ type
     function GetItem(Name: WideString): TScriptItem;
     procedure RunShipState(Binding: TScriptShip);
     procedure RunTurnCode;
-    procedure RunAuxiliaryCode;
+    procedure RunDialogCode;
     procedure CallDialog(Index: Integer);
     procedure CallDialogByVariable(Name: WideString);
     procedure CallDialogMessage(Index: Integer);
@@ -462,7 +445,6 @@ type
     Code: TCodeEC;
     ActionTypeMask: TScriptActionTypeSet;
     StepTypeMask: TScriptStepTypeSet;
-    Gap1A: array[0..1] of Byte;
     constructor Create;
     destructor Destroy; override;
     procedure Initialize(
@@ -565,11 +547,10 @@ type
 
   PScriptDialogBlock = PointerToTDialogBlock;
 
-  TScriptContextSnapshot = packed record
+  TScriptContextSnapshot = record
     Script: TScript;
     CurrentShip: TShip;
     EndState: Boolean;
-    Gap9: array[0..2] of Byte;
   end;
 
 var
@@ -682,15 +663,15 @@ function DecodeScriptRaceMask(Value: Cardinal): TOwnerMask;
 
 function DecodeScriptOwnerMask(Value: Cardinal): TOwnerMask;
 
-function DecodeScriptEconomyMask(Value: Cardinal): TScriptEconomyMask;
+function DecodeScriptEconomyMask(Value: Cardinal): TPlanetEconomies;
 
-function DecodeScriptGovernmentMask(Value: Cardinal): TScriptGovernmentMask;
+function DecodeScriptGovernmentMask(Value: Cardinal): TPlanetGovernments;
 
 function DecodeScriptShipTypeMask(Value: Cardinal): TScriptShipTypeMask;
 
-function DecodeScriptDominatorMask(Value: Cardinal; KlingType: Byte): TDominatorSeriesMask;
+function DecodeScriptDominatorMask(Value: Cardinal; KlingType: TKlingType): TDominatorSeriesMask;
 
-function DecodeScriptItemOwner(Value: Integer): Byte;
+function DecodeScriptItemOwner(Value: Integer): TOwnerId;
 
 function DecodeScriptRelationLevel(Value: Integer): TRelationLevel;
 
@@ -731,7 +712,7 @@ function RunItemUseCode(Item: TItem; Ship: TShip): Integer;
 
 function RunItemConfigActionCode(
     Item: TItem;
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1: TObject;
     Object2: TObject;
@@ -740,7 +721,7 @@ function RunItemConfigActionCode(
 
 function RunCustomShipInfoActionCode(
     Info: PCustomShipInfo;
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1: TObject;
     Object2: TObject;
@@ -872,7 +853,7 @@ begin
       ScriptArcadeReturnScreenId := Ord(CurrentScreenId);
     end;
     RequestedScreenId := screenArcadeBattle;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
     Result := True;
   end;
 end;
@@ -893,7 +874,7 @@ begin
       QuestReturnScreenId := CurrentScreenId;
     end;
     RequestedScreenId := screenPlanetQuest;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
     Result := True;
   end;
 end;
@@ -929,7 +910,7 @@ begin
     if Failed then
     begin
       if ShowMessageBoxGI(
-              TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]),
+              TMessageLoopGI(RegisteredScreens[CurrentScreenId]),
               LocalizedColorText('FormGov.BattlePlanetQuestCrashed'),
               mbgOK or mbgCancel or mbgQuestion)
           = mbgResultOK then
@@ -942,7 +923,7 @@ begin
     if Status = 1 then
     begin
       RequestedScreenId := screenMainMenu;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
       Exit;
     end;
     if Status = 3 then
@@ -950,7 +931,7 @@ begin
     else
       Status := 3;
     RequestedScreenId := CurrentScreenId;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
     CompleteQueuedPlanetaryBattle(Status);
     Result := True;
   end;
@@ -965,10 +946,9 @@ begin
   if QueuedVideos.Count > 0 then
   begin
     Request := PScriptVDRequest(QueuedVideos[0]);
-    if not SkipVideo
-        and (TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]) = RuinsTalkScreen) then
+    if not SkipVideo and (TMessageLoopGI(RegisteredScreens[CurrentScreenId]) = RuinsTalkScreen) then
     begin
-      Video := TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).GetByName('Film') as TxvidGI;
+      Video := TMessageLoopGI(RegisteredScreens[CurrentScreenId]).GetByName('Film') as TxvidGI;
       Video.SetActive(True);
       if Video.ImageOpen(Request.Video, False) then
       begin
@@ -1016,7 +996,7 @@ begin
       begin
         HangarScreen.TryTakeOff;
         ScriptEndTurnRequested := False;
-        TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+        TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
         Result := True;
       end;
     end;
@@ -1030,19 +1010,19 @@ begin
   begin
     ScriptEndTurnRequested := False;
     if CurrentScreenId = screenRuinsTalk then
-      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]))
+      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[CurrentScreenId]))
           .MainPanel
           .EndTurnClicked(nil)
     else if CurrentScreenId = screenPlanet then
-      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]))
+      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[CurrentScreenId]))
           .MainPanel
           .EndTurnClicked(nil)
     else if CurrentScreenId = screenPlanetNO then
-      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]))
+      TMessageLoopGIWithMainPanel(TMessageLoopGI(RegisteredScreens[CurrentScreenId]))
           .MainPanel
           .EndTurnClicked(nil)
     else if CurrentScreenId = screenStarMap then
-      TfStarMap(TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)])).EndTurnAfterOpen := True;
+      TfStarMap(TMessageLoopGI(RegisteredScreens[CurrentScreenId])).EndTurnAfterOpen := True;
     Result := True;
   end;
 end;
@@ -1162,21 +1142,21 @@ begin
     if CurrentScreenId = screenShip then
     begin
       ShipReturnScreenId := screenStarMap;
-      TfShip2(TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)])).CloseClicked(nil);
+      TfShip2(TMessageLoopGI(RegisteredScreens[CurrentScreenId])).CloseClicked(nil);
       Exit;
     end;
     if GetPlayer.DockedTo <> nil then
       RequestedScreenId := screenRuinsTalk
     else if GetPlayer.CurrentPlanet <> nil then
     begin
-      if GetPlayer.CurrentPlanet.OwnerId = Byte(oiUninhabited) then
+      if GetPlayer.CurrentPlanet.OwnerId = oiUninhabited then
         RequestedScreenId := screenPlanetNO
       else
         RequestedScreenId := screenPlanet;
     end
     else
       RequestedScreenId := screenStarMap;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
   end;
 end;
 
@@ -1353,7 +1333,7 @@ begin
   Script := TScript.Create;
   Galaxy.Scripts.Add(Script);
   Template.ActiveScriptIndex := Galaxy.Scripts.Count - 1;
-  Script.ClassId := Template.ConfigValue;
+  Script.ClassId := Template.ClassId;
   if Script.LoadFromFile(Template.FileName, AnchorStar, AnchorPlanet, True) then
   begin
     Template.LastTurn := Galaxy.CurrentTurn;
@@ -1390,7 +1370,7 @@ begin
   I := Galaxy.Scripts.IndexOf(Script);
   NewScript := TScript.Create;
   Galaxy.Scripts[I] := NewScript;
-  NewScript.ClassId := Template.ConfigValue;
+  NewScript.ClassId := Template.ClassId;
   if NewScript.LoadFromFile(Template.FileName, AnchorStar, AnchorPlanet, True) then
   begin
     Template.LastTurn := Galaxy.CurrentTurn;
@@ -1399,9 +1379,9 @@ begin
     for I := 0 to Script.EtherIds.GetCount - 1 do
     begin
       Message := FindPlayerBubbleByKey(Script.EtherIds.GetTextAt(I), False);
-      if (Message <> nil) and (Message.Kind = 3) then
+      if (Message <> nil) and (Message.Kind = pmQuestActive) then
       begin
-        Message.Kind := 5;
+        Message.Kind := pmQuestCancelled;
         Message.WasRead := False;
       end;
     end;
@@ -1496,84 +1476,84 @@ function DecodeScriptRaceMask(Value: Cardinal): TOwnerMask;
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..4];
+    Result := [oiMaloc..oiGaal];
     Exit;
   end;
   Result := [];
   if ScriptDefinitionBit(Value, 1) then
-    Result := Result + [0];
+    Result := Result + [oiMaloc];
   if ScriptDefinitionBit(Value, 2) then
-    Result := Result + [1];
+    Result := Result + [oiPeleng];
   if ScriptDefinitionBit(Value, 3) then
-    Result := Result + [2];
+    Result := Result + [oiHuman];
   if ScriptDefinitionBit(Value, 4) then
-    Result := Result + [3];
+    Result := Result + [oiFeyan];
   if ScriptDefinitionBit(Value, 5) then
-    Result := Result + [4];
+    Result := Result + [oiGaal];
 end;
 
 function DecodeScriptOwnerMask(Value: Cardinal): TOwnerMask;
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..7];
+    Result := [oiMaloc..oiPirate];
     Exit;
   end;
   Result := [];
   if ScriptDefinitionBit(Value, 1) then
-    Result := Result + [0];
+    Result := Result + [oiMaloc];
   if ScriptDefinitionBit(Value, 2) then
-    Result := Result + [1];
+    Result := Result + [oiPeleng];
   if ScriptDefinitionBit(Value, 3) then
-    Result := Result + [2];
+    Result := Result + [oiHuman];
   if ScriptDefinitionBit(Value, 4) then
-    Result := Result + [3];
+    Result := Result + [oiFeyan];
   if ScriptDefinitionBit(Value, 5) then
-    Result := Result + [4];
+    Result := Result + [oiGaal];
   if ScriptDefinitionBit(Value, 6) then
-    Result := Result + [5];
+    Result := Result + [oiDominator];
   if ScriptDefinitionBit(Value, 7) then
-    Result := Result + [6];
+    Result := Result + [oiUninhabited];
   if ScriptDefinitionBit(Value, 8) then
-    Result := Result + [7];
+    Result := Result + [oiPirate];
   if ScriptDefinitionBit(Value, 9) and (GetPlayer <> nil) then
     Result := Result + [GetPlayer.OwnerId];
 end;
 
-function DecodeScriptEconomyMask(Value: Cardinal): TScriptEconomyMask;
+function DecodeScriptEconomyMask(Value: Cardinal): TPlanetEconomies;
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..2];
+    Result := [peAgricultural..peIndustrial];
     Exit;
   end;
   Result := [];
   if ScriptDefinitionBit(Value, 1) then
-    Result := Result + [0];
+    Result := Result + [peAgricultural];
   if ScriptDefinitionBit(Value, 2) then
-    Result := Result + [2];
+    Result := Result + [peIndustrial];
   if ScriptDefinitionBit(Value, 3) then
-    Result := Result + [1];
+    Result := Result + [peMixed];
 end;
 
-function DecodeScriptGovernmentMask(Value: Cardinal): TScriptGovernmentMask;
+function DecodeScriptGovernmentMask(Value: Cardinal): TPlanetGovernments;
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..4];
+    Result := [pgAnarchy..pgDemocracy];
     Exit;
   end;
   Result := [];
   if ScriptDefinitionBit(Value, 1) then
-    Result := Result + [0];
+    Result := Result + [pgAnarchy];
   if ScriptDefinitionBit(Value, 2) then
-    Result := Result + [1];
+    Result := Result + [pgDictatorship];
   if ScriptDefinitionBit(Value, 3) then
-    Result := Result + [2];
+    Result := Result + [pgMonarchy];
   if ScriptDefinitionBit(Value, 4) then
-    Result := Result + [3];
+    Result := Result + [pgRepublic];
   if ScriptDefinitionBit(Value, 5) then
-    Result := Result + [4];
+    Result := Result + [pgDemocracy];
 end;
 
 function DecodeScriptShipTypeMask(Value: Cardinal): TScriptShipTypeMask;
@@ -1582,136 +1562,136 @@ var
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..8];
+    Result := [htRanger..htStation];
     Exit;
   end;
   Result := [];
   if ScriptDefinitionBit(Value, 1) then
-    Result := Result + [0];
+    Result := Result + [htRanger];
   if ScriptDefinitionBit(Value, 2) then
-    Result := Result + [1];
+    Result := Result + [htWarrior];
   if ScriptDefinitionBit(Value, 3) then
-    Result := Result + [2];
+    Result := Result + [htPirate];
   if ScriptDefinitionBit(Value, 4) then
-    Result := Result + [3];
+    Result := Result + [htTransport];
   if ScriptDefinitionBit(Value, 5) then
-    Result := Result + [4];
+    Result := Result + [htLiner];
   if ScriptDefinitionBit(Value, 6) then
-    Result := Result + [5];
+    Result := Result + [htDiplomat];
   if ScriptDefinitionBit(Value, 25) then
-    Result := Result + [7];
+    Result := Result + [htTranclucator];
   for I := 7 to 24 do
     if ScriptDefinitionBit(Value, I) then
     begin
-      Result := Result + [6];
+      Result := Result + [htKling];
       Break;
     end;
 end;
 
-function DecodeScriptDominatorMask(Value: Cardinal; KlingType: Byte): TDominatorSeriesMask;
+function DecodeScriptDominatorMask(Value: Cardinal; KlingType: TKlingType): TDominatorSeriesMask;
 begin
   if not ScriptDefinitionBit(Value, 0) then
   begin
-    Result := [0..2];
+    Result := [dsBlazer..dsTerron];
     Exit;
   end;
   Result := [];
   case KlingType of
-    0:
+    ktBoss:
     begin
       if ScriptDefinitionBit(Value, 7) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 13) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 19) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    1:
+    ktEquantor:
     begin
       if ScriptDefinitionBit(Value, 8) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 14) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 20) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    2:
+    ktUrgant:
     begin
       if ScriptDefinitionBit(Value, 9) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 15) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 21) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    3:
+    ktSmersh:
     begin
       if ScriptDefinitionBit(Value, 10) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 16) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 22) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    4:
+    ktMenoc:
     begin
       if ScriptDefinitionBit(Value, 11) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 17) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 23) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    5:
+    ktShtip:
     begin
       if ScriptDefinitionBit(Value, 12) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 18) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 24) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    6:
+    ktBertor:
     begin
       if ScriptDefinitionBit(Value, 26) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 28) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 30) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
-    7:
+    ktKlig:
     begin
       if ScriptDefinitionBit(Value, 27) then
-        Result := Result + [0];
+        Result := Result + [dsBlazer];
       if ScriptDefinitionBit(Value, 29) then
-        Result := Result + [1];
+        Result := Result + [dsKeller];
       if ScriptDefinitionBit(Value, 31) then
-        Result := Result + [2];
+        Result := Result + [dsTerron];
     end;
   end;
 end;
 
-function DecodeScriptItemOwner(Value: Integer): Byte;
+function DecodeScriptItemOwner(Value: Integer): TOwnerId;
 begin
   if Value = 0 then
-    Result := 0
+    Result := oiMaloc
   else if Value = 1 then
-    Result := 1
+    Result := oiPeleng
   else if Value = 2 then
-    Result := 2
+    Result := oiHuman
   else if Value = 3 then
-    Result := 3
+    Result := oiFeyan
   else if Value = 4 then
-    Result := 4
+    Result := oiGaal
   else if Value = 5 then
-    Result := 5
+    Result := oiDominator
   else if Value = 6 then
-    Result := 6
+    Result := oiUninhabited
   else if Value = 7 then
-    Result := 7
+    Result := oiPirate
   else
-    Result := 6;
+    Result := oiUninhabited;
 end;
 
 function DecodeScriptRelationLevel(Value: Integer): TRelationLevel;
@@ -1743,10 +1723,10 @@ begin
   Result := False;
   if not (ShipToHullType(Ship) in ShipTypeMask) then
     Exit;
-  if (Ship is TRuins) and (8 in ShipTypeMask) then
+  if (Ship is TRuins) and (htStation in ShipTypeMask) then
   begin
     Name := '';
-    if not (Ship.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)]) then
+    if not (Ship.TypeId in [rstRangerCenter..rstCustomStation]) then
       Exit;
     if TRuins(Ship).NoLanding then
       Exit;
@@ -1766,7 +1746,7 @@ begin
       Exit;
   end;
   if Ship is TKling then
-    if not (Byte((Ship as TKling).DominatorSeries)
+    if not ((Ship as TKling).DominatorSeries
         in DominatorMasks[Ord((Ship as TKling).KlingType)]) then
       Exit;
   Result := True;
@@ -1896,17 +1876,17 @@ begin
       Continue;
     if Ship is TRanger then
     begin
-      if TRanger(Ship).CareerStatus[Ord(rcTrader)] < Group.MinTraderStatus then
+      if TRanger(Ship).CareerStatus[rcTrader] < Group.MinTraderStatus then
         Continue;
-      if TRanger(Ship).CareerStatus[Ord(rcTrader)] > Group.MaxTraderStatus then
+      if TRanger(Ship).CareerStatus[rcTrader] > Group.MaxTraderStatus then
         Continue;
-      if TRanger(Ship).CareerStatus[Ord(rcWarrior)] < Group.MinWarriorStatus then
+      if TRanger(Ship).CareerStatus[rcWarrior] < Group.MinWarriorStatus then
         Continue;
-      if TRanger(Ship).CareerStatus[Ord(rcWarrior)] > Group.MaxWarriorStatus then
+      if TRanger(Ship).CareerStatus[rcWarrior] > Group.MaxWarriorStatus then
         Continue;
-      if TRanger(Ship).CareerStatus[Ord(rcPirate)] < Group.MinPirateStatus then
+      if TRanger(Ship).CareerStatus[rcPirate] < Group.MinPirateStatus then
         Continue;
-      if TRanger(Ship).CareerStatus[Ord(rcPirate)] > Group.MaxPirateStatus then
+      if TRanger(Ship).CareerStatus[rcPirate] > Group.MaxPirateStatus then
         Continue;
     end;
     if (Group.MaxDistanceFromPlanet < 10000) and (Ship.CurrentPlanet <> Group.Planet) then
@@ -2181,10 +2161,10 @@ begin
     StateCode.Free;
     StateCode := nil;
   end;
-  if AuxiliaryCode <> nil then
+  if DialogCode <> nil then
   begin
-    AuxiliaryCode.Free;
-    AuxiliaryCode := nil;
+    DialogCode.Free;
+    DialogCode := nil;
   end;
   if ActionCode <> nil then
   begin
@@ -2258,7 +2238,7 @@ begin
   inherited Create;
   InitCode := TCodeEC.Create;
   TurnCode := TCodeEC.Create;
-  AuxiliaryCode := TCodeEC.Create;
+  DialogCode := TCodeEC.Create;
   Constellations := TList.Create;
   Stars := TList.Create;
   Places := TList.Create;
@@ -2334,10 +2314,10 @@ begin
     TurnCode.Free;
     TurnCode := nil;
   end;
-  if AuxiliaryCode <> nil then
+  if DialogCode <> nil then
   begin
-    AuxiliaryCode.Free;
-    AuxiliaryCode := nil;
+    DialogCode.Free;
+    DialogCode := nil;
   end;
   if InitCode <> nil then
   begin
@@ -2442,8 +2422,8 @@ begin
     InitCode.Clear;
   if TurnCode <> nil then
     TurnCode.Clear;
-  if AuxiliaryCode <> nil then
-    AuxiliaryCode.Clear;
+  if DialogCode <> nil then
+    DialogCode.Clear;
   if EtherIds <> nil then
     EtherIds.Clear;
   GroupRelations := nil;
@@ -2575,11 +2555,11 @@ begin
   end;
 end;
 
-procedure TScript.RunAuxiliaryCode;
+procedure TScript.RunDialogCode;
 begin
   try
     CurrentScript := Self;
-    AuxiliaryCode.Run(ScriptProcess);
+    DialogCode.Run(ScriptProcess);
   except
     on E: EBreakMessageGI do
       ;
@@ -2925,9 +2905,9 @@ begin
             Continue;
           if not (Planet.OwnerId in Binding.Planets[K].OwnerMask) then
             Continue;
-          if not (Byte(Planet.Economy) in Binding.Planets[K].EconomyMask) then
+          if not (Planet.Economy in Binding.Planets[K].EconomyMask) then
             Continue;
-          if not (Byte(Planet.Government) in Binding.Planets[K].GovernmentMask) then
+          if not (Planet.Government in Binding.Planets[K].GovernmentMask) then
             Continue;
           I := 0;
           while I < K do
@@ -3003,17 +2983,17 @@ begin
             Continue;
           if Ship is TRanger then
           begin
-            if TRanger(Ship).CareerStatus[Ord(rcTrader)] < Requirement.MinTraderStatus then
+            if TRanger(Ship).CareerStatus[rcTrader] < Requirement.MinTraderStatus then
               Continue;
-            if TRanger(Ship).CareerStatus[Ord(rcTrader)] > Requirement.MaxTraderStatus then
+            if TRanger(Ship).CareerStatus[rcTrader] > Requirement.MaxTraderStatus then
               Continue;
-            if TRanger(Ship).CareerStatus[Ord(rcWarrior)] < Requirement.MinWarriorStatus then
+            if TRanger(Ship).CareerStatus[rcWarrior] < Requirement.MinWarriorStatus then
               Continue;
-            if TRanger(Ship).CareerStatus[Ord(rcWarrior)] > Requirement.MaxWarriorStatus then
+            if TRanger(Ship).CareerStatus[rcWarrior] > Requirement.MaxWarriorStatus then
               Continue;
-            if TRanger(Ship).CareerStatus[Ord(rcPirate)] < Requirement.MinPirateStatus then
+            if TRanger(Ship).CareerStatus[rcPirate] < Requirement.MinPirateStatus then
               Continue;
-            if TRanger(Ship).CareerStatus[Ord(rcPirate)] > Requirement.MaxPirateStatus then
+            if TRanger(Ship).CareerStatus[rcPirate] > Requirement.MaxPirateStatus then
               Continue;
           end;
           if (Requirement.MinStrength <> 0) or (Requirement.MaxStrength <> 0) then
@@ -3164,7 +3144,7 @@ var
   Item, OtherItem: TItem;
   Planet: TPlanet;
   Version, Mask: Cardinal;
-  KlingType: Byte;
+  KlingType: TKlingType;
 
   procedure CompileStateActionCode(
       State: TScriptState
@@ -3173,7 +3153,7 @@ var
     SourceText, ActionTypes, StepTypes: WideString;
     I, Count: Integer;
     Step: Cardinal;
-    Action: Byte;
+    Action: TScriptActionType;
   begin
     if State.OnActionText[1] = '[' then
     begin
@@ -3305,7 +3285,7 @@ begin
         Star.Planets[J].GovernmentMask := DecodeScriptGovernmentMask(Buffer.GetUInt32);
         Star.Planets[J].MinOrbitPercent := Buffer.GetInt32;
         Star.Planets[J].MaxOrbitPercent := Buffer.GetInt32;
-        Star.Planets[J].DefinitionText := Buffer.ReadWideString;
+        Star.Planets[J].DialogChoiceText := Buffer.ReadWideString;
       end;
     end;
     SubCount := Buffer.GetInt32;
@@ -3318,7 +3298,7 @@ begin
         Star.ShipRequirements[J].OwnerMask := DecodeScriptOwnerMask(Buffer.GetUInt32);
         Mask := Buffer.GetUInt32;
         Star.ShipRequirements[J].ShipTypeMask := DecodeScriptShipTypeMask(Mask);
-        for KlingType := 0 to 7 do
+        for KlingType := Low(TKlingType) to High(TKlingType) do
           Star.ShipRequirements[J].DominatorMasks[KlingType] :=
               DecodeScriptDominatorMask(Mask, KlingType);
         Star.ShipRequirements[J].PlayerOnly := Buffer.GetBoolean;
@@ -3347,7 +3327,8 @@ begin
         Star.ShipRequirements[J].MaxStrength := Buffer.GetSingle;
         Star.ShipRequirements[J].StationNames := TrimWideString(Buffer.ReadWideString);
         if Star.ShipRequirements[J].StationNames <> '' then
-          Star.ShipRequirements[J].ShipTypeMask := Star.ShipRequirements[J].ShipTypeMask + [8];
+          Star.ShipRequirements[J].ShipTypeMask :=
+              Star.ShipRequirements[J].ShipTypeMask + [htStation];
       end;
     end;
   end;
@@ -3463,7 +3444,7 @@ begin
     Group.OwnerMask := DecodeScriptOwnerMask(Buffer.GetUInt32);
     Mask := Buffer.GetUInt32;
     Group.ShipTypeMask := DecodeScriptShipTypeMask(Mask);
-    for KlingType := 0 to 7 do
+    for KlingType := Low(TKlingType) to High(TKlingType) do
       Group.DominatorMasks[KlingType] := DecodeScriptDominatorMask(Mask, KlingType);
     Group.MinCount := Buffer.GetInt32;
     Group.MaxCount := Buffer.GetInt32;
@@ -3489,12 +3470,12 @@ begin
     Group.MinPirateStatus := Buffer.GetInt32;
     Group.MaxPirateStatus := Buffer.GetInt32;
     Group.MaxDistanceFromPlanet := Buffer.GetInt32;
-    Group.DefinitionText := Buffer.ReadWideString;
+    Group.StationDialogVariable := Buffer.ReadWideString;
     Group.MinStrength := Buffer.GetSingle;
     Group.MaxStrength := Buffer.GetSingle;
     Group.StationNames := TrimWideString(Buffer.ReadWideString);
     if Group.StationNames <> '' then
-      Group.ShipTypeMask := Group.ShipTypeMask + [8];
+      Group.ShipTypeMask := Group.ShipTypeMask + [htStation];
   end;
   Count := Buffer.GetInt32;
   if Count > 0 then
@@ -3675,14 +3656,14 @@ begin
     Analyzer.RemoveNewlines;
     Analyzer.RemoveWhitespace;
     Analyzer.ValidateDelimiters;
-    AuxiliaryCode.Compile(Analyzer, nil, nil, nil, nil, ErrorText);
+    DialogCode.Compile(Analyzer, nil, nil, nil, nil, ErrorText);
     Analyzer.Free;
     if ErrorText <> '' then
       RaiseWideMessage('CodeTurn.Compiler. Error=' + ErrorText);
-    AuxiliaryCode.LinkAll(ScriptFunctionScope, False);
-    AuxiliaryCode.LinkAll(SharedScriptVariables, False);
-    AuxiliaryCode.LinkAll(InitCode.LocalVar, False);
-    AuxiliaryCode.ScriptFunLinked := True;
+    DialogCode.LinkAll(ScriptFunctionScope, False);
+    DialogCode.LinkAll(SharedScriptVariables, False);
+    DialogCode.LinkAll(InitCode.LocalVar, False);
+    DialogCode.ScriptFunLinked := True;
   end;
   Count := Buffer.GetInt32;
   for I := 0 to Count - 1 do
@@ -3705,29 +3686,30 @@ begin
     if State.PickupItemVarName <> '' then
       State.PickupItem := TScriptItem(InitCode.LocalVar.GetVar(State.PickupItemVarName).GetDword);
     State.PickUpNearbyItems := Buffer.GetBoolean;
-    State.AuxiliaryText := Buffer.ReadWideString;
-    if (State.AuxiliaryText <> '') and (InitCode.LocalVar.GetVarNE(State.AuxiliaryText) = nil) then
+    State.DialogTextOrVariable := Buffer.ReadWideString;
+    if (State.DialogTextOrVariable <> '')
+        and (InitCode.LocalVar.GetVarNE(State.DialogTextOrVariable) = nil) then
     begin
-      State.AuxiliaryCode := TCodeEC.Create;
+      State.DialogCode := TCodeEC.Create;
       Analyzer := TCodeAnalyzerEC.Create;
-      Analyzer.Tokenize(State.AuxiliaryText);
+      Analyzer.Tokenize(State.DialogTextOrVariable);
       Analyzer.RemoveComments;
       Analyzer.RemoveNewlines;
       Analyzer.RemoveWhitespace;
       Analyzer.ValidateDelimiters;
-      State.AuxiliaryCode.Compile(Analyzer, nil, nil, nil, nil, ErrorText);
+      State.DialogCode.Compile(Analyzer, nil, nil, nil, nil, ErrorText);
       Analyzer.Free;
       if ErrorText <> '' then
         RaiseWideMessage('StateCodeText.Compiler. Error=' + ErrorText + ' State=' + State.Name);
-      State.AuxiliaryCode.LinkAll(ScriptFunctionScope, False);
-      State.AuxiliaryCode.LinkAll(SharedScriptVariables, False);
-      State.AuxiliaryCode.LinkAll(InitCode.LocalVar, False);
-      State.AuxiliaryCode.ScriptFunLinked := True;
+      State.DialogCode.LinkAll(ScriptFunctionScope, False);
+      State.DialogCode.LinkAll(SharedScriptVariables, False);
+      State.DialogCode.LinkAll(InitCode.LocalVar, False);
+      State.DialogCode.ScriptFunLinked := True;
     end;
     State.OnActionText := Buffer.ReadWideString;
     if (State.OnActionText <> '')
         and (Length(State.OnActionText) < 32)
-        and (InitCode.LocalVar.GetVarNE(State.AuxiliaryText) <> nil) then
+        and (InitCode.LocalVar.GetVarNE(State.DialogTextOrVariable) <> nil) then
       State.OnActionText := '';
     if State.OnActionText <> '' then
       CompileStateActionCode(State);
@@ -3921,14 +3903,14 @@ begin
       else if (ScriptItem.DefinitionKind = 1)
           and (ScriptItem.DefinitionType >= 0)
           and (ScriptItem.DefinitionType
-              < CountItemTypesInMask([Ord(t_Weapon1)..Ord(t_Weapon18)])) then
+              < CountItemTypesInMask([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])) then
       begin
         Item := TWeapon.Create;
         (Item as TWeapon)
             .Init(
                 TItemType(
                     GetItemTypeFromMask(
-                        [Ord(t_Weapon1)..Ord(t_Weapon18)],
+                        [Ord(t_IndustrialLaser)..Ord(t_Lirecron)],
                         ScriptItem.DefinitionType + 1
                     )
                 ),
@@ -5248,7 +5230,7 @@ end;
 
 procedure TScriptCacheUnit.Initialize(Name, SourceText, ActionTypes, StepTypes: WideString);
 var
-  Action: Byte;
+  Action: TScriptActionType;
   I: Integer;
   Step: Cardinal;
   Count: Integer;
@@ -5407,7 +5389,7 @@ var
   I: Integer;
   Step: Cardinal;
   Count: Integer;
-  Action: Byte;
+  Action: TScriptActionType;
   SourceText, ActionTypes, StepTypes: WideString;
 begin
   ActionCodeInitialized := True;
@@ -5462,7 +5444,7 @@ begin
 end;
 
 function TScriptItem.RunActionCode(
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1, Object2: TObject;
     Param: PtrInt
@@ -5490,7 +5472,7 @@ begin
         Script.PublishCurrentShip(Ship);
         ScriptItemContextStack.Add(Item);
         ScriptItemInfoContextStack.Add(nil);
-        ScriptActionTypeStack.Add(Pointer(ActionType));
+        ScriptActionTypeStack.Add(Pointer(Ord(ActionType)));
         ScriptActionObject1Stack.Add(Object1);
         ScriptActionObject2Stack.Add(Object2);
         ScriptActionParamStack.Add(Pointer(Param));
@@ -5519,7 +5501,7 @@ begin
 end;
 
 function TScriptShip.RunActionCode(
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1, Object2: TObject;
     Param: PtrInt
@@ -5536,7 +5518,7 @@ begin
           Script.PublishCurrentShip(Ship);
           ScriptItemContextStack.Add(nil);
           ScriptItemInfoContextStack.Add(nil);
-          ScriptActionTypeStack.Add(Pointer(ActionType));
+          ScriptActionTypeStack.Add(Pointer(Ord(ActionType)));
           ScriptActionObject1Stack.Add(Object1);
           ScriptActionObject2Stack.Add(Object2);
           ScriptActionParamStack.Add(Pointer(Param));
@@ -5614,7 +5596,7 @@ end;
 
 function RunItemConfigActionCode(
     Item: TItem;
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1, Object2: TObject;
     Param: PtrInt
@@ -5640,7 +5622,7 @@ begin
         try
           ScriptItemContextStack.Add(Item);
           ScriptItemInfoContextStack.Add(nil);
-          ScriptActionTypeStack.Add(Pointer(ActionType));
+          ScriptActionTypeStack.Add(Pointer(Ord(ActionType)));
           ScriptActionObject1Stack.Add(Object1);
           ScriptActionObject2Stack.Add(Object2);
           ScriptActionParamStack.Add(Pointer(Param));
@@ -5679,7 +5661,7 @@ end;
 
 function RunCustomShipInfoActionCode(
     Info: PCustomShipInfo;
-    ActionType: Byte;
+    ActionType: TScriptActionType;
     Ship: TShip;
     Object1, Object2: TObject;
     Param: PtrInt
@@ -5719,7 +5701,7 @@ begin
       begin
         ScriptItemContextStack.Add(nil);
         ScriptItemInfoContextStack.Add(Info);
-        ScriptActionTypeStack.Add(Pointer(ActionType));
+        ScriptActionTypeStack.Add(Pointer(Ord(ActionType)));
         ScriptActionObject1Stack.Add(Object1);
         ScriptActionObject2Stack.Add(Object2);
         ScriptActionParamStack.Add(Pointer(Param));

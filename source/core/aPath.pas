@@ -358,19 +358,19 @@ begin
   begin
     AppendNode;
     Result := ActiveTail;
-    Exit;
+  end
+  else
+  begin
+    NewNode := PopFreeNode;
+    NewNode.Prev := Node.Prev;
+    NewNode.Next := Node;
+    if Node.Prev <> nil then
+      Node.Prev.Next := NewNode;
+    Node.Prev := NewNode;
+    if Node = ActiveHead then
+      ActiveHead := NewNode;
+    Result := NewNode;
   end;
-  NewNode := PopFreeNode;
-  // Value expressions preserve DCC32's native address/value evaluation order;
-  // the + 0 operations themselves emit no instructions.
-  PSPathNode(PAnsiChar(NewNode) + 0).Prev := Node.Prev;
-  PSPathNode(PAnsiChar(NewNode) + 0).Next := Node;
-  if Node.Prev <> nil then
-    Node.Prev.Next := NewNode;
-  Node.Prev := NewNode;
-  if PSPathNode(PAnsiChar(Node) + 0) = ActiveHead then
-    ActiveHead := PSPathNode(PAnsiChar(NewNode) + 0);
-  Result := NewNode;
 end;
 
 function TSPath.GetFollowingNode(Node: PSPathNode; SkipCount: Integer): PSPathNode;

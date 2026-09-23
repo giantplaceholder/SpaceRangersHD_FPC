@@ -23,7 +23,6 @@ type
     Access: Integer;
     Side: Integer;
     AlternateBackground: Boolean;
-    Gap19: array[0..2] of Byte;
     Length: Integer;
   end;
 
@@ -203,19 +202,19 @@ begin
         StartText,
         '<Star>',
         LocalizedText('FormLoadRobot.PStar'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         StartText,
         '<Planet>',
         LocalizedText('FormLoadRobot.PPlanet'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         StartText,
         '<Player>',
         LocalizedText('FormLoadRobot.PPlayer'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ExpandLocalizedTextMarkupAndPrefixLines(StartText);
     StartText := WideString(IntToStr(Difficulty)) + StartText;
@@ -225,38 +224,38 @@ begin
         WinText,
         '<Star>',
         LocalizedText('FormLoadRobot.PStar'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         WinText,
         '<Planet>',
         LocalizedText('FormLoadRobot.PPlanet'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         WinText,
         '<Player>',
         LocalizedText('FormLoadRobot.PPlayer'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ExpandLocalizedTextMarkupAndPrefixLines(WinText);
     ReplaceTextToken(
         LossText,
         '<Star>',
         LocalizedText('FormLoadRobot.PStar'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         LossText,
         '<Planet>',
         LocalizedText('FormLoadRobot.PPlanet'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ReplaceTextToken(
         LossText,
         '<Player>',
         LocalizedText('FormLoadRobot.PPlayer'),
-        '<color=255,240,100>'
+        TextHighlightColorTag
     );
     ExpandLocalizedTextMarkupAndPrefixLines(LossText);
     TerronName := LocalizedText('FormLoadRobot.PPlace');
@@ -275,13 +274,13 @@ begin
           if Difficulty = 1 then
             RecordCompletion(
                 RobotMapDefinitions[Entries[SelectedIndex].MapIndex].Id,
-                -RobotBattleStatistics[0] div 1000,
+                -RobotBattleStatistics.SignedTimeMs div 1000,
                 2
             )
           else
             RecordCompletion(
                 RobotMapDefinitions[Entries[SelectedIndex].MapIndex].Id,
-                -RobotBattleStatistics[0] div 1000,
+                -RobotBattleStatistics.SignedTimeMs div 1000,
                 1
             );
           SaveCompletionData;
@@ -947,20 +946,20 @@ begin
     begin
       SetActive(True);
       Text := RobotMapDefinitions[Entries[SelectedIndex].MapIndex].GovTextStart;
-      ReplaceTextToken(Text, '<Star>', LocalizedText('FormLoadRobot.PStar'), '<color=0,71,234>');
+      ReplaceTextToken(Text, '<Star>', LocalizedText('FormLoadRobot.PStar'), BrightBlueColorTag);
       ReplaceTextToken(
           Text,
           '<Planet>',
           LocalizedText('FormLoadRobot.PPlanet'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
       ReplaceTextToken(
           Text,
           '<Player>',
           LocalizedText('FormLoadRobot.PPlayer'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
-      ReplaceTextToken(Text, '<Money>', WideString(IntToStr(1000)), '<color=0,71,234>');
+      ReplaceTextToken(Text, '<Money>', WideString(IntToStr(1000)), BrightBlueColorTag);
       SetText(Text);
       Text := RobotMapDefinitions[Entries[SelectedIndex].MapIndex].FromAuthor;
       if Text <> '' then

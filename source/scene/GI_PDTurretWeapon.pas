@@ -23,11 +23,9 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    GapF: array[0..0] of Byte;
     Velocity: TPointF;
     Gap18: array[0..1] of Byte;
     Unknown1A: Byte;
-    Gap1B: array[0..0] of Byte;
   end;
 
   TPSPDWeaponGI = class(TPSWeaponGI)
@@ -36,7 +34,6 @@ type
     ParticleCapacity: Integer;
     OriginalLength: Single;
     ParticleColor: Word;
-    Gap142: array[0..1] of Byte;
     procedure UpdateHitTestBounds; override;
     procedure SetPosition(Position: TPoint); override;
     procedure SetActive(Enabled: Boolean); override;

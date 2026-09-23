@@ -22,10 +22,8 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    Gap13: array[0..0] of Byte;
     Velocity: TPointF;
     State: Byte;
-    Gap1D: array[0..0] of Byte;
     RemainingTicks: Word;
     BaseAlpha: Integer;
   end;
@@ -49,7 +47,6 @@ type
     PendingSparkSteps: Integer;
     Color: Word;
     ProjectionBounds: TRect;
-    Gap15A: array[0..5] of Byte;
     LengthScale: Double;
     OriginalLength: Double;
     procedure UpdateHitTestBounds; override;

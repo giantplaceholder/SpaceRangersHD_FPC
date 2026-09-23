@@ -255,10 +255,10 @@ begin
       Header.AddWideStringZ(IntToStr(Galaxy.CurrentTurn));
       Header.AddWideStringZ(IntToStr(GetPlayer.Money));
       Header.AddWideStringZ(GetPlayer.Name);
-      if GetPlayer.OwnerId = Byte(oiPirate) then
+      if GetPlayer.OwnerId = oiPirate then
         Header.AddWideStringZ(
-            OwnerInfo[Ord(oiPirate)].InternalName
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.PilotRace)) and $7F].InternalName
+            OwnerInfo[oiPirate].InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.PilotRace)].InternalName
         )
       else
         Header.AddWideStringZ(OwnerInfo[GetPlayer.OwnerId].InternalName);
@@ -535,7 +535,7 @@ begin
   if (CurrentScreenId <> screenPlanetQuest)
       and ((CurrentScreenId <> screenGovernment) or (GovernmentScreen.PendingTransition = 0))
       and ((CurrentScreenId <> screenStarMap) or (StarMapScreen.PlanetBattleState = 0)) then
-    (TObject(RegisteredScreens[Ord(CurrentScreenId)]) as TMessageLoopGI).OnClose;
+    (TObject(RegisteredScreens[CurrentScreenId]) as TMessageLoopGI).OnClose;
   for I := MessageLoopStack.Count - 1 downto 0 do
   begin
     Loop := MessageLoopStack[I];
@@ -543,7 +543,7 @@ begin
       (Loop as TfShip2).ReturnSelectedHoldEntry;
   end;
   Galaxy.ClearIntegrityStatus;
-  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)))
+  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited))
       or (GetPlayer.IsDockedToShip and (GetPlayer.DockedTo is TRuins)) then
     RestoreTemporaryShopStock;
   Count := CountPersistentPlayerMessages;
@@ -729,8 +729,8 @@ begin
       if Loop is TfGoodsShop2 then
       begin
         Loop.RequestClose(2);
-        TalkScreen.Flag128 := 0;
-        GoodsShopScreen.FlagEC := False;
+        TalkScreen.ModalTransition := tmtNone;
+        GoodsShopScreen.ReopenRequested := False;
         StarMapScreen.RequestClose(1);
       end
       else
@@ -740,9 +740,9 @@ begin
     else if (GetPlayer.IsOnPlanet or GetPlayer.IsDockedToShip) and (Loop is TfStarMap) then
     begin
       Loop.RequestClose(1);
-      if GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiUninhabited)) then
+      if GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId = oiUninhabited) then
         RequestedScreenId := screenPlanetNO
-      else if GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)) then
+      else if GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited) then
         RequestedScreenId := screenPlanet
       else if GetPlayer.IsDockedToShip then
         RequestedScreenId := screenRuinsTalk;
@@ -768,11 +768,11 @@ begin
     else if Loop is TfJump then
       JumpScreen.RestoreOrdersOnArrival := True;
   end;
-  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)))
+  if (GetPlayer.IsOnPlanet and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited))
       or (GetPlayer.IsDockedToShip and (GetPlayer.DockedTo is TRuins)) then
     BuildTemporaryShopSlotGrid;
   if ReopenScreen then
-    (TObject(RegisteredScreens[Ord(CurrentScreenId)]) as TMessageLoopGI).OnOpen;
+    (TObject(RegisteredScreens[CurrentScreenId]) as TMessageLoopGI).OnOpen;
   Galaxy.ClearIntegrityStatus;
   Galaxy.PrimeIntegrityChecksum(1);
   MemorySnapshotBuffer.Free;

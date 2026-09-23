@@ -21,7 +21,7 @@ type
 
   PAngelEntry = PointerToTAngelEntry;
 
-  TAngelEntry = packed record
+  TAngelEntry = record
     Next: PAngelEntry;
     Prev: PAngelEntry;
     Position: TPointF;
@@ -32,7 +32,6 @@ type
     FrameIndex: Integer;
     MovingUp: Boolean;
     FrameVariant: Byte;
-    Gap2E: array[0..1] of Byte;
   end;
 
   TAngelSE = class(TObjectSE)
@@ -53,7 +52,6 @@ type
     Target: TPointF;
     TargetDelay: Integer;
     MoveState: Byte;
-    GapB9: array[0..2] of Byte;
     procedure AttachToSpace(ASpace: TSpaceSE); override;
     procedure DetachFromSpace; override;
     procedure SetPosition(APosition: TPointF); override;

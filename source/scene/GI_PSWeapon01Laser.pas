@@ -22,10 +22,8 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    Gap13: array[0..0] of Byte;
     Velocity: TPointF;
     State: Byte;
-    Gap1D: array[0..2] of Byte;
   end;
 
   TBeamLaserPalette = array[0..8] of Single;
@@ -47,7 +45,6 @@ type
     FirstParticle: PBeamLaserParticle;
     LastParticle: PBeamLaserParticle;
     ProjectionBounds: TRect;
-    Gap14C: array[0..3] of Byte;
     OriginalLength: Double;
     LengthScale: Double;
     PaletteIndex: Integer;

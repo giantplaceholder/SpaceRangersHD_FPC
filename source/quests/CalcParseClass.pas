@@ -124,8 +124,8 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if Math.Power(Abs(X), Y) > 2000000000 then
-      OutValue.IntValue := Math.Sign(A) * 2000000000
+    if Math.Power(Abs(X), Y) > QuestNumericLimit then
+      OutValue.IntValue := Math.Sign(A) * QuestNumericLimit
     else
       OutValue.IntValue := Integer(System.Round(Math.IntPower(Abs(A), B))) * Math.Sign(A);
   end;
@@ -151,10 +151,10 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X + Y > 2000000000 then
-      OutValue.IntValue := 2000000000
-    else if X + Y < -2000000000 then
-      OutValue.IntValue := -2000000000
+    if X + Y > QuestNumericLimit then
+      OutValue.IntValue := QuestNumericLimit
+    else if X + Y < -QuestNumericLimit then
+      OutValue.IntValue := -QuestNumericLimit
     else
       OutValue.IntValue := A + B;
   end;
@@ -180,10 +180,10 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X - Y > 2000000000 then
-      OutValue.IntValue := 2000000000
-    else if X - Y < -2000000000 then
-      OutValue.IntValue := -2000000000
+    if X - Y > QuestNumericLimit then
+      OutValue.IntValue := QuestNumericLimit
+    else if X - Y < -QuestNumericLimit then
+      OutValue.IntValue := -QuestNumericLimit
     else
       OutValue.IntValue := A - B;
   end;
@@ -209,10 +209,10 @@ begin
     B := Right.AsInteger;
     X := A;
     Y := B;
-    if X * Y > 2000000000 then
-      OutValue.IntValue := 2000000000
-    else if X * Y < -2000000000 then
-      OutValue.IntValue := -2000000000
+    if X * Y > QuestNumericLimit then
+      OutValue.IntValue := QuestNumericLimit
+    else if X * Y < -QuestNumericLimit then
+      OutValue.IntValue := -QuestNumericLimit
     else
       OutValue.IntValue := A * B;
   end;
@@ -239,9 +239,9 @@ begin
     begin
       OutValue.ValueKind := cpvkInteger;
       if A < 0 then
-        OutValue.IntValue := -2000000000
+        OutValue.IntValue := -QuestNumericLimit
       else
-        OutValue.IntValue := 2000000000;
+        OutValue.IntValue := QuestNumericLimit;
     end
     else if A mod B = 0 then
     begin
@@ -265,9 +265,9 @@ begin
     if Y = 0 then
     begin
       if X < 0 then
-        OutValue.FloatValue := -2000000000
+        OutValue.FloatValue := -QuestNumericLimit
       else
-        OutValue.FloatValue := 2000000000;
+        OutValue.FloatValue := QuestNumericLimit;
     end
     else
       try
@@ -295,9 +295,9 @@ begin
     if B = 0 then
     begin
       if A < 0 then
-        OutValue.IntValue := -2000000000
+        OutValue.IntValue := -QuestNumericLimit
       else
-        OutValue.IntValue := 2000000000;
+        OutValue.IntValue := QuestNumericLimit;
     end
     else
       OutValue.IntValue := A div B;
@@ -309,9 +309,9 @@ begin
     if Y = 0 then
     begin
       if X < 0 then
-        OutValue.FloatValue := -2000000000
+        OutValue.FloatValue := -QuestNumericLimit
       else
-        OutValue.FloatValue := 2000000000;
+        OutValue.FloatValue := QuestNumericLimit;
     end
     else
       try
@@ -341,9 +341,9 @@ begin
     if B = 0 then
     begin
       if Negative then
-        OutValue.IntValue := -2000000000
+        OutValue.IntValue := -QuestNumericLimit
       else
-        OutValue.IntValue := 2000000000;
+        OutValue.IntValue := QuestNumericLimit;
     end
     else
     begin
@@ -359,9 +359,9 @@ begin
     if Y = 0 then
     begin
       if X < 0 then
-        OutValue.FloatValue := -2000000000
+        OutValue.FloatValue := -QuestNumericLimit
       else
-        OutValue.FloatValue := 2000000000;
+        OutValue.FloatValue := QuestNumericLimit;
     end
     else
       try

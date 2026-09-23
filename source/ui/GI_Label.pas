@@ -32,16 +32,13 @@ type
     TextShadowOffset: Integer;
     TextShadowColor: Cardinal;
     BorderEnabled: Boolean;
-    Gap141: array[0..2] of Byte;
     BorderLightColor: Cardinal;
     BorderDarkColor: Cardinal;
     TextAlignX: TTextAlignXGI;
     TextAlignY: TTextAlignYGI;
-    Gap14E: array[0..1] of Byte;
     TextLeft: Integer;
     TextTop: Integer;
     WordWrapEnabled: Boolean;
-    Gap159: array[0..2] of Byte;
     AutoHeightPadding: Integer;
     CreateEmbeddedControl: TCreateLabelControlEventGI;
     TextTexture: TTextureGR;
@@ -902,7 +899,7 @@ begin
             AbsolutePosition.X,
             AbsolutePosition.Y,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False

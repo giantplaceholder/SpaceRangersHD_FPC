@@ -5,6 +5,7 @@ unit aPlayer;
 interface
 
 uses
+  aConst,
   Achievements,
   Classes,
   EC_BlockPar,
@@ -29,7 +30,7 @@ type
 
   TPlanetBattleHistoryEntry = packed record
     MapId: Integer;
-    Statistics: array[0..5] of Integer;
+    Statistics: TPlanetBattleStatistics;
     ResultCode: Integer;
     CompletionMode: Integer;
     DateTurn: Integer;
@@ -88,10 +89,9 @@ type
     InPrison: Boolean;
     TalkLocked: Boolean;
     ScanLocked: Boolean;
-    Gap563: array[0..0] of Byte;
     HyperspaceKillCount: Integer;
     BlackHoleKillCount: Integer;
-    DominatorKillsByType: array[0..7] of Integer;
+    DominatorKillsByType: array[TKlingType] of Integer;
     ScriptShipBindings: TList;
     QuestTargetKillShip: TShip;
     QuestTargetDefendShip: TShip;
@@ -109,11 +109,10 @@ type
     PirateLicenseCash: Integer;
     PendingPirateLicenseCash: Integer;
     QueuedTravelTarget: TStar;
-    StationServiceLastUseTurns: array[0..11] of Integer;
-    StatusEffectSourceNames: array[1..24] of WideString;
+    StationServiceLastUseTurns: array[TCoalitionProject] of Integer;
+    StatusEffectSourceNames: array[TCaptainHealthEffect] of WideString;
     DiseaseImmunity: Byte;
-    Gap661: array[0..2] of Byte;
-    ProgramRewardStocks: array[0..11] of Integer;
+    ProgramRewardStocks: array[TProgramIndex] of Integer;
     LastDominatorProgramRewardTurn: Integer;
     DestroyedDominatorHullMass: Integer;
     Satellites: TObjectList;
@@ -121,7 +120,6 @@ type
     PlanetBattles: Integer;
     LastPlanetBattleTurn: Integer;
     DeclinePlanetBattleOffers: Boolean;
-    Gap6AD: array[0..0] of Byte;
     DiseaseContractionCount: Word;
     StimulantPurchaseCount: Word;
     PrisonStaysCompleted: Word;
@@ -132,28 +130,24 @@ type
     EquipmentConfigurations: array[0..9] of TEquipmentConfiguration;
     PiratePartners: TList;
     UnresolvedFlagsDA8: array[0..5] of Boolean;
-    GapDAE: array[0..1] of Byte;
     JournalRecords: TObjectList;
     NewsEntries: TList;
     PendingDockDialogue: Byte;
     NoJump: Boolean;
     PirateClanReal: Boolean;
-    GapDBB: array[0..0] of Byte;
     AchievementStats: TAchievementStats;
     ExperienceByDominators: Integer;
     ExperienceByPirates: Integer;
     ExperienceByNormals: Integer;
     ExperienceByTraderCareer: Integer;
     RuinsMode: Byte;
-    GapDD1: array[0..2] of Byte;
     RuinsProxy: TShip;
     RuinsSavedDockedTo: TShip;
     RuinsSavedPlanet: TPlanet;
     RuinsStatusText: WideString;
     AwardedAchievementKeys: TBlockParEC;
     BombKillsThisTurn: Integer;
-    ChameleonLogic: array[0..2] of Byte;
-    GapDEF: array[0..0] of Byte;
+    ChameleonLogic: array[TDominatorSeries] of Byte;
     procedure SaveToBuffer(Buffer: TBufEC); override;
     procedure LoadFromBuffer(Buffer: TBufEC; Galaxy: TGalaxy); override;
     procedure ResolveLoadedReferences(Galaxy: TGalaxy); override;
@@ -179,7 +173,7 @@ type
     procedure ApplyBioArtefactHealthEffects;
     function MayTakeSubCrack: Boolean;
     function GetSubCrackCost: Integer;
-    function GetPirateServiceDiscount: Byte;
+    function GetPirateServiceDiscount: TPercent;
     function CountProgramRewardStocks: Integer;
     function TryAwardDominatorPrograms(Victim: TShip): Boolean;
     function FindProfitableTradeRoute(
@@ -201,7 +195,7 @@ type
     procedure BeginStorageTurn;
     function CanAccessHoldGoods(Good: Byte): Boolean;
     function CanAccessStoredItem(Item: TItem): Boolean;
-    function CountStoredItemUnits(Location: TObject; ItemType: Byte): Integer;
+    function CountStoredItemUnits(Location: TObject; ItemType: TItemType): Integer;
     procedure RepairDuplicateStorageSlots(Location: TObject);
     function FindNextStorageSlot(Location: TObject): Integer;
     function GetStorageSlotExtent(Location: TObject): Integer;
@@ -287,7 +281,6 @@ uses
   SimpleSteamApi,
   aScript,
   aKling,
-  aConst,
   fEquipmentShop,
   GlobalsV,
   aTranclucator;
@@ -337,9 +330,11 @@ end;
 
 constructor TPlayer.Create;
 var
-  ServiceIndex: Byte;
+  ServiceIndex: TCoalitionProject;
   I, J: Integer;
-  RewardIndex, KillIndex, LogicIndex: Byte;
+  RewardIndex: TProgramIndex;
+  KillIndex: TKlingType;
+  LogicIndex: TDominatorSeries;
 begin
   inherited Create;
   StorageEntries := TList.Create;
@@ -348,9 +343,9 @@ begin
   ScriptShipBindings := TList.Create;
   HyperspaceKillCount := 0;
   BlackHoleKillCount := 0;
-  for KillIndex := 0 to 7 do
+  for KillIndex := Low(TKlingType) to High(TKlingType) do
     DominatorKillsByType[KillIndex] := 0;
-  for LogicIndex := 0 to 2 do
+  for LogicIndex := Low(TDominatorSeries) to High(TDominatorSeries) do
     ChameleonLogic[LogicIndex] := 0;
   DebtAmount := 0;
   DebtDueTurn := 0;
@@ -368,7 +363,7 @@ begin
   for ServiceIndex := Low(StationServiceLastUseTurns) to High(StationServiceLastUseTurns) do
     StationServiceLastUseTurns[ServiceIndex] := 150;
   for I := 1 to 24 do
-    StatusEffectSourceNames[I] := '';
+    StatusEffectSourceNames[TCaptainHealthEffect(I)] := '';
   DiseaseImmunity := 50;
   for RewardIndex := Low(ProgramRewardStocks) to High(ProgramRewardStocks) do
     ProgramRewardStocks[RewardIndex] := 0;
@@ -481,9 +476,11 @@ procedure TPlayer.SaveToBuffer(Buffer: TBufEC);
 var
   I, J, ConfigurationCount, SlotCount, ListCount, NewsCount: Integer;
   Entry: PStorageEntry;
-  ServiceIndex, RewardIndex: Byte;
+  ServiceIndex: TCoalitionProject;
+  RewardIndex: TProgramIndex;
   News: PPlanetNewsEntry;
-  KillIndex, LogicIndex: Byte;
+  KillIndex: TKlingType;
+  LogicIndex: TDominatorSeries;
 begin
   inherited SaveToBuffer(Buffer);
   Buffer.AddBoolean(InPrison);
@@ -491,9 +488,9 @@ begin
   Buffer.AddBoolean(ScanLocked);
   Buffer.AddIntegerValue(HyperspaceKillCount);
   Buffer.AddIntegerValue(BlackHoleKillCount);
-  for KillIndex := 0 to 7 do
+  for KillIndex := Low(TKlingType) to High(TKlingType) do
     Buffer.AddIntegerValue(DominatorKillsByType[KillIndex]);
-  for LogicIndex := 0 to 2 do
+  for LogicIndex := Low(TDominatorSeries) to High(TDominatorSeries) do
     Buffer.AddAnsiChar(AnsiChar(ChameleonLogic[LogicIndex]));
   Buffer.AddIntegerValue(StorageEntries.Count);
   for I := 0 to StorageEntries.Count - 1 do
@@ -531,7 +528,7 @@ begin
   for ServiceIndex := Low(StationServiceLastUseTurns) to High(StationServiceLastUseTurns) do
     Buffer.AddIntegerValue(StationServiceLastUseTurns[ServiceIndex]);
   for I := 1 to 24 do
-    Buffer.AddWideStringZ(StatusEffectSourceNames[I]);
+    Buffer.AddWideStringZ(StatusEffectSourceNames[TCaptainHealthEffect(I)]);
   Buffer.AddAnsiChar(AnsiChar(DiseaseImmunity));
   for RewardIndex := Low(ProgramRewardStocks) to High(ProgramRewardStocks) do
     Buffer.AddIntegerValue(ProgramRewardStocks[RewardIndex]);
@@ -544,12 +541,12 @@ begin
   for I := 0 to High(PlanetBattleHistory) do
   begin
     Buffer.AddIntegerValue(PlanetBattleHistory[I].MapId);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[0]);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[1]);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[2]);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[3]);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[4]);
-    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics[5]);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.SignedTimeMs);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.RobotsBuilt);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.RobotsDestroyed);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.TurretsBuilt);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.TurretsDestroyed);
+    Buffer.AddIntegerValue(PlanetBattleHistory[I].Statistics.BuildingsDestroyed);
     Buffer.AddIntegerValue(PlanetBattleHistory[I].ResultCode);
     Buffer.AddIntegerValue(PlanetBattleHistory[I].CompletionMode);
     Buffer.AddIntegerValue(PlanetBattleHistory[I].DateTurn);
@@ -631,13 +628,15 @@ procedure TPlayer.LoadFromBuffer(Buffer: TBufEC; Galaxy: TGalaxy);
 var
   I, Count, J, ConfigurationCount, SlotCount, PartnerCount: Integer;
   Entry: PStorageEntry;
-  ServiceIndex, RewardIndex: Byte;
+  ServiceIndex: TCoalitionProject;
+  RewardIndex: TProgramIndex;
   Satellite: TSatellite;
   Journal: TJournalRecord;
   News: PPlanetNewsEntry;
   AchievementIndex: Integer;
   Data: PAchievementData;
-  KillIndex, LogicIndex: Byte;
+  KillIndex: TKlingType;
+  LogicIndex: TDominatorSeries;
 begin
   inherited LoadFromBuffer(Buffer, Galaxy);
   if LoadedSaveVersion <= 164 then
@@ -648,29 +647,29 @@ begin
   HyperspaceKillCount := Buffer.GetInt32;
   BlackHoleKillCount := Buffer.GetInt32;
   if LoadedSaveVersion >= 89 then
-    for KillIndex := 0 to 7 do
+    for KillIndex := Low(TKlingType) to High(TKlingType) do
       DominatorKillsByType[KillIndex] := Buffer.GetInt32
   else if LoadedSaveVersion >= 74 then
   begin
-    for KillIndex := 0 to 5 do
+    for KillIndex := ktBoss to ktShtip do
       DominatorKillsByType[KillIndex] := Buffer.GetInt32;
-    DominatorKillsByType[6] := 0;
-    DominatorKillsByType[7] := 0;
+    DominatorKillsByType[ktBertor] := 0;
+    DominatorKillsByType[ktKlig] := 0;
   end
   else
-    for KillIndex := 0 to 7 do
+    for KillIndex := Low(TKlingType) to High(TKlingType) do
       DominatorKillsByType[KillIndex] := 0;
   if LoadedSaveVersion >= 155 then
-    for LogicIndex := 0 to 2 do
+    for LogicIndex := Low(TDominatorSeries) to High(TDominatorSeries) do
       ChameleonLogic[LogicIndex] := Buffer.GetByte;
   Count := Buffer.GetInt32;
-  if (Count < 0) or (Count > 10000) then
+  if (Count < 0) or (Count > MaxSavedListCount) then
     raise EAbort.Create('Err');
   for I := 0 to Count - 1 do
   begin
     New(Entry);
     if Buffer.GetByte = 0 then
-      Entry.LocationOwner := TObject(Buffer.GetUInt32 or $80000000)
+      Entry.LocationOwner := TObject(Buffer.GetUInt32 or StoredItemPlanetFlag)
     else
       Entry.LocationOwner := TObject(Buffer.GetUInt32);
     Entry.SlotIndex := Buffer.GetInt32;
@@ -705,7 +704,7 @@ begin
   for ServiceIndex := Low(StationServiceLastUseTurns) to High(StationServiceLastUseTurns) do
     StationServiceLastUseTurns[ServiceIndex] := Buffer.GetInt32;
   for I := 1 to 24 do
-    StatusEffectSourceNames[I] := Buffer.ReadWideString;
+    StatusEffectSourceNames[TCaptainHealthEffect(I)] := Buffer.ReadWideString;
   DiseaseImmunity := Buffer.GetByte;
   if LoadedSaveVersion < 49 then
   begin
@@ -730,12 +729,12 @@ begin
   for I := 0 to Count - 1 do
   begin
     PlanetBattleHistory[I].MapId := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[0] := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[1] := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[2] := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[3] := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[4] := Buffer.GetInt32;
-    PlanetBattleHistory[I].Statistics[5] := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.SignedTimeMs := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.RobotsBuilt := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.RobotsDestroyed := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.TurretsBuilt := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.TurretsDestroyed := Buffer.GetInt32;
+    PlanetBattleHistory[I].Statistics.BuildingsDestroyed := Buffer.GetInt32;
     PlanetBattleHistory[I].ResultCode := Buffer.GetInt32;
     PlanetBattleHistory[I].CompletionMode := Buffer.GetInt32;
     PlanetBattleHistory[I].DateTurn := Buffer.GetInt32;
@@ -771,7 +770,7 @@ begin
   for I := 0 to Count - 1 do
     UnresolvedFlagsDA8[I] := Buffer.GetBoolean;
   Count := Buffer.GetUInt32;
-  if (Count < 0) or (Count > 10000) then
+  if (Count < 0) or (Count > MaxSavedListCount) then
     raise EAbort.Create('Err');
   for I := 0 to Count - 1 do
   begin
@@ -780,7 +779,7 @@ begin
     Journal.LoadFromBuffer(Buffer);
   end;
   Count := Buffer.GetWord;
-  if (Count < 0) or (Count > 10000) then
+  if (Count < 0) or (Count > MaxSavedListCount) then
     raise EAbort.Create('Err');
   for I := 0 to Count - 1 do
   begin
@@ -788,7 +787,7 @@ begin
     NewsEntries.Add(News);
     News.Id := Buffer.GetUInt32;
     News.Turn := Buffer.GetUInt32;
-    News.NewsType := Buffer.GetByte;
+    News.NewsType := TGalaxyNewsKind(Buffer.GetByte);
     News.Text := Buffer.ReadWideString;
   end;
   PendingDockDialogue := Buffer.GetByte;
@@ -883,8 +882,8 @@ begin
   for I := 0 to StorageEntries.Count - 1 do
   begin
     Entry := PStorageEntry(StorageEntries[I]);
-    if Cardinal(Entry.LocationOwner) and $80000000 <> 0 then
-      Entry.LocationOwner := Galaxy.IdToPlanet(Cardinal(Entry.LocationOwner) and $7FFFFFFF)
+    if Cardinal(Entry.LocationOwner) and StoredItemPlanetFlag <> 0 then
+      Entry.LocationOwner := Galaxy.IdToPlanet(Cardinal(Entry.LocationOwner) and TaggedObjectIdMask)
     else
       Entry.LocationOwner := Galaxy.IdToShip(Cardinal(Entry.LocationOwner), True);
     Entry.Item.ResolveLoadedReferences(Galaxy);
@@ -947,100 +946,80 @@ end;
 
 procedure TPlayer.SaveToBlock(Block: TBlockParEC);
 var
-  I: Byte;
+  I: TProgramIndex;
 begin
   Block.AddParam(
       DecodeTextW('InChukriSotoanriIndo'),
       WideString(IntToStr(CurrentStar.Id))
-  ); // Decoded: 'ICurStarId'
+  ); // 'ICurStarId'
   inherited SaveToBlock(Block);
-  Block.AddParam(DecodeTextW('D5eyb7tn'), WideString(IntToStr(DebtAmount))); // Decoded: 'Debt'
-  Block.AddParam(
-      DecodeTextW('DDe3bgt5Dha6t7ej'),
-      WideString(IntToStr(DebtDueTurn))
-  ); // Decoded: 'DebtDate'
-  Block.AddParam(
-      DecodeTextW('Dbe5bht6C7njt8'),
-      WideString(IntToStr(DebtDefaultCount))
-  ); // Decoded: 'DebtCnt'
-  Block.AddParam(
-      DecodeTextW('D0ehp7ojsgi4td'),
-      WideString(IntToStr(DepositAmount))
-  ); // Decoded: 'Deposit'
+  Block.AddParam(DecodeTextW('D5eyb7tn'), WideString(IntToStr(DebtAmount))); // 'Debt'
+  Block.AddParam(DecodeTextW('DDe3bgt5Dha6t7ej'), WideString(IntToStr(DebtDueTurn))); // 'DebtDate'
+  Block
+      .AddParam(DecodeTextW('Dbe5bht6C7njt8'), WideString(IntToStr(DebtDefaultCount))); // 'DebtCnt'
+  Block.AddParam(DecodeTextW('D0ehp7ojsgi4td'), WideString(IntToStr(DepositAmount))); // 'Deposit'
   Block.AddParam(
       DecodeTextW('Dbe5p7ojsriet4Dga6t7ek'),
       WideString(IntToStr(DepositStartTurn))
-  ); // Decoded: 'DepositDate'
+  ); // 'DepositDate'
   Block.AddParam(
       DecodeTextW('D0ebp5o3sfi3t5Dha7y8'),
       WideString(IntToStr(DepositDayCount))
-  ); // Decoded: 'DepositDay'
+  ); // 'DepositDay'
   Block.AddParam(
       DecodeTextW('Dpeupto5seiwtfPye6rucieon9t'),
       WideString(FloatToStr(DepositInterestRate))
-  ); // Decoded: 'DepositPercent'
+  ); // 'DepositPercent'
   Block.AddParam(
       DecodeTextW('Mmejd6Ptoel4i6c7yi'),
       WideString(IntToStr(MedicalPolicyTicks))
-  ); // Decoded: 'MedPolicy'
+  ); // 'MedPolicy'
   for I := Low(ProgramCounts) to High(ProgramCounts) do
     Block.AddParam(ProgramNames[I], WideString(IntToStr(ProgramCounts[I])));
   Block.AddParam(
       DecodeTextW('Emxjp7D8o5m'),
       WideString(IntToStr(ExperienceByDominators))
-  ); // Decoded: 'ExpDom'
-  Block.AddParam(
-      DecodeTextW('E3xrp5P6i7r'),
-      WideString(IntToStr(ExperienceByPirates))
-  ); // Decoded: 'ExpPir'
-  Block.AddParam(
-      DecodeTextW('Emx8p7C4oga6'),
-      WideString(IntToStr(ExperienceByNormals))
-  ); // Decoded: 'ExpCoa'
+  ); // 'ExpDom'
+  Block.AddParam(DecodeTextW('E3xrp5P6i7r'), WideString(IntToStr(ExperienceByPirates))); // 'ExpPir'
+  Block
+      .AddParam(DecodeTextW('Emx8p7C4oga6'), WideString(IntToStr(ExperienceByNormals))); // 'ExpCoa'
   Block.AddParam(
       DecodeTextW('Ekx7peTwr3af'),
       WideString(IntToStr(ExperienceByTraderCareer))
-  ); // Decoded: 'ExpTra'
+  ); // 'ExpTra'
 end;
 
 procedure TPlayer.LoadFromBlock(Block: TBlockParEC);
 var
-  I: Byte;
+  I: TProgramIndex;
 begin
   inherited LoadFromBlock(Block);
-  DebtAmount := StrToInt(AnsiString(Block.GetParam(DecodeTextW('D5eyb7tn')))); // Decoded: 'Debt'
+  DebtAmount := StrToInt(AnsiString(Block.GetParam(DecodeTextW('D5eyb7tn')))); // 'Debt'
   DebtDueTurn :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('DDe3bgt5Dha6t7ej')))); // Decoded: 'DebtDate'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('DDe3bgt5Dha6t7ej')))); // 'DebtDate'
   DebtDefaultCount :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Dbe5bht6C7njt8')))); // Decoded: 'DebtCnt'
-  DepositAmount :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('D0ehp7ojsgi4td')))); // Decoded: 'Deposit'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Dbe5bht6C7njt8')))); // 'DebtCnt'
+  DepositAmount := StrToInt(AnsiString(Block.GetParam(DecodeTextW('D0ehp7ojsgi4td')))); // 'Deposit'
   DepositStartTurn :=
-      StrToInt(
-          AnsiString(Block.GetParam(DecodeTextW('Dbe5p7ojsriet4Dga6t7ek')))
-      ); // Decoded: 'DepositDate'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Dbe5p7ojsriet4Dga6t7ek')))); // 'DepositDate'
   DepositDayCount :=
-      StrToInt(
-          AnsiString(Block.GetParam(DecodeTextW('D0ebp5o3sfi3t5Dha7y8')))
-      ); // Decoded: 'DepositDay'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('D0ebp5o3sfi3t5Dha7y8')))); // 'DepositDay'
   DepositInterestRate :=
       ExtractDecimalToSingleW(
           Block.GetParam(DecodeTextW('Dpeupto5seiwtfPye6rucieon9t'))
-      ); // Decoded: 'DepositPercent'
+      ); // 'DepositPercent'
   MedicalPolicyTicks :=
-      StrToInt(
-          AnsiString(Block.GetParam(DecodeTextW('Mmejd6Ptoel4i6c7yi')))
-      ); // Decoded: 'MedPolicy'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Mmejd6Ptoel4i6c7yi')))); // 'MedPolicy'
   for I := Low(ProgramCounts) to High(ProgramCounts) do
     ProgramCounts[I] := StrToInt(AnsiString(Block.GetParam(ProgramNames[I])));
   ExperienceByDominators :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Emxjp7D8o5m')))); // Decoded: 'ExpDom'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Emxjp7D8o5m')))); // 'ExpDom'
   ExperienceByPirates :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('E3xrp5P6i7r')))); // Decoded: 'ExpPir'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('E3xrp5P6i7r')))); // 'ExpPir'
   ExperienceByNormals :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Emx8p7C4oga6')))); // Decoded: 'ExpCoa'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Emx8p7C4oga6')))); // 'ExpCoa'
   ExperienceByTraderCareer :=
-      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Ekx7peTwr3af')))); // Decoded: 'ExpTra'
+      StrToInt(AnsiString(Block.GetParam(DecodeTextW('Ekx7peTwr3af')))); // 'ExpTra'
 end;
 
 procedure TPlayer.InitializePlayerAtPlanet(Planet: TPlanet; InitialMoney, CharacterPreset: Integer);
@@ -1051,24 +1030,24 @@ begin
           BaseNodes * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]].ArcadeRewardScale
       );
   PreferredCareer := rcTrader;
-  CareerStatus[Ord(rcTrader)] := 0;
-  CareerStatus[Ord(rcWarrior)] := 0;
-  CareerStatus[Ord(rcPirate)] := 0;
-  EminentProgress[Ord(rcTrader)] := 0;
-  EminentProgress[Ord(rcPirate)] := 0;
-  EminentProgress[Ord(rcWarrior)] := 0;
-  BaseSkills[0] := 0;
-  BaseSkills[1] := 0;
-  BaseSkills[2] := 0;
-  BaseSkills[3] := 0;
-  BaseSkills[4] := 0;
-  BaseSkills[5] := 0;
+  CareerStatus[rcTrader] := 0;
+  CareerStatus[rcWarrior] := 0;
+  CareerStatus[rcPirate] := 0;
+  EminentProgress[rcTrader] := 0;
+  EminentProgress[rcPirate] := 0;
+  EminentProgress[rcWarrior] := 0;
+  BaseSkills[psAccuracy] := 0;
+  BaseSkills[psManeuverability] := 0;
+  BaseSkills[psTechnical] := 0;
+  BaseSkills[psTrading] := 0;
+  BaseSkills[psCharisma] := 0;
+  BaseSkills[psLeadership] := 0;
 end;
 
 procedure TPlayer.ApplyCharacterPreset(Planet: TPlanet; InitialMoney, CharacterPreset: Integer);
 var
   I, Quantity: Integer;
-  Kind: Byte;
+  Kind: TItemType;
   Item: TObject;
   Entry: PStorageEntry;
 begin
@@ -1084,7 +1063,7 @@ begin
   for I := 1 to 5 do
     Weapons[I] := nil;
   WeaponCount := 0;
-  case OwnerId * 5 + CharacterPreset of
+  case Ord(OwnerId) * 5 + CharacterPreset of
     1:
     begin
       SetMoney(
@@ -1092,21 +1071,21 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 20, [3, 4]);
+      ChangePlanetRelations(nil, rcmCapAt, 20, [oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 2, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[1]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[1]),
           3,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
@@ -1118,22 +1097,22 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.5, 0.9) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 1, [3, 4]);
-      ChangePlanetRelations(nil, rcmIncrease, 40, [1, 2]);
+      ChangePlanetRelations(nil, rcmCapAt, 1, [oiFeyan, oiGaal]);
+      ChangePlanetRelations(nil, rcmIncrease, 40, [oiPeleng, oiHuman]);
       CreateAndEquipHull(NextRandomIntRange(240, 270, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[1]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
           3,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon3),
-          Round(WeaponInfos[Ord(t_Weapon3)].AverageSize * EquipmentSizeFactors[2]),
+          t_Flux,
+          Round(WeaponInfos[t_Flux].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
@@ -1145,7 +1124,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.2, 1.4) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 70, [0, 1, 2, 3, 4]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 70, [oiMaloc, oiPeleng, oiHuman, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(290, 320, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       GetFuelTanks.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
@@ -1156,8 +1135,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       GetCargoHook.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon1),
-                  Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+                  t_IndustrialLaser,
+                  Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
                   1,
                   OwnerId)
               .ConditionPercent :=
@@ -1170,21 +1149,21 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.9, 1.1) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 5, [3, 4]);
+      ChangePlanetRelations(nil, rcmCapAt, 5, [oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(230, 250, RandomState), 2, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 2, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon3),
-          Round(WeaponInfos[Ord(t_Weapon3)].AverageSize * EquipmentSizeFactors[3]),
+          t_Flux,
+          Round(WeaponInfos[t_Flux].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
@@ -1196,15 +1175,15 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.9, 2.1) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 5, [1, 3]);
+      ChangePlanetRelations(nil, rcmCapAt, 5, [oiPeleng, oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(210, 230, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[4]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 3, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1216,15 +1195,15 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 2.3, 2.5) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 25, [0, 3]);
+      ChangePlanetRelations(nil, rcmCapAt, 25, [oiMaloc, oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(210, 230, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[4]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 3, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1236,28 +1215,28 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.4, 2.0) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 30, [0, 2, 3, 4]);
-      ChangePlanetRelations(nil, rcmCapAt, 60, [1]);
+      ChangePlanetRelations(nil, rcmCapAt, 30, [oiMaloc, oiHuman, oiFeyan, oiGaal]);
+      ChangePlanetRelations(nil, rcmCapAt, 60, [oiPeleng]);
       CreateAndEquipHull(NextRandomIntRange(230, 260, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 2, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[3]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1269,7 +1248,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.9, 1.1) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 50, [1, 2, 3, 4]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 50, [oiPeleng, oiHuman, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(280, 320, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       GetFuelTanks.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
@@ -1280,8 +1259,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       GetCargoHook.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon2),
-                  Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+                  t_FragmentationCannon,
+                  Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
                   3,
                   OwnerId)
               .ConditionPercent :=
@@ -1294,15 +1273,15 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.9, 2.0) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 30, [2, 3]);
+      ChangePlanetRelations(nil, rcmCapAt, 30, [oiHuman, oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
@@ -1311,7 +1290,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(7, 17, RandomState);
       (Entry.Item as TGoods).Init(t_Luxury, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[3].AveragePrice div 4);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Luxury)].AveragePrice div 4);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1325,9 +1304,9 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.9, 1.1) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [2]);
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [3]);
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [4]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiHuman]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiFeyan]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       GetFuelTanks.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
@@ -1338,8 +1317,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       GetCargoHook.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon4),
-                  Round(WeaponInfos[Ord(t_Weapon4)].AverageSize * EquipmentSizeFactors[3]),
+                  t_MissileLauncher,
+                  Round(WeaponInfos[t_MissileLauncher].AverageSize * EquipmentSizeFactors[3]),
                   1,
                   OwnerId)
               .ConditionPercent :=
@@ -1349,7 +1328,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(4, 10, RandomState);
       (Entry.Item as TGoods).Init(t_Narcotics, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[7].AveragePrice div 2);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Narcotics)].AveragePrice div 2);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1363,7 +1342,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.3, 0.5) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 15, [1]);
+      ChangePlanetRelations(nil, rcmCapAt, 15, [oiPeleng]);
       CreateAndEquipHull(NextRandomIntRange(210, 230, RandomState), 2, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
@@ -1371,14 +1350,14 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipDefGenerator(Round(DefGeneratorBaseSize * EquipmentSizeFactors[2]), 3, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
           2,
           OwnerId
       );
@@ -1390,7 +1369,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.5, 2.0) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 90, [0, 1]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 90, [oiMaloc, oiPeleng]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 2, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       GetFuelTanks.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
@@ -1401,8 +1380,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       GetCargoHook.ConditionPercent := NextRandomIntRange(20, 80, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon1),
-                  Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+                  t_IndustrialLaser,
+                  Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
                   1,
                   OwnerId)
               .ConditionPercent :=
@@ -1412,7 +1391,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(100, 200, RandomState);
       (Entry.Item as TGoods).Init(t_Minerals, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[4].AveragePrice div 2);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Minerals)].AveragePrice div 2);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1426,8 +1405,8 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.3, 1.5) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 25, [0]);
-      ChangePlanetRelations(nil, rcmIncrease, 30, [1, 3, 4]);
+      ChangePlanetRelations(nil, rcmCapAt, 25, [oiMaloc]);
+      ChangePlanetRelations(nil, rcmIncrease, 30, [oiPeleng, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(280, 310, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
@@ -1435,8 +1414,8 @@ begin
       CreateAndEquipScanner(Round(ScannerBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1448,7 +1427,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.1, 1.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 5, [1, 4]);
+      ChangePlanetRelations(nil, rcmCapAt, 5, [oiPeleng, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(240, 260, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
@@ -1456,14 +1435,14 @@ begin
       CreateAndEquipScanner(Round(ScannerBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[4]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[4]),
           2,
           OwnerId
       );
@@ -1475,23 +1454,23 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [0]);
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [3]);
-      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [4]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiMaloc]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiFeyan]);
+      ChangePlanetRelations(nil, rcmCapAt, NextRandomIntRange(10, 35, RandomState), [oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 2, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[4]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[4]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           3,
           OwnerId
       );
@@ -1503,27 +1482,27 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 70, [0, 1, 2, 3, 4]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 70, [oiMaloc, oiPeleng, oiHuman, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(250, 270, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           3,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[3]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon3),
-          Round(WeaponInfos[Ord(t_Weapon3)].AverageSize * EquipmentSizeFactors[3]),
+          t_Flux,
+          Round(WeaponInfos[t_Flux].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
@@ -1535,15 +1514,15 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 70, [0, 1]);
+      ChangePlanetRelations(nil, rcmCapAt, 70, [oiMaloc, oiPeleng]);
       CreateAndEquipHull(NextRandomIntRange(230, 250, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[3]), 2, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon4),
-          Round(WeaponInfos[Ord(t_Weapon4)].AverageSize * EquipmentSizeFactors[3]),
+          t_MissileLauncher,
+          Round(WeaponInfos[t_MissileLauncher].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
@@ -1555,8 +1534,8 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.8, 1.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 70, [1, 2, 3, 4]);
-      ChangePlanetRelations(nil, rcmCapAt, 25, [0]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 70, [oiPeleng, oiHuman, oiFeyan, oiGaal]);
+      ChangePlanetRelations(nil, rcmCapAt, 25, [oiMaloc]);
       CreateAndEquipHull(NextRandomIntRange(290, 320, RandomState), 1, OwnerId, -1, False)
               .HullPoints :=
           NextRandomIntRange(50, 150, RandomState);
@@ -1573,8 +1552,8 @@ begin
               .ConditionPercent :=
           NextRandomIntRange(10, 50, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon1),
-                  Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[4]),
+                  t_IndustrialLaser,
+                  Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[4]),
                   1,
                   OwnerId)
               .ConditionPercent :=
@@ -1587,21 +1566,21 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 15, [4]);
+      ChangePlanetRelations(nil, rcmCapAt, 15, [oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(270, 290, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 2, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[1]), 2, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[2]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[2]),
           3,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon3),
-          Round(WeaponInfos[Ord(t_Weapon3)].AverageSize * EquipmentSizeFactors[3]),
+          t_Flux,
+          Round(WeaponInfos[t_Flux].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
@@ -1613,17 +1592,17 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 5, [0, 2, 4]);
-      ChangePlanetRelations(nil, rcmCapAt, 90, [1]);
-      ChangePlanetRelations(nil, rcmCapAt, 60, [3]);
+      ChangePlanetRelations(nil, rcmCapAt, 5, [oiMaloc, oiHuman, oiGaal]);
+      ChangePlanetRelations(nil, rcmCapAt, 90, [oiPeleng]);
+      ChangePlanetRelations(nil, rcmCapAt, 60, [oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(230, 250, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
           1,
           OwnerId
       );
@@ -1632,7 +1611,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(14, 20, RandomState);
       (Entry.Item as TGoods).Init(t_Narcotics, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[7].AveragePrice div 2);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Narcotics)].AveragePrice div 2);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1646,21 +1625,21 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.2, 0.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 70, [0, 1, 2, 3, 4]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 70, [oiMaloc, oiPeleng, oiHuman, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(230, 250, RandomState), 2, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipRadar(Round(RadarBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 2, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           3,
           OwnerId
       );
       CreateAndEquipWeapon(
-          Ord(t_Weapon2),
-          Round(WeaponInfos[Ord(t_Weapon2)].AverageSize * EquipmentSizeFactors[3]),
+          t_FragmentationCannon,
+          Round(WeaponInfos[t_FragmentationCannon].AverageSize * EquipmentSizeFactors[3]),
           2,
           OwnerId
       );
@@ -1672,7 +1651,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 1.2, 1.3) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmRaiseTo, 60, [0, 1, 2, 3, 4]);
+      ChangePlanetRelations(nil, rcmRaiseTo, 60, [oiMaloc, oiPeleng, oiHuman, oiFeyan, oiGaal]);
       CreateAndEquipHull(NextRandomIntRange(220, 230, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
@@ -1680,8 +1659,8 @@ begin
       CreateAndEquipScanner(Round(ScannerBaseSize * EquipmentSizeFactors[4]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1693,7 +1672,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.8, 1.2) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 5, [0]);
+      ChangePlanetRelations(nil, rcmCapAt, 5, [oiMaloc]);
       CreateAndEquipHull(NextRandomIntRange(280, 310, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
@@ -1701,8 +1680,8 @@ begin
       CreateAndEquipScanner(Round(ScannerBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
           1,
           OwnerId
       );
@@ -1711,7 +1690,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(15, 30, RandomState);
       (Entry.Item as TGoods).Init(t_Luxury, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[3].AveragePrice div 2);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Luxury)].AveragePrice div 2);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1725,7 +1704,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.9, 1.2) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 35, [0, 1, 2, 3]);
+      ChangePlanetRelations(nil, rcmCapAt, 35, [oiMaloc, oiPeleng, oiHuman, oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(250, 260, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[5]), 1, OwnerId);
       CreateAndEquipEngine(Round(EngineBaseSize * EquipmentSizeFactors[1]), 1, OwnerId);
@@ -1734,8 +1713,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[3]), 2, OwnerId);
       CreateAndEquipRepairRobot(Round(RepairRobotBaseSize * EquipmentSizeFactors[3]), 2, OwnerId);
       CreateAndEquipWeapon(
-          Ord(t_Weapon1),
-          Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[3]),
+          t_IndustrialLaser,
+          Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[3]),
           1,
           OwnerId
       );
@@ -1744,7 +1723,7 @@ begin
       Entry.Item := TGoods.Create;
       Quantity := NextRandomIntRange(10, 20, RandomState);
       (Entry.Item as TGoods).Init(t_Alcohol, Quantity);
-      Entry.Item.Cost := Quantity * (GoodsMarket[5].AveragePrice div 2);
+      Entry.Item.Cost := Quantity * (GoodsMarket[Ord(t_Alcohol)].AveragePrice div 2);
       if GetPlayer.DockedTo <> nil then
         Entry.LocationOwner := GetPlayer.DockedTo
       else
@@ -1758,7 +1737,7 @@ begin
               SeededRandomFloatRange(Galaxy.GenerationSeed, 0.9, 1.2) * InitialMoney
           )
       );
-      ChangePlanetRelations(nil, rcmCapAt, 15, [0, 1, 3]);
+      ChangePlanetRelations(nil, rcmCapAt, 15, [oiMaloc, oiPeleng, oiFeyan]);
       CreateAndEquipHull(NextRandomIntRange(280, 300, RandomState), 1, OwnerId, -1, False);
       CreateAndEquipFuelTanks(Round(FuelTanksBaseSize * EquipmentSizeFactors[3]), 1, OwnerId);
       GetFuelTanks.ConditionPercent := NextRandomIntRange(10, 50, RandomState);
@@ -1769,8 +1748,8 @@ begin
       CreateAndEquipCargoHook(Round(CargoHookBaseSize * EquipmentSizeFactors[2]), 1, OwnerId);
       GetCargoHook.ConditionPercent := NextRandomIntRange(10, 50, RandomState);
       CreateAndEquipWeapon(
-                  Ord(t_Weapon1),
-                  Round(WeaponInfos[Ord(t_Weapon1)].AverageSize * EquipmentSizeFactors[2]),
+                  t_IndustrialLaser,
+                  Round(WeaponInfos[t_IndustrialLaser].AverageSize * EquipmentSizeFactors[2]),
                   1,
                   OwnerId)
               .ConditionPercent :=
@@ -1801,7 +1780,7 @@ begin
   RefreshAssignedItemSlots;
   HomePlanet.ChangeRelationToRanger(GetPlayer, 100);
   for I := 1 to 24 do
-    StatusEffectSourceNames[I] := '';
+    StatusEffectSourceNames[TCaptainHealthEffect(I)] := '';
 end;
 
 procedure TPlayer.NextDay;
@@ -1861,7 +1840,7 @@ begin
         LastMedicalPolicyTicks := MedicalPolicyTicks;
         if MedicalPolicyTicks = 0 then
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
               PickLocalizedTextVariant('GalaxyNews.MedPolicy.End', Galaxy.CurrentTurn div 10),
               ''
@@ -1869,30 +1848,33 @@ begin
       end;
       if PendingPirateLicenseCash > 0 then
       begin
-        GainExperience(Round(PendingPirateLicenseCash * CareerStatus[Ord(rcPirate)] * 0.001), 3);
+        GainExperience(
+            Round(PendingPirateLicenseCash * CareerStatus[rcPirate] * 0.001),
+            esNormalShips
+        );
         Inc(PirateLicenseCash, PendingPirateLicenseCash);
         PendingPirateLicenseCash := 0;
-        if PirateLicenseCash > 100000000 then
-          PirateLicenseCash := 100000000;
+        if PirateLicenseCash > MaxMonetaryValue then
+          PirateLicenseCash := MaxMonetaryValue;
       end;
       if PirateLicenseTicks > 0 then
       begin
         Dec(PirateLicenseTicks);
         if PirateLicenseTicks = 0 then
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
               PickLocalizedTextVariant('GalaxyNews.PirateLicense.End', Galaxy.CurrentTurn div 10),
               ''
           )
-        else if Galaxy.ShipTypeCounts[Ord(rstDominion)] <= 0 then
+        else if Galaxy.ShipTypeCounts[rstDominion] <= 0 then
         begin
           Found := 0;
           for I := 0 to Galaxy.Stars.Count - 1 do
           begin
             Star := TStar(Galaxy.Stars[I]);
             for J := 0 to Star.Ships.Count - 1 do
-              if TShip(Star.Ships[J]).TypeId = Byte(rstDominion) then
+              if TShip(Star.Ships[J]).TypeId = rstDominion then
               begin
                 Inc(Found);
                 Break;
@@ -1904,7 +1886,7 @@ begin
           begin
             PirateLicenseTicks := 0;
             AddOrUpdatePlayerBubble(
-                0,
+                pmGalaxyNews,
                 Galaxy.CurrentTurn,
                 PickLocalizedTextVariant(
                     'GalaxyNews.PirateLicense.DeadAllCB',
@@ -1926,8 +1908,8 @@ begin
       end;
       if Money < 0 then
         SetMoney(0)
-      else if Money > 100000000 then
-        SetMoney(100000000);
+      else if Money > MaxMonetaryValue then
+        SetMoney(MaxMonetaryValue);
       Stage := 3;
       if InNormalSpace then
         for I := 0 to CurrentStar.Ships.Count - 1 do
@@ -1964,50 +1946,62 @@ begin
         for J := FirstDisease to LastDisease do
         begin
           IncrementWrapped(I, FirstDisease, LastDisease);
-          with CaptainHealthDefinitions[I] do
+          with CaptainHealthDefinitions[TCaptainHealthEffect(I)] do
           begin
-            if (Galaxy.CurrentTurn < 300) or CaptainHealthDefinitions[I].Disabled then
+            if (Galaxy.CurrentTurn < GalaxyWarmupTurns)
+                or CaptainHealthDefinitions[TCaptainHealthEffect(I)].Disabled then
               Continue;
-            if (CurrentPlanet <> nil) and not (0 in CaptainHealthDefinitions[I].Locations) then
+            if (CurrentPlanet <> nil)
+                and not (hlPlanet
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations) then
               Continue;
-            if (DockedTo <> nil) and not (1 in CaptainHealthDefinitions[I].Locations) then
+            if (DockedTo <> nil)
+                and not (hlDocked
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations) then
               Continue;
             if InNormalSpace
-                and not (2 in CaptainHealthDefinitions[I].Locations)
-                and not (3 in CaptainHealthDefinitions[I].Locations) then
+                and not (hlNormalSpace
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations)
+                and not (hlCombat
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations) then
               Continue;
-            if InNormalSpace and (3 in CaptainHealthDefinitions[I].Locations) then
+            if InNormalSpace
+                and (hlCombat in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations) then
               if (EnemyShip = nil)
                   or not EnemyShip.IsAttackingShip(Self)
                   or (GetHullIntegrityPercent > 50)
-                  or ((I = 3) and (EnemyShip.OwnerId <> Byte(oiDominator))) then
+                  or ((TCaptainHealthEffect(I) = heHolyFanaticism)
+                      and (EnemyShip.OwnerId <> oiDominator)) then
                 Continue;
             if (CurrentPlanet <> nil)
                 and not (CurrentPlanet.OwnerId
-                    in CaptainHealthDefinitions[I].AllowedLocationOwners) then
-              if (CurrentPlanet.OwnerId = Byte(oiUninhabited))
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedLocationOwners) then
+              if (CurrentPlanet.OwnerId = oiUninhabited)
                   or not (RaceToOwner(CurrentPlanet.RaceId)
-                      in CaptainHealthDefinitions[I].AllowedLocationOwners) then
+                      in CaptainHealthDefinitions[TCaptainHealthEffect(I)]
+                          .AllowedLocationOwners) then
                 Continue;
             if (DockedTo <> nil)
                 and not (RaceToOwner(DockedTo.PilotRace)
-                    in CaptainHealthDefinitions[I].AllowedLocationOwners)
-                and not (DockedTo.OwnerId in CaptainHealthDefinitions[I].AllowedLocationOwners) then
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedLocationOwners)
+                and not (DockedTo.OwnerId
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedLocationOwners) then
               Continue;
             if (RaceToOwner(PilotRace) in AllowedOwners)
                 and (GetRangerRatingBand in AllowedRatingBands)
                 and (Rank in AllowedRanks)
-                and (Byte(GetDominantCareer) in AllowedCareers)
-                and (CaptainHealth[I].Progress <= 0.0)
-                and (CaptainHealth[I].ExpireTurn + 365 <= Galaxy.CurrentTurn) then
+                and (GetDominantCareer in AllowedCareers)
+                and (CaptainHealth[TCaptainHealthEffect(I)].Progress <= 0.0)
+                and (CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn + TurnsPerYear
+                    <= Galaxy.CurrentTurn) then
             begin
-              if IsHealthEffectActive(4) then
+              if IsHealthEffectActive(heComplexImmunocide) then
                 ResistanceFactor := 0.1
               else
                 ResistanceFactor := 1.0;
-              if IsHealthEffectActive(18) then
+              if IsHealthEffectActive(heBloodDjogar) then
                 ResistanceFactor := ResistanceFactor * 5.0;
-              ResistanceFactor := (CountActiveArtefacts(Ord(t_ArtBio)) + 1) * ResistanceFactor;
+              ResistanceFactor := (CountActiveArtefacts(t_ArtBio) + 1) * ResistanceFactor;
               if CurrentPlanet <> nil then
                 LocationId := CurrentPlanet.Id
               else if DockedTo <> nil then
@@ -2027,11 +2021,13 @@ begin
                       * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]]
                           .GoodsEventDurationFactor then
               begin
-                CaptainHealth[I].Progress := 0.1;
-                if InNormalSpace and (3 in CaptainHealthDefinitions[I].Locations) then
-                  CaptainHealth[I].Progress := 99.9999;
-                CaptainHealth[I].AppliedTurn := Galaxy.CurrentTurn;
-                CaptainHealth[I].ExpireTurn :=
+                CaptainHealth[TCaptainHealthEffect(I)].Progress := 0.1;
+                if InNormalSpace
+                    and (hlCombat
+                        in CaptainHealthDefinitions[TCaptainHealthEffect(I)].Locations) then
+                  CaptainHealth[TCaptainHealthEffect(I)].Progress := 99.9999;
+                CaptainHealth[TCaptainHealthEffect(I)].AppliedTurn := Galaxy.CurrentTurn;
+                CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn :=
                     Galaxy.CurrentTurn
                         + Round(
                             RemapClamped(
@@ -2042,13 +2038,13 @@ begin
                                     1.0,
                                     0.5,
                                     3.0)
-                                * CaptainHealthDefinitions[I].Duration);
+                                * CaptainHealthDefinitions[TCaptainHealthEffect(I)].Duration);
                 if CurrentPlanet <> nil then
-                  StatusEffectSourceNames[I] := CurrentPlanet.GetFullName(' ')
+                  StatusEffectSourceNames[TCaptainHealthEffect(I)] := CurrentPlanet.GetFullName(' ')
                 else if DockedTo <> nil then
-                  StatusEffectSourceNames[I] := DockedTo.GetName
+                  StatusEffectSourceNames[TCaptainHealthEffect(I)] := DockedTo.GetName
                 else
-                  StatusEffectSourceNames[I] := CurrentStar.Name;
+                  StatusEffectSourceNames[TCaptainHealthEffect(I)] := CurrentStar.Name;
               end;
             end;
           end;
@@ -2056,27 +2052,27 @@ begin
       end;
       Stage := 7;
       for I := 1 to 12 do
-        if CaptainHealth[I].Progress <> 0.0 then
+        if CaptainHealth[TCaptainHealthEffect(I)].Progress <> 0.0 then
         begin
-          if CaptainHealth[I].Progress < 100.0 then
+          if CaptainHealth[TCaptainHealthEffect(I)].Progress < 100.0 then
           begin
             if I in [1..3] then
             begin
               if (CurrentPlanet <> nil) or (DockedTo <> nil) then
-                CaptainHealth[I].Progress := 100.0;
+                CaptainHealth[TCaptainHealthEffect(I)].Progress := 100.0;
             end
             else
-              CaptainHealth[I].Progress :=
+              CaptainHealth[TCaptainHealthEffect(I)].Progress :=
                   SeededRandomUnitFloat(Integer(Galaxy.GenerationSeed) - I + Galaxy.CurrentTurn)
-                          * CaptainHealthDefinitions[I].DevelopmentRate
+                          * CaptainHealthDefinitions[TCaptainHealthEffect(I)].DevelopmentRate
                           * 2.0
-                      + CaptainHealth[I].Progress
+                      + CaptainHealth[TCaptainHealthEffect(I)].Progress
                       + 0.01;
-            if CaptainHealth[I].Progress >= 100.0 then
+            if CaptainHealth[TCaptainHealthEffect(I)].Progress >= 100.0 then
             begin
-              CaptainHealth[I].Progress := 100.0;
-              Inc(CaptainHealth[I].ApplicationCount);
-              CaptainHealth[I].ExpireTurn :=
+              CaptainHealth[TCaptainHealthEffect(I)].Progress := 100.0;
+              Inc(CaptainHealth[TCaptainHealthEffect(I)].ApplicationCount);
+              CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn :=
                   Galaxy.CurrentTurn
                       + Round(
                           RemapClamped(
@@ -2087,19 +2083,19 @@ begin
                                   1.0,
                                   0.9,
                                   2.0)
-                              * CaptainHealthDefinitions[I].Duration);
+                              * CaptainHealthDefinitions[TCaptainHealthEffect(I)].Duration);
               Text :=
                   LocalizedColorText(WideString('Illness.Illness.' + IntToStr(I - 1) + '.Start'));
               AddOrUpdatePlayerBubble(
-                  0,
+                  pmGalaxyNews,
                   Galaxy.CurrentTurn,
                   FormatText2(
                       Text,
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Date>',
                       Galaxy.FormatTurnDate(-1),
                       '<Name>',
-                      CaptainHealthDefinitions[I].Name
+                      CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name
                   ),
                   ''
               );
@@ -2107,22 +2103,22 @@ begin
               Inc(DiseaseContractionCount);
             end;
           end
-          else if (CaptainHealth[I].ExpireTurn <= Galaxy.CurrentTurn)
+          else if (CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn <= Galaxy.CurrentTurn)
               and (not (I in [1..3]) or not CurrentStar.RecordingTurnFilm) then
           begin
-            CaptainHealth[I].Progress := 0.0;
-            StatusEffectSourceNames[I] := '';
+            CaptainHealth[TCaptainHealthEffect(I)].Progress := 0.0;
+            StatusEffectSourceNames[TCaptainHealthEffect(I)] := '';
             Text := LocalizedColorText(WideString('Illness.Illness.' + IntToStr(I - 1) + '.End'));
             AddOrUpdatePlayerBubble(
-                0,
+                pmGalaxyNews,
                 Galaxy.CurrentTurn,
                 FormatText2(
                     Text,
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<Date>',
                     Galaxy.FormatTurnDate(-1),
                     '<Name>',
-                    CaptainHealthDefinitions[I].Name
+                    CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name
                 ),
                 ''
             );
@@ -2130,18 +2126,18 @@ begin
         end;
       Stage := 8;
       for I := 13 to 24 do
-        if (CaptainHealth[I].Progress = 100.0)
-            and (CaptainHealth[I].ExpireTurn <= Galaxy.CurrentTurn) then
+        if (CaptainHealth[TCaptainHealthEffect(I)].Progress = 100.0)
+            and (CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn <= Galaxy.CurrentTurn) then
         begin
           Text :=
               LocalizedColorText(WideString('Illness.Stimulant.' + IntToStr(I - 12 - 1) + '.End'));
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
-              FormatText1(Text, '<color=255,240,100>', '<Date>', Galaxy.FormatTurnDate(-1)),
+              FormatText1(Text, TextHighlightColorTag, '<Date>', Galaxy.FormatTurnDate(-1)),
               ''
           );
-          CaptainHealth[I].Progress := 0.0;
+          CaptainHealth[TCaptainHealthEffect(I)].Progress := 0.0;
         end;
       Stage := 9;
       for I := 1 to 1 do
@@ -2150,31 +2146,34 @@ begin
         begin
           Text := LocalizedColorText(WideString('Illness.ExtraIllness.' + IntToStr(I) + '.End'));
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
-              FormatText1(Text, '<color=255,240,100>', '<Date>', Galaxy.FormatTurnDate(-1)),
+              FormatText1(Text, TextHighlightColorTag, '<Date>', Galaxy.FormatTurnDate(-1)),
               ''
           );
           RadiationHealth[I].Progress := 0.0;
         end;
       Stage := 10;
-      StimulantExcess := CountActiveStimulants - GetPlayer.GetTotalStatBonus(Ord(bonStimCapacity));
+      StimulantExcess := CountActiveStimulants - GetPlayer.GetTotalStatBonus(bonStimCapacity);
       { The native one-pass loop retains its dormant footer after Break. }
       while StimulantExcess >= 2 do
       begin
         I := 6;
-        if CaptainHealth[I].Progress <= 0.0 then
+        if CaptainHealth[TCaptainHealthEffect(I)].Progress <= 0.0 then
         begin
           LocalSeed := Galaxy.GenerationSeed + Cardinal(Galaxy.CurrentTurn);
-          if Sqr(Max(0, StimulantExcess - CountActiveArtefacts(Ord(t_ArtBio)))) * 0.4
+          if Sqr(Max(0, StimulantExcess - CountActiveArtefacts(t_ArtBio))) * 0.4
               > NextRandomFloatRange(0.0, 1000.0, LocalSeed) then
-            if (RaceToOwner(PilotRace) in CaptainHealthDefinitions[I].AllowedOwners)
-                and (GetRangerRatingBand in CaptainHealthDefinitions[I].AllowedRatingBands)
-                and (Rank in CaptainHealthDefinitions[I].AllowedRanks)
-                and (Byte(GetDominantCareer) in CaptainHealthDefinitions[I].AllowedCareers) then
+            if (RaceToOwner(PilotRace)
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedOwners)
+                and (GetRangerRatingBand
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedRatingBands)
+                and (Rank in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedRanks)
+                and (GetDominantCareer
+                    in CaptainHealthDefinitions[TCaptainHealthEffect(I)].AllowedCareers) then
             begin
-              CaptainHealth[I].Progress := 100.0;
-              CaptainHealth[I].ExpireTurn :=
+              CaptainHealth[TCaptainHealthEffect(I)].Progress := 100.0;
+              CaptainHealth[TCaptainHealthEffect(I)].ExpireTurn :=
                   Galaxy.CurrentTurn
                       + Round(
                           RemapClamped(
@@ -2185,20 +2184,20 @@ begin
                                   1.0,
                                   0.5,
                                   3.0)
-                              * CaptainHealthDefinitions[I].Duration);
-              Inc(CaptainHealth[I].ApplicationCount);
+                              * CaptainHealthDefinitions[TCaptainHealthEffect(I)].Duration);
+              Inc(CaptainHealth[TCaptainHealthEffect(I)].ApplicationCount);
               Text :=
                   LocalizedColorText(WideString('Illness.Illness.' + IntToStr(I - 1) + '.Start'));
               AddOrUpdatePlayerBubble(
-                  0,
+                  pmGalaxyNews,
                   Galaxy.CurrentTurn,
                   FormatText2(
                       Text,
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Date>',
                       Galaxy.FormatTurnDate(-1),
                       '<Name>',
-                      CaptainHealthDefinitions[I].Name
+                      CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name
                   ),
                   ''
               );
@@ -2209,8 +2208,8 @@ begin
         Break;
       end;
       Stage := 11;
-      if IsHealthEffectActive(5)
-          and (Galaxy.CurrentTurn > CaptainHealth[5].AppliedTurn + 15)
+      if IsHealthEffectActive(heMysteriousLuatanza)
+          and (Galaxy.CurrentTurn > CaptainHealth[heMysteriousLuatanza].AppliedTurn + 15)
           and (Galaxy.CurrentTurn mod 14 = 0) then
       begin
         if SeededRandomUnitFloat(Integer(Galaxy.GenerationSeed) + 1736605 + Galaxy.CurrentTurn)
@@ -2218,21 +2217,21 @@ begin
         begin
           TargetValue :=
               NextRandomIntRange(
-                  Galaxy.ComputeScaledSmallMoney(2),
-                  Galaxy.ComputeScaledAverageMoney(2),
+                  Galaxy.ComputeScaledSmallMoney(oiHuman),
+                  Galaxy.ComputeScaledAverageMoney(oiHuman),
                   RandomState
               );
           SetMoney(TargetValue + Money);
           SoundManager.PlaySound('Sound.Sell');
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
               FormatText2(
                   PickLocalizedTextVariant(
                       'GalaxyNews.IllNews.IllLuatan',
                       Seed * Cardinal(Galaxy.CurrentTurn div 10)
                   ),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Date>',
                   Galaxy.FormatTurnDate(-1),
                   '<Money>',
@@ -2243,14 +2242,14 @@ begin
         end
         else
           AddOrUpdatePlayerBubble(
-              0,
+              pmGalaxyNews,
               Galaxy.CurrentTurn,
               FormatText1(
                   PickLocalizedTextVariant(
                       'GalaxyNews.IllNews.IllLuatanNo',
                       Seed * Cardinal(Galaxy.CurrentTurn div 10)
                   ),
-                  '<color=255,240,100>',
+                  TextHighlightColorTag,
                   '<Date>',
                   Galaxy.FormatTurnDate(-1)
               ),
@@ -2258,7 +2257,7 @@ begin
           );
       end;
       Stage := 12;
-      if IsHealthEffectActive(11)
+      if IsHealthEffectActive(heAkaSezyanka)
           and InNormalSpace
           and HasCargoGoods
           and (SeededRandomUnitFloat(Integer(Galaxy.GenerationSeed) + 135432 + Galaxy.CurrentTurn)
@@ -2267,21 +2266,21 @@ begin
       begin
         TargetValue :=
             NextRandomIntRange(
-                Galaxy.ComputeScaledMiniMoney(2),
-                Galaxy.ComputeScaledBigMoney(2),
+                Galaxy.ComputeScaledMiniMoney(oiHuman),
+                Galaxy.ComputeScaledBigMoney(oiHuman),
                 RandomState
             );
         JettisonCargoGoodsTowardTargetValue(TargetValue);
         SoundManager.PlaySound('Sound.Sell');
         AddOrUpdatePlayerBubble(
-            0,
+            pmGalaxyNews,
             Galaxy.CurrentTurn,
             FormatText1(
                 PickLocalizedTextVariant(
                     'GalaxyNews.IllNews.IllSeciyanka',
                     Seed * Cardinal(Galaxy.CurrentTurn div 10)
                 ),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Date>',
                 Galaxy.FormatTurnDate(-1)
             ),
@@ -2308,10 +2307,10 @@ begin
   if DepositAmount > 0 then
   begin
     Base := 0.01 * DepositInterestRate / 12 + 1;
-    Exponent := DepositDayCount / 365 * 12;
-    LimitRatio := 100000000 / DepositAmount;
+    Exponent := DepositDayCount / TurnsPerYear * 12;
+    LimitRatio := MaxMonetaryValue / DepositAmount;
     if Ln(Base) * Exponent > Ln(LimitRatio) then
-      Result := 100000000
+      Result := MaxMonetaryValue
     else
       Result := Round(Power(Base, Exponent) * DepositAmount);
   end;
@@ -2336,15 +2335,17 @@ end;
 
 procedure TPlayer.ApplyBioArtefactHealthEffects;
 var
-  Selected, I, Count, J: Integer;
+  Selected: Integer;
+  I: TCaptainHealthEffect;
+  Count, J: Integer;
 begin
-  for J := 1 to CountActiveArtefacts(Ord(t_ArtBio)) do
+  for J := 1 to CountActiveArtefacts(t_ArtBio) do
   begin
     if HasActiveDisease and (NextRandomIntRange(1, 100, RandomState) <= 20) then
     begin
       Selected := NextRandomIntRange(1, CountActiveDiseases, RandomState);
       Count := 0;
-      for I := 1 to 12 do
+      for I := Low(TCaptainDisease) to High(TCaptainDisease) do
         if CaptainHealth[I].Progress = 100.0 then
         begin
           Inc(Count);
@@ -2359,7 +2360,7 @@ begin
     begin
       Selected := NextRandomIntRange(1, CountActiveStimulants, RandomState);
       Count := 0;
-      for I := 13 to 24 do
+      for I := Low(TCaptainStimulant) to High(TCaptainStimulant) do
         if CaptainHealth[I].Progress = 100.0 then
         begin
           Inc(Count);
@@ -2388,14 +2389,14 @@ begin
   Result := Round(100000.0 / GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]].QuestMoneyFactor);
 end;
 
-function TPlayer.GetPirateServiceDiscount: Byte;
+function TPlayer.GetPirateServiceDiscount: TPercent;
 begin
-  Result := Round(CareerStatus[Ord(rcPirate)] / 1.3) + 1;
+  Result := Round(CareerStatus[rcPirate] / 1.3) + 1;
 end;
 
 function TPlayer.CountProgramRewardStocks: Integer;
 var
-  I: Byte;
+  I: TProgramIndex;
 begin
   Result := 0;
   for I := Low(ProgramRewardStocks) to High(ProgramRewardStocks) do
@@ -2404,16 +2405,17 @@ end;
 
 function TPlayer.TryAwardDominatorPrograms(Victim: TShip): Boolean;
 var
-  ProgramIndex: Byte;
+  ProgramIndex: TProgramIndex;
   Count: Integer;
 begin
   Inc(DestroyedDominatorHullMass, Victim.GetHull.Weight);
-  if ((Victim as TKling).KlingType in [ktEquentor..ktSmersh, ktBertor])
+  if ((Victim as TKling).KlingType in [ktEquantor..ktSmersh, ktBertor])
       and (DestroyedDominatorHullMass
           > Galaxy.ScaleIntByTechLevel(500, 3000)
               * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]].GoodsEventDurationFactor)
       and (Galaxy.CurrentTurn
-          > 365 * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]].GoodsEventDurationFactor
+          > TurnsPerYear
+                  * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[7]].GoodsEventDurationFactor
               + LastDominatorProgramRewardTurn) then
   begin
     LastDominatorProgramRewardTurn := Galaxy.CurrentTurn;
@@ -2423,14 +2425,14 @@ begin
     Inc(ProgramRewardStocks[ProgramIndex], Count);
     if Galaxy.CoalitionDefeatedTurn = 0 then
       AddOrUpdatePlayerBubble(
-          0,
+          pmGalaxyNews,
           Galaxy.CurrentTurn,
           FormatText2(
               PickLocalizedTextVariant(
                   'GalaxyNews.WB.NewProgramm',
                   Seed * Cardinal(Galaxy.CurrentTurn div 10)
               ),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Count>',
               IntToStr(Count),
               '<Programm>',
@@ -2473,14 +2475,14 @@ begin
     BuyPlanet := Galaxy.Planets[I];
     if not BuyPlanet.CurrentStar.IsConstellationVisible then
       Continue;
-    if not (BuyPlanet.OwnerId in TOwnerMask(PlanetOwnerMasks.Coalition)) then
+    if not (BuyPlanet.OwnerId in PlanetOwnerMasks.Coalition) then
       Continue;
     for J := 0 to Galaxy.Planets.Count - 1 do
     begin
       SellPlanet := Galaxy.Planets[J];
       if not SellPlanet.CurrentStar.IsConstellationVisible then
         Continue;
-      if not (SellPlanet.OwnerId in TOwnerMask(PlanetOwnerMasks.Coalition)) then
+      if not (SellPlanet.OwnerId in PlanetOwnerMasks.Coalition) then
         Continue;
       if (PurchasePlanet = BuyPlanet) or (SalePlanet = SellPlanet) or (SellPlanet = BuyPlanet) then
         Continue;
@@ -2511,8 +2513,8 @@ begin
       end;
       for Kind := 0 to 7 do
         if Kind in GoodsMask then
-          if GoodsLegalOnPlanet[Kind, BuyPlanet.RaceId, Ord(BuyPlanet.Government)] then
-            if GoodsLegalOnPlanet[Kind, SellPlanet.RaceId, Ord(SellPlanet.Government)] then
+          if GoodsLegalOnPlanet[Kind, BuyPlanet.RaceId, BuyPlanet.Government] then
+            if GoodsLegalOnPlanet[Kind, SellPlanet.RaceId, SellPlanet.Government] then
               if (BuyPlanet.RelationToShip(Self) >= 20)
                   and (SellPlanet.RelationToShip(Self) >= 20)
                   and (SeededRandomUnitFloat(
@@ -2621,7 +2623,7 @@ function TPlayer.GetStorageColumnHeaderText: WideString;
 var
   Text: WideString;
 begin
-  Text := '<color=255,240,100>';
+  Text := TextHighlightColorTag;
   Text :=
       Text
           + '<td='
@@ -2636,17 +2638,14 @@ begin
           + '><align=right>'
           + LocalizedText('FormShip.StorageInfo.Cost')
           + '</align>';
-  Text := Text + '</color>';
+  Text := Text + EndColorTag;
   Result := Text;
 end;
 
 function TPlayer.GetStorageDividerText: WideString;
 begin
   Result :=
-      WrapTextInColor(
-          StringOfChar('-', StorageDividerLengths[GiResourceVariant]),
-          '<color=127,127,127>'
-      );
+      WrapTextInColor(StringOfChar('-', StorageDividerLengths[GiResourceVariant]), GrayColorTag);
 end;
 
 function TPlayer.BuildDeployedSatelliteSummary(var LineCount: Integer): WideString;
@@ -2679,38 +2678,38 @@ begin
                   (TObject(Satellite.TargetPlanet) as TPlanet).CurrentStar.Name
               );
           TempText :=
-              WrapTextInColor(TempText + '. ', '<color=255,240,100>')
+              WrapTextInColor(TempText + '. ', TextHighlightColorTag)
                   + WrapTextInColor(
                       (TObject(Satellite.TargetPlanet) as TPlanet).GetFullName(' ') + '.',
-                      '<color=255,240,100>');
+                      TextHighlightColorTag);
           RemainingText := ' ' + LocalizedText('FormShip.StorageInfo.PlanetNO');
           if Planet.WaterTiles - Planet.WaterExplored > 0 then
             ReplaceTextToken(
                 RemainingText,
                 '<Water>',
                 IntToStr(Planet.WaterTiles - Planet.WaterExplored),
-                '<color=0,128,255>'
+                AzureColorTag
             )
           else
-            ReplaceTextToken(RemainingText, '<Water>', '-', '<color=127,127,127>');
+            ReplaceTextToken(RemainingText, '<Water>', '-', GrayColorTag);
           if Planet.LandTiles - Planet.LandExplored > 0 then
             ReplaceTextToken(
                 RemainingText,
                 '<Land>',
                 IntToStr(Planet.LandTiles - Planet.LandExplored),
-                '<color=0,255,0>'
+                GreenColorTag
             )
           else
-            ReplaceTextToken(RemainingText, '<Land>', '-', '<color=127,127,127>');
+            ReplaceTextToken(RemainingText, '<Land>', '-', GrayColorTag);
           if Planet.HillTiles - Planet.HillExplored > 0 then
             ReplaceTextToken(
                 RemainingText,
                 '<Hill>',
                 IntToStr(Planet.HillTiles - Planet.HillExplored),
-                '<color=254,217,7>'
+                GoldColorTag
             )
           else
-            ReplaceTextToken(RemainingText, '<Hill>', '-', '<color=127,127,127>');
+            ReplaceTextToken(RemainingText, '<Hill>', '-', GrayColorTag);
           TempText := TempText + RemainingText;
           Text :=
               Text
@@ -2728,27 +2727,25 @@ begin
           Inc(HeaderCount);
           Inc(LineCount);
         end;
-        SizeText := WrapTextInColor(IntToStr(Satellite.Weight), '<color=0,255,0>');
+        SizeText := WrapTextInColor(IntToStr(Satellite.Weight), GreenColorTag);
         TempText := '';
         if Satellite.WaterExplorationRate > 0 then
           TempText :=
-              TempText
-                  + WrapTextInColor(IntToStr(Satellite.WaterExplorationRate), '<color=0,128,255>')
+              TempText + WrapTextInColor(IntToStr(Satellite.WaterExplorationRate), AzureColorTag)
         else
-          TempText := TempText + WrapTextInColor('-', '<color=127,127,127>');
+          TempText := TempText + WrapTextInColor('-', GrayColorTag);
         TempText := TempText + '/';
         if Satellite.LandExplorationRate > 0 then
           TempText :=
-              TempText + WrapTextInColor(IntToStr(Satellite.LandExplorationRate), '<color=0,255,0>')
+              TempText + WrapTextInColor(IntToStr(Satellite.LandExplorationRate), GreenColorTag)
         else
-          TempText := TempText + WrapTextInColor('-', '<color=127,127,127>');
+          TempText := TempText + WrapTextInColor('-', GrayColorTag);
         TempText := TempText + '/';
         if Satellite.HillExplorationRate > 0 then
           TempText :=
-              TempText
-                  + WrapTextInColor(IntToStr(Satellite.HillExplorationRate), '<color=254,217,7>')
+              TempText + WrapTextInColor(IntToStr(Satellite.HillExplorationRate), GoldColorTag)
         else
-          TempText := TempText + WrapTextInColor('-', '<color=127,127,127>');
+          TempText := TempText + WrapTextInColor('-', GrayColorTag);
         ExplorationText := TempText;
         Condition := Trunc(Satellite.ConditionPercent);
         if Satellite.ConditionPercent > 0 then
@@ -2760,19 +2757,19 @@ begin
         else
           TempText := '0.0%';
         if Condition > 75 then
-          TempText := WrapTextInColor(TempText, '<color=0,255,0>')
+          TempText := WrapTextInColor(TempText, GreenColorTag)
         else if Condition > 50 then
-          TempText := WrapTextInColor(TempText, '<color=255,240,100>')
+          TempText := WrapTextInColor(TempText, TextHighlightColorTag)
         else if Condition > 25 then
-          TempText := WrapTextInColor(TempText, '<color=254,217,7>')
+          TempText := WrapTextInColor(TempText, GoldColorTag)
         else
-          TempText := WrapTextInColor(TempText, '<color=255,0,0>');
+          TempText := WrapTextInColor(TempText, RedColorTag);
         ConditionText := TempText;
         StatusText := '';
         ExplorationTurns := GetSatelliteExplorationTurns(Satellite);
         if ExplorationTurns = 0 then
           StatusText :=
-              ' ' + WrapTextInColor(LocalizedText('Items.Satellite.WorkEnd'), '<color=255,0,0>');
+              ' ' + WrapTextInColor(LocalizedText('Items.Satellite.WorkEnd'), RedColorTag);
         Text := Text + '- ' + Satellite.GetDisplayName;
         Text :=
             Text
@@ -2891,7 +2888,7 @@ begin
     end;
   end;
   if Found then
-    with AddOrUpdatePlayerBubble(0, Galaxy.CurrentTurn, Text, '') do
+    with AddOrUpdatePlayerBubble(pmGalaxyNews, Galaxy.CurrentTurn, Text, '') do
     begin
       if Planets[1] <> nil then
         Targets[0].PlanetId := Planets[1].Id;
@@ -2916,7 +2913,7 @@ begin
   Result := True;
 end;
 
-function TPlayer.CountStoredItemUnits(Location: TObject; ItemType: Byte): Integer;
+function TPlayer.CountStoredItemUnits(Location: TObject; ItemType: TItemType): Integer;
 var
   I: Integer;
   Entry: PStorageEntry;
@@ -2928,13 +2925,13 @@ begin
     if CanAccessStoredItem(Entry.Item)
         and ((Location = nil) or (Entry.LocationOwner = Location)) then
     begin
-      if (ItemType in [Ord(t_Food)..Ord(t_Narcotics)])
-          or (ItemType in [Ord(t_Protoplasm), Ord(t_UselessCountableItem)]) then
+      if (ItemType in [t_Food..t_Narcotics])
+          or (ItemType in [t_Protoplasm, t_UselessCountableItem]) then
       begin
-        if Byte(Entry.Item.ItemType) = ItemType then
+        if Entry.Item.ItemType = ItemType then
           Inc(Result, Entry.Item.Weight);
       end
-      else if Byte(Entry.Item.ItemType) = ItemType then
+      else if Entry.Item.ItemType = ItemType then
         Inc(Result);
     end;
   end;
@@ -2993,9 +2990,10 @@ begin
   Result := 0;
   for I := 0 to StorageEntries.Count - 1 do
   begin
-    Entry := TList(PtrInt(StorageEntries) + 0)[I];
-    if (Entry.LocationOwner = Location) and CanAccessStoredItem(Entry.Item) then
-      Result := Max(Result, Entry.SlotIndex + 1);
+    Entry := StorageEntries[I];
+    if not ((Entry.LocationOwner = Location) and CanAccessStoredItem(Entry.Item)) then
+      Continue;
+    Result := Max(Result, Entry.SlotIndex + 1);
   end;
 end;
 
@@ -3235,7 +3233,7 @@ begin
                         '<Star>',
                         Star.Name
                     ),
-                    '<color=255,240,100>'
+                    TextHighlightColorTag
                 );
             Text :=
                 Text
@@ -3419,11 +3417,10 @@ begin
     Heading := BuildTranclucatorStorageSummary(AddedLines);
     if HasDeployedSatellites or (Length(Heading) > 0) then
     begin
-      Text :=
-          WrapTextInColor(LocalizedText('FormShip.StorageInfo.Main'), '<color=0,255,0>') + #13#10;
+      Text := WrapTextInColor(LocalizedText('FormShip.StorageInfo.Main'), GreenColorTag) + #13#10;
       Text := Text + BuildDeployedSatelliteSummary(AddedLines);
       Text := Text + Heading;
-      AddOrUpdatePlayerBubble(9, Galaxy.CurrentTurn, Text, 'sys_storage1');
+      AddOrUpdatePlayerBubble(pmStorage, Galaxy.CurrentTurn, Text, 'sys_storage1');
     end
     else
       RemovePlayerBubblePages('sys_storage', 0);
@@ -3435,7 +3432,7 @@ begin
     Text :=
         WrapTextInColor(
                 LocalizedText('FormShip.StorageInfo.Main') + 'onepage' + GetStorageColumnHeaderText,
-                '<color=0,255,0>')
+                GreenColorTag)
             + #13#10;
     for I := 0 to StorageEntries.Count - 1 do
     begin
@@ -3451,11 +3448,16 @@ begin
                 ' ('
                     + LocalizedText('FormShip.StorageInfo.Page')
                     + ' '
-                    + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                    + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                     + ')',
                 ''
             );
-          AddOrUpdatePlayerBubble(9, Galaxy.CurrentTurn, Text, 'sys_storage' + IntToStr(Page));
+          AddOrUpdatePlayerBubble(
+              pmStorage,
+              Galaxy.CurrentTurn,
+              Text,
+              'sys_storage' + IntToStr(Page)
+          );
           Inc(Page);
           Text :=
               WrapTextInColor(
@@ -3463,9 +3465,9 @@ begin
                           + ' ('
                           + LocalizedText('FormShip.StorageInfo.Page')
                           + ' '
-                          + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                          + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                           + ')',
-                      '<color=0,255,0>')
+                      GreenColorTag)
                   + GetStorageColumnHeaderText
                   + #13#10;
           LineCount := 0;
@@ -3480,10 +3482,10 @@ begin
                   (Entry.LocationOwner as TPlanet).CurrentStar.Name
               );
           Heading :=
-              WrapTextInColor(Heading + '. ', '<color=255,240,100>')
+              WrapTextInColor(Heading + '. ', TextHighlightColorTag)
                   + WrapTextInColor(
                       (Entry.LocationOwner as TPlanet).GetFullName(' ') + '.',
-                      '<color=255,240,100>');
+                      TextHighlightColorTag);
           Text :=
               Text
                   + Divider
@@ -3508,10 +3510,10 @@ begin
                   (Entry.LocationOwner as TShip).CurrentStar.Name
               );
           Heading :=
-              WrapTextInColor(Heading + '. ', '<color=255,240,100>')
+              WrapTextInColor(Heading + '. ', TextHighlightColorTag)
                   + WrapTextInColor(
                       (Entry.LocationOwner as TShip).GetFullName(' ') + '.',
-                      '<color=255,240,100>');
+                      TextHighlightColorTag);
           Text :=
               Text
                   + Divider
@@ -3538,14 +3540,14 @@ begin
               + '<td='
               + IntToStr(StorageItemColumns[GiResourceVariant].Size)
               + '><align=right>'
-              + WrapTextInColor(IntToStr(Entry.Item.Weight), '<color=0,255,0>')
+              + WrapTextInColor(IntToStr(Entry.Item.Weight), GreenColorTag)
               + '</align>';
       Text :=
           Text
               + '<td='
               + IntToStr(StorageItemColumns[GiResourceVariant].Cost)
               + '><align=right>'
-              + WrapTextInColor(IntToStr(Entry.Item.Cost), '<color=0,255,255>')
+              + WrapTextInColor(IntToStr(Entry.Item.Cost), CyanColorTag)
               + '</align>';
       Text := Text + #13#10;
       Inc(LineCount);
@@ -3563,11 +3565,16 @@ begin
               ' ('
                   + LocalizedText('FormShip.StorageInfo.Page')
                   + ' '
-                  + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                  + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                   + ')',
               ''
           );
-        AddOrUpdatePlayerBubble(9, Galaxy.CurrentTurn, Text, 'sys_storage' + IntToStr(Page));
+        AddOrUpdatePlayerBubble(
+            pmStorage,
+            Galaxy.CurrentTurn,
+            Text,
+            'sys_storage' + IntToStr(Page)
+        );
         Inc(Page);
         Text :=
             WrapTextInColor(
@@ -3575,9 +3582,9 @@ begin
                         + ' ('
                         + LocalizedText('FormShip.StorageInfo.Page')
                         + ' '
-                        + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                        + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                         + ')',
-                    '<color=0,255,0>')
+                    GreenColorTag)
                 + #13#10;
       end;
       if HasDeployedSatellites then
@@ -3595,11 +3602,16 @@ begin
               ' ('
                   + LocalizedText('FormShip.StorageInfo.Page')
                   + ' '
-                  + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                  + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                   + ')',
               ''
           );
-        AddOrUpdatePlayerBubble(9, Galaxy.CurrentTurn, Text, 'sys_storage' + IntToStr(Page));
+        AddOrUpdatePlayerBubble(
+            pmStorage,
+            Galaxy.CurrentTurn,
+            Text,
+            'sys_storage' + IntToStr(Page)
+        );
         Inc(Page);
         Text :=
             WrapTextInColor(
@@ -3607,16 +3619,16 @@ begin
                         + ' ('
                         + LocalizedText('FormShip.StorageInfo.Page')
                         + ' '
-                        + WrapTextInColor(IntToStr(Page), '<color=255,0,255>')
+                        + WrapTextInColor(IntToStr(Page), MagentaColorTag)
                         + ')',
-                    '<color=0,255,0>')
+                    GreenColorTag)
                 + #13#10;
       end;
       Text := Text + Heading;
     end;
     if Page = 1 then
       ReplaceTextToken(Text, 'onepage', '', '');
-    AddOrUpdatePlayerBubble(9, Galaxy.CurrentTurn, Text, 'sys_storage' + IntToStr(Page));
+    AddOrUpdatePlayerBubble(pmStorage, Galaxy.CurrentTurn, Text, 'sys_storage' + IntToStr(Page));
   end;
   RemovePlayerBubblePages('sys_storage', Page + 1);
   RemovePlayerBubbleByKey('sys_storage');
@@ -3656,7 +3668,7 @@ begin
               and not (PilotRace in RobotMapDefinitions[I].PlayerRace) then
             Continue;
           if (RobotMapDefinitions[I].PlayerStatus <> [])
-              and not (Byte(GetDominantCareer) in RobotMapDefinitions[I].PlayerStatus) then
+              and not (GetDominantCareer in RobotMapDefinitions[I].PlayerStatus) then
             Continue;
           if High(PlanetBattleHistory) = -1 then
           begin
@@ -3738,7 +3750,7 @@ begin
       Item := Inventory[I];
       if not (Item is TWeapon)
           and (Item.EquippedFlag <> 0)
-          and (ItemTypeToSlotKind(Byte(Item.ItemType)) <> sskUnsupported) then
+          and (ItemTypeToSlotKind(Item.ItemType) <> sskUnsupported) then
       begin
         EquipmentIds[NextSlot] := Item.Id;
         Inc(NextSlot);
@@ -3752,7 +3764,7 @@ begin
       if Artefact.EquippedFlag = 0 then
         Continue;
       Slot := Artefact.AssignedSlotData and EquipmentSlotIndexMask;
-      if (Slot >= 0) and (DefaultHullSlotCounts[8] > Slot) then
+      if (Slot >= 0) and (DefaultHullSlotCounts[sskArtefact] > Slot) then
         ArtefactIds[Slot] := Artefact.Id;
     end;
   end;
@@ -3846,7 +3858,7 @@ procedure TPlayer.ApplyEquipmentConfiguration(Index: Integer);
     for I := 0 to Inventory.Count - 1 do
     begin
       Item := Inventory[I];
-      if Byte(Item.ItemType) in [Ord(t_Hull)..Ord(t_CustomWeapon)] then
+      if Item.ItemType in [t_Hull..t_CustomWeapon] then
         Item.Unequip;
     end;
     for I := 0 to Artefacts.Count - 1 do
@@ -4094,11 +4106,11 @@ end;
 function TPlayer.GetMaxPiratePartners: Integer;
 begin
   Result := 0;
-  if CareerStatus[Ord(rcPirate)] > 60 then
+  if CareerStatus[rcPirate] > 60 then
     Inc(Result);
-  if CareerStatus[Ord(rcPirate)] > 75 then
+  if CareerStatus[rcPirate] > 75 then
     Inc(Result);
-  if Galaxy.EminentCareerShips[Ord(rcPirate)] = Self then
+  if Galaxy.EminentCareerShips[rcPirate] = Self then
     Inc(Result);
   if PirateLicenseTicks > 0 then
     Inc(Result);
@@ -4107,13 +4119,13 @@ end;
 function TPlayer.GetMaxDominionShips: Integer;
 begin
   Result := 0;
-  if CareerStatus[Ord(rcPirate)] > 50 then
+  if CareerStatus[rcPirate] > 50 then
     Inc(Result);
-  if CareerStatus[Ord(rcPirate)] > 60 then
+  if CareerStatus[rcPirate] > 60 then
     Inc(Result);
-  if CareerStatus[Ord(rcPirate)] > 75 then
+  if CareerStatus[rcPirate] > 75 then
     Inc(Result);
-  if Galaxy.EminentCareerShips[Ord(rcPirate)] = Self then
+  if Galaxy.EminentCareerShips[rcPirate] = Self then
     Inc(Result);
   if PirateLicenseTicks > 0 then
     Inc(Result);
@@ -4253,9 +4265,9 @@ end;
 
 procedure TPlayer.RefreshNewsAtLocation;
 begin
-  if (Galaxy.CurrentTurn > 300) and (IsOnPlanet or IsDockedToShip) then
+  if (Galaxy.CurrentTurn > GalaxyWarmupTurns) and (IsOnPlanet or IsDockedToShip) then
     if (CurrentPlanet = nil)
-        or ((CurrentPlanet.OwnerId in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)])
+        or ((CurrentPlanet.OwnerId in [oiMaloc..oiGaal, oiPirate])
             and (CurrentPlanet.GetRelationLevelToShip(Self) > rlBad)) then
     begin
       MergeGalaxyNews;
@@ -4303,7 +4315,7 @@ begin
   end;
   RuinsMode := SelectedMode;
   RequestedScreenId := screenRuinsTalk;
-  TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+  TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
 end;
 
 procedure TPlayer.CloseRuinsModeScreen;
@@ -4325,13 +4337,13 @@ begin
   begin
     if RuinsSavedDockedTo <> nil then
       RequestedScreenId := screenRuinsTalk
-    else if RuinsSavedPlanet.OwnerId <> Byte(oiUninhabited) then
+    else if RuinsSavedPlanet.OwnerId <> oiUninhabited then
       RequestedScreenId := screenPlanet
     else
       RequestedScreenId := screenPlanetNO;
     ExitRuinsMode;
   end;
-  TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+  TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
 end;
 
 procedure TPlayer.ExitRuinsMode;
@@ -4356,7 +4368,7 @@ procedure TPlayer.RefreshCurrentStanding;
 begin
   if IsInPrison then
     CurrentStanding := ssNeutral
-  else if OwnerId <> Byte(oiPirate) then
+  else if OwnerId <> oiPirate then
   begin
     if (CurrentSystemKills.Pirate > 0) or (CurrentStar.ControlFaction = sfCoalition) then
       CurrentStanding := ssCoalitionActive
@@ -4378,25 +4390,24 @@ end;
 
 function TPlayer.CanSelectShipTarget(Ship: TShip): Boolean;
 type
-  TOwnerMasks = array[0..2] of TOwnerMask;
+  TOwnerMasks = array[TStarFaction] of TOwnerMask;
 
 var
-  Faction: Byte;
+  Faction: TStarFaction;
 begin
   Result := False;
   if (Ship.TargetingRestriction = 1) and (Ship.EnemyShip <> Self) and (EnemyShip <> Ship) then
     Exit;
   if (Ship is TKling)
-      and (ChameleonLogic[Ord(TKling(Ship).DominatorSeries)] >= 2)
+      and (ChameleonLogic[TKling(Ship).DominatorSeries] >= 2)
       and (Ship.EnemyShip <> Self)
       and (EnemyShip <> Ship) then
     Exit;
-  if Ship.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)] then
+  if Ship.TypeId in [rstRangerCenter..rstCustomStation] then
   begin
-    for Faction := 0 to 2 do
+    for Faction := Low(TStarFaction) to High(TStarFaction) do
       if (OwnerId in TOwnerMasks(PlanetOwnerMasks)[Faction])
-          and (Ship.CurrentStanding
-              in TStationStandingMask(NonTargetableStationStandingMasks[Faction]))
+          and (Ship.CurrentStanding in NonTargetableStationStandingMasks[Faction])
           and ((Ship.ScriptShip = nil)
               or (Ship.OwnerId in TOwnerMasks(PlanetOwnerMasks)[Faction])) then
         Exit;
@@ -4414,11 +4425,11 @@ begin
     else if (Ship is TKling) and not Ship.HasIndependentScriptFaction then
     begin
       if (GetPlayer.GetScanner = nil)
-          or (GetPlayer.GetScanner.OwnerId <> Byte(oiDominator))
+          or (GetPlayer.GetScanner.OwnerId <> oiDominator)
           or (GetPlayer.GetScanner.DominatorSeries <> TKling(Ship).DominatorSeries) then
         Result := False;
     end;
-    Result := GetPlayer.ScriptItemsAct($12, Ship, nil, Ord(Result)) <> 0;
+    Result := GetPlayer.ScriptItemsAct(satOnScanPossibility, Ship, nil, Ord(Result)) <> 0;
   end;
 end;
 

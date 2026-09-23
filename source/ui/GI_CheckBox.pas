@@ -18,7 +18,6 @@ type
     CheckedImage: TTransImageGI;
     UncheckedImage: TTransImageGI;
     Checked: Boolean;
-    Gap129: array[0..6] of Byte;
     ChangedCallback: TObjectNotifyEventGI;
     procedure Clear; override;
     procedure SetSize(Size: TPoint); override;

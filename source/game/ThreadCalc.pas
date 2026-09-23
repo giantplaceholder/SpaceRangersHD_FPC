@@ -64,7 +64,8 @@ uses
   GR_Main,
   aGalaxy,
   aPlayer,
-  aShip;
+  aShip,
+  aGalaxyStruct;
 
 procedure StartGalaxyTurnCalculation;
 begin
@@ -130,7 +131,7 @@ begin
     begin
       AppendLogLineThreadSafe(E.ClassName + ' ' + E.Message);
       RequestedScreenId := screenNone;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
       ExitScreenLoop := True;
       raise Exception.Create('Error in procedure ThCa label = ' + IntToStr(Stage));
     end;
@@ -172,7 +173,10 @@ begin
                   0.9,
                   (AdaptiveBeginCalcNextTurn
                           + 1
-                          - Math.Min(1, (LastGalaxyTurnDuration + 100) / (200 * FrameMs)))
+                          - Math.Min(
+                              1,
+                              (LastGalaxyTurnDuration + 100)
+                                  / (BaseMovementStepsPerTurn * FrameMs)))
                       / 2
               );
         end
@@ -184,7 +188,7 @@ begin
         begin
           AppendLogLineThreadSafe(E.ClassName + ' ' + E.Message);
           AppendLogLineThreadSafe('ThreadCalc exception 1');
-          if Galaxy.CurrentTurn < 300 then
+          if Galaxy.CurrentTurn < GalaxyWarmupTurns then
             AppendLogLineThreadSafe(
                 'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
             );
@@ -203,7 +207,7 @@ begin
       begin
         AppendLogLineThreadSafe(E.ClassName + ' ' + E.Message);
         AppendLogLineThreadSafe('ThreadCalc exception 2');
-        if Galaxy.CurrentTurn < 300 then
+        if Galaxy.CurrentTurn < GalaxyWarmupTurns then
           AppendLogLineThreadSafe(
               'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
           );
@@ -225,7 +229,7 @@ begin
       begin
         AppendLogLineThreadSafe(E.ClassName + ' ' + E.Message);
         AppendLogLineThreadSafe('ThreadCalc exception 3');
-        if Galaxy.CurrentTurn < 300 then
+        if Galaxy.CurrentTurn < GalaxyWarmupTurns then
           AppendLogLineThreadSafe(
               'Galaxy create exception, seed = ' + IntToStr(Integer(Galaxy.GenerationSeed))
           );

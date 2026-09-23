@@ -116,7 +116,6 @@ type
     SystemsDefended: Integer;
     SystemsCapturedForPirates: Integer;
     CompletedResearchPrograms: Byte;
-    Gap15: array[0..2] of Byte;
     SuccessfulDominatorHacks: Integer;
     PrisonersBailedOut: Integer;
     DrainedHullPoints: Integer;
@@ -157,6 +156,9 @@ type
     procedure CheckTranclucatorFleetAchievement;
   end;
 
+  {$Z1}
+  TAchievementBackend = (achSteam = 1, achSteamWithoutAchievements = 2, achLocal = 3);
+
 var
 
   AchievementDefinitions: TBlockParEC = nil;
@@ -165,7 +167,7 @@ function GetCurrentAchievementProgress(Key: WideString; StoredValue: Integer): I
 
 procedure InitializeAchievementDefinitions;
 
-function GetAchievementBackend: Byte;
+function GetAchievementBackend: TAchievementBackend;
 
 function GetAvailableAchievementCount: Integer;
 
@@ -223,7 +225,7 @@ begin
     else if Key = 'DRAIN' then
       Result := Stats.DrainedHullPoints
     else if Key = 'BERTORSLAYER' then
-      Result := GetPlayer.DominatorKillsByType[Ord(ktBertor)]
+      Result := GetPlayer.DominatorKillsByType[ktBertor]
     else if Key = 'SIDECHANGER' then
       Result := GetPlayer.SideChangeCount;
     if Result = StoredValue then
@@ -430,7 +432,7 @@ procedure TAchievementStats.CheckFirstPlaceRatingAchievement;
 begin
   if (GetPlayer <> nil)
       and (Galaxy <> nil)
-      and (Galaxy.CurrentTurn >= 300)
+      and (Galaxy.CurrentTurn >= GalaxyWarmupTurns)
       and (GetPlayer.PlaceInRating = 1) then
     TryUnlockAchievement('RATING');
 end;
@@ -463,7 +465,7 @@ var
 begin
   if Galaxy <> nil then
   begin
-    Elapsed := Galaxy.CurrentTurn - 300;
+    Elapsed := Galaxy.CurrentTurn - GalaxyWarmupTurns;
     if Elapsed / 365.0 < 7.0 then
       TryUnlockAchievement('SPRINTER');
   end;
@@ -503,7 +505,7 @@ begin
       for J := 0 to Star.Planets.Count - 1 do
       begin
         Planet := Star.Planets[J];
-        if Planet.OwnerId <> Byte(oiUninhabited) then
+        if Planet.OwnerId <> oiUninhabited then
         begin
           Inc(Count);
           if Planet.GetRelationLevelToShip(GetPlayer) > rlHostile then
@@ -547,11 +549,11 @@ end;
 
 procedure TAchievementStats.CheckAllDiseasesAchievement;
 var
-  I: Integer;
+  I: TCaptainHealthEffect;
 begin
   if (GetPlayer <> nil) and (Galaxy <> nil) then
   begin
-    for I := 1 to 12 do
+    for I := Low(TCaptainDisease) to High(TCaptainDisease) do
       if GetPlayer.CaptainHealth[I].ApplicationCount = 0 then
         Exit;
     TryUnlockAchievement('ILL');
@@ -560,11 +562,11 @@ end;
 
 procedure TAchievementStats.CheckAllDrugsAchievement;
 var
-  I: Integer;
+  I: TCaptainHealthEffect;
 begin
   if (GetPlayer <> nil) and (Galaxy <> nil) then
   begin
-    for I := 13 to 24 do
+    for I := Low(TCaptainStimulant) to High(TCaptainStimulant) do
       if GetPlayer.CaptainHealth[I].ApplicationCount = 0 then
         Exit;
     TryUnlockAchievement('NARKOMAN');
@@ -591,7 +593,7 @@ var
 begin
   if (GetPlayer <> nil) and (Galaxy <> nil) then
   begin
-    DecodeDate(GameTurnToDateTime(Galaxy.CurrentTurn - 300), Year, Month, Day);
+    DecodeDate(GameTurnToDateTime(Galaxy.CurrentTurn - GalaxyWarmupTurns), Year, Month, Day);
     if Year > 3304 then
       Exit;
     if (Year = 3304) and ((Month > 1) or (Day > 1)) then
@@ -657,25 +659,25 @@ begin
   end;
 end;
 
-function GetAchievementBackend: Byte;
+function GetAchievementBackend: TAchievementBackend;
 begin
   if SteamInitialized then
   begin
     if SteamAchievementsCount > 0 then
-      Result := 1
+      Result := achSteam
     else
-      Result := 2;
+      Result := achSteamWithoutAchievements;
   end
   else
-    Result := 3;
+    Result := achLocal;
 end;
 
 function GetAvailableAchievementCount: Integer;
 begin
   case GetAchievementBackend of
-    1: Result := Min(82, SteamAchievementsCount);
-    3: Result := 82;
-    2: Result := 0;
+    achSteam: Result := Min(82, SteamAchievementsCount);
+    achLocal: Result := 82;
+    achSteamWithoutAchievements: Result := 0;
   else
     Result := 0;
   end;
@@ -698,9 +700,9 @@ begin
   if Block = nil then
     Exit;
   case GetAchievementBackend of
-    1: Result := SteamUnlockAchievement(StrToInt(AnsiString(Block.GetParam('Num'))));
-    3: Result := UnlockLocalAchievement(Block);
-    2: Result := False;
+    achSteam: Result := SteamUnlockAchievement(StrToInt(AnsiString(Block.GetParam('Num'))));
+    achLocal: Result := UnlockLocalAchievement(Block);
+    achSteamWithoutAchievements: Result := False;
   else
     Result := False;
   end;
@@ -732,9 +734,9 @@ begin
   else
     Increment := Data.MaxValue - Data.Value;
   case GetAchievementBackend of
-    1: Result := SteamIncreaseStat(StrToInt(AnsiString(Block.GetParam('Num'))), Increment);
-    3: Result := IncreaseLocalAchievementProgress(Block, Increment);
-    2: Result := False;
+    achSteam: Result := SteamIncreaseStat(StrToInt(AnsiString(Block.GetParam('Num'))), Increment);
+    achLocal: Result := IncreaseLocalAchievementProgress(Block, Increment);
+    achSteamWithoutAchievements: Result := False;
   else
     Result := False;
   end;
@@ -774,9 +776,9 @@ begin
     Exit;
   end;
   case GetAchievementBackend of
-    1: Result := SteamIncreaseStat(StrToInt(AnsiString(Block.GetParam('Num'))), Increment);
-    3: Result := IncreaseLocalAchievementProgress(Block, Increment);
-    2: Result := False;
+    achSteam: Result := SteamIncreaseStat(StrToInt(AnsiString(Block.GetParam('Num'))), Increment);
+    achLocal: Result := IncreaseLocalAchievementProgress(Block, Increment);
+    achSteamWithoutAchievements: Result := False;
   else
     Result := False;
   end;
@@ -797,8 +799,8 @@ begin
   begin
     Result := CreateAchievementData;
     case GetAchievementBackend of
-      1: SteamAchievementData(StrToInt(AnsiString(Block.GetParam('Num'))), Result);
-      3: GetLocalAchievementData(Key, Result);
+      achSteam: SteamAchievementData(StrToInt(AnsiString(Block.GetParam('Num'))), Result);
+      achLocal: GetLocalAchievementData(Key, Result);
     end;
     TruncateStartupWideString(Result.Name);
     TruncateStartupWideString(Result.Description);

@@ -38,7 +38,6 @@ type
     StarCount: Integer;
     Capacity: Integer;
     ReservedDirty: Boolean;
-    Gap12D: array[0..2] of Byte;
     FocusPoint: TPointF;
     ViewPosition: TPointF;
     TargetHeading: Single;
@@ -441,7 +440,7 @@ begin
               Origin.X + Bounds.Left,
               Origin.Y + Bounds.Top,
               255,
-              $FFFFFF,
+              RgbWhite,
               @ClipRect,
               False,
               False

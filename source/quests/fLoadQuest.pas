@@ -15,7 +15,7 @@ type
 
   TfLoadQuest = class;
 
-  TfLoadQuestSlot = packed record
+  TfLoadQuestSlot = record
     Name: WideString;
     Title: WideString;
     Description: WideString;
@@ -26,7 +26,6 @@ type
     BackgroundImage: TImageGI;
     RequiredAccess: Integer;
     AlternateGroup: Boolean;
-    Gap25: array[0..2] of Byte;
     Difficulty: Integer;
   end;
 
@@ -75,6 +74,7 @@ var
 implementation
 
 uses
+  EC_CacheBitmap,
   Classes,
   EC_BlockPar,
   EC_Buf,
@@ -99,7 +99,8 @@ uses
   GameInput,
   aConst,
   aGalaxy,
-  aMyFunction;
+  aMyFunction,
+  aGalaxyStruct;
 
 constructor TfLoadQuest.Create;
 begin
@@ -222,7 +223,8 @@ begin
         if Entries[SelectedIndex].QuestId >= 0 then
         begin
           LoadCompletionData;
-          if (Entries[SelectedIndex].QuestId >= 0) and (Entries[SelectedIndex].QuestId < 10000) then
+          if (Entries[SelectedIndex].QuestId >= 0)
+              and (Entries[SelectedIndex].QuestId < FirstLicensedQuestId) then
           begin
             QuestId := Entries[SelectedIndex].QuestId;
             if (QuestId < 0)
@@ -478,7 +480,7 @@ begin
   Row.SetSize(Background.ClientSize);
   Background.SetActive(True);
   TitleRight := GiScalePixels(262);
-  if (Entries[Index].QuestId >= 0) and (Entries[Index].QuestId < 10000) then
+  if (Entries[Index].QuestId >= 0) and (Entries[Index].QuestId < FirstLicensedQuestId) then
   begin
     LengthImage := TImageGI.Create(Row);
     LengthImage.SetDepth(9);
@@ -704,7 +706,7 @@ begin
       if Entries[SelectedIndex].Image <> '' then
       begin
         SetActive(True);
-        LoadBitmapPathAsRgba(Entries[SelectedIndex].Image + '?RGBA');
+        LoadBitmapPathAsRgba(Entries[SelectedIndex].Image + RgbaImagePathSuffix);
         if (ClientSize.X <> GraphBuf.Width) or (ClientSize.Y <> GraphBuf.Height) then
           GraphBuf.RescaleRgba(ClientSize.X, ClientSize.Y, 5);
         RowSkip := GraphBuf.PitchBytes - GraphBuf.Width * SizeOf(TColorRGBA);
@@ -769,37 +771,37 @@ begin
           Text,
           '<Ranger>',
           LocalizedText('FormLoadQuest.PRanger'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
       ReplaceTextToken(
           Text,
           '<ToPlanet>',
           LocalizedText('FormLoadQuest.PToPlanet'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
       ReplaceTextToken(
           Text,
           '<ToStar>',
           LocalizedText('FormLoadQuest.PToStar'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
-      ReplaceTextToken(Text, '<Parsec>', IntToStr(10), '<color=0,71,234>');
-      ReplaceTextToken(Text, '<Date>', FormatGameTurnDate(1000), '<color=0,71,234>');
-      ReplaceTextToken(Text, '<Day>', IntToStr(30), '<color=0,71,234>');
-      ReplaceTextToken(Text, '<Money>', IntToStr(10000), '<color=0,71,234>');
+      ReplaceTextToken(Text, '<Parsec>', IntToStr(10), BrightBlueColorTag);
+      ReplaceTextToken(Text, '<Date>', FormatGameTurnDate(1000), BrightBlueColorTag);
+      ReplaceTextToken(Text, '<Day>', IntToStr(30), BrightBlueColorTag);
+      ReplaceTextToken(Text, '<Money>', IntToStr(10000), BrightBlueColorTag);
       ReplaceTextToken(
           Text,
           '<FromPlanet>',
           LocalizedText('FormLoadQuest.PFromPlanet'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
       ReplaceTextToken(
           Text,
           '<FromStar>',
           LocalizedText('FormLoadQuest.PFromStar'),
-          '<color=0,71,234>'
+          BrightBlueColorTag
       );
-      Text := ReplaceAllWideString(Text, '<clr>', '<color=0,71,234>');
+      Text := ReplaceAllWideString(Text, '<clr>', BrightBlueColorTag);
       ExpandLocalizedTextMarkup(Text);
       Quest.Free;
       SetActive(True);
@@ -870,7 +872,7 @@ procedure TfLoadQuest.RecordCompletion(QuestId, Value, Status: Integer);
 var
   Count, I: Integer;
 begin
-  if (QuestId < 0) or (QuestId >= 10000) then
+  if (QuestId < 0) or (QuestId >= FirstLicensedQuestId) then
     Exit;
   Count := (High(CompletionData) + 1) div 2;
   if QuestId >= Count then
@@ -904,7 +906,7 @@ begin
       if Entries[I + GroupCount].RequiredAccess <> Access then
         Break;
       QuestId := Entries[I + GroupCount].QuestId;
-      if (QuestId >= 0) and (QuestId < 10000) then
+      if (QuestId >= 0) and (QuestId < FirstLicensedQuestId) then
       begin
         CompletionIndex := QuestId;
         if CompletionIndex >= 0 then

@@ -19,7 +19,6 @@ type
   TabObject = class(TObjectEx)
     Prev: TabObject;
     Next: TabObject;
-    GapC: array[0..3] of Byte;
     State: TSphericalBearingState;
     Mass: Double;
     Thrust: Double;
@@ -29,14 +28,12 @@ type
     DistanceTravelled: Double;
     CollisionRadius: Double;
     Collidable: Boolean;
-    Gap61: array[0..6] of Byte;
     ZoneRadius: Double;
     DeletionPending: Boolean;
     WallCollisionEnabled: Boolean;
     GravityEnabled: Boolean;
     ZoneDamageEnabled: Boolean;
     Active: Boolean;
-    Gap75: array[0..2] of Byte;
     SourceObject: TabObject;
     InitialRandomSeed: Cardinal;
     RandomState: Cardinal;
@@ -96,7 +93,8 @@ uses
   ab_Ship,
   ab_ShipAI,
   ab_Zone,
-  ab_StopLine;
+  ab_StopLine,
+  EC_Buf;
 
 constructor TabObject.Create;
 begin
@@ -432,7 +430,9 @@ end;
 
 function TabObject.RandomRange(BoundA, BoundB: Integer): Integer;
 begin
-  RandomState := 16807 * (RandomState mod 127773) - 2836 * (RandomState div 127773);
+  RandomState :=
+      SeedRngMultiplier * (RandomState mod SeedRngQuotient)
+          - SeedRngRemainder * (RandomState div SeedRngQuotient);
   Result := Integer(RandomState) - 1;
   if Result < 0 then
     Result := -Result;

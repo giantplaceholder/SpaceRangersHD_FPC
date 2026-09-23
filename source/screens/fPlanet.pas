@@ -128,7 +128,7 @@ begin
   if GetPlayer.CurrentPlanet.IsMainPiratePlanet then
     SoundSection := 0
   else
-    SoundSection := GetPlayer.CurrentPlanet.RaceId + 1;
+    SoundSection := Ord(GetPlayer.CurrentPlanet.RaceId) + 1;
   if GetPlayer.CurrentPlanet <> TemporaryShopPlanet then
   begin
     SelectMusic;
@@ -150,7 +150,7 @@ begin
   begin
     Event := AddGalaxyEvent('PlayerDeath');
     Event.AddTextData('PlanetCaptured');
-    GameEndReason := 2;
+    GameEndReason := gerPlayerDeath;
     RequestedScreenId := screenGameEnd;
     RequestClose(1);
     Exit;
@@ -316,7 +316,7 @@ begin
               > 0) then
       begin
         QuestNumber := Quest.QuestNumber;
-        if (Quest.QuestNumber < 10000)
+        if (Quest.QuestNumber < FirstLicensedQuestId)
             or ((LanguageDataConfig.GetBlock('PlanetQuest').CountBlocks('PlanetQuestLic') > 0)
                 and (LanguageDataConfig
                         .GetBlock('PlanetQuest')
@@ -345,16 +345,16 @@ begin
           Text,
           '<CurPlanet>',
           (Quest.ObjectiveTarget as TPlanet).Name,
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
       ReplaceTextToken(
           Text,
           '<CurStar>',
           (Quest.ObjectiveTarget as TPlanet).CurrentStar.Name,
-          '<color=255,240,100>'
+          TextHighlightColorTag
       );
-      ReplaceTextToken(Text, '<FromPlanet>', Quest.Planet.Name, '<color=255,240,100>');
-      ReplaceTextToken(Text, '<FromStar>', Quest.Planet.CurrentStar.Name, '<color=255,240,100>');
+      ReplaceTextToken(Text, '<FromPlanet>', Quest.Planet.Name, TextHighlightColorTag);
+      ReplaceTextToken(Text, '<FromStar>', Quest.Planet.CurrentStar.Name, TextHighlightColorTag);
     end;
     SetText(Text);
     Window.SetSize(
@@ -465,13 +465,11 @@ begin
     MusicManager.RequestFadeOut;
     Exit;
   end;
-  if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
   begin
     if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory('Nation.PiratePlanetMain');

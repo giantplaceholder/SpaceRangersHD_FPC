@@ -20,7 +20,6 @@ type
     ImageKindX: TImageKindXGI;
     ImageKindY: TImageKindYGI;
     HalfAlpha: Boolean;
-    Gap127: array[0..0] of Byte;
     CurrentFrame: TObjectGI;
     procedure Clear; override;
     procedure SetSize(Size: TPoint); override;

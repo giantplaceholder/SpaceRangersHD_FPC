@@ -20,7 +20,6 @@ type
     CreditsHeight: Integer;
     FirstMusicSelection: Boolean;
     ReturnToScores: Boolean;
-    GapE2: array[0..1] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;

@@ -7,6 +7,14 @@ interface
 uses
   Classes;
 
+const
+
+  gerDefault = 0;
+
+  gerPlayerDeath = 2;
+
+  gerTerronConversion = 4;
+
 type
 
   TSpaceImageTemplate = record
@@ -74,7 +82,7 @@ type
       gmfNormalBold = 6
   );
 
-  TGameScreenTable = array[0..41] of TObject;
+  TGameScreenTable = array[TGameScreenId] of TObject;
 
 var
 
@@ -262,7 +270,7 @@ var
 
   ClickAutoCloseForm: Boolean = True;
 
-  UiRuntimeFlag: Boolean = False;
+  AwardDialogsEnabled: Boolean = False;
 
   MultiThreadEnabled: Boolean = False;
 
@@ -383,7 +391,7 @@ var
 begin
   Id := screenNone;
   repeat
-    if RegisteredScreens[Ord(Id)] = Screen then
+    if RegisteredScreens[Id] = Screen then
     begin
       Result := Id;
       Exit;
@@ -395,7 +403,7 @@ end;
 
 function GetRegisteredScreenLoop(ScreenId: TGameScreenId): TObject;
 begin
-  Result := RegisteredScreens[Ord(ScreenId)];
+  Result := RegisteredScreens[ScreenId];
 end;
 
 function IsSpaceBackdropScreen(ScreenId: TGameScreenId): Boolean;

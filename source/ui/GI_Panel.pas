@@ -24,10 +24,8 @@ type
     ScrollType: TPanelScrollTypeGI;
     Dragging: Boolean;
     LastDragPoint: TPoint;
-    Gap12B: array[0..4] of Byte;
     ScrollChangedCallback: TObjectNotifyEventGI;
     ScrollAxis: TPanelScrollAxisGI;
-    Gap139: array[0..2] of Byte;
     procedure Clear; override;
     function GetChildAbsolutePosition(LocalPosition: TPoint; ModeW: Boolean): TPoint; override;
     procedure LoadFromConfigPath(const Path: WideString); override;

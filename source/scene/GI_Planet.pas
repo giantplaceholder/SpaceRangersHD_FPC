@@ -41,7 +41,6 @@ type
     AtmosphereColor: Cardinal;
     AtmosphereDirty: Boolean;
     AtmospherePaletteDirty: Boolean;
-    Gap15E: array[0..1] of Byte;
     MapWidthMask: Integer;
     SurfaceMapOffset: Integer;
     Cloud1MapOffset: Integer;
@@ -51,7 +50,6 @@ type
     SourceLightBuffer: Pointer;
     RotatedLightBuffer: Pointer;
     LightAngle: Byte;
-    Gap18D: array[0..2] of Byte;
     MapWidth: Integer;
     MapHeight: Integer;
     TextureCache: TTextureGR;
@@ -858,7 +856,7 @@ begin
           HitTestBounds.Left,
           HitTestBounds.Top,
           255,
-          $FFFFFF,
+          RgbWhite,
           @ClipRect,
           False,
           False
@@ -895,7 +893,7 @@ begin
             HitTestBounds.Left,
             HitTestBounds.Top,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False
@@ -935,7 +933,7 @@ begin
             HitTestBounds.Left,
             HitTestBounds.Top,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False
@@ -975,7 +973,7 @@ begin
             HitTestBounds.Left,
             HitTestBounds.Top,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False
@@ -1023,7 +1021,7 @@ begin
             HitTestBounds.Left,
             HitTestBounds.Top,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False

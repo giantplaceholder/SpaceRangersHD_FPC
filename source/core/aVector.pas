@@ -39,11 +39,9 @@ type
     Extent: TPointF;
     CachedArea: Single;
     AreaValid: Boolean;
-    Gap25: array[0..2] of Byte;
     Bounds: TRectF;
     Gap38: array[0..0] of Byte;
     Flag39: Boolean;
-    Gap3A: array[0..1] of Byte;
     constructor Create;
     constructor CreateTriangle(A: TPointF; B: TPointF; C: TPointF);
     destructor Destroy; override;
@@ -915,35 +913,34 @@ var
   A, B, C, Height, Square: Single;
 begin
   if AreaValid then
-    Result := CachedArea
-  else
   begin
-    Result := 0;
-    CachedArea := 0;
-    if Points.Count >= 3 then
+    Result := CachedArea;
+    Exit;
+  end;
+  Result := 0;
+  CachedArea := 0;
+  if Points.Count >= 3 then
+  begin
+    TriangleFirst := Points[0];
+    for Index := 1 to Points.Count - 2 do
     begin
-      // Preserve DCC32's receiver-before-index argument order; + 0 emits no arithmetic.
-      TriangleFirst := TList(PAnsiChar(Points) + 0)[0];
-      for Index := 1 to Points.Count - 2 do
-      begin
-        Middle := TList(PAnsiChar(Points) + 0)[Index];
-        Last := Points[Index + 1];
-        A := PointDistanceF(TriangleFirst^, Middle^);
-        B := PointDistanceF(TriangleFirst^, Last^);
-        C := PointDistanceF(Middle^, Last^);
-        if A = 0 then
-          A := 1;
-        Square := A * A + B * B - C * C;
-        if Square < 0 then
-          Square := 0.01;
-        Square := B * B - Sqr(Square) / (4 * A * A);
-        if Square < 0 then
-          Square := 0.01;
-        Height := Sqrt(Square);
-        CachedArea := 0.5 * Height * A + CachedArea;
-      end;
-      AreaValid := True;
+      Middle := Points[Index];
+      Last := Points[Index + 1];
+      A := PointDistanceF(TriangleFirst^, Middle^);
+      B := PointDistanceF(TriangleFirst^, Last^);
+      C := PointDistanceF(Middle^, Last^);
+      if A = 0 then
+        A := 1;
+      Square := A * A + B * B - C * C;
+      if Square < 0 then
+        Square := 0.01;
+      Square := B * B - Sqr(Square) / (4 * A * A);
+      if Square < 0 then
+        Square := 0.01;
+      Height := Sqrt(Square);
+      CachedArea := 0.5 * Height * A + CachedArea;
     end;
+    AreaValid := True;
   end;
 end;
 

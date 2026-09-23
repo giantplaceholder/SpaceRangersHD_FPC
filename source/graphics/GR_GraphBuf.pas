@@ -19,6 +19,8 @@ type
 
   PointerToTColorBGRA = ^TColorBGRA;
 
+  PointerToTColorRGB = ^TColorRGB;
+
   PointerToTColorRGBA = ^TColorRGBA;
 
   PointerToTColorRGBAArray = ^TColorRGBAArray;
@@ -53,6 +55,14 @@ type
     function UnpackGreen(Color: Cardinal): Byte;
     function UnpackBlue(Color: Cardinal): Byte;
   end;
+
+  TColorRGB = packed record
+    R: Byte;
+    G: Byte;
+    B: Byte;
+  end;
+
+  PColorRGB = PointerToTColorRGB;
 
   TColorRGBA = packed record
     R: Byte;
@@ -90,12 +100,10 @@ type
     BytesPerPixel: Integer;
     UseTexture: Boolean;
     UsesTextureStorage: Boolean;
-    TextureFlag22: Boolean;
-    Gap23: array[0..0] of Byte;
+    KeepTextureUntilReplacement: Boolean;
     Texture: IDirect3DTexture9;
     TextureLocked: Boolean;
     TextureLockedReadOnly: Boolean;
-    Gap2A: array[0..1] of Byte;
     constructor Create(AUseTexture: Boolean);
     destructor Destroy; override;
     procedure Clear;
@@ -421,7 +429,7 @@ begin
   BytesPerPixel := 0;
   UseTexture := AUseTexture;
   UsesTextureStorage := False;
-  TextureFlag22 := False;
+  KeepTextureUntilReplacement := False;
   Texture := nil;
   TextureLocked := False;
   TextureLockedReadOnly := False;
@@ -444,7 +452,7 @@ begin
   end;
   Texture := nil;
   UsesTextureStorage := False;
-  TextureFlag22 := False;
+  KeepTextureUntilReplacement := False;
   Width := 0;
   Height := 0;
   PitchBytes := 0;
@@ -2105,7 +2113,7 @@ begin
   );
   if UseTexture and (BitsPerPixel = 32) then
   begin
-    if not TextureFlag22 then
+    if not KeepTextureUntilReplacement then
       Texture := nil;
     NewTexture.UnlockRect(0);
     Texture := NewTexture;
@@ -2313,7 +2321,7 @@ begin
   if UseTexture then
   begin
     NewTexture.UnlockRect(0);
-    if not TextureFlag22 then
+    if not KeepTextureUntilReplacement then
       Texture := nil;
     Texture := NewTexture;
   end
@@ -2447,11 +2455,11 @@ var
       while X < Width do
       begin
         System.Move(
-            Pointer(AddPointerOffset(Source, X * 3))^,
+            Pointer(AddPointerOffset(Source, X * SizeOf(TColorRGB)))^,
             Pointer(AddPointerOffset(Dest, X * SizeOf(TColorRGBA)))^,
-            3
+            SizeOf(TColorRGB)
         );
-        PByte(AddPointerOffset(Dest, X * SizeOf(TColorRGBA) + 3))^ := 255;
+        PByte(AddPointerOffset(Dest, Integer(@PColorRGBA(X * SizeOf(TColorRGBA)).A)))^ := 255;
         Inc(X);
       end;
       Dest := AddPointerOffset(Dest, DestPitch);
@@ -2509,7 +2517,7 @@ var
   begin
     Alpha := Alpha and $FF;
     for X := 0 to Count - 1 do
-      PByte(AddPointerOffset(Pixels, X * SizeOf(TColorRGBA) + 3))^ := Alpha;
+      PByte(AddPointerOffset(Pixels, Integer(@PColorRGBA(X * SizeOf(TColorRGBA)).A)))^ := Alpha;
   end;
 
 begin
@@ -2671,7 +2679,7 @@ begin
   if Cardinal(Height) < 1 then
     Exit;
   LockTexture(True);
-  NewPitch := Width * 3;
+  NewPitch := Width * SizeOf(TColorRGB);
   NewPixels := AllocEC(NewPitch * Height);
   Dest := NewPixels;
   Source := Pixels;
@@ -2681,12 +2689,12 @@ begin
     X := 0;
     while X < Cardinal(Width) do
     begin
-      PByte(AddPointerOffset(Dest, X * 3))^ :=
-          PByte(AddPointerOffset(Source, X * SizeOf(TColorRGBA) + 2))^;
-      PByte(AddPointerOffset(Dest, X * 3 + 1))^ :=
-          PByte(AddPointerOffset(Source, X * SizeOf(TColorRGBA) + 1))^;
-      PByte(AddPointerOffset(Dest, X * 3 + 2))^ :=
-          PByte(AddPointerOffset(Source, X * SizeOf(TColorRGBA)))^;
+      PColorRGB(AddPointerOffset(Dest, X * SizeOf(TColorRGB))).R :=
+          PByte(AddPointerOffset(Source, Integer(@PColorBGRA(X * SizeOf(TColorBGRA)).R)))^;
+      PByte(AddPointerOffset(Dest, Integer(@PColorRGB(X * SizeOf(TColorRGB)).G)))^ :=
+          PByte(AddPointerOffset(Source, Integer(@PColorBGRA(X * SizeOf(TColorBGRA)).G)))^;
+      PByte(AddPointerOffset(Dest, Integer(@PColorRGB(X * SizeOf(TColorRGB)).B)))^ :=
+          PColorBGRA(AddPointerOffset(Source, X * SizeOf(TColorBGRA))).B;
       Inc(X);
     end;
     Dest := AddPointerOffset(Dest, NewPitch);

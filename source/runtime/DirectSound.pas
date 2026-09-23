@@ -109,7 +109,6 @@ type
     BlockAlign: Word;
     BitsPerSample: Word;
     ExtraSize: Word;
-    Gap12: array[0..1] of Byte;
   end;
 
   TDSBufferDesc = record

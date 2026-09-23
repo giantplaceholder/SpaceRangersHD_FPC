@@ -41,7 +41,6 @@ type
     Angle: Byte;
     Alpha: Byte;
     AlphaLimit: Byte;
-    Gap6F: array[0..0] of Byte;
     MinimapImagePath: WideString;
     AlternateImagePath: WideString;
     MinimapImageOrigin: TPoint;
@@ -57,7 +56,6 @@ type
     WeaponPortCount: Cardinal;
     WeaponPorts: array[1..10] of TPointF;
     SharedAnimations: Boolean;
-    Gap169: array[0..2] of Byte;
     FirstAnimation: TShip2AnimSE;
     LastAnimation: TShip2AnimSE;
     FirstReducedAnimation: TShip2AnimSE;
@@ -614,7 +612,7 @@ var
   Radians, Sine, Cosine: Double;
 begin
   Point := ScaleImagePoint(Point);
-  Radians := Angle / 256 * 6.2831852;
+  Radians := Angle / 256 * GameTwoPi;
   Sine := Sin(Radians);
   Cosine := Cos(Radians);
   Result.X := Point.X * Cosine - Point.Y * Sine + Position.X;
@@ -629,7 +627,7 @@ begin
   Point := ScaleImagePoint(MakePointF(Seed mod ImageSize.X, (Seed * 45452 + 3247) mod ImageSize.Y));
   Point.X := Point.X * TargetSizeScale;
   Point.Y := Point.Y * TargetSizeScale;
-  Radians := Heading / 256 * 6.2831852;
+  Radians := Heading / 256 * GameTwoPi;
   Sine := Sin(Radians);
   Cosine := Cos(Radians);
   Result.X := Point.X * Cosine - Point.Y * Sine + Position.X;
@@ -647,7 +645,7 @@ begin
     Exit;
   end;
   Point := ScaleImagePoint(WeaponPorts[1 + (Sqr(Seed) div 11) mod WeaponPortCount]);
-  Radians := Heading / 256 * 6.2831852;
+  Radians := Heading / 256 * GameTwoPi;
   Sine := Sin(Radians);
   Cosine := Cos(Radians);
   Result.X := Point.X * Cosine - Point.Y * Sine + Position.X;

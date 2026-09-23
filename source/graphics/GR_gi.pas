@@ -14,6 +14,12 @@ type
 
   TgiGR = class;
 
+  PointerToTGaiFrameEntry = ^TGaiFrameEntry;
+
+  PointerToTGaiSequenceFrameEntry = ^TGaiSequenceFrameEntry;
+
+  PointerToTGaiSequenceTableHeader = ^TGaiSequenceTableHeader;
+
   PointerToTgiClipRectDiskGR = ^TgiClipRectDiskGR;
 
   PointerToTgiHeaderGR = ^TgiHeaderGR;
@@ -22,15 +28,15 @@ type
 
   PointerToTGaiHeader = ^TGaiHeader;
 
-  PointerToTGaiSequenceTableHeader = ^TGaiSequenceTableHeader;
-
   TGaiHeader = packed record
-    Gap0: array[0..7] of Byte;
+    Magic: array[0..3] of AnsiChar;
+    Version: Integer;
     Bounds: TRect;
     FrameCount: Integer;
     Flags: Cardinal;
     SequenceTableOffset: Integer;
-    Gap24: array[0..11] of Byte;
+    SequenceTableSize: Integer;
+    Gap28: array[0..7] of Byte;
   end;
 
   PGaiHeader = PointerToTGaiHeader;
@@ -39,6 +45,8 @@ type
     DataOffset: Integer;
     DataSize: Integer;
   end;
+
+  PGaiFrameEntry = PointerToTGaiFrameEntry;
 
   TGaiSequenceTableHeader = packed record
     SequenceCount: Integer;
@@ -56,6 +64,8 @@ type
     SourceFrameIndex: Integer;
     FrameDelay: Integer;
   end;
+
+  PGaiSequenceFrameEntry = PointerToTGaiSequenceFrameEntry;
 
   TGaiSequenceDataBlock = packed record
     FrameCount: Integer;
@@ -100,7 +110,6 @@ type
     Data: Pointer;
     DataSize: Integer;
     UsesExternalData: Boolean;
-    GapD: array[0..2] of Byte;
     Header: PgiHeaderGR;
     constructor Create;
     destructor Destroy; override;

@@ -20,7 +20,6 @@ type
   TabWeapon = record
     Kind: Byte;
     ItemType: Byte;
-    Gap2: array[0..1] of Byte;
     SlotData: Cardinal;
     Ammo: Integer;
     MaxAmmo: Integer;
@@ -29,7 +28,6 @@ type
     LastFireTick: Integer;
     FireIntervalTicks: Integer;
     Damage: Integer;
-    Gap24: array[0..3] of Byte;
     Range: Double;
   end;
 

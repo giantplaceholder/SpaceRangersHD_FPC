@@ -39,7 +39,6 @@ type
     DateNextImage: TImageGI;
     NextDateLabel: TLabelGI;
     NavigationLocked: Boolean;
-    Gap49: array[0..2] of Byte;
     MessagePulseStep: Integer;
     MessageSlideDirection: Integer;
     MessagePanelRestTop: Integer;
@@ -50,11 +49,9 @@ type
     DateTimerIntervalMs: Integer;
     AuxiliaryItems: TList;
     MoneyWarningActive: Boolean;
-    Gap71: array[0..2] of Byte;
     MoneyWarningTicks: Integer;
     MoneyWarningTimer: PCallbackTimerGI;
     CargoWarningActive: Boolean;
-    Gap7D: array[0..2] of Byte;
     CargoWarningTicks: Integer;
     CargoWarningTimer: PCallbackTimerGI;
     constructor Create;
@@ -484,7 +481,7 @@ begin
     Exit;
   if GetPlayer = nil then
     Exit;
-  if (GetPlayer.CurrentPlanet <> nil) and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiDominator)) then
+  if (GetPlayer.CurrentPlanet <> nil) and (GetPlayer.CurrentPlanet.OwnerId = oiDominator) then
     Exit;
   if GetPlayer.QueuedTravelTarget <> nil then
     Exit;
@@ -521,12 +518,11 @@ begin
     end;
   end;
   if (GetPlayer = nil)
-      or ((GetPlayer.CurrentPlanet <> nil)
-          and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiDominator))) then
+      or ((GetPlayer.CurrentPlanet <> nil) and (GetPlayer.CurrentPlanet.OwnerId = oiDominator)) then
   begin
     Event := AddGalaxyEvent('PlayerDeath');
     Event.AddTextData('PlanetCaptured');
-    GameEndReason := 2;
+    GameEndReason := gerPlayerDeath;
     RequestedScreenId := screenGameEnd;
     Screen.RequestClose(1);
   end
@@ -536,14 +532,14 @@ begin
     if (GetPlayer.PendingDockDialogue > 0) and (GetPlayer.DockedTo <> nil) then
     begin
       RequestedScreenId := screenRuinsTalk;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
     end
     else if (GetPlayer.PendingDockDialogue > 0)
         and (GetPlayer.CurrentPlanet <> nil)
-        and (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiUninhabited)) then
+        and (GetPlayer.CurrentPlanet.OwnerId <> oiUninhabited) then
     begin
       RequestedScreenId := screenGovernment;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
     end;
   end;
 end;
@@ -576,11 +572,11 @@ begin
     RunShipEquipment(Screen);
     RebuildMessageButtons(False);
     PostMouseMove;
-    if ShipScreen.Flag3BC then
+    if ShipScreen.ShipStateChanged then
       Changed := True;
     RefreshMoneyAndCargo;
     RebuildMessageButtons(False);
-    if not ShipScreen.FlagD4 then
+    if not ShipScreen.ReopenRequested then
       Break;
     Screen.SetCursorActive(False);
     FullFrameRedrawRequested := True;
@@ -590,7 +586,7 @@ begin
     Screen.SetCursorActive(True);
   end;
   Galaxy.PrimeIntegrityChecksum(110);
-  ShipScreen.Flag3BC := Changed;
+  ShipScreen.ShipStateChanged := Changed;
   if GetPlayer.IsOnPlanet and (Screen <> GovernmentScreen) then
     if GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) = rlHostile then
     begin
@@ -779,7 +775,7 @@ begin
               LookupLocalizedTextByKey('FormSaveManager.QueryQuickN'),
               '<Num>',
               WideString(IntToStr(SlotIndex)),
-              '<color=255,240,100>'
+              TextHighlightColorTag
           )
     else
       Text := LookupLocalizedTextByKey('FormSaveManager.QueryQuick');
@@ -799,7 +795,7 @@ begin
               LookupLocalizedTextByKey('FormSaveManager.QuickNotExistN'),
               '<Num>',
               WideString(IntToStr(SlotIndex)),
-              '<color=255,240,100>'
+              TextHighlightColorTag
           )
     else
       Text := LookupLocalizedTextByKey('FormSaveManager.QuickNotExist');
@@ -848,7 +844,7 @@ begin
           if Control is TGraphButtonGI then
           begin
             Stage := 4;
-            if (MessageEntry.Kind in [0, 6]) and not MessageEntry.WasRead then
+            if (MessageEntry.Kind in [pmGalaxyNews, pmTip]) and not MessageEntry.WasRead then
             begin
               Stage := 5;
               with Control as TGraphButtonGI do
@@ -984,13 +980,13 @@ begin
       Button.EnterSound := 'Sound.ButtonInfoEnter';
       Button.LeaveSound := 'Sound.ButtonInfoLeave';
       Button.ClickSound := 'Sound.ButtonInfoClick';
-      if (MessageEntry.Kind = 1)
+      if (MessageEntry.Kind = pmRadio)
           and (GetPlayer <> nil)
           and ((Integer(MessageEntry.Targets[0].ShipId) = GetPlayer.Id)
               or (Integer(MessageEntry.Targets[1].ShipId) = GetPlayer.Id)
               or (Integer(MessageEntry.Targets[2].ShipId) = GetPlayer.Id)) then
-        MessageEntry.Kind := 10;
-      if (MessageEntry.Kind in [0, 6]) and not MessageEntry.WasRead then
+        MessageEntry.Kind := pmRadioPlayer;
+      if (MessageEntry.Kind in [pmGalaxyNews, pmTip]) and not MessageEntry.WasRead then
       begin
         Button.SetImageNormalPath('GraphBuf');
         Button.ImageNormal.GraphBufControl.SourceHasPerPixelAlpha := True;
@@ -1054,7 +1050,7 @@ end;
 function TfPanelMain.RemoveDismissibleMessages(Key: WideString): Boolean;
 begin
   Result := False;
-  if RemovePlayerMessagesExceptKinds(Key, [3, 9], False) then
+  if RemovePlayerMessagesExceptKinds(Key, [pmQuestActive, pmStorage], False) then
   begin
     RebuildMessageButtons(False);
     SoundManager.PlaySound('Sound.DelMsg');
@@ -1100,7 +1096,7 @@ begin
     if not MessageEntry.WasRead then
     begin
       MessageEntry.WasRead := True;
-      if MessageEntry.Kind = 6 then
+      if MessageEntry.Kind = pmTip then
         MessageEntry.Turn := Galaxy.CurrentTurn;
     end;
     LabelControl.SetPosition(Window.WorkSubRect.TopLeft);
@@ -1137,7 +1133,7 @@ begin
     MessageEntry := TMessagePlayer(Sender.UserValue);
     if not IsPersistentPlayerMessageQueued(MessageEntry, True) then
       Exit;
-    if MessageEntry.Kind in [3, 9] then
+    if MessageEntry.Kind in [pmQuestActive, pmStorage] then
       Exit;
     Control := MessagePanel.FirstChild;
     while Control <> nil do
@@ -1467,13 +1463,13 @@ begin
     while MessageEntry <> nil do
     begin
       if not MessageEntry.NotificationSoundPlayed then
-        if MessageEntry.Kind in [0..6, 8] then
-          if not PlayedQuestOk and (MessageEntry.Kind = 4) then
+        if MessageEntry.Kind in [pmGalaxyNews..pmTip, pmShipNegative] then
+          if not PlayedQuestOk and (MessageEntry.Kind = pmQuestSucceeded) then
           begin
             PlayedQuestOk := True;
             SoundManager.PlaySound('Sound.QuestOk');
           end
-          else if not PlayedQuestCancel and (MessageEntry.Kind = 5) then
+          else if not PlayedQuestCancel and (MessageEntry.Kind = pmQuestCancelled) then
           begin
             PlayedQuestCancel := True;
             SoundManager.PlaySound('Sound.QuestCancel');

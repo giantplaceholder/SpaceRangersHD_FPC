@@ -21,9 +21,7 @@ type
     Damage: Integer;
     Image: PabWorldImage;
     Exploding: Boolean;
-    GapBD: array[0..2] of Byte;
     TrailDistance: Single;
-    GapC4: array[0..3] of Byte;
     LastTrailPosition: TVector3D;
     ExpireTick: Integer;
     TurnSpeed: Single;

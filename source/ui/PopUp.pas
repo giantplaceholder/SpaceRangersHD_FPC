@@ -17,7 +17,6 @@ type
     LastTick: Cardinal;
     PauseRemaining: Cardinal;
     MovingUp: Boolean;
-    Gap129: array[0..2] of Byte;
     MotionRemainder: Single;
     QueueLock: TCriticalSection;
     TextQueue: TList;
@@ -120,7 +119,7 @@ begin
     SetDepth(-1000);
     SetSize(Classes.Point(GameScreenWidth, GameScreenHeight));
     SetPositionModeW(True);
-    MessageLoop := TObject(RegisteredScreens[Ord(CurrentScreenId)]) as TMessageLoopGI;
+    MessageLoop := TObject(RegisteredScreens[CurrentScreenId]) as TMessageLoopGI;
     while TextQueue.Count > 0 do
     begin
       Text := PWideString(TextQueue[0])^;

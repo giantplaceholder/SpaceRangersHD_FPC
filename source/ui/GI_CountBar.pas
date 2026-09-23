@@ -27,7 +27,6 @@ type
     BeforeThumbImage: TImageGI;
     ThumbButton: TGraphButtonGI;
     MarkerImage: TImageGI;
-    Gap14C: array[0..3] of Byte;
     PositionChangedCallback: TObjectNotifyEventGI;
     RepeatTimer: PCallbackTimerGI;
     procedure LoadFromConfigPath(const Path: WideString); override;

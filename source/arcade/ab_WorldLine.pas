@@ -27,7 +27,6 @@ type
     FrontEndColor: Cardinal;
     BackEndColor: Cardinal;
     ShowBehindSphere: Boolean;
-    Gap51: array[0..6] of Byte;
   end;
 
 var

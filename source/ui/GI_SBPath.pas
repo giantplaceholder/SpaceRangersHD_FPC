@@ -21,7 +21,6 @@ type
     Maximum: Integer;
     Position: Integer;
     Dragging: Boolean;
-    Gap135: array[0..2] of Byte;
     ThumbImage: TImageGI;
     HitRadius: Integer;
     ChangeCallback: TObjectNotifyEventGI;

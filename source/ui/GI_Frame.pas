@@ -18,12 +18,10 @@ type
 
   TFrameGI = class(TObjectGI)
     Kind: TFrameKindGI;
-    Gap121: array[0..2] of Byte;
     Color: Cardinal;
     FillColor: Cardinal;
     Fill: Boolean;
     FillAlpha: Byte;
-    Gap12E: array[0..1] of Byte;
     procedure Clear; override;
     procedure LoadFromConfigPath(const Path: WideString); override;
     procedure Draw(ClipRect: TRect); override;

@@ -21,11 +21,9 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    GapF: array[0..0] of Byte;
     Velocity: TPointF;
     Gap18: array[0..1] of Byte;
     Unknown1A: Byte;
-    Gap1B: array[0..0] of Byte;
   end;
 
   TECutterPalette = array[0..7] of Word;

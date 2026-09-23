@@ -33,7 +33,6 @@ type
     PanUp: Boolean;
     PanDown: Boolean;
     Playing: Boolean;
-    GapD9: array[0..2] of Byte;
     CenterShipButton: TGraphButtonGI;
     SpacePanel: TPanelGI;
     MapPanel: TObjectGI;
@@ -89,6 +88,7 @@ type
 implementation
 
 uses
+  aGalaxyStruct,
   SysUtils,
   Math,
   GameInput,
@@ -99,6 +99,7 @@ uses
   GR_Sound,
   GI_Main,
   aMyFunction,
+  aConst,
   aPlayer,
   aShip,
   aEFilmEnd,
@@ -242,7 +243,8 @@ begin
   StopButton.UpCallback := PlayStopClicked;
   TurnSlider.SetRange(0, FilmHistory.GetCount - 1);
   TurnSlider.PositionChangedCallback := TurnSliderChanged;
-  GetByName('MapPanelA').SetActive((GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(1));
+  GetByName('MapPanelA')
+      .SetActive((GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(heBlindness));
   SelectHistoryEntry(FilmHistory.GetCount - 1, True);
   CopyLiveVisualStateToFilm;
   AdvanceOneStep;
@@ -570,7 +572,7 @@ begin
   SpaceProcess.BindMinimap(MapPanel);
   SpaceProcess.Space.MinimapScale := MapPanel.ClientSize.X / CurrentFilm.MapDiameter;
   if GetPlayer <> nil then
-    if GetPlayer.IsHealthEffectActive(1) then
+    if GetPlayer.IsHealthEffectActive(heBlindness) then
       SpaceProcess.Space.AlphaShift := 2;
   SpaceProcess.Space.CreateMinimapViewport;
   StepIndex := 0;

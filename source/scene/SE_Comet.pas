@@ -21,14 +21,13 @@ type
 
   PCometTrailEntry = PointerToTCometTrailEntry;
 
-  TCometTrailEntry = packed record
+  TCometTrailEntry = record
     Next: PCometTrailEntry;
     Prev: PCometTrailEntry;
     Position: TPointF;
     Velocity: TPointF;
     Animation: TgaiGI;
     Finished: Boolean;
-    Gap1D: array[0..2] of Byte;
   end;
 
   TCometSE = class(TObjectSE)

@@ -36,7 +36,6 @@ type
     AtTarget: Boolean;
     AutoAnimation: Boolean;
     LoopAnimation: Boolean;
-    Gap27: array[0..0] of Byte;
     SkipTime: Integer;
   end;
 
@@ -49,13 +48,11 @@ type
     SourcePoint: TPointF;
     TargetPoint: TPointF;
     Started: Boolean;
-    Gap29: array[0..2] of Byte;
     LeftTime: Integer;
     Direction: Single;
     AnimationInterval: Integer;
     AnimationCountdown: Integer;
     BeforeEnd: Boolean;
-    Gap3D: array[0..2] of Byte;
     constructor Create(AEffectIndex: Integer; AOwner: TObjectGI);
     destructor Destroy; override;
     procedure Clear;
@@ -75,12 +72,10 @@ type
     ShotSoundPath: WideString;
     HitSoundPath: WideString;
     PlayShotSound: Boolean;
-    Gap55: array[0..2] of Byte;
     SourceObject: TObjectSE;
     TargetObject: TObjectSE;
     HitDamage: Integer;
     TargetDestroyed: Boolean;
-    Gap65: array[0..2] of Byte;
     DestructionEffect: Integer;
     DestructionFrameInterval: Integer;
     DestructionDetachStep: Integer;
@@ -96,13 +91,11 @@ type
     ExtraDestructionAnimations: array[0..5] of TgaiGI;
     DamageLabel: TLabelGI;
     ImmediateDestruction: Boolean;
-    GapB5: array[0..2] of Byte;
     DestructionAlpha: Single;
     DestructionAlphaStep: Single;
     DamageLabelPoint: TPointF;
     GapC8: array[0..0] of Byte;
     ProjectileFinished: Boolean;
-    GapCA: array[0..1] of Byte;
     StepIndex: Integer;
     ShotVisual: Integer;
     procedure AttachToSpace(ASpace: TSpaceSE); override;

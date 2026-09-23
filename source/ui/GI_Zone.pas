@@ -19,7 +19,6 @@ type
   TZoneGI = class(TObjectGI)
     Kind: TZoneKindGI;
     CursorInside: Boolean;
-    Gap122: array[0..5] of Byte;
     EnterCallback: TObjectNotifyEventGI;
     LeaveCallback: TObjectNotifyEventGI;
     ZoneMouseDownCallback: TObjectMouseEventGI;

@@ -9,7 +9,8 @@ uses
   GameWindow,
   Types,
   GR_Sound,
-  GR_GraphBuf;
+  GR_GraphBuf,
+  aGalaxyStruct;
 
 type
 
@@ -91,7 +92,7 @@ type
 
   PRobotCallbacks = PointerToTRobotCallbacks;
 
-  TRobotDisplaySettingsPrefix = packed record
+  TRobotDisplaySettingsPrefix = record
     Direct3D: Pointer;
     Device: Pointer;
     ShowStencilShadows: Boolean;
@@ -112,7 +113,6 @@ type
     Anisotropy: Integer;
     MaxDistance: Single;
     VSync: Boolean;
-    Gap35: array[0..2] of Byte;
   end;
 
   PRobotDisplaySettings = PointerToTRobotDisplaySettingsPrefix;
@@ -132,7 +132,7 @@ type
           WinText: PWideChar;
           LossText: PWideChar;
           TerronName: PWideChar;
-          Statistics: PInteger
+          Statistics: PPlanetBattleStatistics
       ): Integer; stdcall;
 
   TRobotInterfacePrefix = record
@@ -152,7 +152,7 @@ var
 
   RobotCallbacks: TRobotCallbacks;
 
-  RobotBattleStatistics: array[0..5] of Integer;
+  RobotBattleStatistics: TPlanetBattleStatistics;
 
   SupportedMultiSamples: array of Integer;
 
@@ -429,6 +429,11 @@ begin
     Result := Sound.Pan;
 end;
 
+function CenterSpan(SpanStart, SpanEnd, ContentStart, ContentEnd: Integer): Integer; inline;
+begin
+  Result := SpanStart + (SpanEnd - SpanStart) div 2 - (ContentEnd - ContentStart) div 2;
+end;
+
 procedure RobotRenderText(
     Text, FontName: PWideChar;
     Color: Cardinal;
@@ -631,7 +636,7 @@ begin
             Font.DrawTaggedText32(
                 Buffer.GetPixels,
                 Buffer.PitchBytes,
-                (Width - 0) div 2 - (Bounds.Right - Bounds.Left) div 2 + OffsetX,
+                CenterSpan(0, Width, Bounds.Left, Bounds.Right) + OffsetX,
                 CurrentY + OffsetY,
                 WrappedLines.GetCurrentText,
                 DrawClip
@@ -694,9 +699,9 @@ begin
       Panel.SetShutterOpenFraction(0);
       Panel.SetProgress(Fraction);
       Panel.Show;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).SetCursorActive(False);
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).InvalidateViewport;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).Present;
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).SetCursorActive(False);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).InvalidateViewport;
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).Present;
       Panel.Hide;
     end;
 end;
@@ -751,7 +756,7 @@ begin
   SavedDirectory := GetCurrentDir;
   LooseFileRoot := SavedDirectory + '\';
   try
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).CaptureCursorState(@CursorState);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).CaptureCursorState(@CursorState);
     if InstallConfig.CountParams('RobotPath') > 0 then
     begin
       SetCurrentDir(NativeGamePath(AnsiString(InstallConfig.GetParam('RobotPath'))));
@@ -811,12 +816,12 @@ begin
     RobotSettings.FSAASamples := RobotFSAASamples;
     RobotSettings.Anisotropy := RobotAnisotropy;
     RobotSettings.MaxDistance := RobotMaxDistance / 100;
-    RobotBattleStatistics[0] := 0;
-    RobotBattleStatistics[1] := 0;
-    RobotBattleStatistics[2] := 0;
-    RobotBattleStatistics[3] := 0;
-    RobotBattleStatistics[4] := 0;
-    RobotBattleStatistics[5] := 0;
+    RobotBattleStatistics.SignedTimeMs := 0;
+    RobotBattleStatistics.RobotsBuilt := 0;
+    RobotBattleStatistics.RobotsDestroyed := 0;
+    RobotBattleStatistics.TurretsBuilt := 0;
+    RobotBattleStatistics.TurretsDestroyed := 0;
+    RobotBattleStatistics.BuildingsDestroyed := 0;
     RobotSettings.Direct3D := Pointer(Direct3D);
     RobotSettings.Device := Pointer(Direct3DDevice);
     AppendLogLineThreadSafe('Starting planetary battle');
@@ -837,7 +842,7 @@ begin
                   PWideChar(WinText),
                   PWideChar(LossText),
                   PWideChar(TerronName),
-                  @RobotBattleStatistics[0]
+                  @RobotBattleStatistics
               )
         else
           Result :=
@@ -851,7 +856,7 @@ begin
                   PWideChar(WinText),
                   PWideChar(LossText),
                   PWideChar(TerronName),
-                  @RobotBattleStatistics[0]
+                  @RobotBattleStatistics
               );
       end;
     except
@@ -881,17 +886,17 @@ begin
     begin
       ExitScreenLoop := True;
       RequestedScreenId := screenNone;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RequestClose(1);
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RequestClose(1);
       Result := 0;
       Exit;
     end;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RestoreCursorState(@CursorState);
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RestoreCursorState(@CursorState);
     if ShowSystemMouse then
       while ShowGameCursor(True) < 0 do
     else
       while ShowGameCursor(False) >= 0 do
         ;
-    TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).InvalidateViewport;
+    TMessageLoopGI(RegisteredScreens[CurrentScreenId]).InvalidateViewport;
   finally
     SetCurrentDir(NativeGamePath(SavedDirectory));
     LooseFileRoot := '';

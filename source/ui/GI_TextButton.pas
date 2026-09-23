@@ -27,7 +27,6 @@ type
     BorderDarkColor: Cardinal;
     Hover: Boolean;
     Down: Boolean;
-    Gap142: array[0..5] of Byte;
     DownCallback: TObjectNotifyEventGI;
     UpCallback: TObjectNotifyEventGI;
     procedure Clear; override;

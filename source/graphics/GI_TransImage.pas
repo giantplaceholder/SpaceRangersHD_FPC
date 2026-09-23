@@ -21,7 +21,6 @@ type
     ImageKindX: TImageKindXGI;
     ImageKindY: TImageKindYGI;
     HalfAlpha: Boolean;
-    Gap127: array[0..0] of Byte;
     procedure Clear; override;
     procedure QueueImageLoad(PendingLoads: TList); override;
     procedure LoadFromConfigPath(const Path: WideString); override;

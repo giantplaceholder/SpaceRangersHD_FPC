@@ -35,6 +35,8 @@ var
 
   StartupCleanupObject: TObject;
 
+function SquaredDistanceToPoint(const Point: TPoint; X: Integer; Y: Integer): Integer; inline;
+
 function MakePointF(X: Single; Y: Single): TPointF;
 
 function MakeVector3D(X: Double; Y: Double; Z: Double): TVector3D;
@@ -60,6 +62,11 @@ function SubtractPointsF(Left: TPointF; Right: TPointF): TPointF;
 function IntersectRects(out Intersection: TRect; const First: TRect; const Second: TRect): Boolean;
 
 implementation
+
+function SquaredDistanceToPoint(const Point: TPoint; X, Y: Integer): Integer; inline;
+begin
+  Result := Sqr(Point.X - X) + Sqr(Point.Y - Y);
+end;
 
 function MakePointF(X, Y: Single): TPointF;
 begin

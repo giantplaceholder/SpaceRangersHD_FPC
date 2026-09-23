@@ -26,21 +26,17 @@ type
     TextColor: Cardinal;
     CaretColor: Cardinal;
     BorderEnabled: Boolean;
-    Gap135: array[0..2] of Byte;
     BorderLightColor: Cardinal;
     BorderDarkColor: Cardinal;
     MaxLength: Integer;
     HasFocus: Boolean;
-    Gap145: array[0..2] of Byte;
     CaretPosition: Integer;
     AutoScrollText: Boolean;
     TextAlignX: TTextAlignXGI;
-    Gap14E: array[0..1] of Byte;
     ChangedCallback: TObjectNotifyEventGI;
     FocusLostCallback: TObjectNotifyEventGI;
     AcceptCharCallback: TEditAcceptCharEventGI;
     ClearFocusOnEnter: Boolean;
-    Gap169: array[0..2] of Byte;
     procedure Clear; override;
     procedure QueueImageLoad(PendingLoads: TList); override;
     procedure LoadFromConfigPath(const Path: WideString); override;
@@ -545,7 +541,7 @@ begin
             HitTestBounds.Left,
             HitTestBounds.Top,
             255,
-            $FFFFFF,
+            RgbWhite,
             @ClipRect,
             False,
             False
@@ -628,7 +624,7 @@ begin
               HitTestBounds.Left,
               HitTestBounds.Top,
               255,
-              $FFFFFF,
+              RgbWhite,
               @ClipRect,
               False,
               False

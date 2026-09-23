@@ -24,6 +24,12 @@ uses
   Classes,
   Types;
 
+const
+
+  GameVersionText = '2.1.2500';
+
+  ModSelectionConfigPath = 'Mods\ModCFG.txt';
+
 type
 
   TCCInterface = class;
@@ -71,13 +77,6 @@ type
 
   TMemoryStatusEx = TGameMemoryStatus;
 
-  TDisplayModeGR = packed record
-    Width: Cardinal;
-    Height: Cardinal;
-    RefreshRate: Cardinal;
-    Format: Cardinal;
-  end;
-
   TCursorUnit = class(TObject)
     Prev: TCursorUnit;
     Next: TCursorUnit;
@@ -94,7 +93,6 @@ type
     ResourceChecksumFailed: Boolean;
     TamperDetected: Boolean;
     Flag0A: Boolean;
-    GapB: array[0..0] of Byte;
     ProtectedStateXorSeed: Integer;
     Value10: Integer;
     IntegrityStatus: Integer;
@@ -104,7 +102,6 @@ type
     IntegrityChecksum2: Cardinal;
     EncodedCheatPoints: Integer;
     EditableStateApplied: Boolean;
-    Gap2D: array[0..2] of Byte;
   end;
 
   TCCInterface = class(TObject)
@@ -1152,7 +1149,7 @@ var
 
   LastRecordingFrameTick: Cardinal = 0;
 
-  UnknownPresentState: Integer = 0;
+  StartupIntegrityMarker: Integer = 0;
 
   LastMouseMessageTick: Cardinal = 0;
 
@@ -1238,6 +1235,17 @@ var
 
   MainRuntimeThreadId: TThreadID;
 
+type
+
+  TDisplayModeGR = object
+    Width: Cardinal;
+    Height: Cardinal;
+    RefreshRate: Cardinal;
+    Format: Cardinal;
+  end;
+
+var
+
   DesktopDisplayMode: TDisplayModeGR;
 
   Direct3DPresentParameters: TD3DPresentParameters;
@@ -1255,11 +1263,11 @@ var
   EncodedPlatformModuleNames: array[0..8] of AnsiString = (
       'loinbaosgaga-10a',
       'loinbavrokrablius-->0',
-      'loinbaveohrablissufainlae',
+      'loinbaveohrablissufainlae', // 'libogg-0', 'libvorbis-0', 'libvorbisfile'
       'mhastorhinxagrakmae',
       'ookogifa',
       'sotoenalm^_^aucah',
-      'sotoenalm^_^aupki',
+      'sotoenalm^_^aupki', // 'matrixgame', 'okgf', 'steam_ach', 'steam_api'
       'xavriadeccomrie',
       'zoloimba'
   );
@@ -2415,7 +2423,7 @@ begin
           ModulePath := AnsiLowerCase(AnsiString(Entry.szModule));
           for Index := 0 to 8 do
           begin
-            // Decoded: 'libogg-0.dll', 'libvorbis-0.dll', 'libvorbisfile.dll',
+            // 'libogg-0.dll', 'libvorbis-0.dll', 'libvorbisfile.dll',
             // 'matrixgame.dll', 'okgf.dll', 'steam_ach.dll', 'steam_api.dll',
             // 'xvidcore.dll', 'zlib.dll'.
             if WideString(ModulePath)
@@ -2445,19 +2453,19 @@ begin
                   HKEY_CURRENT_USER,
                   DecodeTextW(
                       'Sdonf6t4wdabrden\7Vga4l-v7ef\3Sdt6e8a,mu\gAcczt1i2v3e2Pvrnohcyetsrs'
-                  ), // Decoded: 'Software\Valve\Steam\ActiveProcess'
+                  ), // 'Software\Valve\Steam\ActiveProcess'
                   DecodeTextW('S4tgefadm.ClliitevnvteDtlfls'),
                   ''
               )
           )
-      ); // Decoded: 'SteamClientDll'
+      ); // 'SteamClientDll'
   SteamProcessId :=
       ReadRegistryInteger(
           HKEY_CURRENT_USER,
           DecodeTextW('Sdonf6t4wdabrden\7Vga4l-v7ef\3Sdt6e8a,mu\gAcczt1i2v3e2Pvrnohcyetsrs'),
           'pid',
           0
-      ); // Decoded: 'Software\Valve\Steam\ActiveProcess'
+      ); // 'Software\Valve\Steam\ActiveProcess'
   Snapshot := CreateToolhelp32Snapshot(8, GetCurrentProcessId);
   if Snapshot <> INVALID_HANDLE_VALUE then
   begin
@@ -2496,7 +2504,7 @@ begin
           = AnsiLowerCase(
               AnsiString(
                   WideString(ExtractFilePath(SteamClientPath)) + DecodeTextW('s1t2eda5mg.he7xie')
-              )) then // Decoded: 'steam.exe'
+              )) then // 'steam.exe'
       begin
         while Module32Next(Snapshot, Entry) do
         begin
@@ -4388,10 +4396,10 @@ var
   Block: TBlockParEC;
 begin
   ModNames := '';
-  if FileExists(NativeGamePath('Mods\ModCFG.txt')) then
+  if FileExists(NativeGamePath(ModSelectionConfigPath)) then
   begin
     Block := TBlockParEC.Create;
-    Block.LoadFromTextFileWithEncodingProbe('Mods\ModCFG.txt', False);
+    Block.LoadFromTextFileWithEncodingProbe(ModSelectionConfigPath, False);
     if Block.CountParams('CurrentMod') > 0 then
       ModNames := TrimWideString(Block.GetParam('CurrentMod'));
     SelectedMods := ModNames;
@@ -4621,10 +4629,10 @@ var
 begin
   MainDataConfig := TBlockParEC.Create;
   ModNames := '';
-  if not SkipModsOnReload and FileExists(NativeGamePath('Mods\ModCFG.txt')) then
+  if not SkipModsOnReload and FileExists(NativeGamePath(ModSelectionConfigPath)) then
   begin
     Block := TBlockParEC.Create;
-    Block.LoadFromTextFileWithEncodingProbe('Mods\ModCFG.txt', False);
+    Block.LoadFromTextFileWithEncodingProbe(ModSelectionConfigPath, False);
     if Block.CountParams('CurrentMod') > 0 then
       ModNames := TrimWideString(Block.GetParamByPath('CurrentMod'));
     Block.Free;
@@ -4880,7 +4888,7 @@ begin
     AppendLogTextThreadSafe('Creating cfg.txt ... ');
     CopyGameFile('cfg.txt', Text);
     UserSettingsConfig.LoadFromTextFileWithEncodingProbe(PWideChar(Text), True);
-    UserSettingsConfig.AddParam('CurrentVersion', '2.1.2500');
+    UserSettingsConfig.AddParam('CurrentVersion', GameVersionText);
     UserSettingsConfig.AddParam('VideoMemSizeLimit', '256');
     if RunningUnderWine then
     begin
@@ -4896,20 +4904,20 @@ begin
     if UserSettingsConfig.CountParamsByPath('CurrentVersion') = 0 then
     begin
       AppendLogTextThreadSafe('Updating cfg.txt content ... ');
-      UserSettingsConfig.AddParam('CurrentVersion', '2.1.2500');
+      UserSettingsConfig.AddParam('CurrentVersion', GameVersionText);
       UserSettingsConfig.SetOrAddParam('HardwareRender', 'True');
       UserSettingsConfig.SetOrAddParam('MultiThread', 'False');
       UserSettingsConfig.SaveTextFile(PWideChar(Text), True, False);
       AppendLogLineThreadSafe('ok!');
     end
-    else if UserSettingsConfig.GetParamByPathOrMarker('CurrentVersion') <> '2.1.2500' then
+    else if UserSettingsConfig.GetParamByPathOrMarker('CurrentVersion') <> GameVersionText then
     begin
       AppendLogTextThreadSafe('Updating cfg.txt version ... ');
       if (UserSettingsConfig.GetParam('CurrentVersion') = '2.1.1800')
           and (UserSettingsConfig.CountParamsByPath('CountFilmSave') > 0)
           and (UserSettingsConfig.GetParamByPathOrMarker('CountFilmSave') = '30') then
         UserSettingsConfig.SetOrAddParam('CountFilmSave', '7');
-      UserSettingsConfig.SetOrAddParam('CurrentVersion', '2.1.2500');
+      UserSettingsConfig.SetOrAddParam('CurrentVersion', GameVersionText);
       UserSettingsConfig.SaveTextFile(PWideChar(Text), True, False);
       AppendLogLineThreadSafe('ok!');
     end;
@@ -5150,18 +5158,18 @@ begin
     Cursor.ImagePath := Block.GetBlockByIndex(Index).GetParam('Image');
     Cursor.HotSpot := GetPointGI(Block.GetBlockByIndex(Index).GetParam('Sme'));
   end;
-  if LanguageDataConfig.GetParamByPathOrMarker('BV.BV') <> '2.1.2500' then
+  if LanguageDataConfig.GetParamByPathOrMarker('BV.BV') <> GameVersionText then
   begin
     AppendLogLineThreadSafe('Build version mismatch with Lang.dat!');
     BuildVersionMismatch := True;
   end;
-  if MainDataConfig.GetParamByPathOrMarker('BV.BV') <> '2.1.2500' then
+  if MainDataConfig.GetParamByPathOrMarker('BV.BV') <> GameVersionText then
   begin
     AppendLogLineThreadSafe('Build version mismatch with Main.dat!');
     BuildVersionMismatch := True;
   end;
   if CacheDataRoot.FindEntry('BV').ChildData.FindEntry('BV').SharedFileRef.FileRef.FileName
-      <> '2.1.2500' then
+      <> GameVersionText then
   begin
     AppendLogLineThreadSafe('Build version mismatch with CacheData.dat!');
     BuildVersionMismatch := True;
@@ -5170,27 +5178,27 @@ begin
 {$IF Defined(MSWINDOWS) and Defined(CPU386)}
   Text := 'll';
   Text := '.d' + Text;
-  ModuleName := DecodeTextW('sotoenalm^_^aucah') + Text; // Decoded: 'steam_ach'
+  ModuleName := DecodeTextW('sotoenalm^_^aucah') + Text; // 'steam_ach'
   if GetModuleHandleW(PWideChar(ModuleName)) <> 0 then
     VerifyStartupModuleChecksum;
-  ModuleName := DecodeTextW('sotoenalm^_^aupki') + Text; // Decoded: 'steam_api'
+  ModuleName := DecodeTextW('sotoenalm^_^aupki') + Text; // 'steam_api'
   if GetModuleHandleW(PWideChar(ModuleName)) <> 0 then
     VerifyStartupModuleChecksum;
-  ModuleName := DecodeTextW('zoloimba') + Text; // Decoded: 'zlib'
+  ModuleName := DecodeTextW('zoloimba') + Text; // 'zlib'
   VerifyStartupModuleChecksum;
-  ModuleName := DecodeTextW('MhastorhinxaGrakmae') + Text; // Decoded: 'MatrixGame'
+  ModuleName := DecodeTextW('MhastorhinxaGrakmae') + Text; // 'MatrixGame'
   VerifyStartupModuleChecksum;
-  ModuleName := DecodeTextW('ookogifa') + Text; // Decoded: 'okgf'
+  ModuleName := DecodeTextW('ookogifa') + Text; // 'okgf'
   VerifyStartupModuleChecksum;
-  ModuleName := DecodeTextW('xavriadeccomrie') + Text; // Decoded: 'xvidcore'
+  ModuleName := DecodeTextW('xavriadeccomrie') + Text; // 'xvidcore'
   VerifyStartupModuleChecksum;
   ExtraText := 'ib';
   ExtraText := 'l' + ExtraText;
-  ModuleName := ExtraText + DecodeTextW('osgaga-10a') + Text; // Decoded: 'ogg-0'
+  ModuleName := ExtraText + DecodeTextW('osgaga-10a') + Text; // 'ogg-0'
   VerifyStartupModuleChecksum;
-  ModuleName := ExtraText + DecodeTextW('vrokrablius-->0') + Text; // Decoded: 'vorbis-0'
+  ModuleName := ExtraText + DecodeTextW('vrokrablius-->0') + Text; // 'vorbis-0'
   VerifyStartupModuleChecksum;
-  ModuleName := ExtraText + DecodeTextW('veohrablissufainlae') + Text; // Decoded: 'vorbisfile'
+  ModuleName := ExtraText + DecodeTextW('veohrablissufainlae') + Text; // 'vorbisfile'
   VerifyStartupModuleChecksum;
 {$ENDIF}
   CCInterface.SetResourceChecksumFailed(SavedChecksumFailed);
@@ -5776,7 +5784,7 @@ begin
   // Native uses two different approximations of pi for these tables.
   for Index := Low(CircleCos) to High(CircleCos) do
   begin
-    Angle := Index * (3.1415926 / 180);
+    Angle := Index * (GamePi / 180);
     CircleCos[Index] := Cos(Angle);
     CircleSin[Index] := Sin(Angle);
   end;
@@ -6045,14 +6053,14 @@ begin
     if WParam <> 0 then
     begin
       if CurrentScreenId = screenPlanetNO then
-        TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).UpdateActionCursor(False)
+        TMessageLoopGI(RegisteredScreens[CurrentScreenId]).UpdateActionCursor(False)
       else if (CurrentScreenId = screenShip) or (CurrentScreenId = screenStarMap) then
-        TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).UpdateActionCursor(True);
-      if (TMessageLoopGI(RegisteredScreens[Ord(screenShip)]) <> nil)
-          and (TMessageLoopGI(RegisteredScreens[Ord(screenShip)]).GetActionParentLoop <> nil)
-          and (TMessageLoopGI(RegisteredScreens[Ord(screenShip)]).GetActionParentLoop
-              = TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)])) then
-        TMessageLoopGI(RegisteredScreens[Ord(screenShip)]).UpdateActionCursor(True);
+        TMessageLoopGI(RegisteredScreens[CurrentScreenId]).UpdateActionCursor(True);
+      if (TMessageLoopGI(RegisteredScreens[screenShip]) <> nil)
+          and (TMessageLoopGI(RegisteredScreens[screenShip]).GetActionParentLoop <> nil)
+          and (TMessageLoopGI(RegisteredScreens[screenShip]).GetActionParentLoop
+              = TMessageLoopGI(RegisteredScreens[CurrentScreenId])) then
+        TMessageLoopGI(RegisteredScreens[screenShip]).UpdateActionCursor(True);
     end;
   end
   else if Message = WM_DESTROY then
@@ -6165,7 +6173,7 @@ begin
   begin
     Direct3DDevice.BeginScene;
     if not AlternateViewportEnabled then
-      DrawTexture(ScreenRenderBuffer.GetTexture, 0, 0, 255, $FFFFFF, nil, False, False)
+      DrawTexture(ScreenRenderBuffer.GetTexture, 0, 0, 255, RgbWhite, nil, False, False)
     else if ScaleViewportToWindow then
       DrawTextureSized(
           ScreenRenderBuffer.GetTexture,
@@ -6174,7 +6182,7 @@ begin
           PresentationWidth,
           PresentationHeight,
           255,
-          $FFFFFF,
+          RgbWhite,
           nil,
           False,
           False
@@ -6185,7 +6193,7 @@ begin
           ViewportOffset.X,
           ViewportOffset.Y,
           255,
-          $FFFFFF,
+          RgbWhite,
           nil,
           False,
           False
@@ -6237,7 +6245,7 @@ begin
           Width,
           Height,
           255,
-          $FFFFFF,
+          RgbWhite,
           @GameScreenRect,
           False,
           False
@@ -6252,7 +6260,7 @@ begin
           Width,
           Height,
           255,
-          $FFFFFF,
+          RgbWhite,
           @GameScreenRect,
           False,
           False
@@ -6323,9 +6331,12 @@ begin
     X := 0;
     while X < Width do
     begin
-      PByte(AddPointerOffset(Dest, X * 3))^ := PByte(AddPointerOffset(Source, X * 4 + 2))^;
-      PByte(AddPointerOffset(Dest, X * 3 + 1))^ := PByte(AddPointerOffset(Source, X * 4 + 1))^;
-      PByte(AddPointerOffset(Dest, X * 3 + 2))^ := PByte(AddPointerOffset(Source, X * 4))^;
+      PColorRGB(AddPointerOffset(Dest, X * SizeOf(TColorRGB))).R :=
+          PByte(AddPointerOffset(Source, Integer(@PColorBGRA(X * SizeOf(TColorBGRA)).R)))^;
+      PByte(AddPointerOffset(Dest, Integer(@PColorRGB(X * SizeOf(TColorRGB)).G)))^ :=
+          PByte(AddPointerOffset(Source, Integer(@PColorBGRA(X * SizeOf(TColorBGRA)).G)))^;
+      PByte(AddPointerOffset(Dest, Integer(@PColorRGB(X * SizeOf(TColorRGB)).B)))^ :=
+          PColorBGRA(AddPointerOffset(Source, X * SizeOf(TColorBGRA))).B;
       Inc(X);
     end;
     Dest := AddPointerOffset(Dest, DestPitch);
@@ -6753,8 +6764,8 @@ var
 begin
   if (X >= Clip.Right)
       or (Y >= Clip.Bottom)
-      or (X + 0 + Source.Width - 1 < Clip.Left)
-      or (Y + 0 + Source.Height - 1 < Clip.Top) then
+      or (X + Source.Width - 1 < Clip.Left)
+      or (Y + Source.Height - 1 < Clip.Top) then
     Exit;
   SourceX := 0;
   SourceY := 0;
@@ -7239,8 +7250,8 @@ procedure LoadInformationColorTags;
 var
   Block: TBlockParEC;
 begin
-  InfoNameColorTag := '<color=57,239,255>';
-  InfoHullSeriesColorTag := '<color=82,166,255>';
+  InfoNameColorTag := DefaultInfoNameColorTag;
+  InfoHullSeriesColorTag := DefaultInfoHullSeriesColorTag;
   if GameDataConfig.CountBlocks('StyleColor') > 0 then
   begin
     Block := GameDataConfig.GetBlock('StyleColor');

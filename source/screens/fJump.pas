@@ -16,13 +16,11 @@ type
     TransitionTimer: PCallbackTimerGI;
     LoadingStarted: Boolean;
     NoPendingLoads: Boolean;
-    GapD6: array[0..1] of Byte;
     Progress: Single;
     LoadPanel: TfPanelLoad;
     MovieStartTick: Cardinal;
     MovieTimer: PCallbackTimerGI;
     RestoreOrdersOnArrival: Boolean;
-    GapE9: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;
@@ -146,9 +144,9 @@ begin
     end;
     LoadPanel.SetProgress(1);
     LoadPanel.Hide;
-    if GetPlayer.DockedTo.TypeId = Byte(rstMilitaryBase) then
+    if GetPlayer.DockedTo.TypeId = rstMilitaryBase then
       MovieConfig := LanguageDataConfig.GetParamByPathOrMarker('FormRuins.WB.HyperJumpVideo')
-    else if GetPlayer.DockedTo.TypeId = Byte(rstDominion) then
+    else if GetPlayer.DockedTo.TypeId = rstDominion then
       MovieConfig := LanguageDataConfig.GetParamByPathOrMarker('FormRuins.CB.HyperJumpVideo')
     else
     begin
@@ -256,7 +254,7 @@ begin
   else
   begin
     if not (GetPlayer.Order in [soJump, soJumpHole, soTeleport])
-        or ((GetPlayer.Order = soJumpHole) and (GetPlayer.OrderStateData = -65536)) then
+        or ((GetPlayer.Order = soJumpHole) and (GetPlayer.OrderStateData = HoleExitOrderState)) then
     begin
       QueueGalaxyTurnCalculation;
       StarMapScreen.SetMapCenterManually(TruncatePointF(GetPlayer.Position));

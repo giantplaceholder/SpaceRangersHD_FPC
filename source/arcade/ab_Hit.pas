@@ -20,8 +20,7 @@ type
     EffectOriginSpread: Integer;
     TurnSpeedScale: Double;
     Effects: TList;
-    StateCC: Boolean;
-    GapCD: array[0..2] of Byte;
+    HealthBarVisible: Boolean;
     procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override;
     procedure UpdateState; override;
     procedure Advance; override;
@@ -54,6 +53,7 @@ implementation
 
 uses
   Types,
+  aGalaxyStruct,
   aKling,
   Math,
   SysUtils,
@@ -81,7 +81,7 @@ begin
   Health := 200;
   MaxHealth := 200;
   Effects := TList.Create;
-  StateCC := True;
+  HealthBarVisible := True;
 end;
 
 destructor TabHit.Destroy;
@@ -171,7 +171,7 @@ begin
       );
       Animation.SetSequenceFrame(Frame);
       Animation.CycleCompleteCallback := KellerBreakupComplete;
-      StateCC := False;
+      HealthBarVisible := False;
     end;
     if (Health > 0) or (KellerArcadeShip <> Self) then
     begin
@@ -308,8 +308,8 @@ begin
       end;
       DeletionPending := True;
       Galaxy.CheckIntegrityChecksum1(650);
-      Inc(GetPlayer.DominatorKillsByType[0]);
-      KellerShip.ScriptItemsAct(61, nil, nil, 0);
+      Inc(GetPlayer.DominatorKillsByType[ktBoss]);
+      KellerShip.ScriptItemsAct(satOnDeath, nil, nil, 0);
       KellerShip.Free;
       Galaxy.PrimeIntegrityChecksum1(651);
     end
@@ -360,7 +360,7 @@ begin
       if KellerFragments[0] = nil then
       begin
         KellerSplitActive := False;
-        StateCC := True;
+        HealthBarVisible := True;
         Health := MaxHealth;
         (Self as TabShip).AttachVisual;
         if KellerDeathPending then
@@ -378,7 +378,7 @@ begin
           Ship.ZoneDamageEnabled := False;
           Ship.Collidable := False;
           Ship.Active := False;
-          Ship.StateCC := False;
+          Ship.HealthBarVisible := False;
           Ship.Velocity.X := 0;
           Ship.Velocity.Y := 0;
           Ship.MaxSpeed := 0;
@@ -464,7 +464,7 @@ begin
     Ship.ZoneDamageEnabled := False;
     Ship.Collidable := False;
     Ship.Active := False;
-    Ship.StateCC := False;
+    Ship.HealthBarVisible := False;
     Ship.MaxSpeed := 10; // Native overwrites the earlier value.
     KellerFragments[Index] := Ship;
     if Index = 0 then

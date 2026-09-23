@@ -20,7 +20,6 @@ type
     ImageCache: TCBitmapControlEC;
     RotationCache: TCRotateBufControlEC;
     Angle: Byte;
-    Gap129: array[0..2] of Byte;
     procedure Clear; override;
     procedure UpdateHitTestBounds; override;
     function GetLocalBounds: TRect; override;

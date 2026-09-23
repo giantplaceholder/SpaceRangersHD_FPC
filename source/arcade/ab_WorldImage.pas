@@ -31,12 +31,10 @@ type
     FrontDepth: Single;
     BackDepth: Single;
     Dirty: Boolean;
-    Gap35: array[0..2] of Byte;
     FrameMode: Integer;
     LoopAnimation: Boolean;
     Finished: Boolean;
     StopAnimation: Boolean;
-    Gap3F: array[0..0] of Byte;
   end;
 
 var

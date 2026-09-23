@@ -17,7 +17,6 @@ type
 
   TThreadGameLoad = class(TThreadEC)
     Succeeded: Boolean;
-    Gap2D: array[0..2] of Byte;
     procedure Execute; override;
   end;
 
@@ -25,11 +24,9 @@ type
     LoadThread: TThreadGameLoad;
     ProgressTimer: PCallbackTimerGI;
     AssetPreloadStarted: Boolean;
-    GapD9: array[0..2] of Byte;
     TargetProgress: Single;
     DisplayedProgress: Single;
     LoadingComplete: Boolean;
-    GapE5: array[0..2] of Byte;
     LoadPanel: TfPanelLoad;
     procedure OnOpen; override;
     procedure OnClose; override;
@@ -147,13 +144,12 @@ begin
       MusicManager.PlayCategory('Base')
     else if GetPlayer.IsOnPlanet then
     begin
-      if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       begin
         if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
           MusicManager.PlayCategory(
               'Nation.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                   + 'Pirate'
           )
         else
@@ -165,7 +161,7 @@ begin
     end
     else if GetPlayer.IsDockedToShip then
     begin
-      if GetPlayer.DockedTo.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)] then
+      if GetPlayer.DockedTo.TypeId in [rstRangerCenter..rstCustomStation] then
       begin
         Category := GetPlayer.DockedTo.TypeNameOverrideKey;
         if (Category <> '') and (MainDataConfig.GetBlock('Music').CountBlocks(Category) > 0) then
@@ -176,11 +172,10 @@ begin
       else
       begin
         // Retain the native CurrentPlanet lookup in this non-station docking branch.
-        if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+        if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
           MusicManager.PlayCategory(
               'Nation.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                   + 'Pirate'
           )
         else
@@ -244,7 +239,7 @@ begin
         begin
           Block := TBlockParEC.Create;
           Block.AddParam('CurrentMod', LoadedSaveModSet);
-          Block.SaveTextFile('Mods\ModCFG.txt', True, False);
+          Block.SaveTextFile(ModSelectionConfigPath, True, False);
           Block.Free;
           RequestedScreenId := screenNone;
           PostLoadScreenId := screenGameLoad;

@@ -28,18 +28,14 @@ type
     FrameIndex: Integer;
     Alpha: Byte;
     AlphaLimit: Byte;
-    Gap6A: array[0..1] of Byte;
     WeaponPortCount: Cardinal;
     WeaponPorts: array[1..10] of TPointF;
     HasTransitionImages: Boolean;
-    GapC1: array[0..2] of Byte;
     State: Integer;
     FadeTimer: PCallbackTimerGI;
     KeepSize: Boolean;
-    GapCD: array[0..2] of Byte;
     PanelPartnerImage: WideString;
     HideOnStarInfo: Boolean;
-    GapD5: array[0..2] of Byte;
     procedure AttachToSpace(ASpace: TSpaceSE); override;
     procedure DetachFromSpace; override;
     procedure SetPosition(APosition: TPointF); override;

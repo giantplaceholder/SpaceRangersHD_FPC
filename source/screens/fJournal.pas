@@ -20,7 +20,6 @@ type
     InfoPanel: TPanelScrollBarGI;
     ContentHeight: Integer;
     JournalSelected: Boolean;
-    GapDD: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure ProcessCallbackTimers; override;
@@ -298,8 +297,8 @@ var
   ButtonPrefix: WideString;
   PinWidth: Integer;
 begin
-  Text := ReplaceAllWideString(Text, '<color=255,240,100>', '<color=0,0,0>');
-  Text := ReplaceAllWideString(Text, '<color=0,255,0>', '<color=255,255,0>');
+  Text := ReplaceAllWideString(Text, TextHighlightColorTag, BlackColorTag);
+  Text := ReplaceAllWideString(Text, GreenColorTag, YellowColorTag);
   Image := TImageGI.Create(InfoPanel);
   if Compact = 0 then
     Image.SetImagePath('GI,Bm.FormInfo2.' + GiResourceSuffix + 'CaptionL')
@@ -412,7 +411,7 @@ end;
 
 procedure TfJournal.AddEntryText(Text: WideString; Align: TTextAlignXGI; FontName: WideString);
 begin
-  Text := ReplaceAllWideString(Text, '<color=255,240,100>', '<color=0,50,200>');
+  Text := ReplaceAllWideString(Text, TextHighlightColorTag, DialogHighlightColorTag);
   with TLabelGI.Create(InfoPanel) do
   begin
     if FontName = '' then
@@ -535,14 +534,13 @@ begin
       (GetPlayer <> nil)
           and (GetPlayer.IsDockedToShip
               or (GetPlayer.IsOnPlanet
-                  and (GetPlayer.CurrentPlanet.OwnerId
-                      in [Ord(oiMaloc)..Ord(oiGaal), Ord(oiPirate)])));
+                  and (GetPlayer.CurrentPlanet.OwnerId in [oiMaloc..oiGaal, oiPirate])));
 end;
 
 procedure TfJournal.PinEntryClicked(Sender: TObjectGI);
 begin
   SoundManager.PlaySound('Sound.UserMsgAdd');
-  AddOrUpdatePlayerBubble(7, Galaxy.CurrentTurn, Sender.HelpText, '');
+  AddOrUpdatePlayerBubble(pmUserNote, Galaxy.CurrentTurn, Sender.HelpText, '');
   MainPanel.RebuildMessageButtons(False);
   (Sender as TGraphButtonGI).SetDisabled(True);
   BreakUiMessage;
@@ -626,7 +624,7 @@ begin
                   LocalizedText('FormInfo.ExtractRecordDone'),
                   '<FileName>',
                   FileName,
-                  '<color=255,240,100>'
+                  TextHighlightColorTag
               ),
               mbgOK or mbgUnused04
           );
@@ -648,7 +646,7 @@ begin
                 LocalizedText('FormInfo.ExtractNewsDone'),
                 '<FileName>',
                 FileName,
-                '<color=255,240,100>'
+                TextHighlightColorTag
             ),
             mbgOK or mbgUnused04
         );
@@ -677,13 +675,12 @@ begin
         MusicManager.RequestFadeOut
       else if GetPlayer.IsOnPlanet then
       begin
-        if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+        if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
         begin
           if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
             MusicManager.PlayCategory(
                 'Nation.'
-                    + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                        .InternalName
+                    + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                     + 'Pirate'
             )
           else
@@ -697,18 +694,15 @@ begin
       begin
         if not MusicInPlanetEnabled then
           MusicManager.RequestFadeOut
-        else if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+        else if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
           MusicManager.PlayCategory(
               'Nation.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
                   + 'Pirate'
           )
         else
           MusicManager.PlayCategory(
-              'Nation.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F]
-                      .InternalName
+              'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
           );
       end;
     end
@@ -748,8 +742,8 @@ begin
       Break;
     Entry := GetPlayer.NewsEntries[I];
     AddEntryHeading(
-        WrapTextInColor(Galaxy.FormatTurnDate(Entry.Turn) + HeadingSuffix, '<color=255,240,100>'),
-        WrapTextInColor(Galaxy.FormatTurnDate(Entry.Turn), '<color=255,240,100>')
+        WrapTextInColor(Galaxy.FormatTurnDate(Entry.Turn) + HeadingSuffix, TextHighlightColorTag),
+        WrapTextInColor(Galaxy.FormatTurnDate(Entry.Turn), TextHighlightColorTag)
             + #13#10
             + ' '
             + #13#10
@@ -780,8 +774,8 @@ begin
   begin
     Entry := GetPlayer.JournalRecords[I];
     AddEntryHeading(
-        WrapTextInColor(Galaxy.FormatTurnDate(Entry.DateTurn), '<color=255,240,100>'),
-        WrapTextInColor(Galaxy.FormatTurnDate(Entry.DateTurn), '<color=255,240,100>')
+        WrapTextInColor(Galaxy.FormatTurnDate(Entry.DateTurn), TextHighlightColorTag),
+        WrapTextInColor(Galaxy.FormatTurnDate(Entry.DateTurn), TextHighlightColorTag)
             + #13#10
             + ' '
             + #13#10
@@ -799,7 +793,7 @@ begin
     AddEntryText(
         FormatText1(
             LocalizedColorText('FormInfo.RecordCount'),
-            '<color=0,50,200>',
+            DialogHighlightColorTag,
             '<Count>',
             IntToStr(Displayed)
         ),
@@ -855,7 +849,7 @@ var
   CursorAlignment: array[0..2] of Byte;
   State: TCursorStateGI;
 begin
-  ParentLoop.RootUiObject.NativeHook50;
+  ParentLoop.RootUiObject.OnModalSuspend;
   ParentLoop.CaptureCursorState(@State);
   ParentLoop.SetCursorActive(False);
   ParentLoop.DrawQueuedUpdateRects;
@@ -870,7 +864,7 @@ begin
   ParentLoop.InvalidateViewport;
   ParentLoop.RestoreCursorState(@State);
   ParentLoop.UpdateCursorPosition;
-  ParentLoop.RootUiObject.NativeHook48;
+  ParentLoop.RootUiObject.OnModalResume;
   ParentLoop.Present;
   PostMouseMoveMessage;
 end;

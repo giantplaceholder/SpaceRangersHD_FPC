@@ -52,11 +52,16 @@ begin
   Result := ExportHexDigits[Value and $F];
 end;
 
+function HexDigitAt(Value: Byte; Index: Integer): WideChar; inline;
+begin
+  Result := HexDigit(Value shr (Index * 4));
+end;
+
 function ByteToHexText(Value: Byte): WideString;
 begin
   SetLength(Result, 2);
-  Result[1] := HexDigit(Value shr 4);
-  Result[2] := HexDigit(Value shr 0);
+  Result[1] := HexDigitAt(Value, 1);
+  Result[2] := HexDigitAt(Value, 0);
 end;
 
 function ExceptionLogTimestamp: AnsiString;

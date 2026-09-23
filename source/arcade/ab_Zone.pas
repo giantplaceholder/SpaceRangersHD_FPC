@@ -27,7 +27,6 @@ type
     Prev: PabZone;
     Next: PabZone;
     RouteIndex: Integer;
-    GapC: array[0..3] of Byte;
     Longitude: Double;
     PolarAngle: Double;
     RadiusDegrees: Double;
@@ -46,7 +45,6 @@ type
     NextBonusTick: Integer;
     Kind: Integer;
     Segments: array[0..3] of PPolyLineSegmentGI;
-    Gap8C: array[0..3] of Byte;
   end;
 
   PabZoneLink = PointerToTabZoneLink;

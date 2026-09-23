@@ -65,7 +65,6 @@ type
     HoveredItem: TItem;
     HoveredRewardId: Integer;
     CompactHullInfo: Boolean;
-    Gap279: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure OnClose; override;
     procedure SelectMusic; override;
@@ -100,7 +99,7 @@ type
     procedure BuildAdditionalInfo;
   end;
 
-function GetPirateRankSmallImagePath(Rank: Byte): WideString;
+function GetPirateRankSmallImagePath(Rank: TShipRank): WideString;
 
 implementation
 
@@ -135,7 +134,7 @@ uses
   aRuins,
   aTranclucator;
 
-function GetPirateRankSmallImagePath(Rank: Byte): WideString;
+function GetPirateRankSmallImagePath(Rank: TShipRank): WideString;
 begin
   case Rank of
     0..7: Result := 'GI,Bm.FormShip2.PRank' + IntToStr(Rank + 1) + 's';
@@ -216,8 +215,8 @@ var
 begin
   Stage := 0;
   try
-    SetLength(ArtefactZones, DefaultHullSlotCounts[8]);
-    for I := 0 to DefaultHullSlotCounts[8] - 1 do
+    SetLength(ArtefactZones, DefaultHullSlotCounts[sskArtefact]);
+    for I := 0 to DefaultHullSlotCounts[sskArtefact] - 1 do
       ArtefactZones[I] := GetByName('Art' + IntToStr(I) + 'z') as TZoneGI;
     Stage := 1;
     if AuxRenderBuffer.GetPixels = nil then
@@ -227,11 +226,11 @@ begin
     ShipToInspect := ScannerTarget as TShip;
     Stage := 3;
     if GetPlayer <> nil then
-      GetPlayer.ScriptItemsAct($10, ShipToInspect, nil, 0);
+      GetPlayer.ScriptItemsAct(satOnScan, ShipToInspect, nil, 0);
     Stage := 4;
-    ShipToInspect.ScriptItemsAct($18, nil, nil, 0);
+    ShipToInspect.ScriptItemsAct(satOnEnteringForm, nil, nil, 0);
     Stage := 5;
-    CompactHullInfo := ShipToInspect.TypeId in [Ord(rstRangerCenter)..Ord(rstCustomStation)];
+    CompactHullInfo := ShipToInspect.TypeId in [rstRangerCenter..rstCustomStation];
     Stage := 6;
     CountCargoEntries;
     VisibleCargoCount := 6;
@@ -247,9 +246,9 @@ begin
     for I := 0 to 7 do
     begin
       MaximumSlots := 1;
-      if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+      if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
         MaximumSlots := 5;
-      SlotCount := ShipToInspect.GetSlotCountForItemType(Ord(EquipmentSlotLayouts[I].ItemType));
+      SlotCount := ShipToInspect.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
       for J := 0 to SlotCount - 1 do
       begin
         EquipmentAnimations[I, J] :=
@@ -258,7 +257,7 @@ begin
         GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(J) + 'off').SetActive(False);
         GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(J) + 'Set').SetActive(False);
       end;
-      if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+      if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
       begin
         for J := SlotCount to 4 do
         begin
@@ -339,21 +338,20 @@ begin
                 + GiResourceSuffix
                 + 'Rank'
                 + IntToStr(
-                    DominatorShipDefinitions[Ord((ShipToInspect as TKling).KlingType)]
-                        .RankImageIndex)
+                    DominatorShipDefinitions[(ShipToInspect as TKling).KlingType].RankImageIndex)
         )
       else if ShipToInspect is TRuins then
         SetImagePath('GI,Bm.FormRating2.' + GiResourceSuffix + 'Rank7')
       else if ShipToInspect is TTranclucator then
         SetImagePath('GI,Bm.FormRating2.' + GiResourceSuffix + 'Rank4')
-      else if (ShipToInspect is TNormalShip) and (ShipToInspect.OwnerId <> Byte(oiPirate)) then
+      else if (ShipToInspect is TNormalShip) and (ShipToInspect.OwnerId <> oiPirate) then
         SetImagePath('GI,Bm.FormRating2.2Rank' + IntToStr((ShipToInspect as TNormalShip).Rank + 1))
       else
         SetActive(False);
     end;
     Stage := 16;
     with GetByName('RankI2') as TImageGI do
-      if (ShipToInspect is TNormalShip) and (ShipToInspect.OwnerId = Byte(oiPirate)) then
+      if (ShipToInspect is TNormalShip) and (ShipToInspect.OwnerId = oiPirate) then
       begin
         SetActive(True);
         MouseEnterCallback := ShowPropertyInfo;
@@ -709,7 +707,7 @@ end;
 
 procedure TfScaner.RewardsMouseDown(Sender: TObjectGI; KeyState: Cardinal; Point: TPoint);
 begin
-  if UiRuntimeFlag and not ShipToInspect.InHyperspace and RewardsBuffer.Active then
+  if AwardDialogsEnabled and not ShipToInspect.InHyperspace and RewardsBuffer.Active then
   begin
     RewardWindow.SetActive(False);
     AwardSubject := ShipToInspect;
@@ -744,24 +742,24 @@ begin
       if Sender.UserData <> 0 then
       begin
         Info := PCustomShipInfo(Sender.UserData);
-        RunCustomShipInfoActionCode(Info, $31, ShipToInspect, nil, nil, 0);
+        RunCustomShipInfoActionCode(Info, satOnShowingItemInfo, ShipToInspect, nil, nil, 0);
         Description := Info.Description;
         if Description = '' then
           Description :=
               LocalizedColorText('ShipInfo.AddInfo.CustomInfos.' + Info.TypeName + '.Description');
-        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         Caption := LocalizedColorText('ShipInfo.AddInfo.CustomInfos.' + Info.TypeName + '.Name');
-        ReplaceTextToken(Caption, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Caption, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         Sender.HelpText := Caption + '~' + Description;
       end;
       with GetByName('RankImage') as TGraphBufGI do
@@ -850,7 +848,7 @@ begin
                       + ' '
                       + FormatText2(
                           LocalizedText('Rank.NextRankText'),
-                          '<color=255,240,100>',
+                          TextHighlightColorTag,
                           '<NextRank>',
                           Ship.GetNextRankName,
                           '<WarPoints>',
@@ -861,7 +859,7 @@ begin
                       + ' '
                       + FormatText1(
                           LocalizedText('Rank.NextRankGetText'),
-                          '<color=255,240,100>',
+                          TextHighlightColorTag,
                           '<NextRank>',
                           Ship.GetNextRankName);
         end;
@@ -884,7 +882,7 @@ begin
                 + #13#10
                 + FormatText1(
                     LocalizedText('RankPirate.NextRankText'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<WarPoints>',
                     IntToStr(Ship.GetPirateRankPointsToNextRank));
       end;
@@ -907,55 +905,42 @@ begin
       Skill := TPilotSkill(ExtractDigitsToIntW(Sender.ControlName));
       Title :=
           WrapTextInColor(
-              LocalizedText('Skills.' + SkillConfigNames[Ord(Skill)] + '.Name'),
+              LocalizedText('Skills.' + SkillConfigNames[Skill] + '.Name'),
               InfoNameColorTag
           );
       Text :=
           FormatText1(
-              LocalizedText('Skills.' + SkillConfigNames[Ord(Skill)] + '.Text'),
-              '<color=255,240,100>',
+              LocalizedText('Skills.' + SkillConfigNames[Skill] + '.Text'),
+              TextHighlightColorTag,
               '<SkillValue>',
-              IntToStr(
-                  PilotSkillEffects[
-                      Integer(ShipToInspect.GetEffectiveSkillLevel(Skill)) and $7F,
-                      Ord(Skill)
-                  ]
-              )
+              IntToStr(PilotSkillEffects[ShipToInspect.GetEffectiveSkillLevel(Skill), Skill])
           );
       ReplaceTextToken(
           Text,
           '<SkillLevel>',
-          IntToStr(Integer(ShipToInspect.GetEffectiveSkillLevel(Skill)) and $7F),
-          '<color=255,240,100>'
+          IntToStr(ShipToInspect.GetEffectiveSkillLevel(Skill)),
+          TextHighlightColorTag
       );
       if Skill = psTechnical then
         ReplaceTextToken(
             Text,
             '<N>',
             IntToStr(ShipToInspect.GetSatelliteLimit),
-            '<color=255,240,100>'
+            TextHighlightColorTag
         );
       if Skill = psTrading then
         ReplaceTextToken(
             Text,
             '<SkillValue2>',
-            IntToStr(
-                TradingSkillSalePercent[
-                    Integer(ShipToInspect.GetEffectiveSkillLevel(Skill)) and $7F
-                ]
-            ),
-            '<color=255,240,100>'
+            IntToStr(TradingSkillSalePercent[ShipToInspect.GetEffectiveSkillLevel(Skill)]),
+            TextHighlightColorTag
         );
       if Skill = psLeadership then
         ReplaceTextToken(
             Text,
             '<SkillValue2>',
-            IntToStr(
-                LeadershipExperiencePercent[
-                    Integer(ShipToInspect.GetEffectiveSkillLevel(Skill)) and $7F
-                ]
-            ),
-            '<color=255,240,100>'
+            IntToStr(LeadershipExperiencePercent[ShipToInspect.GetEffectiveSkillLevel(Skill)]),
+            TextHighlightColorTag
         );
       if ShipToInspect.GetBaseSkillLevel(Skill) < 6 then
         Text :=
@@ -964,11 +949,9 @@ begin
                 + #13#10
                 + FormatText1(
                     LocalizedText('Skills.PointForNextLevel'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<PointForNextLevel>',
-                    IntToStr(
-                        SkillTrainingCosts[ShipToInspect.BaseSkills[Ord(Skill)] + 1, Ord(Skill)]
-                    ));
+                    IntToStr(SkillTrainingCosts[ShipToInspect.BaseSkills[Skill] + 1, Skill]));
     end;
     (GetByName('RankName') as TLabelGI).SetText(Title);
     (GetByName('RankText') as TLabelGI).SetText(Text);
@@ -1105,21 +1088,21 @@ begin
   try
     ShipToInspect.RefreshAssignedItemSlots;
     Stage := 1;
-    Text := IntToStr(Integer(ShipToInspect.GetDefensePercent) and $7F) + '%';
+    Text := IntToStr(ShipToInspect.GetDefensePercent) + '%';
     Text := Text + ' + ' + WrapTextInColor(IntToStr(ShipToInspect.GetArmor), '');
     (GetByName('IDef') as TLabelGI).SetText(Text);
     Stage := 2;
     (GetByName('IMass') as TLabelGI).SetText(IntToStr(ShipToInspect.CalculateMass));
     Stage := 3;
     if ShipToInspect.CalculateSpeed <= 0 then
-      Text := '<color=255,0,0>'
+      Text := RedColorTag
     else
       Text := '';
     (GetByName('ISpeed') as TLabelGI)
         .SetText(WrapTextInColor(IntToStr(ShipToInspect.CalculateSpeed), Text));
     Stage := 4;
     if ShipToInspect.GetCargoFreeSpace < 0 then
-      Text := '<color=255,0,0>'
+      Text := RedColorTag
     else
       Text := '';
     (GetByName('IEmpty') as TLabelGI)
@@ -1142,12 +1125,11 @@ begin
     Stage := 6;
     for I := 0 to 7 do
     begin
-      SlotCount := ShipToInspect.GetSlotCountForItemType(Ord(EquipmentSlotLayouts[I].ItemType));
+      SlotCount := ShipToInspect.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
       Stage := 7;
       for SlotIndex := 0 to SlotCount - 1 do
       begin
-        Item :=
-            ShipToInspect.FindEquippedItemInSlot(Ord(EquipmentSlotLayouts[I].ItemType), SlotIndex);
+        Item := ShipToInspect.FindEquippedItemInSlot(EquipmentSlotLayouts[I].ItemType, SlotIndex);
         Stage := 8;
         Image :=
             GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(SlotIndex) + 'i')
@@ -1225,7 +1207,7 @@ begin
             .SetActive(False);
         Stage := 17;
       end;
-      if EquipmentSlotLayouts[I].ItemType = t_Weapon1 then
+      if EquipmentSlotLayouts[I].ItemType = WeaponCategoryItemType then
       begin
         Stage := 18;
         for SlotIndex := SlotCount to 4 do
@@ -1245,15 +1227,15 @@ begin
       end;
     end;
     Stage := 20;
-    SlotCount := ShipToInspect.GetSlotCountForItemType(Ord(t_Artefact));
+    SlotCount := ShipToInspect.GetSlotCountForItemType(t_Artefact);
     for SlotIndex := 0 to SlotCount - 1 do
     begin
       Stage := 21;
-      Artefact := ShipToInspect.FindEquippedItemInSlot(Ord(t_Artefact), SlotIndex) as TArtefact;
+      Artefact := ShipToInspect.FindEquippedItemInSlot(t_Artefact, SlotIndex) as TArtefact;
       CanBoost :=
           (Artefact <> nil)
               and (Artefact.BrokenFlag = 0)
-              and ShipToInspect.CanBoostArtefact(Ord(Artefact.ItemType), nil, False);
+              and ShipToInspect.CanBoostArtefact(Artefact.ItemType, nil, False);
       Stage := 22;
       GetByName('Art' + IntToStr(SlotIndex) + 'n')
           .SetActive((Artefact <> nil) and (Artefact.BrokenFlag = 0) and not CanBoost);
@@ -1281,7 +1263,7 @@ begin
         SetActive(Artefact <> nil);
     end;
     Stage := 26;
-    for SlotIndex := SlotCount to DefaultHullSlotCounts[8] - 1 do
+    for SlotIndex := SlotCount to DefaultHullSlotCounts[sskArtefact] - 1 do
     begin
       GetByName('Art' + IntToStr(SlotIndex) + 'n').SetActive(False);
       GetByName('Art' + IntToStr(SlotIndex) + 'b').SetActive(False);
@@ -1414,10 +1396,10 @@ begin
   CenterY := False;
   if not Found then
   begin
-    SlotCount := ShipToInspect.GetSlotCountForItemType(Ord(t_Artefact));
+    SlotCount := ShipToInspect.GetSlotCountForItemType(t_Artefact);
     for SlotIndex := 0 to SlotCount - 1 do
     begin
-      Item := ShipToInspect.FindEquippedItemInSlot(Ord(t_Artefact), SlotIndex);
+      Item := ShipToInspect.FindEquippedItemInSlot(t_Artefact, SlotIndex);
       if Item <> nil then
         with ArtefactZones[SlotIndex] do
           if HitTest(GetCursorPoint) then
@@ -1437,11 +1419,10 @@ begin
   if not Found then
     for I := 0 to 7 do
     begin
-      SlotCount := ShipToInspect.GetSlotCountForItemType(Ord(EquipmentSlotLayouts[I].ItemType));
+      SlotCount := ShipToInspect.GetSlotCountForItemType(EquipmentSlotLayouts[I].ItemType);
       for SlotIndex := 0 to SlotCount - 1 do
       begin
-        Item :=
-            ShipToInspect.FindEquippedItemInSlot(Ord(EquipmentSlotLayouts[I].ItemType), SlotIndex);
+        Item := ShipToInspect.FindEquippedItemInSlot(EquipmentSlotLayouts[I].ItemType, SlotIndex);
         if Item = nil then
           Continue;
         with GetByName('S_' + EquipmentSlotLayouts[I].Name + '_' + IntToStr(SlotIndex) + 'z')
@@ -1588,9 +1569,10 @@ begin
     if (Galaxy <> nil) and not Galaxy.Destroying and (GetPlayer <> nil) then
     begin
       if Item.ScriptItem <> nil then
-        TScriptItem(Item.ScriptItem).RunActionCode($31, ShipToInspect, nil, nil, 0);
+        TScriptItem(Item.ScriptItem)
+            .RunActionCode(satOnShowingItemInfo, ShipToInspect, nil, nil, 0);
       if Item is TEquipmentWithActCode then
-        RunItemConfigActionCode(Item, $31, ShipToInspect, nil, nil, 0);
+        RunItemConfigActionCode(Item, satOnShowingItemInfo, ShipToInspect, nil, nil, 0);
     end;
     if (Item.ItemType = t_Hull)
         and (ShipToInspect.TypeId <> stTranclucator)
@@ -1600,7 +1582,7 @@ begin
       EquipmentShopScreen.RefreshHullInfo(
           Self,
           Item as THull,
-          Equipment.GetInfoText('<color=255,240,100>', ShipToInspect),
+          Equipment.GetInfoText(TextHighlightColorTag, ShipToInspect),
           True
       );
       ItemInfoWindow.SetActive(False);
@@ -1680,7 +1662,7 @@ begin
       (GetByName('InfoName') as TLabelGI)
           .SetText(WrapTextInColor(Equipment.GetDisplayName, InfoNameColorTag));
       (GetByName('InfoText') as TLabelGI)
-          .SetText(Equipment.GetInfoText('<color=255,240,100>', ShipToInspect));
+          .SetText(Equipment.GetInfoText(TextHighlightColorTag, ShipToInspect));
       (GetByName('InfoSize') as TLabelGI).SetText(IntToStr(Equipment.Weight));
       (GetByName('InfoPrice') as TLabelGI).SetText(IntToStr(Equipment.Cost));
       with GetByName('EmRace') as TImageGI do
@@ -1897,32 +1879,32 @@ begin
   UpdateOne(
       0,
       ShipToInspect.GetBaseSkillLevel(psAccuracy),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psAccuracy)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psAccuracy)
   );
   UpdateOne(
       1,
       ShipToInspect.GetBaseSkillLevel(psManeuverability),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psManeuverability)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psManeuverability)
   );
   UpdateOne(
       2,
       ShipToInspect.GetBaseSkillLevel(psTechnical),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psTechnical)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psTechnical)
   );
   UpdateOne(
       3,
       ShipToInspect.GetBaseSkillLevel(psTrading),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psTrading)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psTrading)
   );
   UpdateOne(
       4,
       ShipToInspect.GetBaseSkillLevel(psCharisma),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psCharisma)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psCharisma)
   );
   UpdateOne(
       5,
       ShipToInspect.GetBaseSkillLevel(psLeadership),
-      Integer(ShipToInspect.GetEffectiveSkillLevel(psLeadership)) and $7F
+      ShipToInspect.GetEffectiveSkillLevel(psLeadership)
   );
   for I := 0 to 5 do
     SkillButtons[I].SetActive(False);
@@ -2000,7 +1982,7 @@ begin
   Panel.SetDragScrollingEnabled(True);
   OffsetY := 0;
   for I := 1 to 24 do
-    if ShipToInspect.IsHealthEffectActive(I) then
+    if ShipToInspect.IsHealthEffectActive(TCaptainHealthEffect(I)) then
     begin
       if I < 13 then
         IconKind := 1
@@ -2008,8 +1990,10 @@ begin
         IconKind := 2;
       AddRow(
           IconKind,
-          CaptainHealthDefinitions[I].Name,
-          CaptainHealthDefinitions[I].Name + '~' + CaptainHealthDefinitions[I].Text,
+          CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name,
+          CaptainHealthDefinitions[TCaptainHealthEffect(I)].Name
+              + '~'
+              + CaptainHealthDefinitions[TCaptainHealthEffect(I)].Text,
           0
       );
     end;
@@ -2030,19 +2014,19 @@ begin
             LocalizedColorText('ShipInfo.AddInfo.CustomInfos.' + Info.TypeName + '.Description');
       if Description <> 'NoShow' then
       begin
-        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Description, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Description, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         Caption := Block.GetParam('Name');
-        ReplaceTextToken(Caption, '<Data1>', IntToStr(Info.Data[1]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<Data2>', IntToStr(Info.Data[2]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<Data3>', IntToStr(Info.Data[3]), '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData1>', Info.TextData1, '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData2>', Info.TextData2, '<color=255,240,100>');
-        ReplaceTextToken(Caption, '<TextData3>', Info.TextData3, '<color=255,240,100>');
+        ReplaceTextToken(Caption, '<Data1>', IntToStr(Info.Data[1]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<Data2>', IntToStr(Info.Data[2]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<Data3>', IntToStr(Info.Data[3]), TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData1>', Info.TextData1, TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData2>', Info.TextData2, TextHighlightColorTag);
+        ReplaceTextToken(Caption, '<TextData3>', Info.TextData3, TextHighlightColorTag);
         AddRow(
             StrToInt(AnsiString(Block.GetParam('Icon'))),
             Caption,

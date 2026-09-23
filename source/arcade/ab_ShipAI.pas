@@ -34,22 +34,18 @@ type
   TabShipAI = class(TabShip)
     CurrentZone: PabZone;
     InsideCurrentZone: Boolean;
-    Gap2E5: array[0..2] of Byte;
     CurrentZoneBearing: Double;
     CurrentZoneAngularRadius: Double;
     HeadingInsideCurrentZone: Boolean;
-    Gap2F9: array[0..2] of Byte;
     TargetShip: TabShip;
     TargetBearing: TSphericalBearingDistance;
     ReverseTargetBearing: TSphericalBearingDistance;
     TargetPathClear: Boolean;
-    Gap321: array[0..2] of Byte;
     RouteZone: PabZone;
     RouteBearing: Double;
     RouteAngularRadius: Double;
     HeadingInsideRoute: Boolean;
     DirectPathClear: Boolean;
-    Gap33A: array[0..5] of Byte;
     DirectBearing: TSphericalBearingDistance;
     DirectTargetLongitude: Double;
     DirectTargetPolarAngle: Double;
@@ -65,7 +61,6 @@ type
     IncomingThreat: Boolean;
     RetreatRequested: Boolean;
     AIEnabled: Boolean;
-    Gap387: array[0..0] of Byte;
     procedure ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean); override;
     procedure UpdateState; override;
     procedure Advance; override;
@@ -116,43 +111,6 @@ uses
   fShip2,
   Achievements,
   aNormalShip;
-
-// Source helper: preserve the native full-width load before a Byte stack argument.
-// Passing the local directly lets DCC32 narrow MOV EAX to MOV AL. This identity
-// inlines without a call, extra assignment or temporary in ApplyDamage.
-function RewardTechArgument(const Value: Integer): Integer; inline;
-begin
-  Result := Value;
-end;
-
-// Source helper: keep the seed evaluation before both clamps, with their
-// temporaries preceding the seed slot in the native frame.
-procedure SelectArcadeRewardWeapon(
-    const Ship: TabShipAI;
-    const Tech: Integer;
-    var Info: PWeaponInfo
-); inline;
-var
-  MaximumTech, MinimumTech: Integer;
-  Seed: Cardinal;
-begin
-  Seed := Ship.RandomRange(1, 100000);
-  if Tech + 1 < 8 then
-    MaximumTech := Tech + 1
-  else
-    MaximumTech := 8;
-  if Tech - 1 < 1 then
-    MinimumTech := 1
-  else
-    MinimumTech := Tech - 1;
-  Info :=
-      Galaxy.SelectWeaponInfo(
-          Seed,
-          [0],
-          RewardTechArgument(MaximumTech),
-          RewardTechArgument(MinimumTech)
-      );
-end;
 
 constructor TabShipAI.Create;
 begin
@@ -255,7 +213,8 @@ begin
         while Reward = nil do
         begin
           Inc(Index);
-          Reward := CreateRandomLootItem(ilpArcadeBattle, 6, AdvanceRandomSeed(RandomState));
+          Reward :=
+              CreateRandomLootItem(ilpArcadeBattle, oiUninhabited, AdvanceRandomSeed(RandomState));
           if GetPlayer.HasMatchingArtefactOrCustomItem(Reward) and (Index < 5) then
           begin
             Reward.Free;
@@ -291,9 +250,6 @@ begin
 end;
 
 procedure TabShipAI.ApplyDamage(Amount: Integer; Source: TabObject; Disrupt: Boolean);
-type
-  TUnusedCompilerLocal = record
-  end;
 var
   Index, Attempts: Integer;
   Item: TEquipment;
@@ -301,16 +257,13 @@ var
   // Native has 16 unreferenced bytes between Reward and LivingEnemies,
   // and another 16 between RewardScale and SavedNextItemId. Original
   // local types and allocation remain unresolved.
-  // These zero-sized source-only locals preserve DCC32's local-slot ordering;
-  // they do not represent additional native storage or recovered source types.
-  UnusedCompilerA, UnusedCompilerB, UnusedCompilerC, UnusedCompilerD: TUnusedCompilerLocal;
   Unused20, Unused24, Unused28, Unused2C: Integer;
   LivingEnemies: Integer;
   RewardScale: Single;
   Unused38, Unused3C, Unused40, Unused44: Integer;
   SavedNextItemId: Cardinal;
   Event: TGalaxyEvent;
-  ItemType: Byte;
+  ItemType: TItemType;
   Weight, Level: Integer;
   Info: PWeaponInfo;
   MinSize, MaxSize: Single;
@@ -362,7 +315,7 @@ begin
       begin
         Inc(GetPlayer.HyperspaceKillCount);
         TryAddAchievementProgress('HOLEMAN', 1);
-        if GetPlayer.InHyperspace and (GetPlayer.OwnerId <> Byte(oiPirate)) then
+        if GetPlayer.InHyperspace and (GetPlayer.OwnerId <> oiPirate) then
           GetPlayer.AddRankPoints(2);
       end;
       if (Galaxy <> nil) and (ScriptLabel <> '') then
@@ -439,22 +392,28 @@ begin
           if RandomRange(1, 110) > 70 then
           begin
             WeaponTech := RandomRange(Max(1, Galaxy.TechLevel - 1), Min(8, Galaxy.TechLevel + 1));
-            SelectArcadeRewardWeapon(Self, WeaponTech, Info);
+            Info :=
+                Galaxy.SelectWeaponInfo(
+                    RandomRange(1, 100000),
+                    [waFree],
+                    Min(WeaponTech + 1, 8),
+                    Max(1, WeaponTech - 1)
+                );
             Weight :=
                 RandomRange(Round(Info.AverageSize * MinSize), Round(Info.AverageSize * MaxSize));
             Level := RandomRange(MinLevel, MaxLevel);
-            Item := CreateGeneratedWeapon(Info, Weight, Level, 6);
+            Item := CreateGeneratedWeapon(Info, Weight, Level, oiUninhabited);
           end
           else
           begin
-            ItemType := PickRandomItemType([Ord(t_FuelTanks)..Ord(t_DefGenerator)]);
+            ItemType := TItemType(PickRandomItemType([Ord(t_FuelTanks)..Ord(t_DefGenerator)]));
             Weight :=
                 RandomRange(
                     Round(GetAverageItemSize(ItemType) * MinSize),
                     Round(GetAverageItemSize(ItemType) * MaxSize)
                 );
             Level := RandomRange(MinLevel, MaxLevel);
-            Item := CreateGeneratedEquipment(TItemType(ItemType), Weight, Level, 6);
+            Item := CreateGeneratedEquipment(ItemType, Weight, Level, oiUninhabited);
           end;
           Item.ConditionPercent := SeededRandomFloatRange(Item.Id * (Attempts + 11) * 123, 10, 100);
           Inc(Attempts);

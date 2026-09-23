@@ -19,7 +19,6 @@ type
 
   TShrLightGI = class(TObjectGI)
     Kind: TShrLightKindGI;
-    Gap121: array[0..2] of Byte;
     LightShift: Integer;
     LightBuffer: TGraphBufGR;
     Gap12C: array[0..11] of Byte;

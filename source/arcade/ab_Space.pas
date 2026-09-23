@@ -37,7 +37,6 @@ type
     RouteCost: Double;
     Objects: TList;
     ImageActive: Boolean;
-    Gap65: array[0..2] of Byte;
     Image: TgaiGI;
     constructor Create;
     destructor Destroy; override;
@@ -355,7 +354,7 @@ begin
   MineralBudget :=
       Min(
           CargoHookLevelStats[8].PickupPower,
-          GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice
+          GetPlayer.Wealth div 40 div GoodsMarket[Ord(t_Minerals)].AveragePrice
       );
   MineralBudget := Round(RemapClamped(Danger + ApproachDanger, 0, 250, 0.2, 1.2) * MineralBudget);
   MineralBudget := Round(RemapClamped(Count, 0, 4, 0.8, 1.2) * MineralBudget);
@@ -486,7 +485,7 @@ begin
   MineralBudget :=
       Min(
           CargoHookLevelStats[8].PickupPower,
-          GetPlayer.Wealth div 40 div GoodsMarket[4].AveragePrice
+          GetPlayer.Wealth div 40 div GoodsMarket[Ord(t_Minerals)].AveragePrice
       );
   MineralBudget := Round(RemapClamped(Count, 2, 4, 0.8, 1.2) * MineralBudget);
   for Index := 1 to 8 do

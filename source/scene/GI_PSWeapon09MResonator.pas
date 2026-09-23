@@ -22,7 +22,6 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    GapF: array[0..0] of Byte;
     Velocity: TPointF;
     DelayTicks: Byte;
     MovementDelay: Byte;
@@ -56,7 +55,6 @@ type
     AnimationPosition: TPointF;
     AnimationVelocity: TPointF;
     Unknown158: Byte;
-    Gap159: array[0..2] of Byte;
     AnimationPath: WideString;
     procedure UpdateHitTestBounds; override;
     procedure SetPosition(Position: TPoint); override;
@@ -76,7 +74,6 @@ type
     ParticleCapacity: Integer;
     OriginalLength: Single;
     Unknown144: Byte;
-    Gap145: array[0..0] of Byte;
     ParticleColor: Word;
     procedure UpdateHitTestBounds; override;
     procedure SetPosition(Position: TPoint); override;

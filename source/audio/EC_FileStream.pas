@@ -25,7 +25,6 @@ type
     SourceFile: TFileEC;
     FileSize: Integer;
     EndOfFile: Boolean;
-    Gap51: array[0..2] of Byte;
     BufferLock: TCriticalSection;
     procedure Execute; override;
     constructor Create(BufferBytes: Integer; const FileName: WideString);

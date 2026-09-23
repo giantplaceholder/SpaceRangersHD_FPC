@@ -487,7 +487,7 @@ begin
                   X + TileOrigin.X,
                   Y + TileOrigin.Y,
                   Alpha,
-                  $FFFFFF,
+                  RgbWhite,
                   @ClipRect,
                   False,
                   HardwareMirrorHorizontal
@@ -511,7 +511,7 @@ begin
                 X,
                 Y,
                 Alpha,
-                $FFFFFF,
+                RgbWhite,
                 @ClipRect,
                 False,
                 HardwareMirrorHorizontal

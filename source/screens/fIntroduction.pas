@@ -161,7 +161,7 @@ begin
     Text :=
         FormatText1(
             LocalizedText('FormIntroduction.Text'),
-            '<color=255,240,100>',
+            TextHighlightColorTag,
             '<Player>',
             GetPlayer.Name
         )
@@ -169,7 +169,7 @@ begin
     Text :=
         FormatText1(
             LocalizedText('FormIntroduction.Text'),
-            '<color=255,240,100>',
+            TextHighlightColorTag,
             '<Player>',
             NewGameGenerationThread.PlayerName
         );
@@ -406,7 +406,7 @@ begin
     RequestedScreenId := screenRuinsTalk
   else if GetPlayer.CurrentPlanet = nil then
     RaiseWideMessage('No player location')
-  else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiUninhabited) then
+  else if GetPlayer.CurrentPlanet.OwnerId = oiUninhabited then
     RequestedScreenId := screenPlanetNO
   else
     RequestedScreenId := screenPlanet;

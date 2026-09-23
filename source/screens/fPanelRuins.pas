@@ -131,7 +131,7 @@ begin
     Exit;
   if HasPendingScriptRequests then
     Exit;
-  if (GetPlayer.DockedTo.TypeId = Byte(rstBusinessCenter)) and (GetPlayer.DebtDefaultCount > 1) then
+  if (GetPlayer.DockedTo.TypeId = rstBusinessCenter) and (GetPlayer.DebtDefaultCount > 1) then
     ShowMessageBoxGI(
         Screen,
         LocalizedColorText('FormRuins.BK.DebtNoAccess'),
@@ -156,7 +156,7 @@ begin
     Exit;
   if HasPendingScriptRequests then
     Exit;
-  if (GetPlayer.DockedTo.TypeId = Byte(rstBusinessCenter)) and (GetPlayer.DebtDefaultCount > 1) then
+  if (GetPlayer.DockedTo.TypeId = rstBusinessCenter) and (GetPlayer.DebtDefaultCount > 1) then
     ShowMessageBoxGI(
         Screen,
         LocalizedColorText('FormRuins.BK.DebtNoAccess'),
@@ -181,7 +181,7 @@ begin
     Exit;
   if HasPendingScriptRequests then
     Exit;
-  if (GetPlayer.DockedTo.TypeId = Byte(rstBusinessCenter)) and (GetPlayer.DebtDefaultCount > 1) then
+  if (GetPlayer.DockedTo.TypeId = rstBusinessCenter) and (GetPlayer.DebtDefaultCount > 1) then
     ShowMessageBoxGI(
         Screen,
         LocalizedColorText('FormRuins.BK.DebtNoAccess'),
@@ -231,7 +231,7 @@ begin
   PlayerStar.RefreshSpaceObjectPositions;
   RestoreTemporaryShopStock;
   RunGlobalScriptsForContext(GetPlayer.CurrentStar, 1);
-  if (GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(3) then
+  if (GetPlayer <> nil) and GetPlayer.IsHealthEffectActive(heHolyFanaticism) then
     Galaxy.EnableDominatorSurfaces
   else
     Galaxy.DisableDominatorSurfaces;

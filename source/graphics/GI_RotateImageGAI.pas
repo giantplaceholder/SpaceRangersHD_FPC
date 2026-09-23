@@ -57,6 +57,7 @@ implementation
 
 uses
   GlobalsV,
+  EC_Struct,
   SysUtils,
   Math,
   EC_Cache,
@@ -65,7 +66,8 @@ uses
   GI_Main,
   GR_Main,
   GR_GraphBuf,
-  GR_gi;
+  GR_gi,
+  aMyFunction;
 
 constructor TRotateImageGaiGI.Create(Owner: TObjectGI);
 begin
@@ -154,10 +156,10 @@ begin
       raise Exception.Create('Error in TRotateImageGaiGI.SetImage');
     end;
     Self.ImageSize := ImageSize;
-    Radius := Sqr(Pivot.X - 0) + Sqr(Pivot.Y - 0);
-    Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - ImageSize.Y));
-    Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - 0));
-    Radius := Max(Radius, Sqr(Pivot.X - 0) + Sqr(Pivot.Y - ImageSize.Y));
+    Radius := SquaredDistanceToPoint(Pivot, 0, 0);
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, ImageSize.X, ImageSize.Y));
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, ImageSize.X, 0));
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, 0, ImageSize.Y));
     Radius := Floor(Sqrt(Radius) * 2.0 + 2.0);
     SetSize(Classes.Point(Trunc(Radius), Trunc(Radius)));
     SetOrigin(Classes.Point(ClientSize.X div 2, ClientSize.Y div 2));
@@ -293,7 +295,7 @@ begin
           ImageCache.Release;
       end;
     end;
-    Vertices[0].Color := (Cardinal(Alpha) shl 24) or $FFFFFF;
+    Vertices[0].Color := (Cardinal(Alpha) shl 24) or RgbWhite;
     Vertices[1].Color := Vertices[0].Color;
     Vertices[2].Color := Vertices[0].Color;
     Vertices[3].Color := Vertices[0].Color;
@@ -320,8 +322,8 @@ begin
     CenterX := ClientSize.X / 2;
     CenterY := ClientSize.Y / 2;
     Degrees := Angle / 256 * 360;
-    C := Cos((3.1415926 / 180) * Degrees);
-    S := Sin((3.1415926 / 180) * Degrees);
+    C := Cos((GamePi / 180) * Degrees);
+    S := Sin((GamePi / 180) * Degrees);
     Vertices[0].X := LeftX * C - TopY * S + CenterX + HitTestBounds.Left;
     Vertices[0].Y := LeftX * S + TopY * C + CenterY + HitTestBounds.Top;
     Vertices[1].X := RightX * C - TopY * S + CenterX + HitTestBounds.Left;

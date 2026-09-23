@@ -29,7 +29,6 @@ type
     DialogRefreshTimer: PCallbackTimerGI;
     NextChoiceTop: Integer;
     AnimationRestartRequested: Boolean;
-    GapED: array[0..2] of Byte;
     QuestOffer: TQuest;
     QuestNegotiationLevel: Integer;
     QuestRewardStep: Integer;
@@ -40,7 +39,6 @@ type
     PendingTransition: Integer;
     UseHdPortrait: Boolean;
     UseClassicPortrait: Boolean;
-    Gap132: array[0..1] of Byte;
     PortraitPanel: TObjectGI;
     SavedChoiceScroll: Integer;
     procedure OnOpen; override;
@@ -170,22 +168,6 @@ uses
   Robot,
   fPlanetQuest;
 
-// Preserve the native receiver evaluation before the bounded payment,
-// with the clamp cells allocated before the receiver cell.
-procedure PayBailMoney(Ship: TShip); inline;
-var
-  Remaining, Payment: Integer;
-  Player: TPlayer;
-begin
-  Player := GetPlayer;
-  Remaining := GetPlayer.Money - Ship.GetPrisonReleaseCost;
-  if Remaining < 0 then
-    Payment := 0
-  else
-    Payment := Remaining;
-  Player.SetMoney(Payment);
-end;
-
 constructor TfGov.Create;
 begin
   inherited Create;
@@ -217,7 +199,7 @@ end;
 procedure TfGov.InitializeLayout;
 var
   HalfWidth, ChoiceGrowth: Integer;
-  Owner: Byte;
+  Owner: TOwnerId;
 
   procedure LayoutPortrait(
       Name: WideString;
@@ -296,7 +278,7 @@ begin
       UseHdPortrait := True;
       UseClassicPortrait := UseTablesForGov;
     end;
-    for Owner := 0 to 7 do
+    for Owner := oiMaloc to oiPirate do
       LayoutPortrait('Gov' + OwnerInfo[Owner].InternalName, Self);
     with FindByNameRecursive('PanelTalk') do
     begin
@@ -369,14 +351,12 @@ begin
     UpCallback := PlanetPanel.PlanetClicked;
 end;
 
-// Reviewed compiler-layout difference: native reserves one extra, unreferenced
-// dword at EBP-$F4, before its managed-string temporaries, and emits an extra
-// push ECX in the prologue. Rebuilt temporaries from $F8 onward are four bytes
-// nearer EBP. Calls, branches, constants and field accesses agree throughout.
+// Native reserves an unreferenced dword before its managed-string temporaries.
+// UnresolvedFrameBytes below preserves the matching frame and prologue push ECX.
 
 procedure TfGov.OnOpen;
 var
-  Owner: Byte;
+  Owner: TOwnerId;
   MapIndex, Money, ExperienceAwarded: Integer;
   Text, WinText, LossText, TerronName: WideString;
   Event: TGalaxyEvent;
@@ -400,7 +380,7 @@ begin
     if GetPlayer.CurrentPlanet.IsMainPiratePlanet then
       SoundSection := 0
     else
-      SoundSection := GetPlayer.CurrentPlanet.RaceId + 1;
+      SoundSection := Ord(GetPlayer.CurrentPlanet.RaceId) + 1;
     Stage := 2;
     if GetPlayer.CurrentPlanet <> TemporaryShopPlanet then
     begin
@@ -418,7 +398,7 @@ begin
     begin
       Event := AddGalaxyEvent('PlayerDeath');
       Event.AddTextData('PlanetCaptured');
-      GameEndReason := 2;
+      GameEndReason := gerPlayerDeath;
       RequestedScreenId := screenGameEnd;
       RequestClose(1);
       Exit;
@@ -426,22 +406,18 @@ begin
     if GetPlayer.PendingDockDialogue = 1 then
       GetPlayer.PendingDockDialogue := 0;
     Stage := 4;
-    for Owner := 0 to 7 do
+    for Owner := oiMaloc to oiPirate do
     begin
       Portrait := FindControlByPath('Gov' + OwnerInfo[Owner].InternalName);
       if Portrait <> nil then
         Portrait.SetActive(False);
     end;
     if GetPlayer.CurrentPlanet.IsMainPiratePlanet
-        and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate)) then
+        and (GetPlayer.CurrentPlanet.OwnerId = oiPirate) then
       PortraitPanel := GetByName('GovPirateClan')
     else
       PortraitPanel :=
-          GetByName(
-              'Gov'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
-          );
+          GetByName('Gov' + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName);
     PortraitPanel.SetActive(True);
     with PortraitPanel do
     begin
@@ -449,12 +425,12 @@ begin
       begin
         FindByNameRecursive('Table')
             .SetActive(
-                (GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate))
+                (GetPlayer.CurrentPlanet.OwnerId <> oiPirate)
                     and UseHdPortrait
                     and UseClassicPortrait);
         FindByNameRecursive('Table2')
             .SetActive(
-                (GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate))
+                (GetPlayer.CurrentPlanet.OwnerId = oiPirate)
                     and UseHdPortrait
                     and UseClassicPortrait);
       end
@@ -463,18 +439,16 @@ begin
       with FindByNameRecursive('BG') as TImageGI do
         if GetPlayer.CurrentPlanet.IsMainPiratePlanet then
           SetImagePath('GI,Bm.Gov.PirateBG')
-        else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+        else if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
           SetImagePath(
               'GI,Bm.Gov.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                   + 'PirateBG'
           )
         else
           SetImagePath(
               'GI,Bm.Gov.2'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                   + 'BGi'
           );
       if UseHdPortrait and not UseClassicPortrait then
@@ -527,23 +501,22 @@ begin
       Stage := 8;
       MapIndex := FindRobotMapById(PlanetBattleMapId);
       Text := RobotMapDefinitions[MapIndex].RobotsStart;
-      ReplaceTextToken(Text, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(Text, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(Text, '<Player>', GetPlayer.Name, '<color=255,240,100>');
+      ReplaceTextToken(Text, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(Text, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(Text, '<Player>', GetPlayer.Name, TextHighlightColorTag);
       ExpandLocalizedTextMarkupAndPrefixLines(Text);
       Text := WideString(IntToStr(GovernmentBattleDifficulty)) + Text;
-      Text :=
-          WideString(IntToStr(Min(Integer(Galaxy.GetDifficultyTierIndex) and $7F, 3) + 1)) + Text;
-      Text := WideString(IntToStr(GetPlayer.CurrentPlanet.RaceId + 1)) + Text;
+      Text := WideString(IntToStr(Min(Galaxy.GetDifficultyTierIndex, 3) + 1)) + Text;
+      Text := WideString(IntToStr(Ord(GetPlayer.CurrentPlanet.RaceId) + 1)) + Text;
       WinText := RobotMapDefinitions[MapIndex].RobotsWin;
-      ReplaceTextToken(WinText, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(WinText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(WinText, '<Player>', GetPlayer.Name, '<color=255,240,100>');
+      ReplaceTextToken(WinText, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(WinText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(WinText, '<Player>', GetPlayer.Name, TextHighlightColorTag);
       ExpandLocalizedTextMarkupAndPrefixLines(WinText);
       LossText := RobotMapDefinitions[MapIndex].RobotsLoss;
-      ReplaceTextToken(LossText, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(LossText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(LossText, '<Player>', GetPlayer.Name, '<color=255,240,100>');
+      ReplaceTextToken(LossText, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(LossText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(LossText, '<Player>', GetPlayer.Name, TextHighlightColorTag);
       ExpandLocalizedTextMarkupAndPrefixLines(LossText);
       TerronName :=
           GetPlayer.CurrentPlanet.GetFullName(' ')
@@ -617,8 +590,8 @@ begin
               Min(
                   GetPlayer.Wealth * 0.03,
                   Min(
-                      Galaxy.ComputeScaledAverageMoney(2) * 7,
-                      Galaxy.ComputeScaledHugeMoney(2) * 1.5
+                      Galaxy.ComputeScaledAverageMoney(oiHuman) * 7,
+                      Galaxy.ComputeScaledHugeMoney(oiHuman) * 1.5
                   )
               )
           );
@@ -633,10 +606,10 @@ begin
       SoundManager.PlaySound('Sound.Sell');
       GetPlayer.CurrentPlanet.ChangeRelationToRanger(GetPlayer, -40);
       DialogText := RobotMapDefinitions[MapIndex].GovTextLoss;
-      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Money)), '<color=255,240,100>');
+      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Money)), TextHighlightColorTag);
       Stage := 15;
       BuildGovernmentChoices(True);
       Stage := 16;
@@ -644,12 +617,12 @@ begin
       with GetPlayer.PlanetBattleHistory[High(GetPlayer.PlanetBattleHistory)] do
       begin
         MapId := PlanetBattleMapId;
-        Statistics[0] := RobotBattleStatistics[0];
-        Statistics[1] := RobotBattleStatistics[1];
-        Statistics[2] := RobotBattleStatistics[2];
-        Statistics[3] := RobotBattleStatistics[3];
-        Statistics[4] := RobotBattleStatistics[4];
-        Statistics[5] := RobotBattleStatistics[5];
+        Statistics.SignedTimeMs := RobotBattleStatistics.SignedTimeMs;
+        Statistics.RobotsBuilt := RobotBattleStatistics.RobotsBuilt;
+        Statistics.RobotsDestroyed := RobotBattleStatistics.RobotsDestroyed;
+        Statistics.TurretsBuilt := RobotBattleStatistics.TurretsBuilt;
+        Statistics.TurretsDestroyed := RobotBattleStatistics.TurretsDestroyed;
+        Statistics.BuildingsDestroyed := RobotBattleStatistics.BuildingsDestroyed;
         ResultCode := GovernmentBattleDifficulty;
         CompletionMode := PendingTransition;
         DateTurn := Galaxy.CurrentTurn;
@@ -661,9 +634,11 @@ begin
       Stage := 17;
       MapIndex := FindRobotMapById(PlanetBattleMapId);
       Money :=
-          RoundAndTruncateToTens(Max(GetPlayer.Wealth * 0.03, Galaxy.ComputeScaledBigMoney(2)));
+          RoundAndTruncateToTens(
+              Max(GetPlayer.Wealth * 0.03, Galaxy.ComputeScaledBigMoney(oiHuman))
+          );
       Money := Round(Money * GalaxyDifficultyTuning[Galaxy.DifficultyLevels[5]].QuestMoneyFactor);
-      if GetPlayer.IsHealthEffectActive(23) then
+      if GetPlayer.IsHealthEffectActive(heDoubleplex) then
         Money :=
             Round(
                 SeededRandomFloatRange(
@@ -673,10 +648,7 @@ begin
                         2.3)
                     * Money
             );
-      Inc(
-          Money,
-          Round(Money * (Integer(GetPlayer.GetEffectiveSkillLevel(psCharisma)) and $7F) * 0.1)
-      );
+      Inc(Money, Round(Money * GetPlayer.GetEffectiveSkillLevel(psCharisma) * 0.1));
       case GovernmentBattleDifficulty of
         1: Money := RoundAndTruncateToTens(Money * 4.0);
         2: Money := RoundAndTruncateToTens(Money * 1.6);
@@ -687,10 +659,10 @@ begin
       SoundManager.PlaySound('Sound.LiberationSystem');
       Stage := 19;
       DialogText := RobotMapDefinitions[MapIndex].GovTextWin;
-      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Money)), '<color=255,240,100>');
+      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Money)), TextHighlightColorTag);
       DialogText :=
           DialogText
               + GetPlayer.GrantPlanetQuestReward(GovernmentBattleDifficulty, ExperienceAwarded);
@@ -705,12 +677,12 @@ begin
       with GetPlayer.PlanetBattleHistory[High(GetPlayer.PlanetBattleHistory)] do
       begin
         MapId := PlanetBattleMapId;
-        Statistics[0] := RobotBattleStatistics[0];
-        Statistics[1] := RobotBattleStatistics[1];
-        Statistics[2] := RobotBattleStatistics[2];
-        Statistics[3] := RobotBattleStatistics[3];
-        Statistics[4] := RobotBattleStatistics[4];
-        Statistics[5] := RobotBattleStatistics[5];
+        Statistics.SignedTimeMs := RobotBattleStatistics.SignedTimeMs;
+        Statistics.RobotsBuilt := RobotBattleStatistics.RobotsBuilt;
+        Statistics.RobotsDestroyed := RobotBattleStatistics.RobotsDestroyed;
+        Statistics.TurretsBuilt := RobotBattleStatistics.TurretsBuilt;
+        Statistics.TurretsDestroyed := RobotBattleStatistics.TurretsDestroyed;
+        Statistics.BuildingsDestroyed := RobotBattleStatistics.BuildingsDestroyed;
         ResultCode := GovernmentBattleDifficulty;
         CompletionMode := PendingTransition;
         DateTurn := Galaxy.CurrentTurn;
@@ -722,9 +694,11 @@ begin
       Stage := 23;
       LoadRobotScreen.LoadCompletionData;
       if GovernmentBattleDifficulty = 1 then
-        LoadRobotScreen.RecordCompletion(PlanetBattleMapId, -RobotBattleStatistics[0] div 1000, 2)
+        LoadRobotScreen
+            .RecordCompletion(PlanetBattleMapId, -RobotBattleStatistics.SignedTimeMs div 1000, 2)
       else
-        LoadRobotScreen.RecordCompletion(PlanetBattleMapId, -RobotBattleStatistics[0] div 1000, 1);
+        LoadRobotScreen
+            .RecordCompletion(PlanetBattleMapId, -RobotBattleStatistics.SignedTimeMs div 1000, 1);
       LoadRobotScreen.SaveCompletionData;
     end
     else if PendingTransition = 4 then
@@ -758,12 +732,12 @@ begin
       with GetPlayer.PlanetBattleHistory[High(GetPlayer.PlanetBattleHistory)] do
       begin
         MapId := PlanetBattleMapId;
-        Statistics[0] := RobotBattleStatistics[0];
-        Statistics[1] := RobotBattleStatistics[1];
-        Statistics[2] := RobotBattleStatistics[2];
-        Statistics[3] := RobotBattleStatistics[3];
-        Statistics[4] := RobotBattleStatistics[4];
-        Statistics[5] := RobotBattleStatistics[5];
+        Statistics.SignedTimeMs := RobotBattleStatistics.SignedTimeMs;
+        Statistics.RobotsBuilt := RobotBattleStatistics.RobotsBuilt;
+        Statistics.RobotsDestroyed := RobotBattleStatistics.RobotsDestroyed;
+        Statistics.TurretsBuilt := RobotBattleStatistics.TurretsBuilt;
+        Statistics.TurretsDestroyed := RobotBattleStatistics.TurretsDestroyed;
+        Statistics.BuildingsDestroyed := RobotBattleStatistics.BuildingsDestroyed;
         ResultCode := GovernmentBattleDifficulty;
         CompletionMode := PendingTransition;
         DateTurn := Galaxy.CurrentTurn;
@@ -783,7 +757,7 @@ begin
     MainPanel.RebuildMessageButtons(False);
     Stage := 29;
     if GetPlayer <> nil then
-      GetPlayer.ScriptItemsAct($18, nil, nil, 0);
+      GetPlayer.ScriptItemsAct(satOnEnteringForm, nil, nil, 0);
     Galaxy.PrimeIntegrityChecksum(170);
   except
     on E: Exception do
@@ -799,7 +773,7 @@ begin
   if Galaxy <> nil then
     Galaxy.CheckIntegrityChecksum(171);
   if GetPlayer <> nil then
-    GetPlayer.ScriptItemsAct($19, nil, nil, 0);
+    GetPlayer.ScriptItemsAct(satOnLeavingForm, nil, nil, 0);
   LoadPanel.OnClose;
   ScriptDialogIndex := -1;
   ClearDialogChoices;
@@ -832,7 +806,7 @@ end;
 procedure TfGov.ShipClicked(Sender: TObjectGI);
 begin
   MainPanel.ShipClicked(Sender);
-  if ShipScreen.Flag3BC then
+  if ShipScreen.ShipStateChanged then
   begin
     Galaxy.CheckIntegrityChecksum(302);
     RefreshGovernmentDialog;
@@ -1001,7 +975,8 @@ begin
     if not Assigned(Callback) then
       Text := RemoveTextTagsW(Text);
     SetText(
-        '<Object=0,20,14,0>' + ReplaceAllWideString(Text, '<color=255,240,100>', '<color=0,50,200>')
+        '<Object=0,20,14,0>'
+            + ReplaceAllWideString(Text, TextHighlightColorTag, DialogHighlightColorTag)
     );
     SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
     if not Assigned(Choice.Callback) then
@@ -1107,7 +1082,7 @@ begin
     DialogText := ReplaceAllWideString(DialogText, #13#10 + LocalizedTextLinePrefix, #13#10);
     DialogText := ReplaceAllWideString(DialogText, #13#10, #13#10 + LocalizedTextLinePrefix);
     FormattedTextLength := Length(DialogText);
-    DialogText := ReplaceAllWideString(DialogText, '<color=255,240,100>', '<color=0,50,200>');
+    DialogText := ReplaceAllWideString(DialogText, TextHighlightColorTag, DialogHighlightColorTag);
     (GetByName('TalkText') as TLabelGI).SetText(DialogText);
     TextPanel := GetByName('TextScroll') as TPanelScrollBarGI;
     TextPanel.SetScrollOffset(Point(0, 0));
@@ -1203,10 +1178,10 @@ var
   Text: WideString;
 begin
   Text := (GetByName('TalkText') as TLabelGI).GetText;
-  Text := ReplaceAllWideString(Text, '<color=0,50,200>', '<color=255,240,100>');
+  Text := ReplaceAllWideString(Text, DialogHighlightColorTag, TextHighlightColorTag);
   (Sender as TGraphButtonGI).SetDisabled(True);
   SoundManager.PlaySound('Sound.UserMsgAdd');
-  AddOrUpdatePlayerBubble(7, Galaxy.CurrentTurn, Text, '');
+  AddOrUpdatePlayerBubble(pmUserNote, Galaxy.CurrentTurn, Text, '');
   MainPanel.RebuildMessageButtons(False);
   BreakUiMessage;
 end;
@@ -1217,13 +1192,11 @@ begin
     Exit;
   if not MusicInPlanetEnabled then
     MusicManager.RequestFadeOut
-  else if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+  else if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
   begin
     if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory('Nation.PiratePlanetMain');
@@ -1244,7 +1217,7 @@ begin
   begin
     if GetPlayer.InPrison then
     begin
-      if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId <> oiPirate then
         DialogText := LocalizedColorText('FormGov.Prison.GovAfterPrison')
       else
         DialogText := LocalizedColorText('FormGov.PirateClanPrison.GovAfterPrison');
@@ -1270,12 +1243,12 @@ begin
         and not HasPendingScriptRequests
         and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
     begin
-      if GetPlayer.OwnerId <> Byte(oiPirate) then
+      if GetPlayer.OwnerId <> oiPirate then
         DialogText := LocalizedColorText('FormGov.Prison.GovBeforePrison')
       else
         DialogText := LocalizedColorText('FormGov.PirateClanPrison.GovBeforePrison');
       ClearDialogChoices;
-      if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId <> oiPirate then
         AddChoice(LocalizedColorText('FormGov.Prison.PlayerGoToPrison'), 0, EnterPrison)
       else
         AddChoice(LocalizedColorText('FormGov.PirateClanPrison.PlayerGoToPrison'), 0, EnterPrison);
@@ -1326,7 +1299,7 @@ begin
     for I := 0 to Galaxy.Scripts.Count - 1 do
     begin
       Script := Galaxy.Scripts[I];
-      Script.RunAuxiliaryCode;
+      Script.RunDialogCode;
     end;
     if ScriptDialogOverrides.Count > 0 then
     begin
@@ -1435,7 +1408,7 @@ procedure TfGov.AddBuiltinGovernmentChoices;
 begin
   if (GetPlayer.CurrentPlanet.CurrentStar.Constellation.Id <> 20)
       or (not GetPlayer.CurrentPlanet.IsMainPiratePlanet
-          and (GetPlayer.CurrentPlanet.OwnerId in TOwnerMask(PlanetOwnerMasks.Coalition))) then
+          and (GetPlayer.CurrentPlanet.OwnerId in PlanetOwnerMasks.Coalition)) then
     AddChoice(LocalizedColorText('FormGov.I_QueryQuest'), 0, RequestQuest);
   if (GetPlayer.CurrentPlanet.GetRelationLevelToShip(GetPlayer) <= rlNormal)
       and not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
@@ -1599,7 +1572,7 @@ begin
   GetPlayer.InPrison := True;
   GetPlayer.CurrentSystemKills.Normal := 0;
   GetPlayer.CurrentSystemKills.Pirate := 0;
-  if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
   begin
     if MainPiratePlanet <> nil then
       MainPiratePlanet.ChangeRelationToRanger(GetPlayer, 80)
@@ -1609,12 +1582,12 @@ begin
   else
   begin
     GetPlayer.CurrentPlanet.ChangeRelationToRanger(GetPlayer, 80);
-    GetPlayer.ChangePlanetRelations(nil, rcmRaiseTo, 20, TOwnerMask(PlanetOwnerMasks.Coalition));
+    GetPlayer.ChangePlanetRelations(nil, rcmRaiseTo, 20, PlanetOwnerMasks.Coalition);
     GetPlayer.ChangePlanetRelations(
         GetPlayer.CurrentStar.Constellation,
         rcmIncrease,
         30,
-        TOwnerMask(PlanetOwnerMasks.Coalition)
+        PlanetOwnerMasks.Coalition
     );
   end;
   for I := 0 to GetPlayer.CurrentStar.Ships.Count - 1 do
@@ -1636,7 +1609,7 @@ end;
 
 procedure TfGov.ContinueAfterPrison(Action: PtrInt);
 begin
-  if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId <> oiPirate then
     DialogText := LocalizedColorText('FormGov.Prison.GovAfterPrisonNext')
   else
     DialogText := LocalizedColorText('FormGov.PirateClanPrison.GovAfterPrisonNext');
@@ -1648,9 +1621,9 @@ var
   Cost, RelationDeficit: Integer;
   Text: WideString;
 begin
-  if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId <> oiPirate then
   begin
-    RelationDeficit := 100 - (Integer(GetPlayer.CurrentPlanet.RelationToShip(GetPlayer)) and $7F);
+    RelationDeficit := 100 - GetPlayer.CurrentPlanet.RelationToShip(GetPlayer);
     Cost :=
         Round(
             RemapClamped(RelationDeficit, 0, 100, 1, 5)
@@ -1662,7 +1635,7 @@ begin
             'FormGov.Bribe.Question',
             (Galaxy.CurrentTurn div 10) * GetPlayer.CurrentPlanet.GenerationSeed + 223429
         );
-    ReplaceTextToken(Text, '<Money>', WideString(IntToStr(Cost)), '<color=255,240,100>');
+    ReplaceTextToken(Text, '<Money>', WideString(IntToStr(Cost)), TextHighlightColorTag);
     DialogText := Text;
     ClearDialogChoices;
     if GetPlayer.Money >= Cost then
@@ -1672,7 +1645,7 @@ begin
                   'FormGov.Bribe.Ok',
                   (Galaxy.CurrentTurn div 5) * GetPlayer.CurrentPlanet.GenerationSeed + 8168236
               ),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Money>',
               WideString(IntToStr(Cost)),
               '<Planet>',
@@ -1705,7 +1678,7 @@ procedure TfGov.PayBribe(Action: PtrInt);
 var
   Cost, RelationDeficit: Integer;
 begin
-  RelationDeficit := 100 - (Integer(GetPlayer.CurrentPlanet.RelationToShip(GetPlayer)) and $7F);
+  RelationDeficit := 100 - GetPlayer.CurrentPlanet.RelationToShip(GetPlayer);
   Cost :=
       Round(
           RemapClamped(RelationDeficit, 0, 100, 1, 5)
@@ -1714,7 +1687,7 @@ begin
       );
   GetPlayer.SetMoney(GetPlayer.Money - Cost);
   SoundManager.PlaySound('Sound.Sell');
-  if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
   begin
     if MainPiratePlanet <> nil then
       MainPiratePlanet.ChangeRelationToRanger(GetPlayer, 100)
@@ -1724,20 +1697,16 @@ begin
   else
   begin
     GetPlayer.CurrentPlanet.ChangeRelationToRanger(GetPlayer, 100);
-    GetPlayer.ChangePlanetRelations(
-        GetPlayer.CurrentStar,
-        rcmIncrease,
-        20,
-        TOwnerMask(PlanetOwnerMasks.Coalition)
-    );
+    GetPlayer
+        .ChangePlanetRelations(GetPlayer.CurrentStar, rcmIncrease, 20, PlanetOwnerMasks.Coalition);
   end;
   DialogText :=
       PickLocalizedTextVariant(
           'FormGov.Bribe.QuestionOk',
           (Galaxy.CurrentTurn div 5) * GetPlayer.CurrentPlanet.GenerationSeed + 7156317
       );
-  ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Cost)), '<color=255,240,100>');
-  ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
+  ReplaceTextToken(DialogText, '<Money>', WideString(IntToStr(Cost)), TextHighlightColorTag);
+  ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
   BuildGovernmentChoices(True);
 end;
 
@@ -1757,7 +1726,7 @@ var
   MapIndex, MapId: Integer;
 begin
   if (GetPlayer.CurrentPlanet.CurrentStar.Battle <> 0)
-      and (GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate)) then
+      and (GetPlayer.CurrentPlanet.OwnerId = oiPirate) then
   begin
     DialogText :=
         PickLocalizedTextVariant(
@@ -1785,9 +1754,9 @@ begin
     begin
       MapIndex := FindRobotMapById(MapId);
       DialogText := RobotMapDefinitions[MapIndex].GovTextStart;
-      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, '<color=255,240,100>');
-      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, '<color=255,240,100>');
+      ReplaceTextToken(DialogText, '<Star>', GetPlayer.CurrentStar.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Planet>', GetPlayer.CurrentPlanet.Name, TextHighlightColorTag);
+      ReplaceTextToken(DialogText, '<Player>', GetPlayer.Name, TextHighlightColorTag);
       ClearDialogChoices;
       if (RobotInterface <> nil) and (RobotInterface.Support() = 0) then
         AddChoice(LocalizedColorText('FormGov.I_QuestAccept'), MapId, ShowPlanetBattleSupport)
@@ -1810,7 +1779,8 @@ begin
     begin
       QuestNegotiationLevel := 0;
       DialogText := GetPlayer.BuildQuestText(QuestOffer, qtkOffer);
-      if (QuestOffer.QuestType = qtPlanetQuest) and (QuestOffer.QuestNumber >= 10000) then
+      if (QuestOffer.QuestType = qtPlanetQuest)
+          and (QuestOffer.QuestNumber >= FirstLicensedQuestId) then
         if (LanguageDataConfig.GetBlock('PlanetQuest').CountBlocks('PlanetQuestLic') <= 0)
             or (LanguageDataConfig
                     .GetBlock('PlanetQuest')
@@ -1946,12 +1916,12 @@ begin
   with GetPlayer.PlanetBattleHistory[High(GetPlayer.PlanetBattleHistory)] do
   begin
     MapId := PlanetBattleMapId;
-    Statistics[0] := 0;
-    Statistics[1] := 0;
-    Statistics[2] := 0;
-    Statistics[3] := 0;
-    Statistics[4] := 0;
-    Statistics[5] := 0;
+    Statistics.SignedTimeMs := 0;
+    Statistics.RobotsBuilt := 0;
+    Statistics.RobotsDestroyed := 0;
+    Statistics.TurretsBuilt := 0;
+    Statistics.TurretsDestroyed := 0;
+    Statistics.BuildingsDestroyed := 0;
     ResultCode := 1;
     CompletionMode := 0;
     DateTurn := Galaxy.CurrentTurn;
@@ -2084,7 +2054,7 @@ end;
 procedure TfGov.ChoosePrisonInsteadOfBattle(Action: PtrInt);
 begin
   GetPlayer.CurrentPlanet.SetRelationLevelToRanger(GetPlayer, rlHostile);
-  if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+  if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
   begin
     DialogText :=
         PickLocalizedTextVariant(
@@ -2137,7 +2107,7 @@ begin
               'FormGov.BuyMap.GovAsk',
               (Galaxy.CurrentTurn div 10) * GetPlayer.CurrentPlanet.GenerationSeed
           ),
-          '<color=255,240,100>',
+          TextHighlightColorTag,
           '<Name>',
           (TObject(GetPlayer.CurrentPlanet.FindUnchartedNeighborConstellation) as TConstellation)
               .GetName,
@@ -2206,7 +2176,7 @@ begin
       RowText :=
           FormatText2(
               LocalizedColorText('FormGov.GuarantPrison.ShipRow'),
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Ship>',
               Ship.GetFullName(' '),
               '<Cost>',
@@ -2228,7 +2198,7 @@ begin
       Text :=
           FormatText2(
               Text,
-              '<color=255,240,100>',
+              TextHighlightColorTag,
               '<Ship>',
               Ship.GetFullName(' '),
               '<Cost>',
@@ -2251,7 +2221,7 @@ begin
   Ship := TShip(Action);
   if Ship.IsInPrison then
   begin
-    PayBailMoney(Ship);
+    GetPlayer.SetMoney(Max(0, GetPlayer.Money - Ship.GetPrisonReleaseCost));
     Ship.ClearPrisonTerm;
     Ship.ChangeRelationToRanger(GetPlayer, 100);
     Ship.OrderTakeoff;

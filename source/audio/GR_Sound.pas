@@ -27,7 +27,6 @@ type
     SoundPath: WideString;
     SoundGroup: Integer;
     Looping: Boolean;
-    GapD: array[0..2] of Byte;
     Buffer: TSoundBuffer;
     Volume: Single;
     Pan: Single;
@@ -47,7 +46,6 @@ type
     AutoRelease: Boolean;
     Streaming: Boolean;
     Started: Boolean;
-    GapF: array[0..0] of Byte;
     DirectBuffer: IDirectSoundBuffer;
     Notify: IDirectSoundNotify;
     // WaitForChunk reads these consecutive native-width handles as one wait set.
@@ -61,7 +59,6 @@ type
     VolumeScale: Single;
     VolumeStep: Single;
     FadingOut: Boolean;
-    Gap55: array[0..2] of Byte;
     SoundGroup: Integer;
     Controller: TSoundBufferControl;
     WriteOffset: Integer;

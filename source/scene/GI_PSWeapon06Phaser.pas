@@ -20,18 +20,15 @@ type
     Next: PPhaserParticle;
     Prev: PPhaserParticle;
     Kind: Byte;
-    Gap9: array[0..2] of Byte;
     Position: TPointF;
     Incoming: Single;
     Displacement: Single;
     Reflected: Single;
     Color: Word;
     Alpha: Byte;
-    Gap23: array[0..0] of Byte;
     Phase: Single;
     PhaseStep: Single;
     PhaseCountdown: Byte;
-    Gap2D: array[0..2] of Byte;
   end;
 
   TPhaserPalette = array[0..8] of Single;

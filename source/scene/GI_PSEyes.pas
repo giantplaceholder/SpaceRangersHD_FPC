@@ -25,10 +25,8 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    Gap1B: array[0..0] of Byte;
     Velocity: TPointF;
     State: Byte;
-    Gap25: array[0..2] of Byte;
     Countdown: Integer;
   end;
 

@@ -39,6 +39,7 @@ type
 implementation
 
 uses
+  EC_Struct,
   Classes,
   SysUtils,
   Math,
@@ -107,7 +108,7 @@ var
   Image: TCBitmapEC;
   Radius: Double;
 begin
-  ImageCache.SetCacheKey(Path + '?RGBA');
+  ImageCache.SetCacheKey(Path + RgbaImagePathSuffix);
   Image := AcquireOrCreateBitmap(ImageCache);
   try
     RotationCache.SetCacheKey(
@@ -123,10 +124,10 @@ begin
             + ','
             + IntToStr(Pivot.Y)
     );
-    Radius := Sqr(Pivot.X - 0) + Sqr(Pivot.Y - 0);
-    Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - ImageSize.Y));
-    Radius := Max(Radius, Sqr(Pivot.X - ImageSize.X) + Sqr(Pivot.Y - 0));
-    Radius := Max(Radius, Sqr(Pivot.X - 0) + Sqr(Pivot.Y - ImageSize.Y));
+    Radius := SquaredDistanceToPoint(Pivot, 0, 0);
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, ImageSize.X, ImageSize.Y));
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, ImageSize.X, 0));
+    Radius := Max(Radius, SquaredDistanceToPoint(Pivot, 0, ImageSize.Y));
     Radius := Floor(Sqrt(Radius) * 2.0 + 2.0);
     SetSize(Classes.Point(Trunc(Radius), Trunc(Radius)));
     SetOrigin(Classes.Point(ClientSize.X div 2, ClientSize.Y div 2));

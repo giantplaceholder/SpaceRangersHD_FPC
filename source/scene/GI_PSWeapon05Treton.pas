@@ -26,7 +26,6 @@ type
     Velocity: TPointF;
     Countdown: Byte;
     State: Byte;
-    Gap1E: array[0..1] of Byte;
   end;
 
   TTretonPalette = array[0..1] of Word;

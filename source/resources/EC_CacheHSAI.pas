@@ -21,14 +21,19 @@ type
   PointerToTHSAIHeaderEC = ^THSAIHeaderEC;
 
   THSAIHeaderEC = packed record
-    Gap0: array[0..3] of Byte;
+    Magic: Cardinal;
     Width: Integer;
     Height: Integer;
     PitchBytes: Integer;
     FrameCount: Cardinal;
     FrameStride: Cardinal;
-    Gap18: array[0..23] of Byte;
-    PalettePresent: Cardinal;
+    HasPalette: Cardinal;
+    BitsPerPixel: Cardinal;
+    RedMask: Cardinal;
+    GreenMask: Cardinal;
+    BlueMask: Cardinal;
+    AlphaMask: Cardinal;
+    PaletteBytes: Cardinal;
   end;
 
   PHSAIHeaderEC = PointerToTHSAIHeaderEC;
@@ -137,7 +142,7 @@ function TCHSAIEC.GetFramePalette(FrameIndex: Cardinal): PColorRGBA;
 begin
   if FrameIndex >= Header.FrameCount then
     Result := nil
-  else if Header.PalettePresent = 0 then
+  else if Header.PaletteBytes = 0 then
     Result := nil
   else
     Result :=

@@ -29,7 +29,6 @@ type
     PreviousByteOffset: Integer;
     Gap8: array[0..7] of Byte;
     SavedPixel: Word;
-    Gap12: array[0..1] of Byte;
     Position: TPointF;
     Velocity: TPointF;
     Acceleration: TPointF;
@@ -37,7 +36,6 @@ type
     PixelPosition: TPoint;
     PaletteIndex: Integer;
     Color: Word;
-    Gap42: array[0..1] of Byte;
     ColorPosition: Single;
     ColorStep: Single;
   end;

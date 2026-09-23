@@ -35,7 +35,6 @@ type
     SurfaceMapOffset: Integer;
     DisplayRadius: Integer;
     LightAngle: Byte;
-    Gap8D: array[0..2] of Byte;
     InclinationCos: Single;
     InclinationSin: Single;
     RotationCos: Single;
@@ -199,7 +198,7 @@ begin
     DisplayRadius := MaxDisplayRadius;
   if Cardinal(GameScreenHeight) < 768 then
     DisplayRadius := Round(DisplayRadius * 800 / 1024);
-  LightAngle := Round(ArcTan2(-Position.X, Position.Y) * 180 / 3.1415926 * 256 / 360);
+  LightAngle := Round(ArcTan2(-Position.X, Position.Y) * 180 / GamePi * 256 / 360);
   Index := DisplayRadius - MinimumSatelliteTemplateRadius;
   Template := SatelliteRenderTemplates[Index];
   PlanetControl.SetImageFromTemplate(Template.MaskName, ImagePath, Template.Radius);

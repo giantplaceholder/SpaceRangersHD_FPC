@@ -14,7 +14,6 @@ type
 
   TValuesList = class(TObjectEx)
     AcceptListed: Boolean;
-    Gap5: array[0..2] of Byte;
     Values: array of Integer;
     Count: Integer;
     function NormalizeSemicolonText(Text: WideString): WideString;

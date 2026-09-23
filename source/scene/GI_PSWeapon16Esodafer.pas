@@ -22,10 +22,8 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    Gap13: array[0..0] of Byte;
     Velocity: TPointF;
     State: Byte;
-    Gap1D: array[0..2] of Byte;
   end;
 
   TEsodaferPalette = array[0..2] of Word;
@@ -44,7 +42,6 @@ type
     LastParticle: PEsodaferParticle;
     Colors: TEsodaferPalette;
     ProjectionBounds: TRect;
-    Gap152: array[0..5] of Byte;
     OriginalLength: Double;
     LengthScale: Double;
     procedure UpdateHitTestBounds; override;

@@ -36,7 +36,6 @@ type
 
   TabOptGroup = record
     Polygons: array of PabPolygon;
-    Gap4: array[0..3] of Byte;
     Corners: array[0..3] of TVector3D;
   end;
 

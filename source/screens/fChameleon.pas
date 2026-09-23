@@ -8,7 +8,8 @@ uses
   Classes,
   Types,
   GI_MessageLoop,
-  GI_Image;
+  GI_Image,
+  aGalaxyStruct;
 
 type
 
@@ -16,9 +17,8 @@ type
 
   TfChameleon = class(TMessageLoopGI)
     ChameleonActive: Boolean;
-    VisualType: Byte;
-    GapD2: array[0..1] of Byte;
-    Charges: array[0..2] of Integer;
+    VisualType: TKlingType;
+    Charges: array[TDominatorSeries] of Integer;
     Choice: Integer;
     ChoiceImages: array[1..4] of TImageGI;
     procedure OnOpen; override;
@@ -45,7 +45,7 @@ function ShowChameleonDialog(
     BlazerCharges: Integer;
     KellerCharges: Integer;
     TerronCharges: Integer;
-    VisualType: Byte;
+    VisualType: TKlingType;
     Active: Boolean;
     var Choice: Integer
 ): Cardinal;
@@ -76,7 +76,7 @@ var
   AcceptButton, CancelButton: TGraphButtonGI;
   Size: TPoint;
   SeriesText, NameText, ShipName: WideString;
-  Series: Byte;
+  Series: TDominatorSeries;
   Disabled, NeedSelection, HasSelection: Boolean;
   WorkRect: TRect;
 
@@ -100,13 +100,13 @@ var
             + ')';
   end;
 
-  function ChameleonSeriesColor(Series: Byte): WideString;
+  function ChameleonSeriesColor(Series: TDominatorSeries): WideString;
   begin
     Result := '';
     case Series of
-      0: Result := '<color=255,0,0>';
-      1: Result := '<color=0,128,255>';
-      2: Result := '<color=45,105,45>';
+      dsBlazer: Result := RedColorTag;
+      dsKeller: Result := AzureColorTag;
+      dsTerron: Result := DarkGreenColorTag;
     end;
   end;
 
@@ -165,12 +165,12 @@ begin
   Caption.SetTextColor(CurrentPixelFormat.PackRgbBytes(0, 0, 0));
   ShipName :=
       LookupLocalizedTextByKey(
-          'ShipType.Dominator.' + DominatorSeriesNames[0] + '.' + IntToStr(VisualType)
+          'ShipType.Dominator.' + DominatorSeriesNames[dsBlazer] + '.' + IntToStr(Ord(VisualType))
       );
   Caption.SetText(
       LocalizedText('ShipInfo.AddInfo.Chameleon.Name')
           + ' - '
-          + WrapTextInColor(ShipName, '<color=0,50,200>')
+          + WrapTextInColor(ShipName, DialogHighlightColorTag)
   );
   Caption.SetTextAlignX(taxCenter);
   Caption.SetTextAlignY(tayAuto);
@@ -190,7 +190,7 @@ begin
   );
   NeedSelection := not ChameleonActive;
   HasSelection := ChameleonActive;
-  for Series := 0 to 2 do
+  for Series := Low(TDominatorSeries) to High(TDominatorSeries) do
   begin
     Inc(Y, 20);
     Inc(Index);
@@ -382,7 +382,7 @@ function ShowChameleonDialog(
     Parent: TMessageLoopGI;
     BlazerCharges, KellerCharges: Integer;
     TerronCharges: Integer;
-    VisualType: Byte;
+    VisualType: TKlingType;
     Active: Boolean;
     var Choice: Integer
 ): Cardinal;
@@ -390,7 +390,7 @@ var
   Dialog: TfChameleon;
   CursorState: TCursorStateGI;
 begin
-  Parent.RootUiObject.NativeHook50;
+  Parent.RootUiObject.OnModalSuspend;
   Parent.CaptureCursorState(@CursorState);
   Parent.SetCursorActive(False);
   Parent.DrawQueuedUpdateRects;
@@ -401,9 +401,9 @@ begin
   try
     Dialog.ChameleonActive := Active;
     Dialog.VisualType := VisualType;
-    Dialog.Charges[0] := BlazerCharges;
-    Dialog.Charges[1] := KellerCharges;
-    Dialog.Charges[2] := TerronCharges;
+    Dialog.Charges[dsBlazer] := BlazerCharges;
+    Dialog.Charges[dsKeller] := KellerCharges;
+    Dialog.Charges[dsTerron] := TerronCharges;
     Result := Dialog.Run;
     Choice := Dialog.Choice;
     Parent.InvalidateViewport;
@@ -413,7 +413,7 @@ begin
   end;
   Parent.RestoreCursorState(@CursorState);
   Parent.UpdateCursorPosition;
-  Parent.RootUiObject.NativeHook48;
+  Parent.RootUiObject.OnModalResume;
   if Result = 254 then
     BreakUiMessage;
 end;

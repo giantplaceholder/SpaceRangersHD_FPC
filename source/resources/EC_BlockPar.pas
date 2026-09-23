@@ -42,7 +42,6 @@ type
     StringParamCount: Integer;
     ChildBlockCount: Integer;
     UseSortedIndex: Boolean;
-    Gap19: array[0..2] of Byte;
     SortedEntries: array of TBlockParElEC;
     SortedEntryCount: Integer;
     constructor Create;

@@ -84,14 +84,13 @@ type
 
   TSpaceTimerEventSE = procedure(Timer: PSpaceTimerSE; UserData: Integer) of object;
 
-  TSpaceTimerSE = packed record
+  TSpaceTimerSE = record
     Prev: PSpaceTimerSE;
     Next: PSpaceTimerSE;
     TicksRemaining: Integer;
     RepeatTicks: Integer;
     Callback: TSpaceTimerEventSE;
     UserData: Integer;
-    Gap1C: array[0..3] of Byte;
   end;
 
   TSpaceSE = class(TObject)
@@ -113,9 +112,7 @@ type
     SpaceImages: TSpaceImgGI;
     StarFieldImages: TStarFieldImgGI;
     MinimapDragging: Boolean;
-    Gap4D: array[0..2] of Byte;
     Process: TObject;
-    Gap54: array[0..3] of Byte;
     ScrollChangedCallback: TSpaceScrollEventSE;
     PathPoints: PPointF;
     PathPointCount: Integer;

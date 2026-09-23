@@ -22,7 +22,6 @@ type
     Position: TPoint;
     Color: Word;
     Alpha: array[0..11] of Byte;
-    Gap1E: array[0..1] of Byte;
     EdgeDistance: array[0..11] of Integer;
   end;
 
@@ -44,15 +43,12 @@ type
     FirstParticle: PRadiationParticle;
     LastParticle: PRadiationParticle;
     Color: Word;
-    Gap13A: array[0..1] of Byte;
     Radius: Integer;
     Alpha: Byte;
-    Gap141: array[0..2] of Byte;
     PaletteIndex: Integer;
     ProjectionBounds: TRect;
     LatticeOffset: TPointF;
     PositionInitialized: Boolean;
-    Gap161: array[0..2] of Byte;
     procedure UpdateHitTestBounds; override;
     procedure SetPosition(Position: TPoint); override;
     function GetLocalBounds: TRect; override;

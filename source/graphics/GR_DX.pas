@@ -9,6 +9,10 @@ uses
   Classes,
   Types;
 
+const
+
+  RgbWhite = $FFFFFF;
+
 type
 
   TTextureGR = class;

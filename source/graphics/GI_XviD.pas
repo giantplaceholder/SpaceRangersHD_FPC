@@ -60,14 +60,11 @@ type
     TargetFrame: Integer;
     VideoWidth: Integer;
     VideoHeight: Integer;
-    Gap144: array[0..3] of Byte;
     PlaybackFinished: TObjectNotifyEventGI;
     ColorSpace: Integer;
     FillViewport: Boolean;
-    Gap155: array[0..2] of Byte;
     AviFile: TGameAVI;
     FrameCount: Integer;
-    Gap164: array[0..3] of Byte;
     FramesPerSecond: Double;
     procedure Clear; override;
     procedure LoadFromConfigPath(const Path: WideString); override;

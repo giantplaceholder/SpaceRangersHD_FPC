@@ -8,6 +8,10 @@ uses
   CPDiapClass,
   EC_Struct;
 
+const
+
+  QuestNumericLimit = 2000000000;
+
 type
 
   TCPVariant = class;
@@ -18,10 +22,8 @@ type
   TCPVariant = class(TObjectEx)
     Range: TCPDiapazone;
     FloatValue: Extended;
-    Gap12: array[0..1] of Byte;
     IntValue: Integer;
     ValueKind: TCPValueKind;
-    Gap19: array[0..2] of Byte;
     constructor Create;
     destructor Destroy; override;
     procedure Reset;
@@ -154,10 +156,10 @@ begin
     Result := Range.GetRandomValue
   else if ValueKind = cpvkFloat then
   begin
-    if FloatValue < -2000000000 then
-      Result := -2000000000
-    else if FloatValue > 2000000000 then
-      Result := 2000000000
+    if FloatValue < -QuestNumericLimit then
+      Result := -QuestNumericLimit
+    else if FloatValue > QuestNumericLimit then
+      Result := QuestNumericLimit
     else
       Result := System.Round(FloatValue + 1E-11);
   end

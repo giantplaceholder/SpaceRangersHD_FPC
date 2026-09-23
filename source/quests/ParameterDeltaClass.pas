@@ -29,12 +29,10 @@ type
     ChangeByPercent: Boolean;
     SetValue: Boolean;
     UseExpression: Boolean;
-    Gap1F: array[0..0] of Byte;
     ExpressionText: TTextField;
     CriticalEvent: TEvent;
     VisibilityChange: TParameterVisibilityChange;
     LegacyFlag: Boolean;
-    Gap2D: array[0..2] of Byte;
     constructor Create;
     destructor Destroy; override;
     procedure Reset;

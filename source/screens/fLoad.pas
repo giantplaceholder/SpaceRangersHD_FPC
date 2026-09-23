@@ -31,7 +31,6 @@ type
     LoadProgress: Single;
     DisplayedProgress: Single;
     LoadingFinished: Boolean;
-    GapDD: array[0..2] of Byte;
     IntroSkipRequest: Integer;
     IntroTimer: PCallbackTimerGI;
     IntroStartedAt: Cardinal;

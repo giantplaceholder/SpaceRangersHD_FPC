@@ -26,10 +26,15 @@ type
   end;
 
   TWaveFileHeader = packed record
-    Gap0: array[0..21] of Byte;
+    RiffId: Cardinal;
+    RiffSize: Cardinal;
+    WaveId: Cardinal;
+    FormatId: Cardinal;
+    FormatSize: Cardinal;
+    FormatTag: Word;
     Channels: Word;
     SamplesPerSecond: Cardinal;
-    Gap1C: array[0..3] of Byte;
+    AverageBytesPerSecond: Cardinal;
     BlockAlign: Word;
     BitsPerSample: Word;
     DataId: Cardinal;
@@ -44,7 +49,6 @@ type
 
   TCSoundEC = class(TCacheDataEC)
     Format: TWaveFormatEx;
-    Gap32: array[0..1] of Byte;
     SampleData: Pointer;
     SampleDataSize: Cardinal;
     procedure LoadFromConfigBuffer(SourceBuffer: TBufEC; const LoadOption: WideString); override;

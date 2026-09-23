@@ -62,6 +62,10 @@ uses
   SyncObjs,
   Classes;
 
+const
+
+  PersistentMessageLifetimeTurns = 1000000;
+
 type
 
   TPlanetTempl = class;
@@ -70,12 +74,33 @@ type
 
   TSputnikTempl = class;
 
+  {$Z1}
+  TPlayerMessageKind = (
+      pmGalaxyNews = 0,
+      pmRadio = 1,
+      pmShipPositive = 2,
+      pmQuestActive = 3,
+      pmQuestSucceeded = 4,
+      pmQuestCancelled = 5,
+      pmTip = 6,
+      pmUserNote = 7,
+      pmShipNegative = 8,
+      pmStorage = 9,
+      pmRadioPlayer = 10
+  );
+
+  {$Z1}
+  TGreetingCondition = (gcYes = 0, gcNo = 1, gcAny = 2);
+
+  {$Z1}
+  TGreetingFlightKind = (gfAny = 0, gfToPlanet = 1, gfToStar = 2, gfToItem = 3, gfToShip = 4);
+
+  TGreetingShipCategories = set of TGreetingShipCategory;
+
   TGreetingMask = set of 0..7;
 
-  TRobotMapPlayerStatuses = set of 0..2;
-
   TScriptTemplUnit = class(TObjectEx)
-    ConfigValue: Integer;
+    ClassId: Integer;
     Name: WideString;
     FileName: WideString;
     UseCount: Integer;
@@ -106,7 +131,7 @@ type
     MaskName: WideString;
   end;
 
-  TPlayerMessageKindSet = set of 0..15;
+  TPlayerMessageKindSet = set of TPlayerMessageKind;
 
   TPlayerMessageTarget = packed record
     ShipId: Cardinal;
@@ -122,7 +147,7 @@ type
 
 var
 
-  PlayerMessagePresentations: array[0..10] of TMessagePlayerTypeGraph = (
+  PlayerMessagePresentations: array[TPlayerMessageKind] of TMessagePlayerTypeGraph = (
       (NormalImage: 'GalaxyN'; ActiveImage: 'GalaxyA'; PressedImage: 'GalaxyD'; LifetimeTurns: 10),
       (NormalImage: 'EtherN'; ActiveImage: 'EtherA'; PressedImage: 'EtherD'; LifetimeTurns: 0),
       (
@@ -135,22 +160,27 @@ var
           NormalImage: 'QuestNormalN';
           ActiveImage: 'QuestNormalA';
           PressedImage: 'QuestNormalD';
-          LifetimeTurns: 1000000
+          LifetimeTurns: PersistentMessageLifetimeTurns
       ),
       (
           NormalImage: 'QuestOkN';
           ActiveImage: 'QuestOkA';
           PressedImage: 'QuestOkD';
-          LifetimeTurns: 1000000
+          LifetimeTurns: PersistentMessageLifetimeTurns
       ),
       (
           NormalImage: 'QuestCancelN';
           ActiveImage: 'QuestCancelA';
           PressedImage: 'QuestCancelD';
-          LifetimeTurns: 1000000
+          LifetimeTurns: PersistentMessageLifetimeTurns
       ),
       (NormalImage: 'TipsN'; ActiveImage: 'TipsA'; PressedImage: 'TipsD'; LifetimeTurns: 182),
-      (NormalImage: 'UserN'; ActiveImage: 'UserA'; PressedImage: 'UserD'; LifetimeTurns: 1000000),
+      (
+          NormalImage: 'UserN';
+          ActiveImage: 'UserA';
+          PressedImage: 'UserD';
+          LifetimeTurns: PersistentMessageLifetimeTurns
+      ),
       (
           NormalImage: 'ShipMinusN';
           ActiveImage: 'ShipMinusA';
@@ -161,7 +191,7 @@ var
           NormalImage: 'StorageN';
           ActiveImage: 'StorageA';
           PressedImage: 'StorageD';
-          LifetimeTurns: 1000000
+          LifetimeTurns: PersistentMessageLifetimeTurns
       ),
       (NormalImage: 'Ether2N'; ActiveImage: 'Ether2A'; PressedImage: 'Ether2D'; LifetimeTurns: 0)
   );
@@ -174,8 +204,7 @@ type
     Prev: TMessagePlayer;
     Next: TMessagePlayer;
     Key: WideString;
-    Kind: Byte;
-    Gap11: array[0..2] of Byte;
+    Kind: TPlayerMessageKind;
     ImageNameOverride: WideString;
     NotificationSoundKind: Integer;
     Turn: Integer;
@@ -184,7 +213,6 @@ type
     Button: TGraphButtonGI;
     WasRead: Boolean;
     NotificationSoundPlayed: Boolean;
-    Gap42: array[0..1] of Byte;
     constructor Create;
     procedure SaveToBuffer(Buffer: TBufEC);
     procedure LoadFromBuffer(Buffer: TBufEC);
@@ -279,7 +307,7 @@ var
 
   TalkScripted: Boolean;
 
-  TalkType: Byte;
+  TalkType: TTalkKind;
 
   TalkAmount: Integer;
 
@@ -399,15 +427,15 @@ var
 
   ArcadeWeaponLoopTicks: array[0..17] of Integer;
 
-  RaceShipTemplates: array[0..7] of array[0..5] of TObjectSE;
+  RaceShipTemplates: array[TOwnerId] of array[htRanger..htDiplomat] of TObjectSE;
 
-  BlazerShipTemplates: array[0..7] of TObjectSE;
+  BlazerShipTemplates: array[TKlingType] of TObjectSE;
 
-  KellerShipTemplates: array[0..7] of TObjectSE;
+  KellerShipTemplates: array[TKlingType] of TObjectSE;
 
-  TerronShipTemplates: array[0..7] of TObjectSE;
+  TerronShipTemplates: array[TKlingType] of TObjectSE;
 
-  PirateClanShipTemplates: array[0..7] of TObjectSE;
+  PirateClanShipTemplates: array[TOwnerId] of TObjectSE;
 
   PlanetSpaceTemplates: array of TPlanetSpaceTemplate;
 
@@ -423,8 +451,7 @@ type
     Map: WideString;
     PlanetRace: TOwnerMask;
     PlayerRace: TOwnerMask;
-    PlayerStatus: TRobotMapPlayerStatuses;
-    Gap1F: array[0..0] of Byte;
+    PlayerStatus: TRangerCareerSet;
     MinWins: Integer;
     MaxWins: Integer;
     Reiteration: Integer;
@@ -455,26 +482,26 @@ type
   TShipGreetingsInfo = record
     Name: WideString;
     Priority: Integer;
-    AutoTalk: Byte;
-    FlyType: Byte;
-    ShipType: TGreetingMask;
-    Relations: TGreetingMask;
+    AutoTalk: TGreetingCondition;
+    FlyType: TGreetingFlightKind;
+    ShipType: TGreetingShipCategories;
+    Relations: TRelationLevels;
     ShipRace: TOwnerMask;
     PlayerRace: TOwnerMask;
-    ShipRaceIsPlayerRace: Byte;
-    PlayerAttackGoodShip: Byte;
-    InFear: Byte;
-    ShipBadFlyToShip: Byte;
-    ShipBadType: TGreetingMask;
+    ShipRaceIsPlayerRace: TGreetingCondition;
+    PlayerAttackGoodShip: TGreetingCondition;
+    InFear: TGreetingCondition;
+    ShipBadFlyToShip: TGreetingCondition;
+    ShipBadType: TGreetingShipCategories;
     ShipBadRace: TOwnerMask;
-    ShipFlyToPlayer: Byte;
-    PlayerFlyToShip: Byte;
-    PlayerIsShipBad: Byte;
+    ShipFlyToPlayer: TGreetingCondition;
+    PlayerFlyToShip: TGreetingCondition;
+    PlayerIsShipBad: TGreetingCondition;
     ShipTurnBeforeEndOrder: TGreetingCountMask;
     PlayerTurnBeforeEndOrder: TGreetingCountMask;
     ShipBadTurnBeforeEndOrder: TGreetingCountMask;
-    ShipStatus: TGreetingMask;
-    PlayerStatus: TGreetingMask;
+    ShipStatus: TRangerCareerSet;
+    PlayerStatus: TRangerCareerSet;
     ShipStrength: TGreetingMask;
     PlayerStrength: TGreetingMask;
     ShipStructure: TGreetingMask;
@@ -489,27 +516,27 @@ type
     Goods: Byte;
     ShipGoodsCnt: TGreetingMask;
     PlayerGoodsCnt: TGreetingMask;
-    ShipHaveGoods: Byte;
-    PlayerHaveGoods: Byte;
+    ShipHaveGoods: TGreetingCondition;
+    PlayerHaveGoods: TGreetingCondition;
     ShipGoodsTypeCnt: TGreetingCountMask;
     PlayerGoodsTypeCnt: TGreetingCountMask;
-    ShipMayScanPlayer: Byte;
+    ShipMayScanPlayer: TGreetingCondition;
     RangerInCurStar: TGreetingCountMask;
     PirateInCurStar: TGreetingCountMask;
     KlingInCurStar: TGreetingCountMask;
     WarriorInCurStar: TGreetingCountMask;
     TransportInCurStar: TGreetingCountMask;
     LastPlanetRace: TOwnerMask;
-    LastPlanetRelations: TGreetingMask;
+    LastPlanetRelations: TRelationLevels;
     LastPlanetGoodsCnt: TGreetingMask;
     LastPlanetGoodsSale: TGreetingMask;
     LastPlanetGoodsBuy: TGreetingMask;
-    LastPlanetIsHomePlanet: Byte;
-    LastPlanetRaceIsShipRace: Byte;
-    LastPlanetRaceIsPlayerRace: Byte;
-    LastPlanetEconomy: TGreetingMask;
-    LastPlanetGovernment: TGreetingMask;
-    LastPlanetInCurStar: Byte;
+    LastPlanetIsHomePlanet: TGreetingCondition;
+    LastPlanetRaceIsShipRace: TGreetingCondition;
+    LastPlanetRaceIsPlayerRace: TGreetingCondition;
+    LastPlanetEconomy: TPlanetEconomies;
+    LastPlanetGovernment: TPlanetGovernments;
+    LastPlanetInCurStar: TGreetingCondition;
     LastPlanetDistToShipInTurn: TGreetingCountMask;
     RangerInLastPlanetStar: TGreetingCountMask;
     PirateInLastPlanetStar: TGreetingCountMask;
@@ -517,94 +544,92 @@ type
     WarriorInLastPlanetStar: TGreetingCountMask;
     TransportInLastPlanetStar: TGreetingCountMask;
     ToPlanetRace: TOwnerMask;
-    ToPlanetRelations: TGreetingMask;
+    ToPlanetRelations: TRelationLevels;
     ToPlanetGoodsCnt: TGreetingMask;
     ToPlanetGoodsSale: TGreetingMask;
     ToPlanetGoodsBuy: TGreetingMask;
-    ToPlanetIsHomePlanet: Byte;
-    ToPlanetRaceIsShipRace: Byte;
-    ToPlanetRaceIsPlayerRace: Byte;
-    ToPlanetEconomy: TGreetingMask;
-    ToPlanetGovernment: TGreetingMask;
-    ToPlanetIsLastPlanet: Byte;
-    ToPlanetRaceIsLastPlanetRace: Byte;
-    HomePlanetInToStar: Byte;
-    HomePlanetInCurStar: Byte;
-    ToStarControlByKling: Byte;
-    ToStarInBattle: Byte;
+    ToPlanetIsHomePlanet: TGreetingCondition;
+    ToPlanetRaceIsShipRace: TGreetingCondition;
+    ToPlanetRaceIsPlayerRace: TGreetingCondition;
+    ToPlanetEconomy: TPlanetEconomies;
+    ToPlanetGovernment: TPlanetGovernments;
+    ToPlanetIsLastPlanet: TGreetingCondition;
+    ToPlanetRaceIsLastPlanetRace: TGreetingCondition;
+    HomePlanetInToStar: TGreetingCondition;
+    HomePlanetInCurStar: TGreetingCondition;
+    ToStarControlByKling: TGreetingCondition;
+    ToStarInBattle: TGreetingCondition;
     RangerInToStar: TGreetingCountMask;
     PirateInToStar: TGreetingCountMask;
     KlingInToStar: TGreetingCountMask;
     WarriorInToStar: TGreetingCountMask;
     TransportInToStar: TGreetingCountMask;
-    Gap6F: array[0..0] of Byte;
     ItemType: WideString;
-    ShipNeedInItem: Byte;
-    ToShipType: TGreetingMask;
+    ShipNeedInItem: TGreetingCondition;
+    ToShipType: TGreetingShipCategories;
     ToShipRace: TOwnerMask;
-    ToShipInPlanet: Byte;
-    ToShipBad: Byte;
-    ToShipRelations: TGreetingMask;
+    ToShipInPlanet: TGreetingCondition;
+    ToShipBad: TGreetingCondition;
+    ToShipRelations: TRelationLevels;
     RankShipWithPlayerExtra: TGreetingMask;
     PlayerPirateRank: TGreetingMask;
     Female: Byte;
-    ToStarControlByPirates: Byte;
+    ToStarControlByPirates: TGreetingCondition;
     PirateClanInCurStar: TGreetingCountMask;
     PirateClanInToStar: TGreetingCountMask;
-    CoalitionAlreadyDefeated: Byte;
-    DominatorsAlreadyDefeated: Byte;
+    CoalitionAlreadyDefeated: TGreetingCondition;
+    DominatorsAlreadyDefeated: TGreetingCondition;
   end;
 
   TGovGreetingsInfo = record
     Name: WideString;
     Priority: Integer;
     PlayerRace: TOwnerMask;
-    PlayerStatus: TGreetingMask;
+    PlayerStatus: TRangerCareerSet;
     PlayerRating: TGreetingMask;
     PlayerRank: TGreetingMask;
     Goods: Byte;
     CurPlanetRace: TOwnerMask;
-    CurPlanetRaceIsPlayerRace: Byte;
-    CurPlanetRelations: TGreetingMask;
-    CurPlanetGoodsPermit: Byte;
+    CurPlanetRaceIsPlayerRace: TGreetingCondition;
+    CurPlanetRelations: TRelationLevels;
+    CurPlanetGoodsPermit: TGreetingCondition;
     CurPlanetGoodsCnt: TGreetingMask;
     CurPlanetGoodsSale: TGreetingMask;
     CurPlanetGoodsBuy: TGreetingMask;
-    CurPlanetEconomy: TGreetingMask;
-    CurPlanetGovernment: TGreetingMask;
+    CurPlanetEconomy: TPlanetEconomies;
+    CurPlanetGovernment: TPlanetGovernments;
     RangerInCurStar: TGreetingCountMask;
     PirateInCurStar: TGreetingCountMask;
     KlingInCurStar: TGreetingCountMask;
     WarriorInCurStar: TGreetingCountMask;
     TransportInCurStar: TGreetingCountMask;
-    CurStarInBattle: Byte;
+    CurStarInBattle: TGreetingCondition;
     ToPlanetRace: TOwnerMask;
-    ToPlanetRaceIsPlayerRace: Byte;
-    ToPlanetRaceIsCurPlanetRace: Byte;
-    ToPlanetRelations: TGreetingMask;
-    ToPlanetGoodsPermit: Byte;
+    ToPlanetRaceIsPlayerRace: TGreetingCondition;
+    ToPlanetRaceIsCurPlanetRace: TGreetingCondition;
+    ToPlanetRelations: TRelationLevels;
+    ToPlanetGoodsPermit: TGreetingCondition;
     ToPlanetGoodsCnt: TGreetingMask;
     ToPlanetGoodsSale: TGreetingMask;
     ToPlanetGoodsBuy: TGreetingMask;
-    ToPlanetEconomy: TGreetingMask;
-    ToPlanetGovernment: TGreetingMask;
-    ToPlanetInCurStar: Byte;
+    ToPlanetEconomy: TPlanetEconomies;
+    ToPlanetGovernment: TPlanetGovernments;
+    ToPlanetInCurStar: TGreetingCondition;
     RangerInToStar: TGreetingCountMask;
     PirateInToStar: TGreetingCountMask;
     KlingInToStar: TGreetingCountMask;
     WarriorInToStar: TGreetingCountMask;
     TransportInToStar: TGreetingCountMask;
-    ToStarControlByKling: Byte;
-    ToStarInBattle: Byte;
-    CurPlanetPirateClan: Byte;
-    CurStarInBattlePirates: Byte;
+    ToStarControlByKling: TGreetingCondition;
+    ToStarInBattle: TGreetingCondition;
+    CurPlanetPirateClan: TGreetingCondition;
+    CurStarInBattlePirates: TGreetingCondition;
     PirateClanInCurStar: TGreetingCountMask;
     PirateClanInToStar: TGreetingCountMask;
-    ToStarControlByPirates: Byte;
-    CoalitionAlreadyDefeated: Byte;
-    DominatorsAlreadyDefeated: Byte;
+    ToStarControlByPirates: TGreetingCondition;
+    CoalitionAlreadyDefeated: TGreetingCondition;
+    DominatorsAlreadyDefeated: TGreetingCondition;
     PlayerPirateRank: TGreetingMask;
-    Gap42: array[0..1] of Byte;
   end;
 
   TPlanetAdvtUnit = record
@@ -614,11 +639,10 @@ type
     War: Integer;
     Goods: Byte;
     Owner: TOwnerMask;
-    Gap12: array[0..1] of Byte;
   end;
 
-  TPlanetAdvtList = record
-    Key: Integer;
+  TPlanetAdvtList = object
+    Weight: Integer;
     Indices: array of Integer;
   end;
 
@@ -693,7 +717,7 @@ function FindPlayerMessageExceptKinds(
 function CreatePersistentPlayerMessage: TMessagePlayer;
 
 function AddOrUpdatePlayerBubble(
-    Kind: Byte;
+    Kind: TPlayerMessageKind;
     Turn: Integer;
     const Text: WideString;
     const Key: WideString
@@ -755,7 +779,8 @@ uses
   EC_Str,
   GlobalsV,
   Math,
-  SysUtils;
+  SysUtils,
+  ab_Global;
 
 procedure InitializeScriptHostRuntime;
 begin
@@ -779,7 +804,9 @@ end;
 
 procedure FinalizeScriptHostRuntime;
 var
-  Race, Kind, Series: Byte;
+  Race: TOwnerId;
+  Kind: THullType;
+  KlingKind: TKlingType;
   Item: TObject;
   Index: Integer;
 begin
@@ -831,23 +858,23 @@ begin
     CloseGameEvent(ScriptUiAbortEvent);
     ScriptUiAbortEvent := 0;
   end;
-  for Race := 0 to 7 do
+  for Race := oiMaloc to oiPirate do
   begin
-    for Kind := 0 to 5 do
+    for Kind := htRanger to htDiplomat do
       if RaceShipTemplates[Race, Kind] <> nil then
         ReleaseSpaceObject(RaceShipTemplates[Race, Kind]);
     if PirateClanShipTemplates[Race] <> nil then
       ReleaseSpaceObject(PirateClanShipTemplates[Race]);
   end;
-  for Series := 0 to 7 do
-    if Series <> 0 then
+  for KlingKind := Low(TKlingType) to High(TKlingType) do
+    if KlingKind <> ktBoss then
     begin
-      if BlazerShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(BlazerShipTemplates[Series]);
-      if KellerShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(KellerShipTemplates[Series]);
-      if TerronShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(TerronShipTemplates[Series]);
+      if BlazerShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(BlazerShipTemplates[KlingKind]);
+      if KellerShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(KellerShipTemplates[KlingKind]);
+      if TerronShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(TerronShipTemplates[KlingKind]);
     end;
   if FilmHistory <> nil then
   begin
@@ -884,12 +911,13 @@ var
 
 procedure InitializeGlobalUiRuntime;
 var
-  Race: Byte;
+  Race: TOwnerId;
   Index, TemplateIndex, Count: Integer;
   SatelliteTemplate: TSputnikTempl;
   PlanetTemplate: TPlanetTempl;
   Section: TBlockParEC;
-  Series, Kind: Byte;
+  KlingKind: TKlingType;
+  Kind: THullType;
   ScriptTemplate: TScriptTemplUnit;
   Text, WarningText: WideString;
   ShipBlock: TBlockParEC;
@@ -923,7 +951,7 @@ begin
   if UserSettingsConfig.CountParamsByPath('DisableAutoPilot') > 0 then
     DisableAutoPilot :=
         ParseEnabledNameGI(UserSettingsConfig.GetParamByPathOrMarker('DisableAutoPilot'));
-  UiRuntimeFlag := True;
+  AwardDialogsEnabled := True;
   if UserSettingsConfig.CountParamsByPath('PQuestStyle') > 0 then
     QuestStyleIndex :=
         ExtractDigitsToIntW(UserSettingsConfig.GetParamByPathOrMarker('PQuestStyle'));
@@ -946,7 +974,10 @@ begin
         ParseEnabledNameGI(UserSettingsConfig.GetParamByPathOrMarker('ViewPathLength'));
   if UserSettingsConfig.CountParamsByPath('TurnSaveStep') > 0 then
     TurnSaveStep :=
-        Min(365, ExtractDigitsToIntW(UserSettingsConfig.GetParamByPathOrMarker('TurnSaveStep')));
+        Min(
+            TurnsPerYear,
+            ExtractDigitsToIntW(UserSettingsConfig.GetParamByPathOrMarker('TurnSaveStep'))
+        );
   if UserSettingsConfig.CountParamsByPath('QuickSaveExtraSlots') > 0 then
     QuickSaveExtraSlots :=
         Min(
@@ -1157,7 +1188,7 @@ begin
       ScriptTemplate := TScriptTemplUnit.Create;
       ScriptTemplate.Name := Section.GetParamName(Index);
       Text := Section.GetParamValue(Index);
-      ScriptTemplate.ConfigValue := ExtractDigitsToIntW(ExtractDelimitedPartW(Text, 0, ','));
+      ScriptTemplate.ClassId := ExtractDigitsToIntW(ExtractDelimitedPartW(Text, 0, ','));
       ScriptTemplate.FileName := ExtractDelimitedPartW(Text, 1, ',');
       ScriptTemplates.Add(ScriptTemplate);
       CompileScriptTemplateCondition(ScriptTemplates.Count - 1);
@@ -1174,15 +1205,15 @@ begin
               'Warning! Mismatching global variables with same name <'
                   + Variable.Name
                   + '> found! Types are '
-                  + ScriptVariableTypeNames[Integer(Variable.RealVType) and $7F]
+                  + ScriptVariableTypeNames[Ord(Variable.RealVType)]
                   + ' and '
-                  + ScriptVariableTypeNames[Integer(Other.RealVType) and $7F];
+                  + ScriptVariableTypeNames[Ord(Other.RealVType)];
           if Variable.RealVType = vkEmpty then
           begin
             WarningText :=
                 WarningText
                     + ', '
-                    + ScriptVariableTypeNames[Integer(Variable.RealVType) and $7F]
+                    + ScriptVariableTypeNames[Ord(Variable.RealVType)]
                     + ' will be discarded';
             GlobalScriptVariables.Remove(Variable);
           end
@@ -1191,7 +1222,7 @@ begin
             WarningText :=
                 WarningText
                     + ', '
-                    + ScriptVariableTypeNames[Integer(Other.RealVType) and $7F]
+                    + ScriptVariableTypeNames[Ord(Other.RealVType)]
                     + ' will be discarded';
             GlobalScriptVariables.Remove(Other);
           end;
@@ -1222,17 +1253,17 @@ begin
   end;
   if ReloadScriptTemplates then
   begin
-    for Race := 0 to 7 do
+    for Race := oiMaloc to oiPirate do
     begin
       ShipBlock := GameDataConfig.GetBlockByPath('SE.Ship').FindBlock(OwnerInfo[Race].InternalName);
-      for Kind := 0 to 5 do
+      for Kind := htRanger to htDiplomat do
         RaceShipTemplates[Race, Kind] := nil;
       PirateClanShipTemplates[Race] := nil;
       if ShipBlock <> nil then
       begin
         if ShipBlock.CountBlocks('Ranger') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 0],
+              RaceShipTemplates[Race, htRanger],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Ranger',
@@ -1241,7 +1272,7 @@ begin
           );
         if ShipBlock.CountBlocks('Warrior') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 1],
+              RaceShipTemplates[Race, htWarrior],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Warrior',
@@ -1250,7 +1281,7 @@ begin
           );
         if ShipBlock.CountBlocks('Pirate') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 2],
+              RaceShipTemplates[Race, htPirate],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Pirate',
@@ -1259,7 +1290,7 @@ begin
           );
         if ShipBlock.CountBlocks('Transport') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 3],
+              RaceShipTemplates[Race, htTransport],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Transport',
@@ -1268,7 +1299,7 @@ begin
           );
         if ShipBlock.CountBlocks('Liner') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 4],
+              RaceShipTemplates[Race, htLiner],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Liner',
@@ -1277,7 +1308,7 @@ begin
           );
         if ShipBlock.CountBlocks('Diplomat') > 0 then
           RetainSpaceObject(
-              RaceShipTemplates[Race, 5],
+              RaceShipTemplates[Race, htDiplomat],
               CreateSpaceObjectByName(
                   'Ship2',
                   'Ship.' + OwnerInfo[Race].InternalName + '.Diplomat',
@@ -1296,11 +1327,11 @@ begin
       end;
     end;
     Index := 1;
-    for Series := 0 to 7 do
-      if Series <> 0 then
+    for KlingKind := Low(TKlingType) to High(TKlingType) do
+      if KlingKind <> ktBoss then
       begin
         RetainSpaceObject(
-            BlazerShipTemplates[Series],
+            BlazerShipTemplates[KlingKind],
             CreateSpaceObjectByName(
                 'Ship2',
                 WideString('Ship.Blazer.B' + IntToStr(Index)),
@@ -1308,7 +1339,7 @@ begin
             )
         );
         RetainSpaceObject(
-            KellerShipTemplates[Series],
+            KellerShipTemplates[KlingKind],
             CreateSpaceObjectByName(
                 'Ship2',
                 WideString('Ship.Keller.K' + IntToStr(Index)),
@@ -1316,7 +1347,7 @@ begin
             )
         );
         RetainSpaceObject(
-            TerronShipTemplates[Series],
+            TerronShipTemplates[KlingKind],
             CreateSpaceObjectByName(
                 'Ship2',
                 WideString('Ship.Terron.T' + IntToStr(Index)),
@@ -1367,113 +1398,113 @@ begin
   end;
   PopupController := TfPopUpController.Create;
   LoadScreen := TfLoad.Create;
-  RegisteredScreens[Ord(screenLoad)] := LoadScreen;
+  RegisteredScreens[screenLoad] := LoadScreen;
   LoadScreen.InitializeFromConfig(UiStyleConfig, 'Load', True);
   LoadScreen.InitializeLayout;
   MainMenuScreen := TfMainForm.Create;
-  RegisteredScreens[Ord(screenMainMenu)] := MainMenuScreen;
+  RegisteredScreens[screenMainMenu] := MainMenuScreen;
   MainMenuScreen.InitializeFromConfig(UiStyleConfig, 'MainForm', True);
   PlanetQuestScreen := TfPlanetQuest.Create;
-  RegisteredScreens[Ord(screenPlanetQuest)] := PlanetQuestScreen;
+  RegisteredScreens[screenPlanetQuest] := PlanetQuestScreen;
   PlanetQuestScreen.InitializeFromConfig(UiStyleConfig, 'PlanetQuest', True);
   GameLoadScreen := TfGameLoad.Create;
-  RegisteredScreens[Ord(screenGameLoad)] := GameLoadScreen;
+  RegisteredScreens[screenGameLoad] := GameLoadScreen;
   GameLoadScreen.InitializeFromConfig(UiStyleConfig, 'GameLoad', True);
   NewGameScreen := TfGameSettings2.Create;
-  RegisteredScreens[Ord(screenNewGame)] := NewGameScreen;
+  RegisteredScreens[screenNewGame] := NewGameScreen;
   NewGameScreen.InitializeFromConfig(UiStyleConfig, 'GameSettings', True);
   IntroductionScreen := TfIntroduction.Create;
-  RegisteredScreens[Ord(screenIntroduction)] := IntroductionScreen;
+  RegisteredScreens[screenIntroduction] := IntroductionScreen;
   IntroductionScreen.InitializeFromConfig(UiStyleConfig, 'Introduction', True);
   HangarScreen := TfHangar.Create;
-  RegisteredScreens[Ord(screenHangar)] := HangarScreen;
+  RegisteredScreens[screenHangar] := HangarScreen;
   HangarScreen.InitializeFromConfig(UiStyleConfig, 'Hangar', True);
   PlanetScreen := TfPlanet.Create;
-  RegisteredScreens[Ord(screenPlanet)] := PlanetScreen;
+  RegisteredScreens[screenPlanet] := PlanetScreen;
   PlanetScreen.InitializeFromConfig(UiStyleConfig, 'Planet', True);
   UninhabitedPlanetScreen := TfPlanetNO.Create;
-  RegisteredScreens[Ord(screenPlanetNO)] := UninhabitedPlanetScreen;
+  RegisteredScreens[screenPlanetNO] := UninhabitedPlanetScreen;
   UninhabitedPlanetScreen.InitializeFromConfig(UiStyleConfig, 'PlanetNO', True);
   RuinsTalkScreen := TfRuinsTalk.Create;
-  RegisteredScreens[Ord(screenRuinsTalk)] := RuinsTalkScreen;
+  RegisteredScreens[screenRuinsTalk] := RuinsTalkScreen;
   RuinsTalkScreen.InitializeFromConfig(UiStyleConfig, 'RuinsTalk', True);
   ArcadeBattleScreen := TfAB.Create;
-  RegisteredScreens[Ord(screenArcadeBattle)] := ArcadeBattleScreen;
+  RegisteredScreens[screenArcadeBattle] := ArcadeBattleScreen;
   ArcadeBattleScreen.InitializeFromConfig(UiStyleConfig, 'AB', True);
   GovernmentScreen := TfGov.Create;
-  RegisteredScreens[Ord(screenGovernment)] := GovernmentScreen;
+  RegisteredScreens[screenGovernment] := GovernmentScreen;
   GovernmentScreen.InitializeFromConfig(UiStyleConfig, 'Gov', True);
   InfoScreen := TfInfo.Create;
-  RegisteredScreens[Ord(screenInfo)] := InfoScreen;
+  RegisteredScreens[screenInfo] := InfoScreen;
   InfoScreen.InitializeFromConfig(UiStyleConfig, 'Info', True);
   RangerRatingScreen := TfRating2.Create;
-  RegisteredScreens[Ord(screenRating)] := RangerRatingScreen;
+  RegisteredScreens[screenRating] := RangerRatingScreen;
   RangerRatingScreen.InitializeFromConfig(UiStyleConfig, 'Rating', True);
   RewardsScreen := TfRewards.Create;
-  RegisteredScreens[Ord(screenRewards)] := RewardsScreen;
+  RegisteredScreens[screenRewards] := RewardsScreen;
   RewardsScreen.InitializeFromConfig(UiStyleConfig, 'Rewards', True);
   ShipScreen := TfShip2.Create;
-  RegisteredScreens[Ord(screenShip)] := ShipScreen;
+  RegisteredScreens[screenShip] := ShipScreen;
   ShipScreen.InitializeFromConfig(UiStyleConfig, 'Ship', True);
   TalkScreen := TfTalk.Create;
-  RegisteredScreens[Ord(screenTalk)] := TalkScreen;
+  RegisteredScreens[screenTalk] := TalkScreen;
   TalkScreen.InitializeFromConfig(UiStyleConfig, 'Talk', True);
   ScannerScreen := TfScaner.Create;
-  RegisteredScreens[Ord(screenScanner)] := ScannerScreen;
+  RegisteredScreens[screenScanner] := ScannerScreen;
   ScannerScreen.InitializeFromConfig(UiStyleConfig, 'Scaner', True);
   StarMapScreen := TfStarMap.Create;
-  RegisteredScreens[Ord(screenStarMap)] := StarMapScreen;
+  RegisteredScreens[screenStarMap] := StarMapScreen;
   StarMapScreen.InitializeFromConfig(UiStyleConfig, 'StarMap', True);
   FilmScreen := TfFilm.Create;
-  RegisteredScreens[Ord(screenFilm)] := FilmScreen;
+  RegisteredScreens[screenFilm] := FilmScreen;
   FilmScreen.InitializeFromConfig(UiStyleConfig, 'Film', True);
   GalaxyScreen := TfGalaxy2.Create;
-  RegisteredScreens[Ord(screenGalaxy)] := GalaxyScreen;
+  RegisteredScreens[screenGalaxy] := GalaxyScreen;
   GalaxyScreen.InitializeFromConfig(UiStyleConfig, 'Galaxy', True);
   JumpScreen := TfJump.Create;
-  RegisteredScreens[Ord(screenJump)] := JumpScreen;
+  RegisteredScreens[screenJump] := JumpScreen;
   JumpScreen.InitializeFromConfig(UiStyleConfig, 'Jump', True);
   EquipmentShopScreen := TfEquipmentShop.Create;
-  RegisteredScreens[Ord(screenEquipmentShop)] := EquipmentShopScreen;
+  RegisteredScreens[screenEquipmentShop] := EquipmentShopScreen;
   EquipmentShopScreen.InitializeFromConfig(UiStyleConfig, 'EquipmentShop', True);
   GoodsShopScreen := TfGoodsShop2.Create;
-  RegisteredScreens[Ord(screenGoodsShop)] := GoodsShopScreen;
+  RegisteredScreens[screenGoodsShop] := GoodsShopScreen;
   GoodsShopScreen.InitializeFromConfig(UiStyleConfig, 'GoodsShop', True);
   SaveManagerScreen := TfSaveManager.Create;
-  RegisteredScreens[Ord(screenSaveManager)] := SaveManagerScreen;
+  RegisteredScreens[screenSaveManager] := SaveManagerScreen;
   SaveManagerScreen.InitializeFromConfig(UiStyleConfig, 'SaveManager', True);
   GameMenuScreen := TfGameMenu.Create;
-  RegisteredScreens[Ord(screenGameMenu)] := GameMenuScreen;
+  RegisteredScreens[screenGameMenu] := GameMenuScreen;
   GameMenuScreen.InitializeFromConfig(UiStyleConfig, 'GameMenu', True);
   SettingsScreen := TfCfgSettings.Create;
-  RegisteredScreens[Ord(screenSettings)] := SettingsScreen;
+  RegisteredScreens[screenSettings] := SettingsScreen;
   SettingsScreen.InitializeFromConfig(UiStyleConfig, 'CfgSettings', True);
   GameEndScreen := TfGameEnd.Create;
-  RegisteredScreens[Ord(screenGameEnd)] := GameEndScreen;
+  RegisteredScreens[screenGameEnd] := GameEndScreen;
   GameEndScreen.InitializeFromConfig(UiStyleConfig, 'GameEnd', True);
   AboutScreen := TfAbout.Create;
-  RegisteredScreens[Ord(screenAbout)] := AboutScreen;
+  RegisteredScreens[screenAbout] := AboutScreen;
   AboutScreen.InitializeFromConfig(UiStyleConfig, 'About', True);
   ScoreScreen := TfScore.Create;
-  RegisteredScreens[Ord(screenScores)] := ScoreScreen;
+  RegisteredScreens[screenScores] := ScoreScreen;
   ScoreScreen.InitializeFromConfig(UiStyleConfig, 'Score', True);
   SelectFaceScreen := TfSelectFace.Create;
-  RegisteredScreens[Ord(screenSelectFace)] := SelectFaceScreen;
+  RegisteredScreens[screenSelectFace] := SelectFaceScreen;
   SelectFaceScreen.InitializeFromConfig(UiStyleConfig, 'SelectFace', True);
   JournalScreen := TfJournal.Create;
-  RegisteredScreens[Ord(screenJournal)] := JournalScreen;
+  RegisteredScreens[screenJournal] := JournalScreen;
   JournalScreen.InitializeFromConfig(UiStyleConfig, 'Journal', True);
   LoadRobotScreen := TfLoadRobot.Create;
-  RegisteredScreens[Ord(screenLoadRobot)] := LoadRobotScreen;
+  RegisteredScreens[screenLoadRobot] := LoadRobotScreen;
   LoadRobotScreen.InitializeFromConfig(UiStyleConfig, 'LoadRobot', True);
   LoadQuestScreen := TfLoadQuest.Create;
-  RegisteredScreens[Ord(screenLoadQuest)] := LoadQuestScreen;
+  RegisteredScreens[screenLoadQuest] := LoadQuestScreen;
   LoadQuestScreen.InitializeFromConfig(UiStyleConfig, 'LoadQuest', True);
   LoadArcadeScreen := TfLoadAB.Create;
-  RegisteredScreens[Ord(screenLoadArcade)] := LoadArcadeScreen;
+  RegisteredScreens[screenLoadArcade] := LoadArcadeScreen;
   LoadArcadeScreen.InitializeFromConfig(UiStyleConfig, 'LoadAB', True);
   AchievementsScreen := TfAchievements.Create;
-  RegisteredScreens[Ord(screenAchievements)] := AchievementsScreen;
+  RegisteredScreens[screenAchievements] := AchievementsScreen;
   AchievementsScreen.InitializeFromConfig(UiStyleConfig, 'Achievements', True);
   SpaceObjectUiLoop := TMessageLoopGI.Create;
   SpaceObjectUiLoop.InitializeDefaults;
@@ -1618,17 +1649,17 @@ begin
     begin
       Text := Section.GetParam(WideString(IntToStr(Index)));
       ArcadeWeaponLoopTicks[Index] :=
-          ExtractDigitsToIntW(ExtractDelimitedPartW(Text, 0, ',')) div 20;
+          ExtractDigitsToIntW(ExtractDelimitedPartW(Text, 0, ',')) div ArcadeTickMs;
       ArcadeWeaponLoopSounds[Index] := ExtractDelimitedPartW(Text, 1, ',');
     end;
 end;
 
 function FindMessageLoop(Name: WideString): TMessageLoopGI;
 var
-  Index: Byte;
+  Index: TGameScreenId;
 begin
   Result := nil;
-  for Index := 0 to 41 do
+  for Index := Low(TGameScreenId) to High(TGameScreenId) do
     if (TMessageLoopGI(RegisteredScreens[Index]) <> nil)
         and (TObject(RegisteredScreens[Index]) is TMessageLoopGI)
         and ((TObject(RegisteredScreens[Index]) as TMessageLoopGI).RegisteredLoopName = Name) then
@@ -1643,7 +1674,7 @@ var
   Index, Count: Integer;
   SatelliteTemplate: TSputnikTempl;
   PlanetTemplate: TPlanetTempl;
-  ScreenIndex: Byte;
+  ScreenIndex: TGameScreenId;
   Slot: TShopSlot;
 begin
   ArcadeHitSounds := nil;
@@ -1916,7 +1947,7 @@ begin
     LoadArcadeScreen := nil;
   end;
   // Native code omits AchievementsScreen from this cleanup list.
-  for ScreenIndex := 0 to 41 do
+  for ScreenIndex := Low(TGameScreenId) to High(TGameScreenId) do
     RegisteredScreens[ScreenIndex] := nil;
   if PopupController <> nil then
   begin
@@ -1951,7 +1982,9 @@ end;
 
 procedure ResetScriptHostRuntimeState;
 var
-  Race, Kind, Series: Byte;
+  Race: TOwnerId;
+  Kind: THullType;
+  KlingKind: TKlingType;
   Index: Integer;
 begin
   if ScriptTemplates <> nil then
@@ -1991,23 +2024,23 @@ begin
     ScriptLibraryCache.Free;
     ScriptLibraryCache := nil;
   end;
-  for Race := 0 to 7 do
+  for Race := oiMaloc to oiPirate do
   begin
-    for Kind := 0 to 5 do
+    for Kind := htRanger to htDiplomat do
       if RaceShipTemplates[Race, Kind] <> nil then
         ReleaseSpaceObject(RaceShipTemplates[Race, Kind]);
     if PirateClanShipTemplates[Race] <> nil then
       ReleaseSpaceObject(PirateClanShipTemplates[Race]);
   end;
-  for Series := 0 to 7 do
-    if Series <> 0 then
+  for KlingKind := Low(TKlingType) to High(TKlingType) do
+    if KlingKind <> ktBoss then
     begin
-      if BlazerShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(BlazerShipTemplates[Series]);
-      if KellerShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(KellerShipTemplates[Series]);
-      if TerronShipTemplates[Series] <> nil then
-        ReleaseSpaceObject(TerronShipTemplates[Series]);
+      if BlazerShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(BlazerShipTemplates[KlingKind]);
+      if KellerShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(KellerShipTemplates[KlingKind]);
+      if TerronShipTemplates[KlingKind] <> nil then
+        ReleaseSpaceObject(TerronShipTemplates[KlingKind]);
     end;
   ReloadScriptTemplates := True;
 end;
@@ -2034,7 +2067,7 @@ begin
     begin
       CurrentScreenId := RequestedScreenId;
       RequestedScreenId := screenNone;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).RunContinuous;
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).RunContinuous;
       PreviousScreenId := CurrentScreenId;
       CurrentScreenId := screenNone;
     end
@@ -2044,7 +2077,7 @@ begin
         Exit;
       CurrentScreenId := RequestedScreenId;
       RequestedScreenId := screenNone;
-      TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]).Run;
+      TMessageLoopGI(RegisteredScreens[CurrentScreenId]).Run;
       PreviousScreenId := CurrentScreenId;
       CurrentScreenId := screenNone;
     end;
@@ -2089,7 +2122,7 @@ end;
 procedure TMessagePlayer.LoadFromBuffer(Buffer: TBufEC);
 begin
   Key := Buffer.ReadWideString;
-  Kind := Buffer.GetByte;
+  Kind := TPlayerMessageKind(Buffer.GetByte);
   NotificationSoundKind := Buffer.GetInt32;
   Turn := Buffer.GetInt32;
   Text := Buffer.ReadWideString;
@@ -2405,7 +2438,7 @@ begin
 end;
 
 function AddOrUpdatePlayerBubble(
-    Kind: Byte;
+    Kind: TPlayerMessageKind;
     Turn: Integer;
     const Text, Key: WideString
 ): TMessagePlayer;
@@ -2469,14 +2502,20 @@ begin
     begin
       Entry := Next;
       Next := Next.Next;
-      if Entry.WasRead and (Entry.Kind in [6]) and (Galaxy.CurrentTurn - Entry.Turn >= 7) then
+      if Entry.WasRead and (Entry.Kind in [pmTip]) and (Galaxy.CurrentTurn - Entry.Turn >= 7) then
         RemovePersistentPlayerMessage(Entry, True)
       else if Galaxy.CurrentTurn - Entry.Turn
           >= PlayerMessagePresentations[Entry.Kind].LifetimeTurns then
         RemovePersistentPlayerMessage(Entry, True)
-      else if Entry.WasRead and (Entry.Kind in [0..2, 4, 5, 8]) then
+      else if Entry.WasRead
+          and (Entry.Kind
+              in [
+                  pmGalaxyNews..pmShipPositive,
+                  pmQuestSucceeded,
+                  pmQuestCancelled,
+                  pmShipNegative]) then
         RemovePersistentPlayerMessage(Entry, True)
-      else if not GetPlayer.InNormalSpace and (Entry.Kind = 1) then
+      else if not GetPlayer.InNormalSpace and (Entry.Kind = pmRadio) then
         RemovePersistentPlayerMessage(Entry, True);
     end;
   finally
@@ -2564,14 +2603,14 @@ begin
     ShownPlayerTips := ShownPlayerTips or (1 shl Index);
     if Index < 10 then
       AddOrUpdatePlayerBubble(
-          6,
+          pmTip,
           Galaxy.CurrentTurn,
           LocalizedColorText('Tips.0' + SysUtils.IntToStr(Index)),
           ''
       )
     else
       AddOrUpdatePlayerBubble(
-          6,
+          pmTip,
           Galaxy.CurrentTurn,
           LocalizedColorText('Tips.' + SysUtils.IntToStr(Index)),
           ''
@@ -2638,15 +2677,15 @@ begin
   begin
     Names := AnsiString(Text);
     if Pos('Maloc', Names) > 0 then
-      Include(Result, 0);
+      Include(Result, oiMaloc);
     if Pos('Peleng', Names) > 0 then
-      Include(Result, 1);
+      Include(Result, oiPeleng);
     if Pos('People', Names) > 0 then
-      Include(Result, 2);
+      Include(Result, oiHuman);
     if Pos('Fei', Names) > 0 then
-      Include(Result, 3);
+      Include(Result, oiFeyan);
     if Pos('Gaal', Names) > 0 then
-      Include(Result, 4);
+      Include(Result, oiGaal);
   end;
 end;
 
@@ -2709,11 +2748,11 @@ begin
     if (Text <> '') and (Text <> 'Any') then
     begin
       if Pos('Trader', AnsiString(Text)) > 0 then
-        Include(RobotMapDefinitions[Index].PlayerStatus, 0);
+        Include(RobotMapDefinitions[Index].PlayerStatus, rcTrader);
       if Pos('Pirate', AnsiString(Text)) > 0 then
-        Include(RobotMapDefinitions[Index].PlayerStatus, 1);
+        Include(RobotMapDefinitions[Index].PlayerStatus, rcPirate);
       if Pos('Warrior', AnsiString(Text)) > 0 then
-        Include(RobotMapDefinitions[Index].PlayerStatus, 2);
+        Include(RobotMapDefinitions[Index].PlayerStatus, rcWarrior);
     end;
     RobotMapDefinitions[Index].MinWins := ExtractSignedDigitsToIntW(ReadMapText('MinWins'));
     RobotMapDefinitions[Index].MaxWins := ExtractSignedDigitsToIntW(ReadMapText('MaxWins'));
@@ -2802,22 +2841,22 @@ begin
           Priority := StrToInt(AnsiString(Text));
         Text := ReadShipGreetingField('AutoTalk');
         if (Text = '') or (Text = 'No') then
-          AutoTalk := 1
+          AutoTalk := gcNo
         else if Text = 'Any' then
-          AutoTalk := 2
+          AutoTalk := gcAny
         else
-          AutoTalk := 0;
+          AutoTalk := gcYes;
         Text := ReadShipGreetingField('FlyType');
         if (Text = 'Any') or (Text = '') then
-          FlyType := 0
+          FlyType := gfAny
         else if Text = 'ToPlanet' then
-          FlyType := 1
+          FlyType := gfToPlanet
         else if Text = 'ToStar' then
-          FlyType := 2
+          FlyType := gfToStar
         else if Text = 'ToItem' then
-          FlyType := 3
+          FlyType := gfToItem
         else if Text = 'ToShip' then
-          FlyType := 4
+          FlyType := gfToShip
         else
           RaiseWideMessage(Text);
         Text := ReadShipGreetingField('ShipType');
@@ -2846,15 +2885,15 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(Relations, 0);
+            Include(Relations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(Relations, 1);
+            Include(Relations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(Relations, 2);
+            Include(Relations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(Relations, 3);
+            Include(Relations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(Relations, 4);
+            Include(Relations, rlExcellent);
         end;
         Text := ReadShipGreetingField('ShipRace');
         ShipRace := ParseRobotMapRaceMask(Text);
@@ -2862,32 +2901,32 @@ begin
         PlayerRace := ParseRobotMapRaceMask(Text);
         Text := ReadShipGreetingField('ShipRaceIsPlayerRace');
         if Text = 'Yes' then
-          ShipRaceIsPlayerRace := 0
+          ShipRaceIsPlayerRace := gcYes
         else if Text = 'No' then
-          ShipRaceIsPlayerRace := 1
+          ShipRaceIsPlayerRace := gcNo
         else
-          ShipRaceIsPlayerRace := 2;
+          ShipRaceIsPlayerRace := gcAny;
         Text := ReadShipGreetingField('PlayerAttackGoodShip');
         if Text = 'Yes' then
-          PlayerAttackGoodShip := 0
+          PlayerAttackGoodShip := gcYes
         else if Text = 'No' then
-          PlayerAttackGoodShip := 1
+          PlayerAttackGoodShip := gcNo
         else
-          PlayerAttackGoodShip := 2;
+          PlayerAttackGoodShip := gcAny;
         Text := ReadShipGreetingField('InFear');
         if Text = 'Yes' then
-          InFear := 0
+          InFear := gcYes
         else if Text = 'Any' then
-          InFear := 2
+          InFear := gcAny
         else
-          InFear := 1;
+          InFear := gcNo;
         Text := ReadShipGreetingField('ShipBadFlyToShip');
         if Text = 'Yes' then
-          ShipBadFlyToShip := 0
+          ShipBadFlyToShip := gcYes
         else if Text = 'Any' then
-          ShipBadFlyToShip := 2
+          ShipBadFlyToShip := gcAny
         else
-          ShipBadFlyToShip := 1;
+          ShipBadFlyToShip := gcNo;
         Text := ReadShipGreetingField('ShipBadType');
         ShipBadType := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -2913,25 +2952,25 @@ begin
         ShipBadRace := ParseRobotMapRaceMask(Text);
         Text := ReadShipGreetingField('ShipFlyToPlayer');
         if Text = 'Yes' then
-          ShipFlyToPlayer := 0
+          ShipFlyToPlayer := gcYes
         else if Text = 'No' then
-          ShipFlyToPlayer := 1
+          ShipFlyToPlayer := gcNo
         else
-          ShipFlyToPlayer := 2;
+          ShipFlyToPlayer := gcAny;
         Text := ReadShipGreetingField('PlayerFlyToShip');
         if Text = 'Yes' then
-          PlayerFlyToShip := 0
+          PlayerFlyToShip := gcYes
         else if Text = 'No' then
-          PlayerFlyToShip := 1
+          PlayerFlyToShip := gcNo
         else
-          PlayerFlyToShip := 2;
+          PlayerFlyToShip := gcAny;
         Text := ReadShipGreetingField('PlayerIsShipBad');
         if Text = 'Yes' then
-          PlayerIsShipBad := 0
+          PlayerIsShipBad := gcYes
         else if Text = 'No' then
-          PlayerIsShipBad := 1
+          PlayerIsShipBad := gcNo
         else
-          PlayerIsShipBad := 2;
+          PlayerIsShipBad := gcAny;
         Text := ReadShipGreetingField('ShipTurnBeforeEndOrder');
         ShipTurnBeforeEndOrder := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -2967,22 +3006,22 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Trader', AnsiString(Text)) > 0 then
-            Include(ShipStatus, 0);
+            Include(ShipStatus, rcTrader);
           if Pos('Pirate', AnsiString(Text)) > 0 then
-            Include(ShipStatus, 1);
+            Include(ShipStatus, rcPirate);
           if Pos('Warrior', AnsiString(Text)) > 0 then
-            Include(ShipStatus, 2);
+            Include(ShipStatus, rcWarrior);
         end;
         Text := ReadShipGreetingField('PlayerStatus');
         PlayerStatus := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Trader', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 0);
+            Include(PlayerStatus, rcTrader);
           if Pos('Pirate', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 1);
+            Include(PlayerStatus, rcPirate);
           if Pos('Warrior', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 2);
+            Include(PlayerStatus, rcWarrior);
         end;
         Text := ReadShipGreetingField('ShipStrength');
         ShipStrength := [];
@@ -3164,7 +3203,7 @@ begin
         end;
         Text := ReadShipGreetingField('Goods');
         if Text = '' then
-          Goods := 42
+          Goods := UnspecifiedGoods
         else if Text = 'Food' then
           Goods := 0
         else if Text = 'Medicine' then
@@ -3182,7 +3221,7 @@ begin
         else if Text = 'Narcotics' then
           Goods := 7
         else
-          Goods := 42;
+          Goods := UnspecifiedGoods;
         Text := ReadShipGreetingField('ShipGoodsCnt');
         ShipGoodsCnt := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3219,18 +3258,18 @@ begin
         end;
         Text := ReadShipGreetingField('ShipHaveGoods');
         if Text = 'Yes' then
-          ShipHaveGoods := 0
+          ShipHaveGoods := gcYes
         else if Text = 'No' then
-          ShipHaveGoods := 1
+          ShipHaveGoods := gcNo
         else
-          ShipHaveGoods := 2;
+          ShipHaveGoods := gcAny;
         Text := ReadShipGreetingField('PlayerHaveGoods');
         if Text = 'Yes' then
-          PlayerHaveGoods := 0
+          PlayerHaveGoods := gcYes
         else if Text = 'No' then
-          PlayerHaveGoods := 1
+          PlayerHaveGoods := gcNo
         else
-          PlayerHaveGoods := 2;
+          PlayerHaveGoods := gcAny;
         Text := ReadShipGreetingField('ShipGoodsTypeCnt');
         ShipGoodsTypeCnt := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3249,11 +3288,11 @@ begin
         end;
         Text := ReadShipGreetingField('ShipMayScanPlayer');
         if Text = 'Yes' then
-          ShipMayScanPlayer := 0
+          ShipMayScanPlayer := gcYes
         else if Text = 'No' then
-          ShipMayScanPlayer := 1
+          ShipMayScanPlayer := gcNo
         else
-          ShipMayScanPlayer := 2;
+          ShipMayScanPlayer := gcAny;
         Text := ReadShipGreetingField('RangerInCurStar');
         RangerInCurStar := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3306,7 +3345,7 @@ begin
         end;
         Text := ReadShipGreetingField('LastPlanetRace');
         if Text = 'Any' then
-          LastPlanetRace := [0..4]
+          LastPlanetRace := [oiMaloc..oiGaal]
         else
           LastPlanetRace := ParseRobotMapRaceMask(Text);
         Text := ReadShipGreetingField('LastPlanetRelations');
@@ -3314,15 +3353,15 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(LastPlanetRelations, 0);
+            Include(LastPlanetRelations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(LastPlanetRelations, 1);
+            Include(LastPlanetRelations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(LastPlanetRelations, 2);
+            Include(LastPlanetRelations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(LastPlanetRelations, 3);
+            Include(LastPlanetRelations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(LastPlanetRelations, 4);
+            Include(LastPlanetRelations, rlExcellent);
         end;
         Text := ReadShipGreetingField('LastPlanetGoodsCnt');
         LastPlanetGoodsCnt := [];
@@ -3373,58 +3412,58 @@ begin
         end;
         Text := ReadShipGreetingField('LastPlanetIsHomePlanet');
         if Text = 'Yes' then
-          LastPlanetIsHomePlanet := 0
+          LastPlanetIsHomePlanet := gcYes
         else if Text = 'No' then
-          LastPlanetIsHomePlanet := 1
+          LastPlanetIsHomePlanet := gcNo
         else
-          LastPlanetIsHomePlanet := 2;
+          LastPlanetIsHomePlanet := gcAny;
         Text := ReadShipGreetingField('LastPlanetRaceIsShipRace');
         if Text = 'Yes' then
-          LastPlanetRaceIsShipRace := 0
+          LastPlanetRaceIsShipRace := gcYes
         else if Text = 'No' then
-          LastPlanetRaceIsShipRace := 1
+          LastPlanetRaceIsShipRace := gcNo
         else
-          LastPlanetRaceIsShipRace := 2;
+          LastPlanetRaceIsShipRace := gcAny;
         Text := ReadShipGreetingField('LastPlanetRaceIsPlayerRace');
         if Text = 'Yes' then
-          LastPlanetRaceIsPlayerRace := 0
+          LastPlanetRaceIsPlayerRace := gcYes
         else if Text = 'No' then
-          LastPlanetRaceIsPlayerRace := 1
+          LastPlanetRaceIsPlayerRace := gcNo
         else
-          LastPlanetRaceIsPlayerRace := 2;
+          LastPlanetRaceIsPlayerRace := gcAny;
         Text := ReadShipGreetingField('LastPlanetEconomy');
         LastPlanetEconomy := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Agriculture', AnsiString(Text)) > 0 then
-            Include(LastPlanetEconomy, 0);
+            Include(LastPlanetEconomy, peAgricultural);
           if Pos('Mixed', AnsiString(Text)) > 0 then
-            Include(LastPlanetEconomy, 1);
+            Include(LastPlanetEconomy, peMixed);
           if Pos('Industrial', AnsiString(Text)) > 0 then
-            Include(LastPlanetEconomy, 2);
+            Include(LastPlanetEconomy, peIndustrial);
         end;
         Text := ReadShipGreetingField('LastPlanetGoverment');
         LastPlanetGovernment := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Anarchy', AnsiString(Text)) > 0 then
-            Include(LastPlanetGovernment, 0);
+            Include(LastPlanetGovernment, pgAnarchy);
           if Pos('Dictatorship', AnsiString(Text)) > 0 then
-            Include(LastPlanetGovernment, 1);
+            Include(LastPlanetGovernment, pgDictatorship);
           if Pos('Monarchy', AnsiString(Text)) > 0 then
-            Include(LastPlanetGovernment, 2);
+            Include(LastPlanetGovernment, pgMonarchy);
           if Pos('Republic', AnsiString(Text)) > 0 then
-            Include(LastPlanetGovernment, 3);
+            Include(LastPlanetGovernment, pgRepublic);
           if Pos('Democracy', AnsiString(Text)) > 0 then
-            Include(LastPlanetGovernment, 4);
+            Include(LastPlanetGovernment, pgDemocracy);
         end;
         Text := ReadShipGreetingField('LastPlanetInCurStar');
         if Text = 'Yes' then
-          LastPlanetInCurStar := 0
+          LastPlanetInCurStar := gcYes
         else if Text = 'No' then
-          LastPlanetInCurStar := 1
+          LastPlanetInCurStar := gcNo
         else
-          LastPlanetInCurStar := 2;
+          LastPlanetInCurStar := gcAny;
         Text := ReadShipGreetingField('LastPlanetDistToShipInTurn');
         LastPlanetDistToShipInTurn := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3492,15 +3531,15 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 0);
+            Include(ToPlanetRelations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 1);
+            Include(ToPlanetRelations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 2);
+            Include(ToPlanetRelations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 3);
+            Include(ToPlanetRelations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 4);
+            Include(ToPlanetRelations, rlExcellent);
         end;
         Text := ReadShipGreetingField('ToPlanetGoodsCnt');
         ToPlanetGoodsCnt := [];
@@ -3551,93 +3590,93 @@ begin
         end;
         Text := ReadShipGreetingField('ToPlanetIsHomePlanet');
         if Text = 'Yes' then
-          ToPlanetIsHomePlanet := 0
+          ToPlanetIsHomePlanet := gcYes
         else if Text = 'No' then
-          ToPlanetIsHomePlanet := 1
+          ToPlanetIsHomePlanet := gcNo
         else
-          ToPlanetIsHomePlanet := 2;
+          ToPlanetIsHomePlanet := gcAny;
         Text := ReadShipGreetingField('ToPlanetRaceIsShipRace');
         if Text = 'Yes' then
-          ToPlanetRaceIsShipRace := 0
+          ToPlanetRaceIsShipRace := gcYes
         else if Text = 'No' then
-          ToPlanetRaceIsShipRace := 1
+          ToPlanetRaceIsShipRace := gcNo
         else
-          ToPlanetRaceIsShipRace := 2;
+          ToPlanetRaceIsShipRace := gcAny;
         Text := ReadShipGreetingField('ToPlanetRaceIsPlayerRace');
         if Text = 'Yes' then
-          ToPlanetRaceIsPlayerRace := 0
+          ToPlanetRaceIsPlayerRace := gcYes
         else if Text = 'No' then
-          ToPlanetRaceIsPlayerRace := 1
+          ToPlanetRaceIsPlayerRace := gcNo
         else
-          ToPlanetRaceIsPlayerRace := 2;
+          ToPlanetRaceIsPlayerRace := gcAny;
         Text := ReadShipGreetingField('ToPlanetEconomy');
         ToPlanetEconomy := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Agriculture', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 0);
+            Include(ToPlanetEconomy, peAgricultural);
           if Pos('Mixed', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 1);
+            Include(ToPlanetEconomy, peMixed);
           if Pos('Industrial', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 2);
+            Include(ToPlanetEconomy, peIndustrial);
         end;
         Text := ReadShipGreetingField('ToPlanetGoverment');
         ToPlanetGovernment := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Anarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 0);
+            Include(ToPlanetGovernment, pgAnarchy);
           if Pos('Dictatorship', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 1);
+            Include(ToPlanetGovernment, pgDictatorship);
           if Pos('Monarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 2);
+            Include(ToPlanetGovernment, pgMonarchy);
           if Pos('Republic', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 3);
+            Include(ToPlanetGovernment, pgRepublic);
           if Pos('Democracy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 4);
+            Include(ToPlanetGovernment, pgDemocracy);
         end;
         Text := ReadShipGreetingField('ToPlanetIsLastPlanet');
         if Text = 'Yes' then
-          ToPlanetIsLastPlanet := 0
+          ToPlanetIsLastPlanet := gcYes
         else if Text = 'Any' then
-          ToPlanetIsLastPlanet := 2
+          ToPlanetIsLastPlanet := gcAny
         else
-          ToPlanetIsLastPlanet := 1;
+          ToPlanetIsLastPlanet := gcNo;
         Text := ReadShipGreetingField('ToPlanetRaceIsLastPlanetRace');
         if Text = 'Yes' then
-          ToPlanetRaceIsLastPlanetRace := 0
+          ToPlanetRaceIsLastPlanetRace := gcYes
         else if Text = 'No' then
-          ToPlanetRaceIsLastPlanetRace := 1
+          ToPlanetRaceIsLastPlanetRace := gcNo
         else
-          ToPlanetRaceIsLastPlanetRace := 2;
+          ToPlanetRaceIsLastPlanetRace := gcAny;
         Text := ReadShipGreetingField('HomePlanetInToStar');
         if Text = 'Yes' then
-          HomePlanetInToStar := 0
+          HomePlanetInToStar := gcYes
         else if Text = 'No' then
-          HomePlanetInToStar := 1
+          HomePlanetInToStar := gcNo
         else
-          HomePlanetInToStar := 2;
+          HomePlanetInToStar := gcAny;
         Text := ReadShipGreetingField('HomePlanetInCurStar');
         if Text = 'Yes' then
-          HomePlanetInCurStar := 0
+          HomePlanetInCurStar := gcYes
         else if Text = 'No' then
-          HomePlanetInCurStar := 1
+          HomePlanetInCurStar := gcNo
         else
-          HomePlanetInCurStar := 2;
+          HomePlanetInCurStar := gcAny;
         Text := ReadShipGreetingField('ToStarControlByKling');
         if Text = 'Yes' then
-          ToStarControlByKling := 0
+          ToStarControlByKling := gcYes
         else if Text = 'Any' then
-          ToStarControlByKling := 2
+          ToStarControlByKling := gcAny
         else
-          ToStarControlByKling := 1;
+          ToStarControlByKling := gcNo;
         Text := ReadShipGreetingField('ToStarInBattle');
         if Text = 'Yes' then
-          ToStarInBattle := 0
+          ToStarInBattle := gcYes
         else if Text = 'Any' then
-          ToStarInBattle := 2
+          ToStarInBattle := gcAny
         else
-          ToStarInBattle := 1;
+          ToStarInBattle := gcNo;
         Text := ReadShipGreetingField('RangerInToStar');
         RangerInToStar := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3695,23 +3734,23 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Anarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 0);
+            Include(ToPlanetGovernment, pgAnarchy);
           if Pos('Dictatorship', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 1);
+            Include(ToPlanetGovernment, pgDictatorship);
           if Pos('Monarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 2);
+            Include(ToPlanetGovernment, pgMonarchy);
           if Pos('Republic', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 3);
+            Include(ToPlanetGovernment, pgRepublic);
           if Pos('Democracy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 4);
+            Include(ToPlanetGovernment, pgDemocracy);
         end;
         Text := ReadShipGreetingField('ShipNeedInItem');
         if Text = 'Yes' then
-          ShipNeedInItem := 0
+          ShipNeedInItem := gcYes
         else if Text = 'No' then
-          ShipNeedInItem := 1
+          ShipNeedInItem := gcNo
         else
-          ShipNeedInItem := 2;
+          ShipNeedInItem := gcAny;
         Text := ReadShipGreetingField('ToShipType');
         ToShipType := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3735,32 +3774,32 @@ begin
         ToShipRace := ParseRobotMapRaceMask(Text);
         Text := ReadShipGreetingField('ToShipInPlanet');
         if Text = 'Yes' then
-          ToShipInPlanet := 0
+          ToShipInPlanet := gcYes
         else if Text = 'No' then
-          ToShipInPlanet := 1
+          ToShipInPlanet := gcNo
         else
-          ToShipInPlanet := 2;
+          ToShipInPlanet := gcAny;
         Text := ReadShipGreetingField('ToShipBad');
         if Text = 'Yes' then
-          ToShipBad := 0
+          ToShipBad := gcYes
         else if Text = 'No' then
-          ToShipBad := 1
+          ToShipBad := gcNo
         else
-          ToShipBad := 2;
+          ToShipBad := gcAny;
         Text := ReadShipGreetingField('ToShipRelations');
         ToShipRelations := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(ToShipRelations, 0);
+            Include(ToShipRelations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(ToShipRelations, 1);
+            Include(ToShipRelations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(ToShipRelations, 2);
+            Include(ToShipRelations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(ToShipRelations, 3);
+            Include(ToShipRelations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(ToShipRelations, 4);
+            Include(ToShipRelations, rlExcellent);
         end;
         Text := ReadShipGreetingField('PlayerPirateRank');
         PlayerPirateRank := [];
@@ -3815,11 +3854,11 @@ begin
         end;
         Text := ReadShipGreetingField('ToStarControlByPirates');
         if Text = 'Yes' then
-          ToStarControlByPirates := 0
+          ToStarControlByPirates := gcYes
         else if Text = 'Any' then
-          ToStarControlByPirates := 2
+          ToStarControlByPirates := gcAny
         else
-          ToStarControlByPirates := 1;
+          ToStarControlByPirates := gcNo;
         Text := ReadShipGreetingField('PirateClanInCurStar');
         PirateClanInCurStar := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -3843,18 +3882,18 @@ begin
         end;
         Text := ReadShipGreetingField('CoalitionAlreadyDefeated');
         if Text = 'Yes' then
-          CoalitionAlreadyDefeated := 0
+          CoalitionAlreadyDefeated := gcYes
         else if Text = 'No' then
-          CoalitionAlreadyDefeated := 1
+          CoalitionAlreadyDefeated := gcNo
         else
-          CoalitionAlreadyDefeated := 2;
+          CoalitionAlreadyDefeated := gcAny;
         Text := ReadShipGreetingField('DominatorsAlreadyDefeated');
         if Text = 'Yes' then
-          DominatorsAlreadyDefeated := 0
+          DominatorsAlreadyDefeated := gcYes
         else if Text = 'No' then
-          DominatorsAlreadyDefeated := 1
+          DominatorsAlreadyDefeated := gcNo
         else
-          DominatorsAlreadyDefeated := 2;
+          DominatorsAlreadyDefeated := gcAny;
       end;
     end;
 end;
@@ -3903,11 +3942,11 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Trader', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 0);
+            Include(PlayerStatus, rcTrader);
           if Pos('Pirate', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 1);
+            Include(PlayerStatus, rcPirate);
           if Pos('Warrior', AnsiString(Text)) > 0 then
-            Include(PlayerStatus, 2);
+            Include(PlayerStatus, rcWarrior);
         end;
         Text := ReadGovernmentGreetingField('PlayerRating');
         PlayerRating := [];
@@ -3947,7 +3986,7 @@ begin
         end;
         Text := ReadGovernmentGreetingField('Goods');
         if Text = '' then
-          Goods := 42
+          Goods := UnspecifiedGoods
         else if Text = 'Food' then
           Goods := 0
         else if Text = 'Medicine' then
@@ -3965,38 +4004,38 @@ begin
         else if Text = 'Narcotics' then
           Goods := 7
         else
-          Goods := 42;
+          Goods := UnspecifiedGoods;
         Text := ReadGovernmentGreetingField('CurPlanetRace');
         CurPlanetRace := ParseRobotMapRaceMask(Text);
         Text := ReadGovernmentGreetingField('CurPlanetRaceIsPlayerRace');
         if Text = 'Yes' then
-          CurPlanetRaceIsPlayerRace := 0
+          CurPlanetRaceIsPlayerRace := gcYes
         else if Text = 'No' then
-          CurPlanetRaceIsPlayerRace := 1
+          CurPlanetRaceIsPlayerRace := gcNo
         else
-          CurPlanetRaceIsPlayerRace := 2;
+          CurPlanetRaceIsPlayerRace := gcAny;
         Text := ReadGovernmentGreetingField('CurPlanetRelations');
         CurPlanetRelations := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(CurPlanetRelations, 0);
+            Include(CurPlanetRelations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(CurPlanetRelations, 1);
+            Include(CurPlanetRelations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(CurPlanetRelations, 2);
+            Include(CurPlanetRelations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(CurPlanetRelations, 3);
+            Include(CurPlanetRelations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(CurPlanetRelations, 4);
+            Include(CurPlanetRelations, rlExcellent);
         end;
         Text := ReadGovernmentGreetingField('CurPlanetGoodsPermit');
         if Text = 'Yes' then
-          CurPlanetGoodsPermit := 0
+          CurPlanetGoodsPermit := gcYes
         else if Text = 'No' then
-          CurPlanetGoodsPermit := 1
+          CurPlanetGoodsPermit := gcNo
         else
-          CurPlanetGoodsPermit := 2;
+          CurPlanetGoodsPermit := gcAny;
         Text := ReadGovernmentGreetingField('CurPlanetGoodsCnt');
         CurPlanetGoodsCnt := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -4049,26 +4088,26 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Agriculture', AnsiString(Text)) > 0 then
-            Include(CurPlanetEconomy, 0);
+            Include(CurPlanetEconomy, peAgricultural);
           if Pos('Mixed', AnsiString(Text)) > 0 then
-            Include(CurPlanetEconomy, 1);
+            Include(CurPlanetEconomy, peMixed);
           if Pos('Industrial', AnsiString(Text)) > 0 then
-            Include(CurPlanetEconomy, 2);
+            Include(CurPlanetEconomy, peIndustrial);
         end;
         Text := ReadGovernmentGreetingField('CurPlanetGoverment');
         CurPlanetGovernment := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Anarchy', AnsiString(Text)) > 0 then
-            Include(CurPlanetGovernment, 0);
+            Include(CurPlanetGovernment, pgAnarchy);
           if Pos('Dictatorship', AnsiString(Text)) > 0 then
-            Include(CurPlanetGovernment, 1);
+            Include(CurPlanetGovernment, pgDictatorship);
           if Pos('Monarchy', AnsiString(Text)) > 0 then
-            Include(CurPlanetGovernment, 2);
+            Include(CurPlanetGovernment, pgMonarchy);
           if Pos('Republic', AnsiString(Text)) > 0 then
-            Include(CurPlanetGovernment, 3);
+            Include(CurPlanetGovernment, pgRepublic);
           if Pos('Democracy', AnsiString(Text)) > 0 then
-            Include(CurPlanetGovernment, 4);
+            Include(CurPlanetGovernment, pgDemocracy);
         end;
         Text := ReadGovernmentGreetingField('RangerInCurStar');
         RangerInCurStar := [];
@@ -4122,52 +4161,52 @@ begin
         end;
         Text := ReadGovernmentGreetingField('CurStarInBattle');
         if Text = 'Yes' then
-          CurStarInBattle := 0
+          CurStarInBattle := gcYes
         else if Text = 'Any' then
-          CurStarInBattle := 2
+          CurStarInBattle := gcAny
         else
-          CurStarInBattle := 1;
+          CurStarInBattle := gcNo;
         Text := ReadGovernmentGreetingField('ToPlanetRace');
         if Text = 'Any' then
-          ToPlanetRace := [0..4]
+          ToPlanetRace := [oiMaloc..oiGaal]
         else
           ToPlanetRace := ParseRobotMapRaceMask(Text);
         Text := ReadGovernmentGreetingField('ToPlanetRaceIsPlayerRace');
         if Text = 'Yes' then
-          ToPlanetRaceIsPlayerRace := 0
+          ToPlanetRaceIsPlayerRace := gcYes
         else if Text = 'No' then
-          ToPlanetRaceIsPlayerRace := 1
+          ToPlanetRaceIsPlayerRace := gcNo
         else
-          ToPlanetRaceIsPlayerRace := 2;
+          ToPlanetRaceIsPlayerRace := gcAny;
         Text := ReadGovernmentGreetingField('ToPlanetRaceIsCurPlanetRace');
         if Text = 'Yes' then
-          ToPlanetRaceIsCurPlanetRace := 0
+          ToPlanetRaceIsCurPlanetRace := gcYes
         else if Text = 'No' then
-          ToPlanetRaceIsCurPlanetRace := 1
+          ToPlanetRaceIsCurPlanetRace := gcNo
         else
-          ToPlanetRaceIsCurPlanetRace := 2;
+          ToPlanetRaceIsCurPlanetRace := gcAny;
         Text := ReadGovernmentGreetingField('ToPlanetRelations');
         ToPlanetRelations := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('War', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 0);
+            Include(ToPlanetRelations, rlHostile);
           if Pos('Bad', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 1);
+            Include(ToPlanetRelations, rlBad);
           if Pos('Normal', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 2);
+            Include(ToPlanetRelations, rlNormal);
           if Pos('Good', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 3);
+            Include(ToPlanetRelations, rlGood);
           if Pos('Best', AnsiString(Text)) > 0 then
-            Include(ToPlanetRelations, 4);
+            Include(ToPlanetRelations, rlExcellent);
         end;
         Text := ReadGovernmentGreetingField('ToPlanetGoodsPermit');
         if Text = 'Yes' then
-          ToPlanetGoodsPermit := 0
+          ToPlanetGoodsPermit := gcYes
         else if Text = 'No' then
-          ToPlanetGoodsPermit := 1
+          ToPlanetGoodsPermit := gcNo
         else
-          ToPlanetGoodsPermit := 2;
+          ToPlanetGoodsPermit := gcAny;
         Text := ReadGovernmentGreetingField('ToPlanetGoodsCnt');
         ToPlanetGoodsCnt := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -4220,34 +4259,34 @@ begin
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Agriculture', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 0);
+            Include(ToPlanetEconomy, peAgricultural);
           if Pos('Mixed', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 1);
+            Include(ToPlanetEconomy, peMixed);
           if Pos('Industrial', AnsiString(Text)) > 0 then
-            Include(ToPlanetEconomy, 2);
+            Include(ToPlanetEconomy, peIndustrial);
         end;
         Text := ReadGovernmentGreetingField('ToPlanetGoverment');
         ToPlanetGovernment := [];
         if (Text <> '') and (Text <> 'Any') then
         begin
           if Pos('Anarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 0);
+            Include(ToPlanetGovernment, pgAnarchy);
           if Pos('Dictatorship', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 1);
+            Include(ToPlanetGovernment, pgDictatorship);
           if Pos('Monarchy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 2);
+            Include(ToPlanetGovernment, pgMonarchy);
           if Pos('Republic', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 3);
+            Include(ToPlanetGovernment, pgRepublic);
           if Pos('Democracy', AnsiString(Text)) > 0 then
-            Include(ToPlanetGovernment, 4);
+            Include(ToPlanetGovernment, pgDemocracy);
         end;
         Text := ReadGovernmentGreetingField('ToPlanetInCurStar');
         if Text = 'Any' then
-          ToPlanetInCurStar := 2
+          ToPlanetInCurStar := gcAny
         else if Text = 'No' then
-          ToPlanetInCurStar := 1
+          ToPlanetInCurStar := gcNo
         else
-          ToPlanetInCurStar := 0;
+          ToPlanetInCurStar := gcYes;
         Text := ReadGovernmentGreetingField('RangerInToStar');
         RangerInToStar := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -4300,32 +4339,32 @@ begin
         end;
         Text := ReadGovernmentGreetingField('ToStarControlByKling');
         if Text = 'Yes' then
-          ToStarControlByKling := 0
+          ToStarControlByKling := gcYes
         else if Text = 'Any' then
-          ToStarControlByKling := 2
+          ToStarControlByKling := gcAny
         else
-          ToStarControlByKling := 1;
+          ToStarControlByKling := gcNo;
         Text := ReadGovernmentGreetingField('ToStarInBattle');
         if Text = 'Yes' then
-          ToStarInBattle := 0
+          ToStarInBattle := gcYes
         else if Text = 'Any' then
-          ToStarInBattle := 2
+          ToStarInBattle := gcAny
         else
-          ToStarInBattle := 1;
+          ToStarInBattle := gcNo;
         Text := ReadGovernmentGreetingField('CurPlanetPirateClan');
         if Text = 'Yes' then
-          CurPlanetPirateClan := 0
+          CurPlanetPirateClan := gcYes
         else if Text = 'No' then
-          CurPlanetPirateClan := 1
+          CurPlanetPirateClan := gcNo
         else
-          CurPlanetPirateClan := 2;
+          CurPlanetPirateClan := gcAny;
         Text := ReadGovernmentGreetingField('CurStarInBattlePirates');
         if Text = 'Yes' then
-          CurStarInBattlePirates := 0
+          CurStarInBattlePirates := gcYes
         else if Text = 'Any' then
-          CurStarInBattlePirates := 2
+          CurStarInBattlePirates := gcAny
         else
-          CurStarInBattlePirates := 1;
+          CurStarInBattlePirates := gcNo;
         Text := ReadGovernmentGreetingField('PirateClanInCurStar');
         PirateClanInCurStar := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -4348,25 +4387,25 @@ begin
         end;
         Text := ReadGovernmentGreetingField('ToStarControlByPirates');
         if Text = 'Yes' then
-          ToStarControlByPirates := 0
+          ToStarControlByPirates := gcYes
         else if Text = 'Any' then
-          ToStarControlByPirates := 2
+          ToStarControlByPirates := gcAny
         else
-          ToStarControlByPirates := 1;
+          ToStarControlByPirates := gcNo;
         Text := ReadGovernmentGreetingField('CoalitionAlreadyDefeated');
         if Text = 'Yes' then
-          CoalitionAlreadyDefeated := 0
+          CoalitionAlreadyDefeated := gcYes
         else if Text = 'No' then
-          CoalitionAlreadyDefeated := 1
+          CoalitionAlreadyDefeated := gcNo
         else
-          CoalitionAlreadyDefeated := 2;
+          CoalitionAlreadyDefeated := gcAny;
         Text := ReadGovernmentGreetingField('DominatorsAlreadyDefeated');
         if Text = 'Yes' then
-          DominatorsAlreadyDefeated := 0
+          DominatorsAlreadyDefeated := gcYes
         else if Text = 'No' then
-          DominatorsAlreadyDefeated := 1
+          DominatorsAlreadyDefeated := gcNo
         else
-          DominatorsAlreadyDefeated := 2;
+          DominatorsAlreadyDefeated := gcAny;
         Text := ReadGovernmentGreetingField('PlayerPirateRank');
         PlayerPirateRank := [];
         if (Text <> '') and (Text <> 'Any') then
@@ -4437,7 +4476,7 @@ begin
           else if PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].War > 1 then
             PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].War := 1;
         end;
-        PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Goods := 42;
+        PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Goods := UnspecifiedGoods;
         if Block.CountParams('Goods') > 0 then
         begin
           Text := Block.GetParam('Goods');
@@ -4458,22 +4497,22 @@ begin
           else if Text = 'Narcotics' then
             PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Goods := 7
           else
-            PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Goods := 42;
+            PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Goods := UnspecifiedGoods;
         end;
         PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner := [];
         if Block.CountParams('Owner') > 0 then
         begin
           Text := Block.GetParam('Owner');
           if Pos('Maloc', AnsiString(Text)) > 0 then
-            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, 0);
+            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, oiMaloc);
           if Pos('Peleng', AnsiString(Text)) > 0 then
-            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, 1);
+            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, oiPeleng);
           if Pos('People', AnsiString(Text)) > 0 then
-            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, 2);
+            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, oiHuman);
           if Pos('Fei', AnsiString(Text)) > 0 then
-            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, 3);
+            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, oiFeyan);
           if Pos('Gaal', AnsiString(Text)) > 0 then
-            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, 4);
+            Include(PlanetAdvertDefinitions[GroupIndex].Adverts[AdvertIndex].Owner, oiGaal);
         end;
         Inc(AdvertIndex);
         if AdvertIndex >= Count - 1 then
@@ -4484,7 +4523,7 @@ begin
     SetLength(PlanetAdvertDefinitions[GroupIndex].Lists, Block.GetParamCount);
     for BlockIndex := 0 to High(PlanetAdvertDefinitions[GroupIndex].Lists) do
     begin
-      PlanetAdvertDefinitions[GroupIndex].Lists[BlockIndex].Key :=
+      PlanetAdvertDefinitions[GroupIndex].Lists[BlockIndex].Weight :=
           ExtractDigitsToIntW(Block.GetParamName(BlockIndex));
       Text := Block.GetParamValue(BlockIndex);
       Count := CountDelimitedPartsW(Text, ',');
@@ -4510,7 +4549,7 @@ end;
 
 function GetInnermostScreenLoop: TMessageLoopGI;
 begin
-  Result := TMessageLoopGI(RegisteredScreens[Ord(CurrentScreenId)]);
+  Result := TMessageLoopGI(RegisteredScreens[CurrentScreenId]);
   while Result.ChildLoop <> nil do
     Result := Result.ChildLoop;
 end;

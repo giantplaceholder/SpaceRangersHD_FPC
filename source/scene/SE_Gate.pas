@@ -21,7 +21,6 @@ type
 
   TGateSE = class(TObjectSE)
     Angle: Byte;
-    Gap4D: array[0..2] of Byte;
     State: Integer;
     StateStep: Integer;
     LabelText: WideString;
@@ -53,7 +52,6 @@ type
 
   TGateEffectSE = class(TObjectSE)
     Angle: Byte;
-    Gap4D: array[0..2] of Byte;
     StateStep: Integer;
     Image: TRotateImageGaiGI;
     TickCount: Integer;

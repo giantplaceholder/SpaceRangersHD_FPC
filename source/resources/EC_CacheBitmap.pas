@@ -10,6 +10,10 @@ uses
   EC_Cache,
   GR_GraphBuf;
 
+const
+
+  RgbaImagePathSuffix = '?RGBA';
+
 type
 
   TCBitmapControlEC = class;

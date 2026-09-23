@@ -26,7 +26,6 @@ type
   TQuestChoiceEvent = procedure(Value: Integer) of object;
 
   TfQuestA = class(TObject)
-    Gap4: array[0..3] of Byte;
     Callback: TQuestChoiceEvent;
     Value: Integer;
     constructor Create;
@@ -49,7 +48,6 @@ type
     ChoiceCount: Integer;
     Gap104: array[0..1] of Byte;
     ParameterPanelOrigin: TPoint;
-    Gap10E: array[0..1] of Byte;
     QuestId: Integer;
     procedure OnOpen; override;
     procedure OnClose; override;
@@ -266,7 +264,7 @@ begin
     Data := AcquireOrCreateBuffer(Control);
     Quest.LoadFromReader(Data.Buffer, False);
     if not StandaloneQuestMode then
-      if QuestId >= 10000 then
+      if QuestId >= FirstLicensedQuestId then
         if (LanguageDataConfig.GetBlock('PlanetQuest').CountBlocks('PlanetQuestLic') <= 0)
             or (LanguageDataConfig
                     .GetBlock('PlanetQuest')
@@ -313,7 +311,7 @@ begin
   if Quest.FormatVersion <= 1111111124 then
     ApplyLegacyPictureOverrides;
   if GetPlayer = nil then
-    CurrentDate := TrimWideString(Galaxy.FormatTurnDate(300))
+    CurrentDate := TrimWideString(Galaxy.FormatTurnDate(GalaxyWarmupTurns))
   else
     CurrentDate := TrimWideString(Galaxy.FormatTurnDate(Galaxy.CurrentTurn));
   Quest.PlayerInterface := QuestPlayerInterface;
@@ -767,7 +765,7 @@ begin
   FixedWidth := FindTextOffsetW(LowerCaseWideString(Text), '<fix>') >= 0;
   Text := RemoveMatchingTextTagsW(Text, 'fix', 'FIX');
   Text := RemoveMatchingTextTagsW(Text, '/fix', '/FIX');
-  Text := ReplaceAllWideString(Text, GetTextColorTag(QuestStyleIndex), '<color=255,240,100>');
+  Text := ReplaceAllWideString(Text, GetTextColorTag(QuestStyleIndex), TextHighlightColorTag);
   Lines := TStringsEC.Create;
   Lines.SetText(Text);
   Lines.First;
@@ -1168,14 +1166,15 @@ begin
     if (QueuedTextQuests.Count = 0)
         and (GetPlayer <> nil)
         and (GetPlayer.CurrentPlanet <> nil)
-        and (GetPlayer.CurrentPlanet.TextQuestId >= 10000)
+        and (GetPlayer.CurrentPlanet.TextQuestId >= FirstLicensedQuestId)
         and ((LanguageDataConfig.GetBlock('PlanetQuest').CountBlocks('PlanetQuestLic') <= 0)
             or (LanguageDataConfig
                     .GetBlock('PlanetQuest')
                     .GetBlock('PlanetQuestLic')
                     .GetParamOrMarker(IntToStr(GetPlayer.CurrentPlanet.TextQuestId))
                 = PlanetQuestScreen.GetQuestContentHash(GetPlayer.CurrentPlanet.TextQuestId))) then
-      MoneyLimitComplement := (Galaxy.ComputeScaledBigMoney(2) + GetPlayer.Money) xor $FFFFFFFF
+      MoneyLimitComplement :=
+          (Galaxy.ComputeScaledBigMoney(oiHuman) + GetPlayer.Money) xor $FFFFFFFF
     else if (GetPlayer <> nil) and (QueuedTextQuests.Count = 0) then
       MoneyLimitComplement := (GetPlayer.Money + 50000) xor $FFFFFFFF
     else
@@ -1185,7 +1184,7 @@ begin
     begin
       Stage := 6;
       Quest := TTextQuest.Create;
-      if GetPlayer.CurrentPlanet.OwnerId <> Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId <> oiPirate then
         LoadQuestByName('Prison')
       else
         LoadQuestByName('PirateClanPrison');
@@ -1724,7 +1723,7 @@ var
   Expanded, SourceLineBreak, ReplacementLineBreak, IndentedLineBreak: WideString;
 begin
   if GetPlayer = nil then
-    CurrentDate := TrimWideString(Galaxy.FormatTurnDate(DaysElapsed + 300))
+    CurrentDate := TrimWideString(Galaxy.FormatTurnDate(DaysElapsed + GalaxyWarmupTurns))
   else
     CurrentDate := TrimWideString(Galaxy.FormatTurnDate(Galaxy.CurrentTurn));
   Expanded := ExpandExternalText(Text);
@@ -1797,7 +1796,7 @@ begin
               WrapTextInColor(GetPlayer.Name, GetTextColorTag(QuestStyleIndex))
           );
     Expanded := ReplaceAllWideString(Expanded, '<clr>', GetTextColorTag(QuestStyleIndex));
-    Expanded := ReplaceAllWideString(Expanded, '<clrEnd>', '</color>');
+    Expanded := ReplaceAllWideString(Expanded, '<clrEnd>', EndColorTag);
   end;
   Result := Expanded;
 end;
@@ -1856,15 +1855,15 @@ begin
                     News,
                     '<FromPlanet>',
                     GovernmentQuest.Planet.Name,
-                    '<color=255,240,100>'
+                    TextHighlightColorTag
                 );
                 ReplaceTextToken(
                     News,
                     '<ToPlanet>',
                     GetPlayer.CurrentPlanet.Name,
-                    '<color=255,240,100>'
+                    TextHighlightColorTag
                 );
-                AddOrUpdatePlayerBubble(0, Galaxy.CurrentTurn, News, '');
+                AddOrUpdatePlayerBubble(pmGalaxyNews, Galaxy.CurrentTurn, News, '');
               end;
               ItemName :=
                   LookupLocalizedTextByKey(
@@ -1879,7 +1878,7 @@ begin
               GetPlayer.CurrentPlanet.TextQuestId := -1;
               (GetByName('QuestPanel') as TPanelGI).SetActive(False);
               if GetPlayer.CurrentPlanet.IsCoalitionOwned
-                  or (GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate)) then
+                  or (GetPlayer.CurrentPlanet.OwnerId = oiPirate) then
               begin
                 GetPlayer
                     .CurrentPlanet
@@ -1922,7 +1921,7 @@ begin
   begin
     GetPlayer.InPrison := False;
     if GetPlayer.CurrentPlanet <> nil then
-      if (GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate)) and (MainPiratePlanet <> nil) then
+      if (GetPlayer.CurrentPlanet.OwnerId = oiPirate) and (MainPiratePlanet <> nil) then
         MainPiratePlanet.SetRelationLevelToRanger(GetPlayer, rlHostile)
       else
         GetPlayer.CurrentPlanet.SetRelationLevelToRanger(GetPlayer, rlHostile);
@@ -1952,21 +1951,21 @@ begin
                   News,
                   '<ToPlanet>',
                   GetPlayer.CurrentPlanet.Name,
-                  '<color=255,240,100>'
+                  TextHighlightColorTag
               );
               ReplaceTextToken(
                   News,
                   '<FromPlanet>',
                   GovernmentQuest.Planet.Name,
-                  '<color=255,240,100>'
+                  TextHighlightColorTag
               );
               ReplaceTextToken(
                   News,
                   '<Relation>',
                   GovernmentQuest.Planet.GetRelationLevelTextToShip(GetPlayer),
-                  '<color=255,240,100>'
+                  TextHighlightColorTag
               );
-              AddOrUpdatePlayerBubble(0, Galaxy.CurrentTurn, News, '');
+              AddOrUpdatePlayerBubble(pmGalaxyNews, Galaxy.CurrentTurn, News, '');
               GetPlayer.CurrentPlanet.TextQuestId := -1;
               GetPlayer.ArchiveQuest(I);
               Break;
@@ -2170,28 +2169,25 @@ var
   Variable: TVarEC;
 begin
   Expanded := Text;
-  // +0 preserves the native argument-load order; see docs/development.md.
   for I := 1 to Quest.GetParameterCount do
-    if FindTextPosW('ext_', Quest.GetParameter(I + 0).NameText.Text) = 1 then
-    begin
-      Name := Quest.GetParameter(I + 0).NameText.Text;
-      Token := Name;
-      Name[1] := 'E';
-      Token[1] := 't';
-      Token := '<' + Token + '>';
-      Name := 'GQuestVar' + Name;
-      Variable := SharedScriptVariables.GetVarNE(Name);
-      if Variable <> nil then
-        Expanded :=
-            ReplaceAllWideString(
-                Expanded,
-                Token,
-                WrapTextInColor(
-                    TrimWideString(Variable.GetString),
-                    GetTextColorTag(QuestStyleIndex)
-                )
-            );
-    end;
+  begin
+    if FindTextPosW('ext_', Quest.GetParameter(I).NameText.Text) <> 1 then
+      Continue;
+    Name := Quest.GetParameter(I).NameText.Text;
+    Token := Name;
+    Name[1] := 'E';
+    Token[1] := 't';
+    Token := '<' + Token + '>';
+    Name := 'GQuestVar' + Name;
+    Variable := SharedScriptVariables.GetVarNE(Name);
+    if Variable <> nil then
+      Expanded :=
+          ReplaceAllWideString(
+              Expanded,
+              Token,
+              WrapTextInColor(TrimWideString(Variable.GetString), GetTextColorTag(QuestStyleIndex))
+          );
+  end;
   Result := Expanded;
 end;
 

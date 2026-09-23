@@ -27,7 +27,6 @@ type
     HitKind: TGraphButtonHitKindGI;
     Down: Boolean;
     Disabled: Boolean;
-    Gap124: array[0..3] of Byte;
     DownCallback: TObjectNotifyEventGI;
     UpCallback: TObjectNotifyEventGI;
     StateChangedCallback: TObjectNotifyEventGI;
@@ -54,10 +53,8 @@ type
     CaptionShadowColors: array[0..5] of Cardinal;
     CaptionAlignX: TTextAlignXGI;
     CaptionAlignY: TTextAlignYGI;
-    Gap1E6: array[0..1] of Byte;
     ImageAutoUpdateFlags: Cardinal;
     UpOnlyDown: Boolean;
-    Gap1ED: array[0..2] of Byte;
     OnPressCode: TBlockParEC;
     procedure Clear; override;
     procedure SetSize(Size: TPoint); override;

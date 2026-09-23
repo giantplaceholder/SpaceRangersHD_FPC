@@ -240,13 +240,12 @@ begin
       MusicManager.RequestFadeOut
     else
     begin
-      if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+      if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
       begin
         if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
           MusicManager.PlayCategory(
               'Nation.'
-                  + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                      .InternalName
+                  + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                   + 'Pirate'
           )
         else
@@ -263,16 +262,13 @@ begin
       MusicManager.RequestFadeOut
     else
     begin
-      if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+      if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
         MusicManager.PlayCategory(
-            'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
-                + 'Pirate'
+            'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName + 'Pirate'
         )
       else
         MusicManager.PlayCategory(
-            'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
+            'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
         );
     end;
   end

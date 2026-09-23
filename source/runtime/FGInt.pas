@@ -43,7 +43,6 @@ type
 
   TFGInt = record
     Sign: TSign;
-    Gap1: array[0..2] of Byte;
     Number: array of LongWord;
   end;
 

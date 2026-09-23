@@ -27,7 +27,6 @@ type
     Velocity: TPoint;
     FloatVelocity: TPointF;
     State: Byte;
-    Gap2D: array[0..0] of Byte;
     Unknown2E: Word;
     Radius: Integer;
   end;
@@ -57,7 +56,6 @@ type
     FirstParticle: PTurbogravirParticle;
     LastParticle: PTurbogravirParticle;
     ProjectionBounds: TRect;
-    Gap29C: array[0..3] of Byte;
     LengthScale: Double;
     OriginalLength: Double;
     PaletteIndex: Integer;

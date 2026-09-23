@@ -47,12 +47,10 @@ type
     ImageOrigin: TPoint;
     SurfaceMapOffset: Integer;
     LightAngle: Byte;
-    Gap5D: array[0..2] of Byte;
     RotationTimerInterval: Cardinal;
     SurfaceMapStep: Integer;
     MinimapImagePath: WideString;
     MinimapImageOrigin: TPoint;
-    Gap74: array[0..3] of Byte;
     OrbitalVelocity: Double;
     Radius: Integer;
     Cloud1ImagePath: WideString;
@@ -76,7 +74,6 @@ type
     QuestEnabled: Boolean;
     RingKind: Byte;
     Civilized: Boolean;
-    GapD7: array[0..0] of Byte;
     SurfaceAnimationMask: Integer;
     SurfaceAnimationIndex: Integer;
     PlanetControl: TPlanetGI;
@@ -92,7 +89,6 @@ type
     MapOrbitPoints: PPlanetMapOrbitPoint;
     CollisionCircle: PPlanetCollisionCircle;
     MinimapOwner: Byte;
-    Gap115: array[0..2] of Byte;
     RuinsAnimationPath: WideString;
     RuinsImagePath: WideString;
     RuinsMinimapPath: WideString;
@@ -101,7 +97,6 @@ type
     RuinsMinimapControl: TImageGI;
     RuinsAnimationFrame: Integer;
     IsRuins: Boolean;
-    Gap135: array[0..2] of Byte;
     procedure CopyTo(Destination: TObjectSE); override;
     procedure AttachToSpace(ASpace: TSpaceSE); override;
     procedure DetachFromSpace; override;
@@ -145,6 +140,7 @@ implementation
 
 uses
   GI_GI,
+  aGalaxyStruct,
   SysUtils,
   Math,
   EC_Str,
@@ -316,7 +312,7 @@ begin
     );
     MinimapControl.SetOrigin(MinimapImageOrigin);
     if MinimapOwner <= 7 then
-      MinimapControl.SetImagePath('Bm.Planet.M.' + OwnerInfo[MinimapOwner].InternalName)
+      MinimapControl.SetImagePath('Bm.Planet.M.' + OwnerInfo[TOwnerId(MinimapOwner)].InternalName)
     else
     begin
       OwnerIndex := MinimapOwner - 7 - 1;
@@ -612,7 +608,7 @@ begin
   begin
     for Index := 0 to 23 do
       if (SurfaceAnimationMask and (1 shl Index)) <> 0 then
-        Inc(TotalWeight, Lists[Index].Key);
+        Inc(TotalWeight, Lists[Index].Weight);
     Attempts := 10;
     while Attempts > 0 do
     begin
@@ -620,7 +616,7 @@ begin
       for Index := 0 to 23 do
         if (SurfaceAnimationMask and (1 shl Index)) <> 0 then
         begin
-          Dec(Choice, Lists[Index].Key);
+          Dec(Choice, Lists[Index].Weight);
           if Choice < 0 then
           begin
             SurfaceAnimationIndex := Index;
@@ -672,7 +668,7 @@ begin
   if MinimapControl <> nil then
   begin
     if MinimapOwner <= 7 then
-      MinimapControl.SetImagePath('Bm.Planet.M.' + OwnerInfo[MinimapOwner].InternalName)
+      MinimapControl.SetImagePath('Bm.Planet.M.' + OwnerInfo[TOwnerId(MinimapOwner)].InternalName)
     else
     begin
       Index := MinimapOwner - 7 - 1;
@@ -912,7 +908,7 @@ begin
             Trunc(
                 ArcTan2(-(Position.X - Obj.Position.X), Position.Y - Obj.Position.Y)
                     * 180
-                    / 3.1415926
+                    / GamePi
                     * 256
                     / 360
             )
@@ -1347,9 +1343,11 @@ begin
     Control := TCBitmapControlEC.Create;
     GlobalCache.ResetControl(Control);
     if SmallPreview then
-      Control.SetCacheKey(ExtractDelimitedPartW(SatelliteTemplate.MaskName, 0, '?') + '?RGBA')
+      Control.SetCacheKey(
+          ExtractDelimitedPartW(SatelliteTemplate.MaskName, 0, '?') + RgbaImagePathSuffix
+      )
     else
-      Control.SetCacheKey(Template.MaskName + '?RGBA');
+      Control.SetCacheKey(Template.MaskName + RgbaImagePathSuffix);
     AcquireOrCreateBitmap(Control);
     Planet.RenderSurfaceToBuffer(Buffer);
     Planet.Free;

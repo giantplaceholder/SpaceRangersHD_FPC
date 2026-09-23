@@ -19,6 +19,10 @@ type
 
   PointerToInteger = ^Integer;
 
+const
+
+  SingleFrameAnimationSpec = '[50,0-0]';
+
 type
 
   TgaiGI = class;
@@ -30,30 +34,24 @@ type
     ImageKindX: TImageKindXGI;
     ImageKindY: TImageKindYGI;
     Alpha: Byte;
-    Gap12F: array[0..0] of Byte;
     SequenceFrame: Integer;
     SequenceFrameCount: Integer;
     SequenceFrameIndexTable: PointerToInteger;
     SequenceFrameDelayTable: PointerToInteger;
     SequenceIndex: Integer;
     UsesPlaybackBuffer: Boolean;
-    Gap145: array[0..2] of Byte;
     CachedPlaybackGraphBuf: TGraphBufGR;
     LastCachedFrameIndex: Integer;
     TransparentColor: Cardinal;
-    Gap154: array[0..3] of Byte;
     CycleCompleteCallback: TObjectNotifyEventGI;
     FrameAdvancedCallback: TObjectNotifyEventGI;
     SkipImageUpdateRect: Boolean;
     StopPlaybackRequested: Boolean;
     StopAfterOneCycle: Boolean;
-    Gap16B: array[0..0] of Byte;
     StartSoundName: WideString;
     FirstFrameOnly: Boolean;
-    Gap171: array[0..2] of Byte;
     AutoUpdateFlags: Cardinal;
     HardwareMirrorHorizontal: Boolean;
-    Gap179: array[0..2] of Byte;
     procedure Clear; override;
     procedure SetSize(Size: TPoint); override;
     procedure SetActive(Value: Boolean); override;
@@ -1175,7 +1173,7 @@ begin
                   FrameOrigin.X + X,
                   FrameOrigin.Y + Y,
                   Alpha,
-                  $FFFFFF,
+                  RgbWhite,
                   @ClipRect,
                   False,
                   HardwareMirrorHorizontal
@@ -1230,7 +1228,7 @@ begin
                   FrameOrigin.X + X,
                   FrameOrigin.Y + Y,
                   Alpha,
-                  $FFFFFF,
+                  RgbWhite,
                   @ClipRect,
                   False,
                   HardwareMirrorHorizontal
@@ -1327,7 +1325,7 @@ begin
                   X,
                   Y,
                   Alpha,
-                  $FFFFFF,
+                  RgbWhite,
                   @ClipRect,
                   False,
                   HardwareMirrorHorizontal
@@ -1424,7 +1422,7 @@ begin
                   X,
                   Y,
                   Alpha,
-                  $FFFFFF,
+                  RgbWhite,
                   @ClipRect,
                   False,
                   HardwareMirrorHorizontal

@@ -19,7 +19,6 @@ type
 
   TCircleGI = class(TObjectGI)
     Kind: TCircleKindGI;
-    Gap121: array[0..2] of Byte;
     Color: Cardinal;
     FillColor: Cardinal;
     Center: TPoint;
@@ -27,7 +26,6 @@ type
     ShrLightInner: Byte;
     ShrLightOuter: Byte;
     LightBufferDirty: Boolean;
-    Gap13B: array[0..0] of Byte;
     LightBuffer: TGraphBufGR;
     procedure Clear; override;
     procedure SetSize(Size: TPoint); override;

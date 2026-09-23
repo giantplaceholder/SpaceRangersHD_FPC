@@ -12,6 +12,8 @@ uses
 
 const
 
+  ArcadeTickMs = 20;
+
   abkRegeneration = 0;
 
   abkSpeed = 1;

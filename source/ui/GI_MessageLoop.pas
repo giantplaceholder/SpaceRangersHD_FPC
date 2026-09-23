@@ -35,12 +35,11 @@ type
 
   TObjectKeyEventGI = procedure(Sender: TObjectGI; Key: Cardinal) of object;
 
-  TCursorStateGI = packed record
+  TCursorStateGI = record
     ImagePath: WideString;
     Active: Boolean;
     HotSpot: TPoint;
     Position: TPoint;
-    Gap15: array[0..2] of Byte;
   end;
 
   TObjectGI = class(TObjectEx)
@@ -58,10 +57,8 @@ type
     PositionModeW: Boolean;
     Active: Boolean;
     HitTestDisabled: Boolean;
-    Gap43: array[0..0] of Byte;
     ConfigPath: WideString;
     AutoOffsetEnabled: Boolean;
-    Gap49: array[0..2] of Byte;
     AutoOffsetScale: TPointF;
     ScrollOffset: TPoint;
     SkipOwnQueuedDraw: Integer;
@@ -79,7 +76,6 @@ type
     UserIndex: PtrInt;
     UserData: PtrInt;
     UserState: PtrInt;
-    Gap9C: array[0..3] of Byte;
     MouseMoveCallback: TObjectMouseEventGI;
     LeftButtonDownCallback: TObjectMouseEventGI;
     LeftButtonUpCallback: TObjectMouseEventGI;
@@ -116,9 +112,9 @@ type
     procedure OnMouseEnter; virtual;
     procedure OnMouseLeave; virtual;
     procedure OnActivate; virtual;
-    procedure NativeHook48; virtual;
+    procedure OnModalResume; virtual;
     procedure OnDeactivate; virtual;
-    procedure NativeHook50; virtual;
+    procedure OnModalSuspend; virtual;
     procedure ProcessLeftButtonDown(KeyState: Cardinal; Point: TPoint); virtual;
     procedure ProcessLeftButtonUp(KeyState: Cardinal; Point: TPoint); virtual;
     procedure ProcessRightButtonDown(KeyState: Cardinal; Point: TPoint); virtual;
@@ -201,14 +197,13 @@ type
   // Callback payloads follow pointer width; delays and ticks remain 32-bit.
   TCallbackTimerEventGI = procedure(Timer: PCallbackTimerGI; UserData: PtrInt) of object;
 
-  TCallbackTimerGI = packed record
+  TCallbackTimerGI = record
     Callback: TCallbackTimerEventGI;
     UserData: PtrInt;
     RepeatMs: Integer;
     DueTick: Cardinal;
     Prev: PCallbackTimerGI;
     Next: PCallbackTimerGI;
-    Gap1C: array[0..3] of Byte;
   end;
 
   TSavedLineGI = record
@@ -235,15 +230,12 @@ type
     RegionDrawControl: TObjectGI;
     MouseViewUpdateControls: TList;
     RegionDrawPending: Boolean;
-    Gap41: array[0..2] of Byte;
     CursorImagePath: WideString;
     ViewportRect: TRect;
     UpdateRectsEnabled: Boolean;
-    Gap59: array[0..2] of Byte;
     UpdateRects: TArrayRectGR;
     ExitCode: Integer;
     CaretBlinkOn: Boolean;
-    Gap65: array[0..2] of Byte;
     TimerTick: Cardinal;
     FirstTimer: PCallbackTimerGI;
     LastTimer: PCallbackTimerGI;
@@ -259,10 +251,8 @@ type
     SavedLineCount: Integer;
     PendingRedraw: Boolean;
     ContinuousLoop: Boolean;
-    Gap9E: array[0..1] of Byte;
     FramesPerSecond: Integer;
     PlayTransitionSounds: Boolean;
-    GapA5: array[0..2] of Byte;
     OpenSoundName: WideString;
     CloseSoundName: WideString;
     SoundSection: Integer;
@@ -270,11 +260,9 @@ type
     TransientControl: TObjectGI;
     TransientData: TObject;
     IsOpen: Boolean;
-    GapC1: array[0..2] of Byte;
     SavedBackgroundControl: TObjectGI;
     DeferredCodeBlocks: TList;
     RefreshMouseAfterCode: Boolean;
-    GapCD: array[0..2] of Byte;
     function Run: Integer; virtual;
     procedure ProcessWindowMessage(Message: Cardinal; WParam: Cardinal; LParam: Integer); virtual;
     function RunContinuous: Integer; virtual;
@@ -899,7 +887,7 @@ begin
   end;
 end;
 
-procedure TObjectGI.NativeHook48;
+procedure TObjectGI.OnModalResume;
 var
   Child: TObjectGI;
 begin
@@ -907,7 +895,7 @@ begin
   while Child <> nil do
   begin
     if Child.Active = True then
-      Child.NativeHook48;
+      Child.OnModalResume;
     Child := Child.NextSibling;
   end;
 end;
@@ -926,7 +914,7 @@ begin
   end;
 end;
 
-procedure TObjectGI.NativeHook50;
+procedure TObjectGI.OnModalSuspend;
 var
   Child: TObjectGI;
 begin
@@ -934,7 +922,7 @@ begin
   while Child <> nil do
   begin
     if Child.Active = True then
-      Child.NativeHook50;
+      Child.OnModalSuspend;
     Child := Child.NextSibling;
   end;
 end;
@@ -1653,7 +1641,7 @@ var
 begin
   Count := MouseViewUpdateControls.Count;
   for Index := 0 to Count - 1 do
-    if TList(PAnsiChar(MouseViewUpdateControls) + 0)[Index] = Control then
+    if MouseViewUpdateControls[Index] = Control then
     begin
       Result := Index;
       Exit;
@@ -1684,7 +1672,7 @@ begin
   Count := MouseViewUpdateControls.Count;
   for Index := 0 to Count - 1 do
   begin
-    Control := TList(PAnsiChar(MouseViewUpdateControls) + 0)[Index];
+    Control := MouseViewUpdateControls[Index];
     Control.Invalidate;
   end;
 end;
@@ -2124,7 +2112,7 @@ end;
 
 procedure TMessageLoopGI.Present;
 begin
-  UnknownPresentState := 0;
+  StartupIntegrityMarker := 0;
   if ContinuousLoop then
   begin
     FullFrameRedrawRequested := True;

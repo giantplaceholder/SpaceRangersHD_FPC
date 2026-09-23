@@ -28,10 +28,8 @@ type
     ThreadId: TThreadID;
     Priority: Byte;
     StopRequested: Boolean;
-    Gap12: array[0..1] of Byte;
     StopEvent: TGameEventHandle;
     Flag18: Boolean;
-    Gap19: array[0..2] of Byte;
     ShutdownEvent: TGameEventHandle;
     StartEvent: TGameEventHandle;
     RunningEvent: TGameEventHandle;

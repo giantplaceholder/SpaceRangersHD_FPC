@@ -20,7 +20,6 @@ type
     ImageCache: TCAlphaBitmapControlEC;
     ImageKindX: TImageKindXGI;
     ImageKindY: TImageKindYGI;
-    Gap126: array[0..1] of Byte;
     procedure Clear; override;
     procedure QueueImageLoad(PendingLoads: TList); override;
     procedure LoadFromConfigPath(const Path: WideString); override;
@@ -359,7 +358,7 @@ begin
         X := Left;
         while (X < Right) do
         begin
-          DrawTexture(Bitmap.GetTexture, X, Y, 255, $FFFFFF, @ClipRect, False, False);
+          DrawTexture(Bitmap.GetTexture, X, Y, 255, RgbWhite, @ClipRect, False, False);
           Inc(X, Width);
         end;
         Inc(Y, Height);

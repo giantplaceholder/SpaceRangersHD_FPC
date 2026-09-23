@@ -147,9 +147,9 @@ begin
   CaptionLabel.SetFontName(NormalBoldFontName);
   CaptionLabel.SetText(
       ReplaceAllWideString(
-          ReplaceAllWideString(Caption, '<color=255,240,100>', '<color=0,50,200>'),
-          '<color=0,255,0>',
-          '<color=255,255,0>'
+          ReplaceAllWideString(Caption, TextHighlightColorTag, DialogHighlightColorTag),
+          GreenColorTag,
+          YellowColorTag
       )
   );
   Edit := TEditGI.Create(ContentPanel);
@@ -271,7 +271,7 @@ var
   Dialog: TfTextBox;
   State: TCursorStateGI;
 begin
-  Parent.RootUiObject.NativeHook50;
+  Parent.RootUiObject.OnModalSuspend;
   Parent.CaptureCursorState(@State);
   Parent.SetCursorActive(False);
   Parent.DrawQueuedUpdateRects;
@@ -295,7 +295,7 @@ begin
   end;
   Parent.RestoreCursorState(@State);
   Parent.UpdateCursorPosition;
-  Parent.RootUiObject.NativeHook48;
+  Parent.RootUiObject.OnModalResume;
   if Result = 254 then
     BreakUiMessage;
 end;

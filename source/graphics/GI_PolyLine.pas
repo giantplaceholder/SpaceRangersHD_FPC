@@ -19,14 +19,13 @@ type
 
   PPolyLineSegmentGI = PointerToTPolyLineSegmentGI;
 
-  TPolyLineSegmentGI = packed record
+  TPolyLineSegmentGI = record
     Next: PPolyLineSegmentGI;
     Prev: PPolyLineSegmentGI;
     First: TPoint;
     Last: TPoint;
     UserData: Integer;
     Animated: Boolean;
-    Gap1D: array[0..2] of Byte;
     PixelCount: Integer;
     PixelCapacity: Integer;
     PixelFirst: TPoint;
@@ -35,10 +34,8 @@ type
     Visible: Boolean;
     PreviousFirst: TPoint;
     PreviousLast: TPoint;
-    Gap4D: array[0..2] of Byte;
     PreviousPixels: Pointer;
     PreviouslyVisible: Boolean;
-    Gap55: array[0..2] of Byte;
     ClippedColor: Cardinal;
     ClippedEndColor: Cardinal;
     Color: Cardinal;
@@ -52,11 +49,9 @@ type
     AnimationPhase: Cardinal;
     AnimationTimer: PCallbackTimerGI;
     FrameDrawing: Boolean;
-    Gap131: array[0..2] of Byte;
     ShadowCircle: TCircleGI;
     AutoRebuildBounds: Boolean;
     NormalizeBounds: Boolean;
-    Gap13A: array[0..1] of Byte;
     SegmentHeap: TGameHeapHandle;
     procedure Clear; override;
     procedure LoadFromConfigPath(const Path: WideString); override;

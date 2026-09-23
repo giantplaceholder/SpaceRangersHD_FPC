@@ -21,12 +21,10 @@ type
     Position: TPointF;
     Color: Word;
     Alpha: Byte;
-    GapF: array[0..0] of Byte;
     Velocity: TPointF;
     FadeInTicks: Byte;
     InitialFadeInTicks: Byte;
     FadeOutThreshold: Byte;
-    Gap1B: array[0..0] of Byte;
   end;
 
   TAVisionPalette = array[0..3] of Word;

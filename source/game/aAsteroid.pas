@@ -61,7 +61,8 @@ uses
   aConst,
   aPlayer,
   aShip,
-  GR_Main;
+  GR_Main,
+  aGalaxyStruct;
 
 const
   // Preserve native Extended constants. DCC32's decimal conversion rounds plain
@@ -145,7 +146,7 @@ end;
 
 procedure TAsteroid.AdvanceOrbitStep(StepIndex: Integer; RecordFilm: Boolean);
 begin
-  IntegrateMotion(200 / CurrentStar.MovementStepCount);
+  IntegrateMotion(BaseMovementStepsPerTurn / CurrentStar.MovementStepCount);
   if RecordFilm then
     PrimaryFilm.SetObjectPosition(StepIndex, FilmObject, Position);
 end;
@@ -259,7 +260,7 @@ end;
 function TAsteroid.GetDisplayName: WideString;
 begin
   Result := LocalizedText('Asteroid.Name');
-  ReplaceTextToken(Result, '<Number>', IntToWideString(Id), '<color=255,240,100>');
+  ReplaceTextToken(Result, '<Number>', IntToWideString(Id), TextHighlightColorTag);
 end;
 
 function TAsteroid.GetInfoText: WideString;
@@ -267,11 +268,11 @@ var
   Speed: Single;
 begin
   Result := LocalizedText('Asteroid.Text');
-  ReplaceTextToken(Result, '<Number>', IntToWideString(Id), '<color=255,240,100>');
+  ReplaceTextToken(Result, '<Number>', IntToWideString(Id), TextHighlightColorTag);
   Speed := Sqrt(Sqr(Velocity.X) + Sqr(Velocity.Y));
-  Speed := Speed * 200 * 19968 * AsteroidWorldScale;
-  ReplaceTextToken(Result, '<Speed>', IntToWideString(Round(Speed)), '<color=255,240,100>');
-  ReplaceTextToken(Result, '<Count>', IntToWideString(MineralCount), '<color=255,240,100>');
+  Speed := Speed * BaseMovementStepsPerTurn * 19968 * AsteroidWorldScale;
+  ReplaceTextToken(Result, '<Speed>', IntToWideString(Round(Speed)), TextHighlightColorTag);
+  ReplaceTextToken(Result, '<Count>', IntToWideString(MineralCount), TextHighlightColorTag);
 end;
 
 end.

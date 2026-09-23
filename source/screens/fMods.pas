@@ -28,7 +28,6 @@ type
     ErrorCounts: array of Integer;
     InvalidSelections: array of Boolean;
     NeedsValidation: Boolean;
-    GapF5: array[0..2] of Byte;
     procedure OnOpen; override;
     procedure SelectMusic; override;
     procedure ProcessMouseWheel(KeyState: Cardinal; Point: TPoint; Delta: Integer); override;
@@ -991,7 +990,7 @@ begin
   List.Free;
   Block := TBlockParEC.Create;
   Block.AddParam('CurrentMod', Folders);
-  Block.SaveTextFile('Mods\ModCFG.txt', True, False);
+  Block.SaveTextFile(ModSelectionConfigPath, True, False);
   Block.Free;
   ReloadModsRequested := True;
   if ExitCode = 0 then
@@ -1064,9 +1063,9 @@ var
         ReplaceTextToken(
             Name,
             '<ModName>',
-            '<color=255,240,100>'
+            TextHighlightColorTag
                 + TrimWideString(ExtractDelimitedPartW(Info.DependencyNames, PartIndex, ','))
-                + '</color>',
+                + EndColorTag,
             ''
         );
         ShowMessageBoxGI(Self, Name, mbgOK or mbgError);
@@ -1225,8 +1224,8 @@ begin
         end;
       end;
       Text := LocalizedText('FormMods.QueryTurnOffWithExtra');
-      ReplaceTextToken(Text, '<ModName>', '<color=255,240,100>' + Info.Name + '</color>', '');
-      ReplaceTextToken(Text, '<ModsList>', '<color=255,240,100>' + Value + '</color>', '');
+      ReplaceTextToken(Text, '<ModName>', TextHighlightColorTag + Info.Name + EndColorTag, '');
+      ReplaceTextToken(Text, '<ModsList>', TextHighlightColorTag + Value + EndColorTag, '');
       if ShowMessageBoxGI(GetInnermostScreenLoop, Text, mbgOK or mbgCancel or mbgQuestion)
           <> mbgResultOK then
         Exit;
@@ -1397,14 +1396,14 @@ begin
       if Value <> '' then
       begin
         Temp := LocalizedText('FormMods.QueryTurnOnWithExtra2');
-        ReplaceTextToken(Temp, '<ModsList>', '<color=255,240,100>' + Value + '</color>', '');
+        ReplaceTextToken(Temp, '<ModsList>', TextHighlightColorTag + Value + EndColorTag, '');
       end
       else
         Temp := '';
       if Text <> '' then
       begin
         Value := LocalizedText('FormMods.QueryTurnOnWithExtra1');
-        ReplaceTextToken(Value, '<ModsList>', '<color=255,240,100>' + Text + '</color>', '');
+        ReplaceTextToken(Value, '<ModsList>', TextHighlightColorTag + Text + EndColorTag, '');
       end
       else
         Value := '';
@@ -1529,7 +1528,7 @@ var
 begin
   Info := TModInfo(Sender.UserValue);
   Body := LocalizedText('FormMods.InfoName');
-  ReplaceTextToken(Body, '<Name>', '<color=255,240,100>' + Info.GetDisplayName + '</color>', '');
+  ReplaceTextToken(Body, '<Name>', TextHighlightColorTag + Info.GetDisplayName + EndColorTag, '');
   Body := Body + #13#10 + ' ' + #13#10;
   if Info.Author = '' then
     Text := LocalizedText('FormMods.InfoAuthorUnknown')
@@ -1537,7 +1536,7 @@ begin
     Text := LocalizedText('FormMods.InfoAuthors')
   else
     Text := LocalizedText('FormMods.InfoAuthor');
-  ReplaceTextToken(Text, '<Name>', '<color=255,240,100>' + Info.Author + '</color>', '');
+  ReplaceTextToken(Text, '<Name>', TextHighlightColorTag + Info.Author + EndColorTag, '');
   Body := Body + Text + #13#10 + ' ' + #13#10;
   if Info.FullDescription = '' then
     Body := Body + LocalizedText('FormMods.NoDescription') + #13#10 + ' ' + #13#10
@@ -1546,17 +1545,22 @@ begin
   if Info.DependencyNames <> '' then
   begin
     Text := LocalizedText('FormMods.InfoDependencies');
-    ReplaceTextToken(Text, '<Mods>', '<color=255,240,100>' + Info.DependencyNames + '</color>', '');
+    ReplaceTextToken(
+        Text,
+        '<Mods>',
+        TextHighlightColorTag + Info.DependencyNames + EndColorTag,
+        ''
+    );
     Body := Body + Text + #13#10 + ' ' + #13#10;
   end;
   if Info.ConflictNames <> '' then
   begin
     Text := LocalizedText('FormMods.InfoConflicts');
-    ReplaceTextToken(Text, '<Mods>', '<color=255,240,100>' + Info.ConflictNames + '</color>', '');
+    ReplaceTextToken(Text, '<Mods>', TextHighlightColorTag + Info.ConflictNames + EndColorTag, '');
     Body := Body + Text + #13#10 + ' ' + #13#10;
   end;
   Text := LocalizedText('FormMods.InfoPath');
-  ReplaceTextToken(Text, '<Path>', '<color=255,240,100>' + Info.Folder + '</color>', '');
+  ReplaceTextToken(Text, '<Path>', TextHighlightColorTag + Info.Folder + EndColorTag, '');
   Body := Body + Text;
   ShowMessageBoxGI(Self, Body, mbgOK or mbgUnused04 or mbgLeftAlign);
 end;
@@ -1573,7 +1577,7 @@ begin
   Selected := Info.SwitchImage.UserIndex = 1;
   Critical := False;
   Body := LocalizedText('FormMods.ProblemsInfoHeader');
-  ReplaceTextToken(Body, '<Name>', '<color=255,240,100>' + Info.GetDisplayName + '</color>', '');
+  ReplaceTextToken(Body, '<Name>', TextHighlightColorTag + Info.GetDisplayName + EndColorTag, '');
   Body := Body + #13#10 + ' ' + #13#10;
   if Info.MissingFolder then
   begin
@@ -1605,7 +1609,7 @@ begin
       end
       else
         Text := LocalizedText('FormMods.ProblemsInfoSharedName2');
-      ReplaceTextToken(Text, '<Mods>', '<color=255,240,100>' + Value + '</color>', '');
+      ReplaceTextToken(Text, '<Mods>', TextHighlightColorTag + Value + EndColorTag, '');
       Body := Body + Text + #13#10 + ' ' + #13#10;
     end;
     if Selected and (Info.ConflictCount > 0) then
@@ -1631,7 +1635,7 @@ begin
       if Text <> '' then
       begin
         Value := LocalizedText('FormMods.ProblemsInfoConflicts');
-        ReplaceTextToken(Value, '<Mods>', '<color=255,240,100>' + Text + '</color>', '');
+        ReplaceTextToken(Value, '<Mods>', TextHighlightColorTag + Text + EndColorTag, '');
         Body := Body + Value + #13#10 + ' ' + #13#10;
         Critical := True;
       end;
@@ -1648,9 +1652,9 @@ begin
           ReplaceTextToken(
               Value,
               '<Mod>',
-              '<color=255,240,100>'
+              TextHighlightColorTag
                   + TrimWideString(ExtractDelimitedPartW(Info.DependencyNames, J, ','))
-                  + '</color>',
+                  + EndColorTag,
               ''
           );
           Body := Body + Value + #13#10 + ' ' + #13#10;
@@ -1682,7 +1686,7 @@ begin
       if Text <> '' then
       begin
         Value := LocalizedText('FormMods.ProblemsInfoDependencies');
-        ReplaceTextToken(Value, '<Mods>', '<color=255,240,100>' + Text + '</color>', '');
+        ReplaceTextToken(Value, '<Mods>', TextHighlightColorTag + Text + EndColorTag, '');
         Body := Body + Value + #13#10 + ' ' + #13#10;
         Critical := True;
       end;
@@ -1716,7 +1720,7 @@ begin
     Result := 0;
     Exit;
   end;
-  Parent.RootUiObject.NativeHook50;
+  Parent.RootUiObject.OnModalSuspend;
   Parent.CaptureCursorState(@State);
   Parent.SetCursorActive(False);
   Parent.DrawQueuedUpdateRects;
@@ -1738,7 +1742,7 @@ begin
   end;
   Parent.RestoreCursorState(@State);
   Parent.UpdateCursorPosition;
-  Parent.RootUiObject.NativeHook48;
+  Parent.RootUiObject.OnModalResume;
 end;
 
 end.

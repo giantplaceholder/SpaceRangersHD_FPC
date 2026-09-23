@@ -18,7 +18,6 @@ type
     Item: TItem;
     BonusKind: Integer;
     HiddenBonus: Boolean;
-    GapB9: array[0..2] of Byte;
     Visual: TObjectSE;
     SpawnZone: PabZone;
     procedure UpdateState; override;

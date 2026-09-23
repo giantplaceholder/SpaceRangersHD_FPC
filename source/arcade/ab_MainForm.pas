@@ -87,7 +87,6 @@ type
     ShipPath: TSPath;
     RouteSpaces: TList;
     MapDrag: TArcadeMapDrag;
-    Gap11D: array[0..2] of Byte;
     ScrollTimer: PCallbackTimerGI;
     MapBackgroundPath: WideString;
     WeaponButtons: array[0..4] of TObjectGI;
@@ -118,7 +117,6 @@ type
     TurnRightKeyDown: Boolean;
     PrimaryFireKeyDown: Boolean;
     SecondaryFireKeyDown: Boolean;
-    Gap2C3: array[0..0] of Byte;
     GridLines: TList;
     MapState2C8: Integer;
     Text2CC: WideString;
@@ -129,20 +127,18 @@ type
     CampaignTransitionStarted: Boolean;
     CampaignLoadStarted: Boolean;
     CampaignLoadFinished: Boolean;
-    Gap31B: array[0..0] of Byte;
     CacheLoader: TCacheLoader;
     DefeatCountdownTicks: Integer;
     CampaignLoadProgress: Single;
     DepartureTurn: Integer;
     ArrivalTurn: Integer;
-    InfoObject: TObject;
+    InfoSpace: TabSpace;
     CargoPickupItem: TabItem;
     CargoPickupZone: PabZone;
     InitialRandomSeed: Cardinal;
     RandomSeed: Cardinal;
     ViewModeBeforeDefeat: Byte;
     SimulationPaused: Boolean;
-    Gap346: array[0..1] of Byte;
     VictoryTimer: PCallbackTimerGI;
     ListedObjects: TList;
     LoadPanel: TfPanelLoad;
@@ -240,6 +236,7 @@ implementation
 uses
   GameWindow,
   GI_GI,
+  EC_CacheBitmap,
   aKling,
   GameInput,
   SysUtils,
@@ -508,7 +505,7 @@ begin
   ArcadeSpaceProcess.OpenSpace(WorldPanel, Self);
   ArcadeSpaceProcess.Space.AlphaShift := 0;
   if GetPlayer <> nil then
-    if GetPlayer.IsHealthEffectActive(1) then
+    if GetPlayer.IsHealthEffectActive(heBlindness) then
       ArcadeSpaceProcess.Space.AlphaShift := 2;
   SkipSavedPixelRestore := True;
   StarField.Stars.Clear;
@@ -572,7 +569,7 @@ begin
           GetPlayer.Graphic.GraphKey,
           Round((GetPlayer.Graphic.Size.X shl 10) / 800)
       );
-    GetPlayer.ScriptItemsAct($37, Ship, nil, 0);
+    GetPlayer.ScriptItemsAct(satOnStartAB, Ship, nil, 0);
   end;
   Ship.MaxSpeed := 11;
   Ship.TurnSpeed := PlayerInitialTurnSpeed;
@@ -582,15 +579,30 @@ begin
     Ship.MaxHealth := 1000;
     Ship.Health := 1000;
     Ship.WeaponCount := 5;
-    ab_Weapon_Initialize(@Ship.Weapons[0], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[0],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.Weapons[0].SlotData := 0;
-    ab_Weapon_Initialize(@Ship.Weapons[1], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[1],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.Weapons[1].SlotData := 1;
-    ab_Weapon_Initialize(@Ship.Weapons[2], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[2],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.Weapons[2].SlotData := 2;
-    ab_Weapon_Initialize(@Ship.Weapons[3], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[3],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.Weapons[3].SlotData := 3 or EquipmentSecondaryFireFlag;
-    ab_Weapon_Initialize(@Ship.Weapons[4], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[4],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.Weapons[4].SlotData := 4 or EquipmentSecondaryFireFlag;
     Ship.PrimaryWeapon := -1;
     Ship.SecondaryWeapon := -1;
@@ -620,11 +632,26 @@ begin
     Ship.Health := 500;
     Ship.MaxHealth := 500;
     Ship.WeaponCount := 5;
-    ab_Weapon_Initialize(@Ship.Weapons[0], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[1], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[2], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[3], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[4], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[0],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[1],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[2],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[3],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[4],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.PrimaryWeapon := 0;
     ShipX0 := Ship;
     Ship := TabShipAI.Create;
@@ -636,11 +663,26 @@ begin
     Ship.Health := 500;
     Ship.MaxHealth := 500;
     Ship.WeaponCount := 5;
-    ab_Weapon_Initialize(@Ship.Weapons[0], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[1], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[2], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[3], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[4], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[0],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[1],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[2],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[3],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[4],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.PrimaryWeapon := 0;
     ShipX1 := Ship;
     Ship := TabShipAI.Create;
@@ -652,11 +694,26 @@ begin
     Ship.Health := 500;
     Ship.MaxHealth := 500;
     Ship.WeaponCount := 5;
-    ab_Weapon_Initialize(@Ship.Weapons[0], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[1], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[2], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[3], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
-    ab_Weapon_Initialize(@Ship.Weapons[4], PickRandomItemType([Ord(t_Weapon1)..Ord(t_Weapon18)]));
+    ab_Weapon_Initialize(
+        @Ship.Weapons[0],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[1],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[2],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[3],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
+    ab_Weapon_Initialize(
+        @Ship.Weapons[4],
+        PickRandomItemType([Ord(t_IndustrialLaser)..Ord(t_Lirecron)])
+    );
     Ship.PrimaryWeapon := 0;
     for Index := 0 to 3 do
     begin
@@ -752,7 +809,7 @@ begin
   else
     EnterMapView;
   ArcadeTickCount := 0;
-  UpdateTimer := ScheduleCallbackTimer(20, 20, TimerTakt);
+  UpdateTimer := ScheduleCallbackTimer(ArcadeTickMs, ArcadeTickMs, TimerTakt);
   ScrollTimer := ScheduleCallbackTimer(ScrollTime, ScrollTime, ScrollMapTimer);
   TimerTakt(nil, 0);
   HideHelp;
@@ -1426,7 +1483,7 @@ begin
       end;
       if GetPlayer <> nil then
       begin
-        Item := GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), Value - 1) as TWeapon;
+        Item := GetPlayer.FindEquippedItemInSlot(WeaponCategoryItemType, Value - 1) as TWeapon;
         if GetPlayer.GetSlotCount(sskWeapon) <= Value - 1 then
           Button.SetImageDisabledPath(
               'GI,Bm.FormAB2.' + GiResourceSuffix + 'W' + IntToStr(Value) + 'H'
@@ -1446,13 +1503,13 @@ begin
       with WeaponIcons[Value - 1] do
       begin
         if (GetPlayer <> nil)
-            and (GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), Value - 1) <> nil) then
+            and (GetPlayer.FindEquippedItemInSlot(WeaponCategoryItemType, Value - 1) <> nil) then
         begin
           WeaponIcons[Value - 1].SetActive(True);
           SetImagePath(
               'GI,'
                   + GetPlayer
-                      .FindEquippedItemInSlot(Ord(t_Weapon1), Value - 1)
+                      .FindEquippedItemInSlot(WeaponCategoryItemType, Value - 1)
                       .GetBitmapResourceName
                   + 's'
           );
@@ -1463,7 +1520,7 @@ begin
           SetImagePath(
               'GI,Bm.Items.'
                   + GiResourceSuffix
-                  + ItemTypeNames[PlayerArcadeShip.Weapons[Button.UserIndex].ItemType]
+                  + ItemTypeNames[TItemType(PlayerArcadeShip.Weapons[Button.UserIndex].ItemType)]
                   + 's'
           );
         end
@@ -1483,9 +1540,9 @@ begin
       if WeaponButtons[SlotIndex].UserState = 0 then
         WeaponButtons[SlotIndex].UserState := PtrInt(TImageGI.Create(WeaponButtons[SlotIndex]));
       if (GetPlayer <> nil)
-          and (GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), SlotIndex) <> nil) then
+          and (GetPlayer.FindEquippedItemInSlot(WeaponCategoryItemType, SlotIndex) <> nil) then
       begin
-        Item := GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), SlotIndex) as TWeapon;
+        Item := GetPlayer.FindEquippedItemInSlot(WeaponCategoryItemType, SlotIndex) as TWeapon;
         MicroModule := Item.MicroModuleIndex;
         Item.MicroModuleIndex := 0;
         WeaponName := Item.GetShortName;
@@ -1787,7 +1844,7 @@ begin
         Galaxy.CheckIntegrityChecksum1(640);
       if GetPlayer <> nil then
         with GetPlayer.FindEquippedItemInSlot(
-                Ord(t_Weapon1),
+                WeaponCategoryItemType,
                 PlayerArcadeShip.Weapons[Index].SlotData and EquipmentSlotIndexMask)
             as TWeapon do
           AssignedSlotData := PlayerArcadeShip.Weapons[Index].SlotData;
@@ -2964,7 +3021,7 @@ begin
       if not ArcadeAutopilotEnabled
           and not ArcadeEnemiesDefeated
           and not DisableAutoPilot
-          and ((ArcadeTickCount - ArcadeLastInputTick) * 20 > ChangeAutoPilot * 1000) then
+          and ((ArcadeTickCount - ArcadeLastInputTick) * ArcadeTickMs > ChangeAutoPilot * 1000) then
       begin
         ArcadeAutopilotEnabled := True;
         UpdateAutopilotButtons;
@@ -3440,7 +3497,8 @@ begin
         TScriptShip(KellerShip.ScriptShip)
             .Script
             .PublishShipContext(KellerShip.ScriptShip as TScriptShip);
-        CurrentScript.CallDialogByVariable(TScriptShip(KellerShip.ScriptShip).State.AuxiliaryText);
+        CurrentScript
+            .CallDialogByVariable(TScriptShip(KellerShip.ScriptShip).State.DialogTextOrVariable);
         if ScriptDialogIndex < 0 then
           RaiseWideMessage('Not found dialog');
         TalkShip := KellerShip;
@@ -3648,7 +3706,8 @@ begin
       if TurnCalculationPhase = tcpGalaxyFinished then
         QueuePlayerStarTurnCalculation
       else if ((GetPlayer.Order <> soJump) and (GetPlayer.Order <> soJumpHole))
-          or ((GetPlayer.Order = soJumpHole) and (GetPlayer.OrderStateData = -65536)) then
+          or ((GetPlayer.Order = soJumpHole)
+              and (GetPlayer.OrderStateData = HoleExitOrderState)) then
       begin
         StarMapScreen.SetMapCenterManually(TruncatePointF(GetPlayer.Position));
         StarMapScreen.ResumeMode := smrTurnFilm;
@@ -3707,7 +3766,7 @@ begin
       if (Ship.Visual <> nil)
           and Ship.Visual.IsAttachedToSpace
           and (Ship.Visual.GetDepth = ShipFrontDepth)
-          and Ship.StateCC
+          and Ship.HealthBarVisible
           and ((Ship.BonusTicks[abkInvisibility] <= 0)
               or (Ship.RevealTicks > 0)
               or (PlayerArcadeShip = Ship)) then
@@ -3908,7 +3967,7 @@ var
   end; // Native unused four-byte slot before the temporary point records.
 begin
   if (PlayerArcadeShip = nil)
-      or ((GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactScaner)) <= 0))
+      or ((GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactScaner) <= 0))
       or (ExitCode <> 0)
       or (ArcadeViewMode = 5) then
   begin
@@ -3986,8 +4045,7 @@ begin
               SetDepth(1);
             end;
           end;
-          if (GetPlayer <> nil)
-              and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) <= 0) then
+          if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) <= 0) then
             if EnemyRewardIcons[Index] <> nil then
             begin
               EnemyRewardIcons[Index].Free;
@@ -3996,7 +4054,7 @@ begin
               EnemyRewardBackdrops[Index] := nil;
             end;
           if (GetPlayer <> nil)
-              and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0)
+              and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0)
               and (EnemyRewardIcons[Index] = nil) then
           begin
             EnemyRewardBackdrops[Index] := TImageGI.Create(MapPanel);
@@ -4137,7 +4195,7 @@ begin
           begin
             with EnemyRewardIcons[Index] as TImageGI do
             begin
-              if GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) <= 0 then
+              if GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) <= 0 then
               begin
                 EnemyRewardIcons[Index].Free;
                 EnemyRewardIcons[Index] := nil;
@@ -4693,13 +4751,13 @@ var
   Star: TStar;
   Owner: TPanelGI;
   Objects: TList;
-  OwnerId: Byte;
+  OwnerId: TOwnerId;
 begin
   if Space = nil then
     HideObjectInfo
-  else if InfoObject <> Space then
+  else if InfoSpace <> Space then
   begin
-    InfoObject := Space;
+    InfoSpace := Space;
     if (GetPlayer <> nil) and ((StartArcadeSpace = Space) or (EndArcadeSpace = Space)) then
     begin
       GetByName('InfoStar').SetActive(True);
@@ -4708,7 +4766,7 @@ begin
       else
         Star := GetPlayer.CurrentStar;
       (GetByName('InfoStarName') as TLabelGI)
-          .SetText(WrapTextInColor(Star.Name, '<color=255,240,100>'));
+          .SetText(WrapTextInColor(Star.Name, TextHighlightColorTag));
       with GetByName('InfoStarImage') as TGraphBufGI do
       begin
         SourceHasPerPixelAlpha := True;
@@ -4821,7 +4879,7 @@ begin
           OwnerId := TPlanet(Objects[Index]).OwnerId
         else
           OwnerId := TShip(Objects[Index]).OwnerId;
-        if OwnerId <> Byte(oiUninhabited) then
+        if OwnerId <> oiUninhabited then
         begin
           with TGraphBufGI.Create(Owner, False) do
           begin
@@ -4832,7 +4890,7 @@ begin
                           GetFactionEmblemPath(TPlanet(Objects[Index]).GetFactionResourceName),
                           1,
                           ',')
-                      + '?RGBA'
+                      + RgbaImagePathSuffix
               )
             else
               LoadBitmapPathAsRgba(
@@ -4840,7 +4898,7 @@ begin
                           GetFactionEmblemPath(TShip(Objects[Index]).GetFactionNameKey),
                           1,
                           ',')
-                      + '?RGBA'
+                      + RgbaImagePathSuffix
               );
             SetPosition(
                 Classes.Point(
@@ -4885,7 +4943,7 @@ begin
       GetByName('InfoStar').SetActive(False);
       GetByName('InfoPanel').SetActive(True);
       (GetByName('InfoName') as TLabelGI)
-          .SetText(WrapTextInColor(LocalizedColorText('FormAB.InfoName'), '<color=255,240,100>'));
+          .SetText(WrapTextInColor(LocalizedColorText('FormAB.InfoName'), TextHighlightColorTag));
       (GetByName('InfoExit') as TLabelGI).SetText(IntToStr(Space.OutgoingCount));
       Text := Space.GetDangerText;
       (GetByName('InfoDanger') as TLabelGI).SetText(Text);
@@ -4896,7 +4954,7 @@ begin
         if Obj is TabShipAI then
           Inc(ShipCount);
       end;
-      if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0) then
+      if (GetPlayer <> nil) and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0) then
         Text := IntToStr(ShipCount)
       else
         Text := LocalizedColorText('FormAB.Unknow');
@@ -4933,13 +4991,13 @@ end;
 
 procedure TfAB.HideObjectInfo;
 begin
-  if InfoObject <> nil then
+  if InfoSpace <> nil then
   begin
     GetByName('InfoPanel').SetActive(False);
     GetByName('InfoStar').SetActive(False);
     HideHelp;
   end;
-  InfoObject := nil;
+  InfoSpace := nil;
 end;
 
 procedure TfAB.ShowItemInfo(Item: TabItem);
@@ -5013,14 +5071,14 @@ begin
       (GetByName('InfoItemName') as TLabelGI)
           .SetText(WrapTextInColor(Instance.GetDisplayName, InfoNameColorTag));
       (GetByName('InfoItemText') as TLabelGI)
-          .SetText(Instance.GetInfoText('<color=255,240,100>', nil));
+          .SetText(Instance.GetInfoText(TextHighlightColorTag, nil));
     end;
     (GetByName('InfoItemSize') as TLabelGI).SetText(IntToStr(Instance.Weight));
     (GetByName('InfoItemPrice') as TLabelGI).SetText(IntToStr(Instance.Cost));
     with GetByName('InfoItemEmRace') as TImageGI do
     begin
       if Instance is TGoods then
-        SetImagePath(GetFactionEmblemPath(OwnerInfo[Ord(oiUninhabited)].InternalName))
+        SetImagePath(GetFactionEmblemPath(OwnerInfo[oiUninhabited].InternalName))
       else
         SetImagePath(GetFactionEmblemPath(Instance.GetOwnerConfigName));
       SetImageKindX(ikxCenter);
@@ -5219,7 +5277,7 @@ begin
     SlotCount := GetPlayer.GetSlotCount(sskWeapon);
     for SlotIndex := 0 to SlotCount - 1 do
     begin
-      Item := GetPlayer.FindEquippedItemInSlot(Ord(t_Weapon1), SlotIndex) as TWeapon;
+      Item := GetPlayer.FindEquippedItemInSlot(WeaponCategoryItemType, SlotIndex) as TWeapon;
       if GetPlayer.IsEquipmentUsable(Item) then
       begin
         if (CampaignWeapons[PlayerArcadeShip.WeaponCount] <> Item)
@@ -5325,7 +5383,11 @@ function TfAB.RandomFloat(BoundA, BoundB: Double): Double;
 begin
   RandomSeed := RandomSeed div 7931 + (RandomSeed * 7981 + 567);
   Result :=
-      SeededRandomIntRange(Trunc(BoundA * 1000 + 1), Trunc(BoundB * 1000 + 1), RandomSeed) / 1000;
+      SeededRandomIntRange(
+              Trunc(BoundA * RandomFloatResolution + 1),
+              Trunc(BoundB * RandomFloatResolution + 1),
+              RandomSeed)
+          / RandomFloatResolution;
 end;
 
 procedure TfAB.UpdateHelp(Sender: TObjectGI; Show: Boolean);

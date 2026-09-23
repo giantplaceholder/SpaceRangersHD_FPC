@@ -193,7 +193,6 @@ type
   TVarEC = class(TObject)
     Name: WideString;
     Kind: TVarKind;
-    Gap9: array[0..2] of Byte;
     // Mods pass object addresses through both integer kinds. GetInt still
     // exposes signed 32-bit arithmetic; GetDword retains every address bit.
     IntValue: PtrInt;
@@ -304,7 +303,6 @@ type
     Prev: TCodeAnalyzerUnitEC;
     Next: TCodeAnalyzerUnitEC;
     TokenKind: TCodeTokenKind;
-    GapD: array[0..2] of Byte;
     SourceStart: Integer;
     SourceLength: Integer;
     Text: WideString;
@@ -345,7 +343,6 @@ type
 
   TExpressionInstrEC = class(TObject)
     Opcode: TExpressionOpcode;
-    Gap5: array[0..2] of Byte;
     OperandCount: Integer;
     Operands: array of Integer;
     destructor Destroy; override;
@@ -354,7 +351,6 @@ type
 
   TExpressionVarEC = class(TObject)
     Kind: TExpressionVarKind;
-    Gap5: array[0..2] of Byte;
     Name: WideString;
     MemberPath: array of WideString;
     Value: TVarEC;
@@ -371,7 +367,6 @@ type
     InstructionCount: Integer;
     Instructions: PointerToTExpressionInstrEC;
     SharedInstructions: Boolean;
-    Gap15: array[0..2] of Byte;
     ResultIndex: Integer;
     constructor Create;
     destructor Destroy; override;
@@ -402,7 +397,6 @@ type
     Prev: TCodeUnitEC;
     Next: TCodeUnitEC;
     Opcode: TCodeOpcode;
-    GapD: array[0..2] of Byte;
     Expression: TExpressionEC;
     Target: TCodeUnitEC;
     ExceptionVar: TVarEC;
@@ -410,7 +404,6 @@ type
     SourceLength: Integer;
     SourceContext: Pointer;
     Breakpoint: Boolean;
-    Gap29: array[0..2] of Byte;
     destructor Destroy; override;
   end;
 
@@ -434,7 +427,6 @@ type
   TCodeEC = class(TObject)
     Parent: TCodeEC;
     IsClassDefinition: Boolean;
-    Gap9: array[0..2] of Byte;
     Name: WideString;
     First: TCodeUnitEC;
     Last: TCodeUnitEC;
@@ -442,7 +434,6 @@ type
     Process: TCodeProcessEC;
     DebugContext: TScriptDebugState;
     ScriptFunLinked: Boolean;
-    Gap25: array[0..2] of Byte;
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
@@ -488,7 +479,6 @@ type
     Next: TCompilerUnitEC;
     Kind: TCompilerUnitKind;
     OperatorToken: TCodeTokenKind;
-    GapE: array[0..1] of Byte;
     Text: WideString;
     VariableIndex: Integer;
     IntValue: Integer;
@@ -513,11 +503,9 @@ type
 
   TScriptDebugState = class(TObject)
     Paused: Boolean;
-    Gap5: array[0..2] of Byte;
     StopEvent: TGameEventHandle;
     ResumeEvent: TGameEventHandle;
     StepMode: Byte;
-    Gap11: array[0..2] of Byte;
     CurrentUnit: TCodeUnitEC;
     CurrentCode: TCodeEC;
   end;

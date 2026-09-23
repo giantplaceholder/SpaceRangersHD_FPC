@@ -26,7 +26,6 @@ type
     EventCount: Integer;
     Events: array of TEvent;
     UseEventExpression: Boolean;
-    Gap21: array[0..2] of Byte;
     NextEventIndex: Integer;
     EventExpression: TTextField;
     IsDeath: Boolean;
@@ -34,7 +33,6 @@ type
     IsStart: Boolean;
     IsSuccess: Boolean;
     IsFailure: Boolean;
-    Gap31: array[0..2] of Byte;
     VisitLimit: Integer;
     VisitCount: Integer;
     Sequence: TSequence;

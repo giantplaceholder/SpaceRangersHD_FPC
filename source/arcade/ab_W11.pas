@@ -20,7 +20,6 @@ type
     Damage: Integer;
     Image: PabWorldImage;
     Exploding: Boolean;
-    GapB9: array[0..6] of Byte;
     LastTrailPosition: TVector3D;
     ExpireTick: Integer;
     TurnSpeed: Single;

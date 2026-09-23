@@ -14,7 +14,6 @@ type
 
   TSequence = class(TObjectEx)
     UnknownFlag: Byte;
-    Gap5: array[0..2] of Byte;
     TraversalLimit: Integer;
     Locations: TList;
     Paths: TList;

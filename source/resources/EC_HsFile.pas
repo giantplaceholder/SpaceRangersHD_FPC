@@ -45,7 +45,6 @@ type
     EntryBuffer: PPackEntryEC;
     ChangedFlag: Boolean;
     InitializedEmptyFlag: Boolean;
-    Gap22: array[0..1] of Byte;
     constructor Create(FolderName: AnsiString);
     constructor CreateChild(FolderName: AnsiString; Parent: THsFolderEC);
     destructor Destroy; override;
@@ -87,7 +86,6 @@ type
     NextPack: TPackFileEC;
     PrevPack: TPackFileEC;
     UseLooseFiles: Boolean;
-    GapD: array[0..2] of Byte;
     PackageHandle: THandle;
     PackagePath: AnsiString;
     RootFolder: THsFolderEC;
@@ -144,7 +142,6 @@ type
     LastPack: TPackFileEC;
     NameToPackIndexHash: THashEC;
     UseFastNameIndex: Boolean;
-    Gap11: array[0..2] of Byte;
     PackByIndex: TPackFileArray;
     constructor Create;
     destructor Destroy; override;

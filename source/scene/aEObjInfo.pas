@@ -41,14 +41,12 @@ type
   TEOTPlanet = record
     Id: Cardinal;
     Name: WideString;
-    OwnerId: Byte;
-    RaceId: Byte;
-    GapA: array[0..1] of Byte;
+    OwnerId: TOwnerId;
+    RaceId: TOwnerId;
     Population: Integer;
     Economy: TPlanetEconomy;
     Government: TPlanetGovernment;
     Relation: TRelationLevel;
-    Gap13: array[0..0] of Byte;
     UnexploredWater: Integer;
     UnexploredLand: Integer;
     UnexploredHills: Integer;
@@ -62,9 +60,8 @@ type
     Id: Cardinal;
     Name: WideString;
     FullName: WideString;
-    OwnerId: Byte;
+    OwnerId: TOwnerId;
     DominatorSeries: TDominatorSeries;
-    GapE: array[0..1] of Byte;
     TypeName: WideString;
     Speed: Integer;
     HullCapacity: Integer;
@@ -72,12 +69,10 @@ type
     HullFragility: Double;
     OutsideNormalSpace: Boolean;
     ScannerResolved: Boolean;
-    Gap2A: array[0..1] of Byte;
     DefenseText: WideString;
     DamageText: WideString;
     RepairPoints: Integer;
     Relation: TRelationLevel;
-    Gap39: array[0..2] of Byte;
     WinChance: Integer;
     PortraitImage: WideString;
     CombatStatusCount: Integer;
@@ -92,16 +87,13 @@ type
     Name: WideString;
     ImagePath: WideString;
     ItemType: TItemType;
-    GapD: array[0..2] of Byte;
     InfoText: WideString;
     Weight: Integer;
     Cost: Integer;
-    OwnerId: Byte;
-    Gap1D: array[0..2] of Byte;
+    OwnerId: TOwnerId;
     ConditionPercent: Double;
     Fragility: Double;
     DominatorSeries: TDominatorSeries;
-    Gap31: array[0..2] of Byte;
     Faction: WideString;
   end;
 
@@ -240,10 +232,10 @@ begin
                   + #13#10
                   + WrapTextInColor(
                       LookupLocalizedTextByKey('FormInfo.Partner'),
-                      '<color=255,240,100>');
+                      TextHighlightColorTag);
         if (Ship is TKling)
             and ((Ship as TKling).ActiveProgramAppliedTurn > 0)
-            and ((Ship as TKling).ActiveProgramId in [6..11]) then
+            and ((Ship as TKling).ActiveProgramId in [prgShipwreck..prgDisconnection]) then
           Ships[Index].FullName :=
               Ships[Index].FullName
                   + #13#10
@@ -253,7 +245,7 @@ begin
                               + ProgramNames[(Ship as TKling).ActiveProgramId]
                               + '.AddToShipInfo'
                       ),
-                      '<color=255,0,0>');
+                      RedColorTag);
       end
       else
       begin
@@ -262,7 +254,7 @@ begin
       end;
       Stage := 23;
       Ships[Index].OwnerId := Ship.OwnerId;
-      if Ships[Index].OwnerId = Byte(oiDominator) then
+      if Ships[Index].OwnerId = oiDominator then
         Ships[Index].DominatorSeries := (Ship as TKling).DominatorSeries;
       if Ship is TRanger then
         Ships[Index].TypeName := (Ship as TRanger).GetCharacterName
@@ -279,7 +271,7 @@ begin
       Stage := 24;
       Ships[Index].RepairPoints := -1;
       Ships[Index].DamageText := WrapTextInColor('???', '');
-      Ships[Index].DefenseText := IntToStr(Integer(Ship.GetDefensePercent) and $7F) + '%';
+      Ships[Index].DefenseText := IntToStr(Ship.GetDefensePercent) + '%';
       if GetPlayer.CanResolveObjectWithScanner(Ship)
           or (GetPlayer = Ship)
           or (GetPlayer = Ship.PartnerShip)
@@ -318,9 +310,9 @@ begin
       Stage := 27;
       if (GetPlayer <> Ship)
           and not (Ship is TRuins)
-          and (GetPlayer.CountActiveArtefacts(Ord(t_ArtefactAnalyzer)) > 0)
+          and (GetPlayer.CountActiveArtefacts(t_ArtefactAnalyzer) > 0)
           and GetPlayer.CanResolveObjectWithScanner(Ship) then
-        Ships[Index].WinChance := Integer(GetPlayer.GetWinChancePercent(Ship)) and $7F
+        Ships[Index].WinChance := GetPlayer.GetWinChancePercent(Ship)
       else
         Ships[Index].WinChance := -1;
       Stage := 28;
@@ -361,14 +353,14 @@ begin
             WrapTextInColor(GoodsMarket[Byte(Item.ItemType)].DisplayName, InfoNameColorTag);
         Items[Index].InfoText :=
             LocalizedText('Items.Goods.Text.' + IntToStr(Byte(Item.ItemType) + 1));
-        Items[Index].OwnerId := Byte(oiUninhabited);
+        Items[Index].OwnerId := oiUninhabited;
       end
       else
       begin
         Stage := 32;
         Items[Index].ImagePath := 'GI,' + Item.GetBitmapResourceName + 's';
         Items[Index].Name := WrapTextInColor(Item.GetDisplayName, InfoNameColorTag);
-        Items[Index].InfoText := Item.GetInfoText('<color=255,240,100>', nil);
+        Items[Index].InfoText := Item.GetInfoText(TextHighlightColorTag, nil);
         Items[Index].OwnerId := Item.OwnerId;
       end;
       if Item is TEquipment then
@@ -583,8 +575,8 @@ begin
   begin
     Planets[Index].Id := Buffer.GetUInt32;
     Planets[Index].Name := Buffer.ReadWideString;
-    Planets[Index].OwnerId := Buffer.GetByte;
-    Planets[Index].RaceId := Buffer.GetByte;
+    Planets[Index].OwnerId := TOwnerId(Buffer.GetByte);
+    Planets[Index].RaceId := TOwnerId(Buffer.GetByte);
     Planets[Index].Population := Buffer.GetInt32;
     Planets[Index].Economy := TPlanetEconomy(Buffer.GetByte);
     Planets[Index].Government := TPlanetGovernment(Buffer.GetByte);
@@ -605,7 +597,7 @@ begin
     Ships[Index].Id := Buffer.GetUInt32;
     Ships[Index].Name := Buffer.ReadWideString;
     Ships[Index].FullName := Buffer.ReadWideString;
-    Ships[Index].OwnerId := Buffer.GetByte;
+    Ships[Index].OwnerId := TOwnerId(Buffer.GetByte);
     Ships[Index].DominatorSeries := TDominatorSeries(Buffer.GetByte);
     Ships[Index].TypeName := Buffer.ReadWideString;
     Ships[Index].Speed := Buffer.GetInt32;
@@ -641,7 +633,7 @@ begin
     Items[Index].InfoText := Buffer.ReadWideString;
     Items[Index].Weight := Buffer.GetInt32;
     Items[Index].Cost := Buffer.GetInt32;
-    Items[Index].OwnerId := Buffer.GetByte;
+    Items[Index].OwnerId := TOwnerId(Buffer.GetByte);
     Items[Index].ConditionPercent := Buffer.GetSingle;
     Items[Index].Fragility := Buffer.GetSingle;
     Items[Index].DominatorSeries := TDominatorSeries(Buffer.GetByte);

@@ -338,15 +338,15 @@ end;
 
 function GetShopItemIconName(Item: TItem): WideString;
 var
-  Owner: Byte;
+  Owner: TOwnerId;
 begin
   if (Item is TEquipment)
       and (Item.ItemType in [t_FuelTanks..t_DefGenerator])
       and (GetPlayer <> nil)
-      and GetPlayer.IsHealthEffectActive(3) then
+      and GetPlayer.IsHealthEffectActive(heHolyFanaticism) then
   begin
     Owner := Item.OwnerId;
-    Item.OwnerId := Byte(oiDominator);
+    Item.OwnerId := oiDominator;
     Result := Item.GetBitmapResourceName;
     Item.OwnerId := Owner;
   end
@@ -514,7 +514,7 @@ end;
 
 procedure TfEquipmentShop.OnOpen;
 var
-  Owner: Byte;
+  Owner: TOwnerId;
   Size: Integer;
   BackgroundPath: WideString;
   SavedSlots: TList;
@@ -542,11 +542,11 @@ begin
       UpCallback := StationPanel.ServicesClicked;
   with GetByName('BGCity2') as TImageGI do
   begin
-    SetActive(GetPlayer.IsDockedToShip and (GetPlayer.DockedTo.TypeId = Byte(rstMilitaryBase)));
+    SetActive(GetPlayer.IsDockedToShip and (GetPlayer.DockedTo.TypeId = rstMilitaryBase));
     if Active then
     begin
       SetImagePath('GAI,' + GetPlayer.CurrentStar.GetBackgroundImagePath(Size));
-      GaiImageControl.LoadFrameSequenceFromText('[50,0-0]');
+      GaiImageControl.LoadFrameSequenceFromText(SingleFrameAnimationSpec);
       SetImageKindX(ikxCenter);
       SetImageKindY(ikyCenter);
     end;
@@ -592,15 +592,15 @@ begin
     else if GetPlayer.IsDockedToShip then
       Owner := GetPlayer.DockedTo.OwnerId
     else
-      Owner := 0;
+      Owner := oiMaloc;
     SetActive(True);
-    if Owner = 1 then
+    if Owner = oiPeleng then
       SetImagePath('GI,Bm.FormShop2.' + GiResourceSuffix + 'Peleng')
-    else if Owner = 2 then
+    else if Owner = oiHuman then
       SetImagePath('GI,Bm.FormShop2.' + GiResourceSuffix + 'People')
-    else if Owner = 3 then
+    else if Owner = oiFeyan then
       SetImagePath('GI,Bm.FormShop2.' + GiResourceSuffix + 'Fei')
-    else if Owner = 4 then
+    else if Owner = oiGaal then
       SetImagePath('GI,Bm.FormShop2.' + GiResourceSuffix + 'Gaal')
     else
       SetActive(False);
@@ -845,13 +845,13 @@ begin
               'Bm.FormShop2.'
                   + GiResourceSuffix
                   + 'Slot'
-                  + ItemTypeNames[Ord(Slot.Item.ItemType)]
+                  + ItemTypeNames[Slot.Item.ItemType]
                   + LevelSuffix) then
             SetImagePath(
                 'GI,Bm.FormShop2.'
                     + GiResourceSuffix
                     + 'Slot'
-                    + ItemTypeNames[Ord(Slot.Item.ItemType)]
+                    + ItemTypeNames[Slot.Item.ItemType]
                     + LevelSuffix
             )
           else if (Slot.Item is TArtefact)
@@ -999,7 +999,7 @@ begin
   if GetPlayer.QueuedTravelTarget <> nil then
     Exit;
   if GetPlayer.IsDockedToShip
-      and (GetPlayer.DockedTo.TypeId = Byte(rstDominion))
+      and (GetPlayer.DockedTo.TypeId = rstDominion)
       and (GetPlayer.DockedTo.Order = soTeleport)
       and (Cardinal(GetPlayer.DockedTo.OrderStateData) > 0)
       and not GetPlayer.DockedTo.InHyperspace then
@@ -1008,7 +1008,7 @@ begin
     Exit;
   end;
   if GetPlayer.IsDockedToShip
-      and (GetPlayer.DockedTo.TypeId = Byte(rstDominion))
+      and (GetPlayer.DockedTo.TypeId = rstDominion)
       and ((GetPlayer.DockedTo as TRuins).FlyToStar <> nil)
       and ((GetPlayer.DockedTo as TRuins).FlyToStar <> GetPlayer.CurrentStar)
       and ((GetPlayer.DockedTo as TRuins).FlyDate <= Galaxy.CurrentTurn) then
@@ -1017,7 +1017,7 @@ begin
     Exit;
   end;
   if GetPlayer.IsDockedToShip
-      and (GetPlayer.DockedTo.TypeId = Byte(rstMilitaryBase))
+      and (GetPlayer.DockedTo.TypeId = rstMilitaryBase)
       and ((GetPlayer.DockedTo as TRuins).FlyToStar <> nil)
       and ((GetPlayer.DockedTo as TRuins).FlyToStar <> GetPlayer.CurrentStar)
       and ((GetPlayer.DockedTo as TRuins).FlyDate <= Galaxy.CurrentTurn) then
@@ -1074,7 +1074,7 @@ begin
     ClearGoodsControls;
     BuildGoodsControls;
     UpdateScrollButtons;
-    if not ShipScreen.FlagD4 then
+    if not ShipScreen.ReopenRequested then
       Break;
     SetCursorActive(False);
     DrawQueuedUpdateRects;
@@ -1266,7 +1266,7 @@ begin
             Self,
             FormatText1(
                 LanguageDataConfig.GetParamByPathOrMarker('FormShop.NoMoney'),
-                '<color=255,240,100>',
+                TextHighlightColorTag,
                 '<Money>',
                 IntToWideString(Galaxy.PendingEquipmentPurchasePrice - GetPlayer.Money)
             ),
@@ -1294,7 +1294,7 @@ begin
                   Self,
                   FormatText1(
                       LanguageDataConfig.GetParamByPathOrMarker('FormShop.BuyHull'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Money>',
                       IntToWideString(Galaxy.PendingEquipmentPurchasePrice)
                   ),
@@ -1308,7 +1308,7 @@ begin
                   Self,
                   FormatText1(
                       LanguageDataConfig.GetParamByPathOrMarker('FormShop.UpgradeHull'),
-                      '<color=255,240,100>',
+                      TextHighlightColorTag,
                       '<Money>',
                       IntToWideString(Galaxy.PendingEquipmentPurchasePrice)
                   ),
@@ -1323,7 +1323,7 @@ begin
                 Self,
                 FormatText2(
                     LanguageDataConfig.GetParamByPathOrMarker('FormShop.Buy'),
-                    '<color=255,240,100>',
+                    TextHighlightColorTag,
                     '<Item>',
                     RemoveTextTagsW(Slot.Item.GetDisplayName),
                     '<Money>',
@@ -1636,7 +1636,7 @@ begin
       RefreshHullInfo(
           Self,
           Item as THull,
-          Equipment.GetInfoText('<color=255,240,100>', nil),
+          Equipment.GetInfoText(TextHighlightColorTag, nil),
           False
       );
       ItemInfoWindow.SetActive(False);
@@ -1656,11 +1656,11 @@ begin
       (GetByName('InfoName') as TLabelGI)
           .SetText(WrapTextInColor(Equipment.GetDisplayName, InfoNameColorTag));
       (GetByName('InfoText') as TLabelGI)
-          .SetText(Equipment.GetInfoText('<color=255,240,100>', nil));
+          .SetText(Equipment.GetInfoText(TextHighlightColorTag, nil));
       (GetByName('InfoSize') as TLabelGI).SetText(IntToWideString(Equipment.Weight));
       Price := IntToWideString(Equipment.GetConditionAdjustedCost);
       if Equipment.GetConditionAdjustedCost < Equipment.Cost then
-        Price := WrapTextInColor(Price, '<color=255,0,0>');
+        Price := WrapTextInColor(Price, RedColorTag);
       (GetByName('InfoPrice') as TLabelGI).SetText(Price);
       with GetByName('EmRace') as TImageGI do
       begin
@@ -1804,7 +1804,7 @@ begin
     AddOverlay('InfoHull_W4');
   if Hull.GetSlotCount(sskWeapon) < 5 then
     AddOverlay('InfoHull_W5');
-  for I := 1 to DefaultHullSlotCounts[Ord(sskArtefact)] do
+  for I := 1 to DefaultHullSlotCounts[sskArtefact] do
     if Hull.GetSlotCount(sskArtefact) < I then
       AddOverlay('InfoHull_A' + IntToWideString(I));
   if Hull.GetSlotCount(sskEngine) < 1 then
@@ -1825,7 +1825,7 @@ end;
 
 var
   // Native managed-string initialization pairs at $7E3C0C, $7E3C04 and $7E3BFC.
-  ShopDominatorImagePrefixes: array[0..2] of WideString = ('B', 'K', 'T');
+  ShopDominatorImagePrefixes: TDominatorSeriesNameTable = ('B', 'K', 'T');
 
 procedure TfEquipmentShop.RefreshHullInfo(
     Target: TMessageLoopGI;
@@ -1839,7 +1839,8 @@ var
   Control: TObjectGI;
   I: Integer;
   PreviewPath, SeriesName: WideString;
-  HullKind, DisplayKind: Byte;
+  HullKind: THullType;
+  DisplayKind: TKlingType;
   Series: TDominatorSeries;
   BarWidth, CapWidth, MinimumWidth: Integer;
   UnusedNativeLocal:
@@ -1863,7 +1864,7 @@ begin
   Target.GetByName('InfoHull_W3').SetActive(not (Hull.GetSlotCount(sskWeapon) >= 3));
   Target.GetByName('InfoHull_W4').SetActive(not (Hull.GetSlotCount(sskWeapon) >= 4));
   Target.GetByName('InfoHull_W5').SetActive(not (Hull.GetSlotCount(sskWeapon) >= 5));
-  for I := 1 to DefaultHullSlotCounts[Ord(sskArtefact)] do
+  for I := 1 to DefaultHullSlotCounts[sskArtefact] do
   begin
     Control := Target.FindControlByPath('InfoHull_A' + IntToWideString(I));
     if Control <> nil then
@@ -1878,40 +1879,40 @@ begin
   Target
       .GetByName('InfoHull_DefGenerator')
       .SetActive(not (Hull.GetSlotCount(sskDefGenerator) >= 1));
-  DisplayKind := 0;
+  DisplayKind := ktBoss;
   Series := dsBlazer;
   HullKind := Hull.HullType;
   if (Hull.OwnerShip <> nil)
       and (GetPlayer = Hull.OwnerShip)
       and GetPlayer.ChameleonActive
-      and (GetPlayer.ChameleonVisualType in [0..7])
-      and (GetPlayer.ChameleonVisualType <> 0) then
+      and (GetPlayer.ChameleonVisualType in [Low(TKlingType)..High(TKlingType)])
+      and (GetPlayer.ChameleonVisualType <> ktBoss) then
   begin
-    HullKind := 6;
+    HullKind := htKling;
     DisplayKind := GetPlayer.ChameleonVisualType;
     Series := GetPlayer.ChameleonSeries;
   end;
   if (Hull.OwnerShip <> nil) and (TObject(Hull.OwnerShip) is TKling) then
   begin
-    HullKind := 6;
-    DisplayKind := Byte((TObject(Hull.OwnerShip) as TKling).KlingType);
+    HullKind := htKling;
+    DisplayKind := (TObject(Hull.OwnerShip) as TKling).KlingType;
     Series := (TObject(Hull.OwnerShip) as TKling).DominatorSeries;
   end;
   if not SuppressImage then
     with Target.GetByName('InfoHullImage') as TImageGI do
     begin
-      if HullKind = 6 then
+      if HullKind = htKling then
       begin
         SetImagePath('GraphBuf');
         PreviewPath := '';
-        if DisplayKind <> 0 then
+        if DisplayKind <> ktBoss then
           PreviewPath :=
               GameDataConfig.GetParamByPathOrMarker(
                   'SE.Ship.'
-                      + DominatorSeriesNames[Ord(Series)]
+                      + DominatorSeriesNames[Series]
                       + '.'
-                      + ShopDominatorImagePrefixes[Ord(Series)]
-                      + IntToWideString(DisplayKind)
+                      + ShopDominatorImagePrefixes[Series]
+                      + IntToWideString(Ord(DisplayKind))
                       + '.'
                       + GiResourceSuffix
                       + 'ImageP'
@@ -1938,7 +1939,7 @@ begin
           with GraphBufControl do
           begin
             SourceHasPerPixelAlpha := True;
-            if DisplayKind = 0 then
+            if DisplayKind = ktBoss then
               case Series of
                 dsTerron: LoadGiByPathIntoGraphBuf('Bm.Ruins.Terroni', GraphBuf);
                 dsKeller: LoadGiByPathIntoGraphBuf('Bm.Ruins.Kelleri', GraphBuf);
@@ -2110,13 +2111,12 @@ begin
   end;
   if GetPlayer.IsOnPlanet then
   begin
-    if GetPlayer.CurrentPlanet.OwnerId = Byte(oiPirate) then
+    if GetPlayer.CurrentPlanet.OwnerId = oiPirate then
     begin
       if not GetPlayer.CurrentPlanet.IsMainPiratePlanet then
         MusicManager.PlayCategory(
             'Nation.'
-                + OwnerInfo[Integer(RaceToOwner(GetPlayer.CurrentPlanet.RaceId)) and $7F]
-                    .InternalName
+                + OwnerInfo[RaceToOwner(GetPlayer.CurrentPlanet.RaceId)].InternalName
                 + 'Pirate'
         )
       else
@@ -2130,16 +2130,13 @@ begin
   begin
     if not MusicInPlanetEnabled then
       MusicManager.RequestFadeOut
-    else if GetPlayer.DockedTo.TypeId in [Ord(rstPirateBase), Ord(rstDominion)] then
+    else if GetPlayer.DockedTo.TypeId in [rstPirateBase, rstDominion] then
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
-              + 'Pirate'
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName + 'Pirate'
       )
     else
       MusicManager.PlayCategory(
-          'Nation.'
-              + OwnerInfo[Integer(RaceToOwner(GetPlayer.DockedTo.PilotRace)) and $7F].InternalName
+          'Nation.' + OwnerInfo[RaceToOwner(GetPlayer.DockedTo.PilotRace)].InternalName
       );
   end;
 end;

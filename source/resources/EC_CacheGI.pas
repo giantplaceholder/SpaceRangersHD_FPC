@@ -30,7 +30,6 @@ type
     Image: TgiGR;
     SurfaceCache: TTextureGR;
     UsesTiledSurfaces: Boolean;
-    Gap29: array[0..2] of Byte;
     TileOrigins: array of TPoint;
     TileCount: Integer;
     procedure LoadFromConfigBuffer(SourceBuffer: TBufEC; const LoadOption: WideString); override;
