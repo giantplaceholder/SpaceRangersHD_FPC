@@ -1,11 +1,18 @@
 # Building
 
-## macOS ARM64
+## Requirements
 
-Requires Python 3, FPC 3.2.2 for bootstrapping, GNU Make,
-Xcode command-line tools, CMake, pkg-config, SDL2 2.26 or newer, libogg, libvorbis, libjpeg, and libpng.
-AVI cinematics also need a native Xvid library (`xvidcore`).
-`FPC_BOOTSTRAP` selects the installed bootstrap compiler.
+Build natively on Linux x86_64 or macOS ARM64. Linux ARM64 is recognized but unvalidated.
+Requires Python 3.10+, FPC 3.2.2, GNU Make, CMake 3.20+, pkg-config, and development
+libraries for SDL2 2.26+ (or SDL2-compat), libogg, libvorbis, libjpeg, and libpng.
+
+- Linux: C11 compiler and binutils. LLVM builds also require `clang` and `ld.lld` (validated with 22.1.3).
+- macOS: Xcode command-line tools and Homebrew.
+
+AVI playback needs Xvid: `libxvidcore.so.4` on Linux, `xvidcore` on macOS.
+`FPC_BOOTSTRAP` overrides the installed compiler used to bootstrap the pinned FPC.
+
+## Build and run
 
 ```sh
 git submodule update --init --recursive
@@ -13,28 +20,25 @@ git submodule update --init --recursive
 ./tools/run.py --game-dir=/path/to/game
 ```
 
-The build script bootstraps the pinned FPC LLVM compiler into `.local/fpc/`.
-Normal builds use `-O2`. Use `--release` with both build and run scripts for
-release builds (`-O4`).
+The scripts detect the host OS; `--target=linux` or `--target=macos` selects it
+explicitly. Resources default to `game/` when `--game-dir` is omitted.
 
-All builds use an RTL compiled with `CLASSESINLINE`; the pinned FPC also marks
-the list error routine `noreturn`, allowing safe list accesses to optimize better.
-macOS link-time optimization is a separate opt-in. Pass `--lto` to both scripts:
+- `--release`: `-O4` instead of the default `-O2`.
+- `--llvm`: LLVM backend on Linux; macOS uses LLVM by default.
+- `--lto`: Pascal link-time optimization, implying LLVM; unavailable on Android.
+- `--rebuild`: rebuild all game units and native code (build script only).
 
-```sh
-./tools/build.py --release --lto
-./tools/run.py --release --lto
-```
+Use matching `--release`, `--llvm`, and `--lto` options for build and run.
+Profiles are `debug` or `release`, followed by `-llvm` for Linux LLVM builds
+and `-lto` when enabled. Compiler/RTL caches live in `.local/fpc/`.
 
-Normal builds keep their existing output paths. LTO builds use `.local/release-lto/`
-or `.local/debug-lto/`, with separate RTL and game-unit caches. Switching between
-them does not rebuild the compiler or overwrite the other configuration.
-LTO takes longer to link. Android currently builds without LTO.
+| Platform | Output |
+| --- | --- |
+| Linux | `.local/linux-<cpu>/<profile>/bin/`: `Rangers` and `libokgf.so` |
+| macOS | `.local/<profile>/Space Rangers HD.app` |
 
-`./tools/build.py --rebuild` forces a game rebuild.
-
-Game resources default to the ignored `game/` directory. `--game-dir` selects
-another location. Build output is stored under `.local/`.
+Linux CPU names are `x86_64` and `aarch64`. Keep the Linux executable and OKGF
+library together; SDL and codecs remain system dependencies.
 
 ## Formatting
 

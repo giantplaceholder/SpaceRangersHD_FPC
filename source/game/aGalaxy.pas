@@ -16876,7 +16876,7 @@ begin
                                   or (TTranclucator(Ship).OwnerShip <> Missile.OwnerShip)
                                       and (not (TObject(Missile.OwnerShip) is TTranclucator)
                                           or (TTranclucator(Ship).OwnerShip
-                                              <> TTranclucator(Cardinal(Missile.OwnerShip))
+                                              <> TTranclucator(Missile.OwnerShip)
                                                   .OwnerShip))))) then
                   begin
                     MissileDistance :=
@@ -16889,7 +16889,7 @@ begin
                         MissilePriority := 3
                       else if (Missile.Target <> nil)
                           and (TObject(Missile.Target) is TShip)
-                          and (Cardinal(Missile.Target) <> Cardinal(Missile.OwnerShip))
+                          and (Missile.Target <> Missile.OwnerShip)
                           and ((TObject(Missile.Target) as TShip).GetRelationLevelToShip(Ship)
                               > rlHostile)
                           and (Ship.GetRelationLevelToShip(TObject(Missile.Target) as TShip)

@@ -3,6 +3,13 @@
 A Free Pascal port of **Space Rangers HD: A War Apart**, based on the
 recovered Delphi source and intended to preserve the original game behavior.
 
+Supported native platforms:
+
+- Linux x86_64
+- macOS ARM64
+
+See [BUILDING.md](BUILDING.md) for dependencies and build/run instructions.
+
 The source was generated from
 [SpaceRangersHD_decomp at `7342a10`](https://github.com/pakompom/SpaceRangersHD_decomp/tree/7342a10dc1a0dcaa242ea4bc8c33e29c0eb6bdc0),
 which reconstructs the **2026-08-11 prerelease** build.

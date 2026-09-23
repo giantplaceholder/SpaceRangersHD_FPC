@@ -20,6 +20,7 @@ function GameTickCount: Cardinal;
 function GameCpuClockMHz: Double;
 function GameUserDirectory: UnicodeString;
 function NativeGamePath(const Path: UnicodeString): UnicodeString;
+procedure SetGameDirectory(const Path: UnicodeString);
 
 implementation
 
@@ -259,12 +260,19 @@ begin
     raise EInOutError.Create('Cannot locate the Documents folder');
   Result := IncludeTrailingPathDelimiter(Result) + 'SpaceRangersHD\';
   {$ELSE}
-  Result := GetEnvironmentVariable('XDG_DATA_HOME');
-  if Result = '' then
-    Result := GetUserDir + '.local/share';
+  Result := UTF8Decode(GetEnvironmentVariable('XDG_DATA_HOME'));
+  // XDG paths must be absolute; relative values must not follow the asset CWD.
+  if (Result = '') or (Result[1] <> '/') then
+    Result := UTF8Decode(GetUserDir) + '.local/share';
   Result := IncludeTrailingPathDelimiter(Result) + 'SpaceRangersHD/';
   {$ENDIF}
 {$ENDIF}
+end;
+
+procedure SetGameDirectory(const Path: UnicodeString);
+begin
+  if (Path = '') or not SetCurrentDir(UTF8Encode(NativeGamePath(Path))) then
+    raise EInOutError.Create('Cannot open game directory: ' + UTF8Encode(Path));
 end;
 
 function GameCpuClockMHz: Double;

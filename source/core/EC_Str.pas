@@ -919,6 +919,9 @@ var
   TextLength, PairCount, i, j: Integer;
 begin
   Result := Text;
+  // Unix WideStrings can share storage, including read-only string literals.
+  // Detach before writing through a pointer, which bypasses copy-on-write.
+  UniqueString(Result);
   TextLength := Length(Result);
   PairCount := High(WideCaseTable) + 1;
   for i := 0 to TextLength - 1 do
@@ -935,6 +938,7 @@ var
   TextLength, PairCount, i, j: Integer;
 begin
   Result := Text;
+  UniqueString(Result);
   TextLength := Length(Result);
   PairCount := High(WideCaseTable) + 1;
   for i := 0 to TextLength - 1 do

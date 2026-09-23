@@ -28,7 +28,7 @@ type
     procedure Draw(ClipRect: TRect); override;
     constructor Create(Owner: TObjectGI);
     destructor Destroy; override;
-    procedure SetImagePath(const Path: WideString);
+    procedure SetImage(const Path: WideString; Origin: TPoint);
     procedure RebuildSystemCursor;
     function CreateNativeCursor(Buffer: TGraphBufGR; Hotspot: TPoint): Pointer;
     procedure AdvanceAnimation(Timer: PCallbackTimerGI; UserData: PtrInt);
@@ -98,9 +98,13 @@ begin
   ImageControl.Clear;
 end;
 
-procedure TCursorGI.SetImagePath(const Path: WideString);
+procedure TCursorGI.SetImage(const Path: WideString; Origin: TPoint);
 begin
   Clear;
+  // Image and hotspot form one cursor. Rebuilding between these updates can
+  // put the previous hotspot outside the new image (especially cropped GAI frames).
+  inherited SetOrigin(Origin);
+  ImageControl.SetPosition(Classes.Point(-Origin.X, -Origin.Y));
   if ShowSystemMouse then
   begin
     if ImagePath <> Path then
@@ -258,7 +262,7 @@ begin
   end;
   if (FrameIndex < 0) or (High(FrameIndices) < FrameIndex) then
     FrameIndex := 0;
-  if Active then
+  if Active and (Length(FrameIndices) > 0) then
   begin
     SDL_SetCursor(CursorHandles[FrameIndices[FrameIndex]]);
     while ShowGameCursor(True) < 0 do

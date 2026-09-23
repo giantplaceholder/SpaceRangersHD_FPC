@@ -2452,18 +2452,21 @@ begin
     Exits[0] := 0;
     Exits[1] := 0;
     Exits[2] := 0;
-    if Space.PortalSlotCount > 1 then
+    // Map selection above requires support for this number of outgoing links.
+    // Shuffle those exit indices; terminal nodes have no exits to shuffle.
+    if Space.OutgoingCount > 1 then
       Exits[1] := 1;
-    if Space.PortalSlotCount > 2 then
+    if Space.OutgoingCount > 2 then
       Exits[2] := 2;
-    for Index := 0 to 4 do
-    begin
-      Attempt := RandomRange(0, Space.PortalSlotCount - 1);
-      OtherIndex := RandomRange(0, Space.PortalSlotCount - 1);
-      Choice := Exits[Attempt];
-      Exits[Attempt] := Exits[OtherIndex];
-      Exits[OtherIndex] := Choice;
-    end;
+    if Space.OutgoingCount > 0 then
+      for Index := 0 to 4 do
+      begin
+        Attempt := RandomRange(0, Space.OutgoingCount - 1);
+        OtherIndex := RandomRange(0, Space.OutgoingCount - 1);
+        Choice := Exits[Attempt];
+        Exits[Attempt] := Exits[OtherIndex];
+        Exits[OtherIndex] := Choice;
+      end;
     Index := 0;
     Link := FirstArcadeSpaceLink;
     while Link <> nil do

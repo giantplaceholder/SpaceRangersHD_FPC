@@ -626,6 +626,7 @@ function TryDispatchResumingScriptRequest: Boolean;
 function DispatchPendingScriptRequests: Boolean;
 
 procedure StartScriptRequestThread;
+procedure StopScriptRequestThread;
 
 procedure CompleteQueuedArcadeBattle(Status: Integer);
 
@@ -737,6 +738,7 @@ uses
   GI_MessageBox,
   GI_XviD,
   GameSystem,
+  GameEvents,
   Robot,
   fPanelMain,
   fShip2,
@@ -1128,15 +1130,38 @@ begin
       ScriptRequestThread.Start;
 end;
 
+procedure StopScriptRequestThread;
+begin
+  if ScriptRequestThread <> nil then
+  begin
+    ScriptRequestThread.RequestStop;
+    ScriptRequestThread.WaitForIdle(INFINITE);
+  end;
+end;
+
 constructor TScriptThread.Create;
 begin
   inherited Create;
 end;
 
 procedure TScriptThread.Execute;
+var
+  Events: array[0..1] of TGameEventHandle;
 begin
+  if IsStopRequested then
+    Exit;
   if (TurnCalculationThread <> nil) and TurnCalculationThread.IsRunning then
-    TurnCalculationThread.WaitForIdle(INFINITE);
+  begin
+    // Shutdown must be able to join this worker while calculation is still
+    // waiting for the UI. Keep the calculation's events alive until we leave.
+    Events[0] := StopEvent;
+    Events[1] := TurnCalculationThread.IdleEvent;
+    if WaitGameEvents(Length(Events), @Events, False, INFINITE) = WAIT_OBJECT_0 then
+      Exit;
+    TurnCalculationThread.WaitForIdle(0);
+  end;
+  if IsStopRequested then
+    Exit;
   if HasPendingScriptRequests then
   begin
     if CurrentScreenId = screenShip then
@@ -1264,6 +1289,7 @@ end;
 
 procedure FinalizeScriptEngine;
 begin
+  FreeAndNil(ScriptRequestThread);
   if ScriptFunctionScope <> nil then
   begin
     ScriptFunctionScope.Free;

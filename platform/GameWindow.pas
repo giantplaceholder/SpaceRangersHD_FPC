@@ -134,12 +134,14 @@ var
   Flags: Cardinal;
   PreviousTarget: PSDL_Texture;
   TargetGeneration: LongInt;
+  Created: Boolean;
 begin
   InitializeGameVideo;
   TargetGeneration := GameTargetGeneration;
   LogicalWidth := Width;
   LogicalHeight := Height;
-  if GameSDLWindow = nil then
+  Created := GameSDLWindow = nil;
+  if Created then
   begin
     GameSDLWindow :=
         SDL_CreateWindow(
@@ -190,6 +192,15 @@ begin
   end;
   CheckSDL(SDL_RenderSetVSync(GameSDLRenderer, Ord(VSync)));
   SDL_ShowCursor(Ord(CursorCount >= 0));
+  if Created then
+  begin
+    // Wayland maps the window only after a buffer is presented. The game waits
+    // for real focus before drawing its loading screen, so supply the first
+    // buffer here to avoid waiting for focus on an invisible surface.
+    CheckSDL(SDL_SetRenderDrawColor(GameSDLRenderer, 0, 0, 0, 255));
+    CheckSDL(SDL_RenderClear(GameSDLRenderer));
+    SDL_RenderPresent(GameSDLRenderer);
+  end;
 end;
 
 procedure CloseGameWindow;

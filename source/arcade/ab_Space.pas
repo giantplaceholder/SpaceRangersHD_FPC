@@ -31,7 +31,6 @@ type
     AppearanceIndex: Integer;
     MapPath: WideString;
     BoundaryKind: Integer;
-    PortalSlotCount: Integer;
     Danger: Double;
     ApproachDanger: Double;
     RouteCost: Double;

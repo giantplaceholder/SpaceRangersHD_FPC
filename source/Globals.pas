@@ -810,6 +810,8 @@ var
   Item: TObject;
   Index: Integer;
 begin
+  // The request worker can wait on the calculation thread's idle event.
+  StopScriptRequestThread;
   // Join while script globals and dialog events are still valid. RequestStop
   // also releases conversations waiting for a UI that is being torn down.
   if TurnCalculationThread <> nil then
@@ -923,6 +925,10 @@ var
   ShipBlock: TBlockParEC;
   Variable, Other: TVarEC;
 begin
+  // This worker survives settings/mod reloads. Direct script calls to Execute
+  // must work again once the previous UI has been released.
+  if ScriptRequestThread <> nil then
+    ScriptRequestThread.SetStopRequested(False);
   CacheLoader := TCacheLoader.Create;
   InitializeSaveWriter;
   RangerFontName := 'Font.2Ranger';
@@ -1677,6 +1683,9 @@ var
   ScreenIndex: TGameScreenId;
   Slot: TShopSlot;
 begin
+  // Script requests close/change screens. Finish them before releasing the UI,
+  // including when this runtime is rebuilt after a settings/mod change.
+  StopScriptRequestThread;
   ArcadeHitSounds := nil;
   ArcadeExplosionSounds := nil;
   ArcadeItemSounds := nil;

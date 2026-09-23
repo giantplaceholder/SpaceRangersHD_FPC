@@ -1,26 +1,38 @@
 #!/usr/bin/env python3
-"""Run the macOS game."""
+"""Run the native desktop game."""
 
 import argparse
 import os
 from pathlib import Path
+
+from targets import desktop_binary, desktop_target
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target", choices=("linux", "macos"), default=desktop_target())
     parser.add_argument("--release", action="store_true", help="Run the optimized build.")
+    parser.add_argument("--llvm", action="store_true", help="Run the Linux LLVM build.")
     parser.add_argument("--lto", action="store_true", help="Run the separate LTO build.")
     parser.add_argument(
         "--game-dir", type=Path, default=ROOT / "game", help="Game asset directory."
     )
     args, game_options = parser.parse_known_args()
-    configuration = ("release" if args.release else "debug") + ("-lto" if args.lto else "")
-    binary = ROOT / ".local" / configuration / "Space Rangers HD.app/Contents/MacOS/Rangers"
+    if args.llvm and args.target != "linux":
+        parser.error("--llvm selects the optional Linux backend; macOS already uses LLVM.")
+    try:
+        binary = desktop_binary(ROOT, args.target, args.release, args.lto, llvm=args.llvm)
+    except RuntimeError as error:
+        parser.error(str(error))
     if not binary.is_file():
-        parser.error("Run ./tools/build.py first, with matching --release and --lto options.")
+        parser.error(
+            "Run ./tools/build.py first, with matching --release, --llvm and --lto options."
+        )
     game_directory = args.game_dir.expanduser().resolve()
+    if not game_directory.is_dir():
+        parser.error(f"Game asset directory does not exist: {game_directory}")
     command = [str(binary), f"--game-dir={game_directory}", *game_options]
     try:
         os.execv(binary, command)

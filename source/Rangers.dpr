@@ -294,7 +294,6 @@ uses
   GR_AMStream,
   DirectSound,
   BreakMessageGIException,
-  VFW,
   aGalaxyStruct,
   GI_PolyFill,
   ab_ShipWall,
@@ -564,9 +563,7 @@ begin
     // The executable can live in an app bundle; resources are selected explicitly.
     for ArgumentIndex := 1 to ParamCount do
       if Copy(ParamStr(ArgumentIndex), 1, 11) = '--game-dir=' then
-        SetCurrentDir(
-            UTF8Encode(NativeGamePath(UTF8Decode(Copy(ParamStr(ArgumentIndex), 12, MaxInt))))
-        );
+        SetGameDirectory(UTF8Decode(Copy(ParamStr(ArgumentIndex), 12, MaxInt)));
     Randomize;
     repeat
       try

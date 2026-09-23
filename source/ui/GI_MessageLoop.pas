@@ -2761,8 +2761,7 @@ procedure TMessageLoopGI.SetCursorImage(const ImagePath: WideString; HotSpot: TP
 begin
   if CustomCursorEnabled then
   begin
-    (CursorControl as TCursorGI).SetImagePath(ImagePath);
-    CursorControl.SetOrigin(HotSpot);
+    (CursorControl as TCursorGI).SetImage(ImagePath, HotSpot);
     CursorImagePath := ImagePath;
   end;
 end;

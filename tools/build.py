@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Space Rangers HD for macOS or Android ARM64."""
+"""Build Space Rangers HD for Linux, macOS or Android."""
 
 import argparse
 import json
@@ -14,6 +14,7 @@ import zipfile
 from pathlib import Path
 
 from compiler import prepare_compiler
+from targets import desktop_directory, desktop_target
 
 ROOT = Path(__file__).resolve().parents[1]
 PASCAL_FLAGS = ("-Mdelphi", "-FcUTF8")
@@ -140,12 +141,27 @@ def pascal_flags(release: bool, *platform_paths: Path) -> list[str]:
     ]
 
 
+def build_paszlib(
+    work: Path, compiler: Path, compiler_flags: list[str], rebuild: bool, *options: str
+) -> Path:
+    directory = work / "paszlib"
+    directory.mkdir(parents=True, exist_ok=True)
+    # This FPC package uses ObjFPC syntax. Build released units separately so
+    # a game rebuild in Delphi mode does not recompile the package in that mode.
+    compile_pascal(directory, [
+        compiler, *compiler_flags, "-Mobjfpc", "-Ur", "-O2", *options,
+        f"-FU{directory}", f"-FE{directory}",
+        f"-Fu{ROOT / 'vendor/fpc/packages/hash/src'}",
+        ROOT / "vendor/fpc/packages/paszlib/src/paszlib.pas",
+    ], rebuild)  # fmt: skip
+    return directory
+
+
 def build_macos(release: bool, rebuild: bool = False, *, lto: bool = False) -> Path:
     compiler, compiler_flags = prepare_compiler("macos", run_step, lto=lto)
     clang = require_tool("clang")
     sdk = output("xcrun", "--show-sdk-path")
-    configuration = ("release" if release else "debug") + ("-lto" if lto else "")
-    work = ROOT / ".local" / configuration
+    work = desktop_directory(ROOT, "macos", release, lto)
     app = work / "Space Rangers HD.app"
     libraries = app / "Contents/MacOS"
     units = work / "units"
@@ -161,23 +177,14 @@ def build_macos(release: bool, rebuild: bool = False, *, lto: bool = False) -> P
         rebuild=rebuild,
     )
     shutil.copy2(native / "libokgf.dylib", libraries)
-    paszlib = work / "paszlib"
-    paszlib.mkdir(exist_ok=True)
-    # This FPC package uses ObjFPC syntax. Build released units separately so
-    # a game rebuild in Delphi mode does not recompile the package in that mode.
-    compile_pascal(paszlib, [
-        compiler, *compiler_flags, "-Mobjfpc", "-Ur", "-O2", "-Aclang-llvm-darwin",
-        f"-FU{paszlib}", f"-FE{paszlib}",
-        f"-Fu{ROOT / 'vendor/fpc/packages/hash/src'}",
-        ROOT / "vendor/fpc/packages/paszlib/src/paszlib.pas",
-    ], rebuild)  # fmt: skip
+    paszlib = build_paszlib(work, compiler, compiler_flags, rebuild, "-Aclang-llvm-darwin")
     compile_pascal(work, [
         compiler, *compiler_flags, *pascal_flags(release, paszlib), "-Aclang-llvm-darwin",
         f"-FU{units}", f"-FE{libraries}", f"-Fl{libraries}",
         f"-Fl{output('brew', '--prefix')}/lib",
         "-k-lokgf", "-k-rpath", "-k@executable_path", f"-XR{sdk}",
         # Retain the linker's generated object so dsymutil can read LTO DWARF.
-        *(["-k-object_path_lto", f"-k{work / 'lto.o'}"] if lto else []),
+        *(["-k-object_path_lto", f'-k"{work / "lto.o"}"'] if lto else []),
         ROOT / "source/Rangers.dpr",
     ], rebuild)  # fmt: skip
     for name in ("Rangers", "libokgf.dylib"):
@@ -200,6 +207,48 @@ def build_macos(release: bool, rebuild: bool = False, *, lto: bool = False) -> P
     )
     run_step(work, "sign", ["codesign", "--force", "--deep", "--sign", "-", app])
     return app
+
+
+def build_linux(
+    release: bool, rebuild: bool = False, *, llvm: bool = False, lto: bool = False
+) -> Path:
+    llvm = llvm or lto
+    work = desktop_directory(ROOT, "linux", release, lto, llvm=llvm)
+    libraries, units = (work / name for name in ("bin", "units"))
+    for directory in (libraries, units):
+        directory.mkdir(parents=True, exist_ok=True)
+    # Check system dependencies before the more expensive compiler bootstrap.
+    require_tool("cmake")
+    require_tool("pkg-config")
+    if llvm:
+        require_tool("clang")
+        require_tool("ld.lld")
+    subprocess.run(
+        ["pkg-config", "--print-errors", "--exists", "sdl2 >= 2.26", "vorbisfile", "ogg"],
+        check=True,
+    )
+    native = build_okgf(work, release, rebuild=rebuild)
+    shutil.copy2(native / "libokgf.so", libraries)
+    compiler, compiler_flags = prepare_compiler("linux", run_step, llvm=llvm, lto=lto)
+    if llvm:
+        # FPC's LLVM exception runtime uses libgcc; -n disables system fpc.cfg.
+        libgcc = Path(output("clang", "-print-libgcc-file-name"))
+        if not libgcc.is_file():
+            raise FileNotFoundError("Clang cannot locate libgcc; install the GCC runtime.")
+        compiler_flags += [f"-Fl{libgcc.parent}"]
+    paszlib = build_paszlib(work, compiler, compiler_flags, rebuild)
+    # CMake finds C libraries; FPC needs the corresponding native search paths.
+    library_flags = shlex.split(output("pkg-config", "--libs-only-L", "sdl2", "vorbisfile"))
+    compile_pascal(work, [
+        compiler, *compiler_flags, *pascal_flags(release, paszlib),
+        f"-FU{units}", f"-FE{libraries}", f"-Fl{libraries}",
+        *("-Fl" + flag[2:] for flag in library_flags),
+        # LLD resolves command-line -l before FPC's script SEARCH_DIR entries.
+        # FPC reparses -k options; quote the whole linker argument for spaced paths.
+        f'-k"-L{libraries}"', "-k-lokgf", "-k--enable-new-dtags", "-k-rpath", "-k$ORIGIN",
+        ROOT / "source/Rangers.dpr",
+    ], rebuild)  # fmt: skip
+    return libraries / "Rangers"
 
 
 def latest_sdk_directory(parent: Path, prefix: str = "") -> Path:
@@ -273,7 +322,7 @@ def build_android(release: bool, rebuild: bool = False) -> Path:
         "-Aclang-llvm", "-Cg", f"-Fl{clang_libraries}/aarch64",
         "-XPaarch64-linux-android-",
         f"-FD{binutils}", f"-FU{units}", f"-FE{libraries}", f"-Fl{libraries}",
-        f"-Fl{system_libraries}/26", f"-Fl{system_libraries}", f"-k-L{system_libraries}/26",
+        f"-Fl{system_libraries}/26", f"-Fl{system_libraries}", f'-k"-L{system_libraries}/26"',
         "-k-z", "-kmax-page-size=16384", "-k-lm", "-k--no-undefined",
         platform / "main.lpr",
     ], rebuild)  # fmt: skip
@@ -348,21 +397,26 @@ def sign_android_apk(work: Path, unsigned: Path, sdk_tools: Path, java: Path) ->
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target", choices=("macos", "android"), default="macos")
+    parser.add_argument("--target", choices=("linux", "macos", "android"), default=desktop_target())
     parser.add_argument("--release", action="store_true", help="Build an optimized release.")
-    parser.add_argument("--lto", action="store_true", help="Enable LTO in a separate macOS build.")
+    parser.add_argument("--llvm", action="store_true", help="Use the LLVM backend on Linux.")
+    parser.add_argument("--lto", action="store_true", help="Enable LLVM LTO (Linux or macOS).")
     parser.add_argument(
         "--rebuild", action="store_true", help="Rebuild all game units and native code."
     )
     args = parser.parse_args()
-    if args.lto and args.target != "macos":
-        parser.error("--lto is currently supported only for macOS builds.")
+    if args.lto and args.target == "android":
+        parser.error("--lto is currently supported only for Linux and macOS builds.")
+    if args.llvm and args.target != "linux":
+        parser.error("--llvm selects the optional Linux backend; other targets already use LLVM.")
     try:
         soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
         desired = 4096 if hard == resource.RLIM_INFINITY else min(4096, hard)
         resource.setrlimit(resource.RLIMIT_NOFILE, (max(soft, desired), hard))
         if args.target == "android":
             artifact = build_android(args.release, args.rebuild)
+        elif args.target == "linux":
+            artifact = build_linux(args.release, args.rebuild, llvm=args.llvm, lto=args.lto)
         else:
             artifact = build_macos(args.release, args.rebuild, lto=args.lto)
     except subprocess.CalledProcessError as error:

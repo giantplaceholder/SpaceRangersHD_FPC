@@ -2,6 +2,29 @@
 
 This changelog records game-source changes for Free Pascal compatibility.
 
+- Fix arcade-battle startup by shuffling the actual outgoing-link indices and
+  skipping nodes without exits. The unused, uninitialized portal-count field
+  allowed negative array indices during map generation.
+- Remove the unused VFW import, which pulled `AVIFIL32.DLL` into Unix builds
+  despite video playback already using `GameAVI`.
+- Present an initial cleared SDL frame when creating the window. Wayland needs
+  this buffer to map the surface before the game can receive activation and
+  start drawing its loading screen.
+- Detach shared WideString results before case conversion writes through raw
+  pointers. Preserve the game's configured case table and the caller's string,
+  including read-only literals and shared strings on Unix.
+- Update cursor image and hotspot together. Rebuilding a new cropped image with
+  the previous hotspot could fail SDL's bounds check during cursor transitions.
+- Preserve full pointer width when inspecting a missile owner's tranclucator
+  and comparing missile ownership in point-defense targeting.
+- Cancel and join script-request work before destroying UI/calculation state;
+  free its worker with the script engine. The leaked worker otherwise kept
+  waiting on SDL's event condition during process shutdown. Its wait for turn
+  calculation now also observes cancellation.
+- Ignore relative `XDG_DATA_HOME` values, preserve UTF-8 user-directory names,
+  and report failed resource-directory changes instead of silently using the
+  caller's working directory.
+
 - Preserve Delphi Win32's exhausted-loop behavior in asteroid collision searches,
   script ship/group/state selection, planet filters, quest-event fallback,
   weighted item/text selection and numeric/quoted-text scans. Advance search
@@ -20,11 +43,6 @@ This changelog records game-source changes for Free Pascal compatibility.
   wider `Extended`. The game selects 24-bit x87 arithmetic precision while
   retaining the wider exponent range; this fix restores the mathematical curve
   on ARM64 without reproducing that intermediate rounding.
-
-- Build the RTL with `CLASSESINLINE` by default and mark `TFPList.Error`
-  `noreturn`, allowing checked list accesses to optimize better.
-- Offer macOS LTO separately through `--lto`, with isolated runtime, game-unit
-  and app caches. Retain the LTO linker object for matching crash symbols.
 
 - Share game compiler directives in `GameOptions.inc` and leave optimization
   levels to the build settings instead of disabling optimization in each unit.
